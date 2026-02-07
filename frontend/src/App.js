@@ -1,54 +1,140 @@
-import { useEffect } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./lib/auth";
+import { Toaster } from "./components/ui/sonner";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+// Pages
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import DashboardPage from "./pages/DashboardPage";
+import DomainsPage from "./pages/DomainsPage";
+import GroupsPage from "./pages/GroupsPage";
+import GroupDetailPage from "./pages/GroupDetailPage";
+import ReportsPage from "./pages/ReportsPage";
+import BrandsPage from "./pages/BrandsPage";
+import UsersPage from "./pages/UsersPage";
+import AuditLogsPage from "./pages/AuditLogsPage";
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
+// Protected Route wrapper
+const ProtectedRoute = ({ children }) => {
+    const { isAuthenticated, loading } = useAuth();
+    
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+            </div>
+        );
     }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
+    
+    if (!isAuthenticated) {
+        return <Navigate to="/login" replace />;
+    }
+    
+    return children;
 };
 
-function App() {
-  return (
-    <div className="App">
-      <BrowserRouter>
+// Public Route wrapper (redirect to dashboard if already logged in)
+const PublicRoute = ({ children }) => {
+    const { isAuthenticated, loading } = useAuth();
+    
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+            </div>
+        );
+    }
+    
+    if (isAuthenticated) {
+        return <Navigate to="/dashboard" replace />;
+    }
+    
+    return children;
+};
+
+function AppRoutes() {
+    return (
         <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
+            {/* Public routes */}
+            <Route path="/login" element={
+                <PublicRoute>
+                    <LoginPage />
+                </PublicRoute>
+            } />
+            <Route path="/register" element={
+                <PublicRoute>
+                    <RegisterPage />
+                </PublicRoute>
+            } />
+            
+            {/* Protected routes */}
+            <Route path="/dashboard" element={
+                <ProtectedRoute>
+                    <DashboardPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/domains" element={
+                <ProtectedRoute>
+                    <DomainsPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/groups" element={
+                <ProtectedRoute>
+                    <GroupsPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/groups/:groupId" element={
+                <ProtectedRoute>
+                    <GroupDetailPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+                <ProtectedRoute>
+                    <ReportsPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/brands" element={
+                <ProtectedRoute>
+                    <BrandsPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/users" element={
+                <ProtectedRoute>
+                    <UsersPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/audit-logs" element={
+                <ProtectedRoute>
+                    <AuditLogsPage />
+                </ProtectedRoute>
+            } />
+            
+            {/* Default redirect */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-      </BrowserRouter>
-    </div>
-  );
+    );
+}
+
+function App() {
+    return (
+        <BrowserRouter>
+            <AuthProvider>
+                <AppRoutes />
+                <Toaster 
+                    position="top-right"
+                    toastOptions={{
+                        style: {
+                            background: '#0A0A0A',
+                            border: '1px solid #27272A',
+                            color: '#FAFAFA'
+                        }
+                    }}
+                />
+            </AuthProvider>
+        </BrowserRouter>
+    );
 }
 
 export default App;
