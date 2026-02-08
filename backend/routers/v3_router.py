@@ -1065,7 +1065,9 @@ async def send_domain_change_alert(
 
 # ==================== BULK IMPORT ENDPOINTS ====================
 
-class BulkImportItem(BaseModel):
+from pydantic import BaseModel as PydanticBaseModel
+
+class BulkImportItem(PydanticBaseModel):
     domain_name: str
     brand_name: Optional[str] = None
     registrar: Optional[str] = None
@@ -1073,11 +1075,9 @@ class BulkImportItem(BaseModel):
     status: Optional[str] = "active"
     notes: Optional[str] = None
 
-class BulkImportRequest(BaseModel):
+class BulkImportRequest(PydanticBaseModel):
     domains: List[BulkImportItem]
     skip_duplicates: bool = True
-
-from pydantic import BaseModel as PydanticBaseModel
 
 @router.post("/import/domains")
 async def bulk_import_domains(
