@@ -445,3 +445,43 @@ class SeoConflict(BaseModel):
     
     # Metadata
     detected_at: str
+
+
+
+# ==================== MONITORING SETTINGS MODELS ====================
+
+class ExpirationMonitoringSettings(BaseModel):
+    """Settings for domain expiration monitoring"""
+    enabled: bool = True
+    alert_window_days: int = 7  # Alert when expiration <= today + N days
+    alert_thresholds: List[int] = [30, 14, 7, 3, 1, 0]  # Days to send alerts
+    include_auto_renew: bool = False  # Include domains with auto-renew enabled
+
+
+class AvailabilityMonitoringSettings(BaseModel):
+    """Settings for domain availability (ping/HTTP) monitoring"""
+    enabled: bool = True
+    default_interval_seconds: int = 300  # 5 minutes
+    alert_on_down: bool = True  # Alert when status changes UP → DOWN
+    alert_on_recovery: bool = False  # Alert when status changes DOWN → UP
+    timeout_seconds: int = 15
+    follow_redirects: bool = True
+
+
+class TelegramMonitoringSettings(BaseModel):
+    """Telegram alert settings for monitoring"""
+    enabled: bool = True
+
+
+class MonitoringSettings(BaseModel):
+    """Combined monitoring settings"""
+    expiration: ExpirationMonitoringSettings = ExpirationMonitoringSettings()
+    availability: AvailabilityMonitoringSettings = AvailabilityMonitoringSettings()
+    telegram: TelegramMonitoringSettings = TelegramMonitoringSettings()
+
+
+class MonitoringSettingsUpdate(BaseModel):
+    """Model for updating monitoring settings"""
+    expiration: Optional[Dict[str, Any]] = None
+    availability: Optional[Dict[str, Any]] = None
+    telegram: Optional[Dict[str, Any]] = None
