@@ -325,6 +325,47 @@ export default function DomainsPage() {
 
     const hasActiveFilters = filterBrand !== 'all' || filterStatus !== 'all' || filterMonitoring !== 'all';
 
+    // Export handlers
+    const handleExport = async (format) => {
+        try {
+            toast.info(`Exporting domains as ${format.toUpperCase()}...`);
+            const params = {};
+            if (filterBrand !== 'all') params.brand_id = filterBrand;
+            if (filterStatus !== 'all') params.status = filterStatus;
+            
+            const response = await exportAPI.assetDomains(format, params);
+            
+            if (format === 'csv') {
+                // Download CSV blob
+                const blob = new Blob([response.data], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `asset_domains_export_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                toast.success('CSV exported successfully');
+            } else {
+                // Download JSON
+                const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `asset_domains_export_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                toast.success(`JSON exported (${response.data.total} domains)`);
+            }
+        } catch (err) {
+            toast.error('Export failed');
+            console.error(err);
+        }
+    };
+
     // CSV Import handlers
     const handleFileSelect = (e) => {
         const file = e.target.files[0];
