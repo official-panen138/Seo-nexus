@@ -59,6 +59,30 @@ def init_v3_router(
     tier_service = tier_svc
 
 
+# ==================== TELEGRAM HELPER ====================
+
+async def send_v3_telegram_alert(message: str) -> bool:
+    """Send alert to Telegram for V3 events"""
+    settings = await db.settings.find_one({"key": "telegram"}, {"_id": 0})
+    
+    if not settings or not settings.get("bot_token") or not settings.get("chat_id"):
+        logger.warning("Telegram not configured, skipping V3 alert")
+        return False
+    
+    try:
+        url = f"https://api.telegram.org/bot{settings['bot_token']}/sendMessage"
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json={
+                "chat_id": settings["chat_id"],
+                "text": message,
+                "parse_mode": "HTML"
+            }, timeout=10)
+            return response.status_code == 200
+    except Exception as e:
+        logger.error(f"Failed to send V3 Telegram alert: {e}")
+        return False
+
+
 # ==================== HELPER FUNCTIONS ====================
 
 async def enrich_asset_domain(asset: dict) -> dict:
