@@ -32,7 +32,8 @@ import {
     Download,
     Upload,
     FileSpreadsheet,
-    Plus
+    Plus,
+    Trash2
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
