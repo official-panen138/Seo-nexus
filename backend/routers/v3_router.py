@@ -641,17 +641,37 @@ async def create_network(
     data: SeoNetworkCreate,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Create a new SEO network (brand_id is required)"""
+    """
+    Create a new SEO network with initial main node.
+    
+    Every network MUST have a main node defined at creation time.
+    The main domain MUST belong to the same brand as the network.
+    """
     # Validate brand exists (required field)
     brand = await db.brands.find_one({"id": data.brand_id})
     if not brand:
         raise HTTPException(status_code=400, detail="Brand not found")
     
+    # Validate main domain exists and belongs to the same brand
+    main_domain = await db.asset_domains.find_one({"id": data.main_node.asset_domain_id})
+    if not main_domain:
+        raise HTTPException(status_code=400, detail="Main domain not found")
+    
+    if main_domain.get("brand_id") != data.brand_id:
+        raise HTTPException(
+            status_code=400, 
+            detail="Main domain must belong to the same brand as the network"
+        )
+    
     now = datetime.now(timezone.utc).isoformat()
+    network_id = str(uuid.uuid4())
+    
+    # Create network (exclude main_node from storage)
+    network_data = data.model_dump(exclude={"main_node"})
     network = {
-        "id": str(uuid.uuid4()),
+        "id": network_id,
         "legacy_id": None,
-        **data.model_dump(),
+        **network_data,
         "created_at": now,
         "updated_at": now
     }
@@ -662,18 +682,48 @@ async def create_network(
     
     await db.seo_networks.insert_one(network)
     
-    # Log activity
+    # Create the main node (seo_structure_entry)
+    main_path = data.main_node.optimized_path or "/"
+    main_entry = {
+        "id": str(uuid.uuid4()),
+        "asset_domain_id": data.main_node.asset_domain_id,
+        "network_id": network_id,
+        "optimized_path": main_path if main_path != "/" else None,
+        "domain_role": DomainRole.MAIN.value,
+        "domain_status": SeoStatus.CANONICAL.value,
+        "index_status": IndexStatus.INDEX.value,
+        "target_entry_id": None,  # Main node has no target
+        "created_at": now,
+        "updated_at": now
+    }
+    
+    await db.seo_structure_entries.insert_one(main_entry)
+    
+    # Log activity for network creation
     if activity_log_service:
         await activity_log_service.log(
             actor=current_user["email"],
             action_type=ActionType.CREATE,
             entity_type=EntityType.SEO_NETWORK,
-            entity_id=network["id"],
-            after_value=network
+            entity_id=network_id,
+            after_value={**network, "main_node_id": main_entry["id"]}
+        )
+        
+        # Log activity for main node creation
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.CREATE,
+            entity_type=EntityType.SEO_STRUCTURE_ENTRY,
+            entity_id=main_entry["id"],
+            after_value=main_entry,
+            metadata={"node_type": "main", "domain": main_domain["domain_name"]}
         )
     
-    network["domain_count"] = 0
+    # Build response
+    network["domain_count"] = 1
     network["brand_name"] = brand["name"]
+    network["main_node_id"] = main_entry["id"]
+    network["main_domain_name"] = main_domain["domain_name"]
     
     return SeoNetworkResponse(**network)
 
