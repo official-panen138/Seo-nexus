@@ -298,26 +298,18 @@ Build a full-stack SEO Network Operations Center combining:
 - White-label option
 
 ## Next Tasks List
-1. Email notification integration (Resend/SendGrid)
-2. Scheduled conflict alerts (cron)
-3. Domain health check improvements
-4. Alert history and analytics
-
-## Telegram Configuration
-- **Bot**: @monitoringseo_bot
-- **Chat ID**: 5125449265 (configured in settings collection)
-- **V3 Alert Endpoints**:
-  - `POST /api/v3/alerts/test` - Send test alert
-  - `POST /api/v3/alerts/send-conflicts` - Send all SEO conflicts
-  - `POST /api/v3/alerts/domain-change` - Alert on domain changes
-
-## New Features (Feb 8, 2026)
-- **Ranking & Path Tracking**: Network detail → Domain List → Edit button
-- **Bulk CSV Import**: Domains page → Import CSV → Upload → Import
-- **Activity Logs**: Sidebar → V3 Activity → Filter and view details
+1. **P1: Conflict Detection UI** (Backend API exists at `/api/v3/reports/conflicts`)
+   - Alert Center panel for conflicts
+   - Node highlighting in D3 diagram
+   - Conflict details in node detail panel
+2. Email notification integration (Resend/SendGrid)
+3. Scheduled conflict alerts (cron)
+4. Domain health check improvements
+5. Alert history and analytics
 
 ## Test Credentials
-- **Super Admin**: `superadmin@seonoc.com` / `SuperAdmin123!`
+- **Super Admin**: `admin@test.com` / `admin123` (confirmed working)
+- **Alt Super Admin**: `superadmin@seonoc.com` / `SuperAdmin123!`
 - **Admin**: `admin@seonoc.com` / `Admin123!`
 
 ## Key Files Reference
