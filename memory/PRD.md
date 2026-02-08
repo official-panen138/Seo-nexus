@@ -49,6 +49,51 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## What's Been Implemented (Feb 8, 2026)
 
+### P0 Domain Monitoring Fix (Feb 8, 2026) - COMPLETE
+**Issue:** Monitoring was not properly split into independent engines
+
+**Two Independent Engines Implemented:**
+
+1. **Domain Expiration Monitoring** (ExpirationMonitoringService)
+   - Runs on daily loop (hourly check with 24-hour alert deduplication)
+   - Alerts when expiration_date <= today + alert_window_days
+   - Sends Telegram alert with: domain, brand, registrar, expiration, auto-renew
+   - Tracks `expiration_alert_sent_at` to avoid spam
+   - Configurable alert thresholds (30, 14, 7, 3, 1, 0 days)
+   - Option to include/exclude auto-renew domains
+
+2. **Domain Availability Monitoring** (AvailabilityMonitoringService)
+   - Runs at configurable intervals (default 5 minutes)
+   - Only checks domains with `monitoring_enabled: true`
+   - Alerts ONLY on UP → DOWN transition
+   - Optional recovery alert on DOWN → UP
+   - Includes SEO context if domain is in SEO Network
+   - Tracks: `last_ping_status`, `last_http_code`, `last_checked_at`
+
+**New Fields Added:**
+- `expiration_alert_sent_at` - Track last expiration alert timestamp
+- `last_ping_status` - Previous status for transition detection
+- `last_http_code` - Last HTTP response code
+- `last_checked_at` - Last availability check timestamp
+
+**Settings → Monitoring Page:**
+- `/settings/monitoring` with 4 tabs
+- Expiration Monitoring: enabled, alert_window, thresholds, include_auto_renew
+- Availability Monitoring: enabled, interval, timeout, alert_on_down, alert_on_recovery, follow_redirects
+- Expiring Domains list (with days remaining, status badges)
+- Down Domains list (with HTTP code, network context)
+
+**API Endpoints:**
+- `GET /api/v3/monitoring/settings` - Get config
+- `PUT /api/v3/monitoring/settings` - Update config (Super Admin)
+- `GET /api/v3/monitoring/stats` - Get counts
+- `POST /api/v3/monitoring/check-expiration` - Manual trigger
+- `POST /api/v3/monitoring/check-availability` - Manual trigger
+- `GET /api/v3/monitoring/expiring-domains?days=N` - List expiring
+- `GET /api/v3/monitoring/down-domains` - List down
+
+**Tests:** 100% pass rate (11/11 backend, 100% frontend)
+
 ### P0 Critical Bug Fix - Node Linking (Feb 8, 2026) - COMPLETE
 **Issue:** Node-to-node linking was broken in UI and graph visualization
 
