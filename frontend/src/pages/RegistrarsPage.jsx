@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Layout from '@/Layout';
+import { Layout } from '@/components/Layout';
 import { registrarsAPI } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
