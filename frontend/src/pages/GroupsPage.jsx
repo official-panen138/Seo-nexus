@@ -152,25 +152,41 @@ export default function GroupsPage() {
                 {/* Header */}
                 <div className="page-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h1 className="page-title">Networks</h1>
+                        <h1 className="page-title">SEO Networks</h1>
                         <p className="page-subtitle">
-                            {groups.length} network{groups.length !== 1 ? 's' : ''}
+                            {filteredNetworks.length} network{filteredNetworks.length !== 1 ? 's' : ''}
                         </p>
                     </div>
-                    {canEdit() && (
-                        <Button 
-                            onClick={openCreateDialog}
-                            className="bg-white text-black hover:bg-zinc-200"
-                            data-testid="add-network-btn"
-                        >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Network
-                        </Button>
-                    )}
+                    <div className="flex items-center gap-3">
+                        {/* Brand Filter */}
+                        <Select value={filterBrand} onValueChange={setFilterBrand}>
+                            <SelectTrigger className="w-[180px] bg-black border-border" data-testid="brand-filter">
+                                <Filter className="h-4 w-4 mr-2 opacity-50" />
+                                <SelectValue placeholder="All Brands" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Brands</SelectItem>
+                                {brands.map(b => (
+                                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        
+                        {canEdit() && (
+                            <Button 
+                                onClick={openCreateDialog}
+                                className="bg-white text-black hover:bg-zinc-200"
+                                data-testid="add-network-btn"
+                            >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Network
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
-                {/* Groups Grid */}
-                {groups.length === 0 ? (
+                {/* Networks Grid */}
+                {filteredNetworks.length === 0 ? (
                     <div className="empty-state mt-16">
                         <Network className="empty-state-icon" />
                         <p className="empty-state-title">No networks yet</p>
@@ -189,12 +205,12 @@ export default function GroupsPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="networks-grid">
-                        {groups.map((group, index) => (
+                        {filteredNetworks.map((network, index) => (
                             <Link 
-                                key={group.id} 
-                                to={`/groups/${group.id}`}
+                                key={network.id} 
+                                to={`/groups/${network.id}`}
                                 className={`animate-fade-in stagger-${(index % 5) + 1}`}
-                                data-testid={`network-card-${group.id}`}
+                                data-testid={`network-card-${network.id}`}
                             >
                                 <Card className="bg-card border-border card-hover h-full">
                                     <CardHeader className="pb-3">
@@ -203,16 +219,24 @@ export default function GroupsPage() {
                                                 <div className="p-2 rounded-md bg-purple-500/10">
                                                     <Network className="h-5 w-5 text-purple-500" />
                                                 </div>
-                                                <CardTitle className="text-base">{group.name}</CardTitle>
+                                                <div>
+                                                    <CardTitle className="text-base">{network.name}</CardTitle>
+                                                    {network.brand_name && (
+                                                        <Badge variant="outline" className="mt-1 text-xs">
+                                                            <Tag className="h-3 w-3 mr-1" />
+                                                            {network.brand_name}
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </div>
                                             {canEdit() && (
                                                 <div className="flex gap-1">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        onClick={(e) => openEditDialog(group, e)}
+                                                        onClick={(e) => openEditDialog(network, e)}
                                                         className="h-8 w-8 hover:bg-white/5"
-                                                        data-testid={`edit-network-${group.id}`}
+                                                        data-testid={`edit-network-${network.id}`}
                                                     >
                                                         <Edit className="h-4 w-4" />
                                                     </Button>
