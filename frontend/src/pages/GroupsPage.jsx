@@ -352,7 +352,7 @@ export default function GroupsPage() {
                                     data-testid="save-network-btn"
                                 >
                                     {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                    {selectedGroup ? 'Update' : 'Create'}
+                                    {selectedNetwork ? 'Update' : 'Create'}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -366,7 +366,7 @@ export default function GroupsPage() {
                             <DialogTitle>Delete Network</DialogTitle>
                         </DialogHeader>
                         <p className="text-zinc-400">
-                            Are you sure you want to delete <span className="text-white font-medium">{selectedGroup?.name}</span>?
+                            Are you sure you want to delete <span className="text-white font-medium">{selectedNetwork?.name}</span>?
                             All domains will be removed from this network (but not deleted).
                         </p>
                         <DialogFooter>
