@@ -96,11 +96,20 @@ Build a full-stack SEO Network Operations Center combining:
 - ✅ V3 Dashboard: `/api/v3/reports/dashboard`
 - ✅ Conflict Detection: `/api/v3/reports/conflicts`
 
+**Phase 6 - Frontend Update: COMPLETED**
+- ✅ V3 API service layer (`/app/frontend/src/lib/api.js`)
+  - assetDomainsAPI, networksAPI, structureAPI, activityLogsAPI, v3ReportsAPI
+- ✅ NetworkGraph.jsx updated for V3 with derived tiers
+- ✅ GroupDetailPage.jsx uses V3 API with automatic fallback to V2
+- ✅ Tier distribution displayed (Derived)
+- ✅ D3 visualization shows correct tier colors
+- ✅ Domain list shows Role, Target, and calculated tier
+
 **Verification Results:**
 - Main SEO Network: LP/Money Site: 1, Tier 1: 3, Tier 2: 6, Tier 3: 6, Tier 5+: 1 (orphan)
 - Support Network: LP/Money Site: 1, Tier 1: 3
 - NOINDEX in high tier: 3 conflicts
-- Orphan domains: 2
+- Orphan domains: 1 (visible in UI)
 
 ### Frontend
 - ✅ SEO-NOC Dashboard with:
