@@ -49,6 +49,51 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## What's Been Implemented (Feb 8, 2026)
 
+### V3 P0 Features - COMPLETE (Feb 8, 2026)
+
+**Feature 1: Registrar as Master Data - COMPLETE**
+- ✅ New `registrars` collection with CRUD API at `/api/v3/registrars`
+- ✅ Fields: name (required, unique), website, status (active/inactive), notes
+- ✅ Write access restricted to `super_admin` role (403 for others)
+- ✅ Updated `AssetDomain` model with `registrar_id` foreign key
+- ✅ Registrar Management page at `/registrars` (Settings menu)
+- ✅ Searchable dropdown in Domain Add/Edit forms (auto-suggest)
+- ✅ All changes logged in `activity_logs_v3`
+- ✅ Initial data: GoDaddy, Namecheap registrars
+
+**Feature 2: SEO Networks with Brand Association - COMPLETE**
+- ✅ `brand_id` is now REQUIRED on `SeoNetwork` model
+- ✅ Network creation validates brand existence (400 if not found)
+- ✅ Create Network dialog shows Brand as required field with dropdown
+- ✅ Networks list displays brand name badge on cards
+- ✅ Brand filter dropdown on Networks page
+- ✅ `brand_name` enriched in API responses
+
+**Feature 3: Path-Level SEO Nodes - COMPLETE**
+- ✅ `optimized_path` field added to `SeoStructureEntry`
+  - Enables page-level SEO targeting (e.g., /blog/best-product)
+- ✅ Node-to-node relationships via `target_entry_id` (in addition to legacy `target_asset_domain_id`)
+- ✅ Node = Domain + optional Path
+- ✅ `node_label` computed for display (domain + path)
+- ✅ Target Node dropdown shows entries from same network
+- ✅ Edit Structure Entry dialog has "Path Configuration" section
+
+**Feature 4: Updated Tier Calculation - COMPLETE**
+- ✅ `TierCalculationService` updated for node-based graph traversal
+- ✅ BFS algorithm traverses `target_entry_id` relationships
+- ✅ Legacy `target_asset_domain_id` supported for backward compatibility
+- ✅ Tiers keyed by `entry_id` (not `asset_domain_id`)
+- ✅ Visual graph and tier distribution working correctly
+
+**Feature 5: SEO Workflow Refinement - COMPLETE**
+- ✅ Network creation: Name, Brand, Description only
+- ✅ Domain assignment with full SEO structure fields (in Network detail)
+- ✅ Clear CTAs: "Add Domains to Network" after creation
+- ✅ Edit Structure Entry dialog has all fields:
+  - Path Configuration (optimized_path)
+  - SEO Structure (role, status, index, target node)
+  - Ranking & Path Tracking (URL, keyword, position)
+
 ### V2 Backend (LEGACY - Functional)
 - ✅ JWT authentication with RBAC (super_admin, admin, viewer)
 - ✅ Categories CRUD with 8 default categories
