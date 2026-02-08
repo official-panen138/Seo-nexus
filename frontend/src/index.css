@@ -167,8 +167,9 @@
 }
 
 .graph-link {
-    stroke: hsl(240 4% 35%);
-    stroke-opacity: 0.8;
+    stroke: #525252;
+    stroke-opacity: 1;
+    stroke-width: 2px;
     fill: none;
 }
 
