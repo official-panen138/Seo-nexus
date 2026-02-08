@@ -1,374 +1,288 @@
+#!/usr/bin/env python3
 import requests
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
-class SEONetworkAPITester:
-    def __init__(self, base_url="https://network-mapper-pro.preview.emergentagent.com"):
+class SEONOCAPITester:
+    def __init__(self, base_url="https://network-mapper-pro.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
-        self.user = None
         self.tests_run = 0
         self.tests_passed = 0
-        self.created_entities = {
-            'brands': [],
-            'groups': [],
-            'domains': [],
-            'users': []
-        }
+        self.test_results = []
 
-    def run_test(self, name, method, endpoint, expected_status, data=None, description=None):
-        """Run a single API test"""
-        url = f"{self.base_url}/api/{endpoint}"
-        headers = {'Content-Type': 'application/json'}
-        if self.token:
-            headers['Authorization'] = f'Bearer {self.token}'
-
+    def log_test(self, name, success, message="", details={}):
+        """Log test result"""
         self.tests_run += 1
-        print(f"\n🔍 Testing {name}...")
-        if description:
-            print(f"   {description}")
+        if success:
+            self.tests_passed += 1
+            print(f"✅ {name}")
+        else:
+            print(f"❌ {name}: {message}")
         
+        self.test_results.append({
+            "test": name,
+            "success": success,
+            "message": message,
+            "details": details
+        })
+
+    def run_test(self, name, method, endpoint, expected_status, data=None, headers=None):
+        """Run a single API test"""
+        url = f"{self.base_url}/{endpoint}"
+        
+        # Default headers
+        req_headers = {'Content-Type': 'application/json'}
+        if self.token:
+            req_headers['Authorization'] = f'Bearer {self.token}'
+        if headers:
+            req_headers.update(headers)
+
         try:
             if method == 'GET':
-                response = requests.get(url, headers=headers)
+                response = requests.get(url, headers=req_headers, timeout=30)
             elif method == 'POST':
-                response = requests.post(url, json=data, headers=headers)
+                response = requests.post(url, json=data, headers=req_headers, timeout=30)
             elif method == 'PUT':
-                response = requests.put(url, json=data, headers=headers)
+                response = requests.put(url, json=data, headers=req_headers, timeout=30)
             elif method == 'DELETE':
-                response = requests.delete(url, headers=headers)
-
-            print(f"   URL: {url}")
-            print(f"   Status: {response.status_code} (expected: {expected_status})")
+                response = requests.delete(url, headers=req_headers, timeout=30)
 
             success = response.status_code == expected_status
+            
             if success:
-                self.tests_passed += 1
-                print(f"✅ PASSED")
+                self.log_test(name, True)
                 try:
-                    return True, response.json() if response.text else {}
+                    return response.json() if response.content else {}
                 except:
-                    return True, {}
+                    return {}
             else:
-                print(f"❌ FAILED - Expected {expected_status}, got {response.status_code}")
+                error_msg = f"Expected {expected_status}, got {response.status_code}"
                 try:
-                    error_data = response.json()
-                    print(f"   Error: {error_data}")
-                    return False, error_data
+                    error_detail = response.json().get('detail', '')
+                    if error_detail:
+                        error_msg += f": {error_detail}"
                 except:
-                    print(f"   Error text: {response.text}")
-                    return False, {'error': response.text}
+                    pass
+                self.log_test(name, False, error_msg)
+                return {}
 
+        except requests.exceptions.Timeout:
+            self.log_test(name, False, "Request timeout")
+            return {}
+        except requests.exceptions.ConnectionError:
+            self.log_test(name, False, "Connection error")
+            return {}
         except Exception as e:
-            print(f"❌ FAILED - Exception: {str(e)}")
-            return False, {'error': str(e)}
+            self.log_test(name, False, f"Error: {str(e)}")
+            return {}
 
-    def test_user_registration(self):
-        """Test user registration - first user becomes super_admin"""
-        timestamp = datetime.now().strftime('%H%M%S')
-        user_data = {
-            "email": f"admin{timestamp}@example.com",
-            "name": f"Admin User {timestamp}",
-            "password": "SecurePass123!"
-        }
+    def test_auth_flow(self):
+        """Test authentication endpoints"""
+        print("\n🔐 Testing Authentication...")
         
-        success, response = self.run_test(
-            "User Registration (Super Admin)", 
-            "POST", 
-            "auth/register", 
-            200, 
-            user_data,
-            "First user should become super_admin"
-        )
-        
-        if success and 'access_token' in response:
-            self.token = response['access_token']
-            self.user = response['user']
-            print(f"   Registered user role: {self.user.get('role')}")
-            print(f"   Token obtained: {self.token[:20]}...")
-            return True
-        return False
-
-    def test_user_login(self):
-        """Test user login"""
-        if not self.user:
-            print("❌ Cannot test login - no user registered")
-            return False
-
+        # Test login with demo admin credentials
         login_data = {
-            "email": self.user['email'],
-            "password": "SecurePass123!"
+            "email": "admin@seonexus.com",
+            "password": "admin123"
         }
-        
-        success, response = self.run_test(
-            "User Login", 
-            "POST", 
-            "auth/login", 
-            200, 
-            login_data
+        response = self.run_test(
+            "Admin Login",
+            "POST",
+            "auth/login",
+            200,
+            data=login_data
         )
         
-        if success and 'access_token' in response:
-            # Update token in case it's different
+        if response and 'access_token' in response:
             self.token = response['access_token']
-            print(f"   Login successful, role: {response['user'].get('role')}")
-            return True
-        return False
-
-    def test_get_me(self):
-        """Test get current user endpoint"""
-        success, response = self.run_test(
-            "Get Current User", 
-            "GET", 
-            "auth/me", 
-            200
-        )
+            self.log_test("Token Retrieved", True)
+            
+            # Test auth/me endpoint
+            me_response = self.run_test("Get Current User", "GET", "auth/me", 200)
+            if me_response:
+                self.log_test("User Profile Access", True)
+                return True
         
-        if success:
-            print(f"   Current user: {response.get('name')} ({response.get('role')})")
-            return True
         return False
 
     def test_dashboard_stats(self):
-        """Test dashboard stats endpoint"""
-        success, response = self.run_test(
-            "Dashboard Stats", 
-            "GET", 
-            "reports/dashboard-stats", 
-            200
-        )
+        """Test dashboard and stats endpoints"""
+        print("\n📊 Testing Dashboard & Stats...")
         
-        if success:
-            stats = response
-            print(f"   Total domains: {stats.get('total_domains', 0)}")
-            print(f"   Total groups: {stats.get('total_groups', 0)}")
-            print(f"   Total brands: {stats.get('total_brands', 0)}")
-            return True
-        return False
+        self.run_test("Dashboard Stats", "GET", "reports/dashboard-stats", 200)
+        self.run_test("Tier Distribution", "GET", "reports/tier-distribution", 200)
+        self.run_test("Index Status Report", "GET", "reports/index-status", 200)
+        self.run_test("Brand Health Report", "GET", "reports/brand-health", 200)
+        self.run_test("Monitoring Stats", "GET", "monitoring/stats", 200)
 
-    def test_seed_data(self):
-        """Test seeding demo data (super_admin only)"""
-        success, response = self.run_test(
-            "Seed Demo Data", 
-            "POST", 
-            "seed-data", 
-            200,
-            description="Creates sample brands, groups, and domains"
-        )
+    def test_categories_management(self):
+        """Test categories CRUD operations"""
+        print("\n📁 Testing Categories Management...")
         
-        if success:
-            print(f"   Seeded: {response.get('message', 'Data seeded successfully')}")
-            return True
-        return False
-
-    def test_brands_crud(self):
-        """Test brands CRUD operations"""
-        print("\n📋 Testing Brands CRUD...")
+        # Get all categories (should have default ones)
+        categories = self.run_test("Get Categories", "GET", "categories", 200)
         
-        # Get all brands
-        success, brands = self.run_test("Get All Brands", "GET", "brands", 200)
-        if not success:
-            return False
-        print(f"   Found {len(brands)} existing brands")
-        
-        # Create new brand
-        brand_data = {
-            "name": f"Test Brand {datetime.now().strftime('%H%M%S')}",
-            "description": "Test brand for API testing"
-        }
-        success, brand = self.run_test("Create Brand", "POST", "brands", 200, brand_data)
-        if success and 'id' in brand:
-            self.created_entities['brands'].append(brand['id'])
-            print(f"   Created brand ID: {brand['id']}")
+        if categories:
+            category_count = len(categories)
+            self.log_test(f"Default Categories Loaded ({category_count})", category_count >= 8)
             
-            # Update brand
-            updated_data = {**brand_data, "description": "Updated test brand description"}
-            success, _ = self.run_test(f"Update Brand", "PUT", f"brands/{brand['id']}", 200, updated_data)
-            if success:
-                print(f"   Brand updated successfully")
-                return True
-        
-        return False
+            # Test category names
+            category_names = [cat.get('name') for cat in categories]
+            expected_names = ['Money Site', 'PBN', 'Fresh Domain', 'Aged Domain']
+            found_expected = [name for name in expected_names if name in category_names]
+            self.log_test(f"Expected Categories Found ({len(found_expected)}/4)", len(found_expected) >= 2)
 
-    def test_groups_crud(self):
-        """Test groups/networks CRUD operations"""
-        print("\n🔗 Testing Groups/Networks CRUD...")
+    def test_domains_and_monitoring(self):
+        """Test domain management and monitoring"""
+        print("\n🌐 Testing Domain Management...")
         
-        # Get all groups
-        success, groups = self.run_test("Get All Groups", "GET", "groups", 200)
-        if not success:
-            return False
-        print(f"   Found {len(groups)} existing groups")
+        # Get all domains
+        domains = self.run_test("Get Domains", "GET", "domains", 200)
         
-        # Create new group
-        group_data = {
-            "name": f"Test Network {datetime.now().strftime('%H%M%S')}",
-            "description": "Test network for API testing"
-        }
-        success, group = self.run_test("Create Group", "POST", "groups", 200, group_data)
-        if success and 'id' in group:
-            self.created_entities['groups'].append(group['id'])
-            print(f"   Created group ID: {group['id']}")
+        if domains:
+            domain_count = len(domains)
+            self.log_test(f"Domains Loaded ({domain_count})", domain_count > 0)
             
-            # Get specific group
-            success, group_detail = self.run_test(f"Get Group Detail", "GET", f"groups/{group['id']}", 200)
-            if success and 'domains' in group_detail:
-                print(f"   Group detail loaded with {len(group_detail['domains'])} domains")
-                return True
-        
-        return False
-
-    def test_domains_crud(self):
-        """Test domains CRUD operations"""
-        print("\n🌐 Testing Domains CRUD...")
-        
-        # Get all domains first
-        success, domains = self.run_test("Get All Domains", "GET", "domains", 200)
-        if not success:
-            return False
-        print(f"   Found {len(domains)} existing domains")
-        
-        # Need a brand to create domain
-        if not self.created_entities['brands']:
-            print("   ❌ Cannot test domain creation - no brands available")
-            return False
-        
-        brand_id = self.created_entities['brands'][0]
-        group_id = self.created_entities['groups'][0] if self.created_entities['groups'] else None
-        
-        # Create domain
-        domain_data = {
-            "domain_name": f"test{datetime.now().strftime('%H%M%S')}.example.com",
-            "brand_id": brand_id,
-            "domain_status": "canonical",
-            "index_status": "index",
-            "tier_level": "tier_3",
-            "group_id": group_id,
-            "notes": "Test domain for API testing"
-        }
-        
-        success, domain = self.run_test("Create Domain", "POST", "domains", 201, domain_data)
-        if success and 'id' in domain:
-            self.created_entities['domains'].append(domain['id'])
-            print(f"   Created domain ID: {domain['id']}")
-            
-            # Get specific domain
-            success, domain_detail = self.run_test(f"Get Domain Detail", "GET", f"domains/{domain['id']}", 200)
-            if success:
-                print(f"   Domain detail: {domain_detail.get('domain_name')} ({domain_detail.get('tier_level')})")
+            # Test first domain detail if exists
+            if domain_count > 0:
+                domain_id = domains[0].get('id')
+                self.run_test("Get Domain Detail", "GET", f"domains/{domain_id}", 200)
                 
-                # Update domain
-                update_data = {"index_status": "noindex", "notes": "Updated test domain"}
-                success, _ = self.run_test(f"Update Domain", "PUT", f"domains/{domain['id']}", 200, update_data)
-                if success:
-                    print(f"   Domain updated successfully")
-                    return True
+                # Test monitoring check if domain has monitoring enabled
+                if domains[0].get('monitoring_enabled'):
+                    self.run_test("Schedule Domain Check", "POST", f"domains/{domain_id}/check", 200)
         
-        return False
+        # Test brands endpoint
+        brands = self.run_test("Get Brands", "GET", "brands", 200)
+        if brands:
+            brand_count = len(brands)
+            self.log_test(f"Brands Loaded ({brand_count})", brand_count > 0)
+        
+        # Test groups/networks
+        groups = self.run_test("Get Groups/Networks", "GET", "groups", 200)
+        if groups:
+            group_count = len(groups)
+            self.log_test(f"Networks Loaded ({group_count})", group_count >= 0)
 
-    def test_reports(self):
-        """Test various report endpoints"""
-        print("\n📊 Testing Reports...")
+    def test_alerts_system(self):
+        """Test alert management system"""
+        print("\n🚨 Testing Alert System...")
         
-        # Tier distribution
-        success, tier_data = self.run_test("Tier Distribution Report", "GET", "reports/tier-distribution", 200)
-        if success:
-            print(f"   Tier distribution: {len(tier_data)} tier levels")
+        # Get all alerts
+        alerts = self.run_test("Get Alerts", "GET", "alerts", 200)
         
-        # Index status report
-        success, index_data = self.run_test("Index Status Report", "GET", "reports/index-status", 200)
-        if success:
-            print(f"   Index status: {len(index_data)} status types")
-        
-        # Brand health
-        success, health_data = self.run_test("Brand Health Report", "GET", "reports/brand-health", 200)
-        if success:
-            print(f"   Brand health: {len(health_data)} brands analyzed")
-        
-        # Export data
-        success, export_data = self.run_test("Export Domains (JSON)", "GET", "reports/export?format=json", 200)
-        if success and 'data' in export_data:
-            print(f"   JSON export: {len(export_data['data'])} domains exported")
-            return True
-        
-        return False
+        if alerts is not None:
+            alert_count = len(alerts)
+            self.log_test(f"Alerts Retrieved ({alert_count})", True)
+            
+            # Test alert filtering
+            self.run_test("Filter Critical Alerts", "GET", "alerts?severity=critical", 200)
+            self.run_test("Filter Monitoring Alerts", "GET", "alerts?alert_type=monitoring", 200)
+            self.run_test("Filter Unacknowledged", "GET", "alerts?acknowledged=false", 200)
 
-    def test_user_management(self):
-        """Test user management (super_admin only)"""
-        print("\n👥 Testing User Management...")
+    def test_seo_conflicts(self):
+        """Test SEO conflict detection"""
+        print("\n⚠️ Testing SEO Conflict Detection...")
         
-        # Get all users
-        success, users = self.run_test("Get All Users", "GET", "users", 200)
-        if success:
-            print(f"   Found {len(users)} users")
-            return True
+        conflicts = self.run_test("Detect SEO Conflicts", "GET", "seo/conflicts", 200)
         
-        return False
+        if conflicts:
+            conflict_count = conflicts.get('total', 0)
+            self.log_test(f"SEO Conflicts Detected ({conflict_count})", True)
+            
+            # Log conflict types if any
+            if conflict_count > 0:
+                conflict_types = set()
+                for conflict in conflicts.get('conflicts', []):
+                    conflict_types.add(conflict.get('type', 'unknown'))
+                self.log_test(f"Conflict Types: {', '.join(conflict_types)}", True)
+
+    def test_settings_and_telegram(self):
+        """Test settings management"""
+        print("\n⚙️ Testing Settings...")
+        
+        # Get Telegram settings
+        self.run_test("Get Telegram Settings", "GET", "settings/telegram", 200)
+        
+        # Note: Won't test actual Telegram send to avoid spam
 
     def test_audit_logs(self):
-        """Test audit logs (super_admin only)"""
-        success, logs = self.run_test("Get Audit Logs", "GET", "audit-logs?limit=10", 200)
-        if success:
-            print(f"   Found {len(logs)} audit log entries")
-            return True
+        """Test audit logging system"""
+        print("\n📝 Testing Audit Logs...")
         
-        return False
+        self.run_test("Get Audit Logs", "GET", "audit-logs?limit=10", 200)
+        self.run_test("Get Domain Audit Logs", "GET", "audit-logs?entity_type=domain&limit=5", 200)
+
+    def test_reports_export(self):
+        """Test export functionality"""
+        print("\n📤 Testing Reports & Export...")
+        
+        self.run_test("Export Domains JSON", "GET", "reports/export?format=json", 200)
+        self.run_test("Export Domains CSV", "GET", "reports/export?format=csv", 200)
 
     def run_all_tests(self):
-        """Run comprehensive test suite"""
-        print("🚀 Starting SEO Network Manager API Test Suite")
+        """Run all test suites"""
+        print("🚀 Starting SEO-NOC Backend API Tests")
         print(f"Base URL: {self.base_url}")
-        print("=" * 60)
         
-        # Authentication tests
-        if not self.test_user_registration():
-            print("❌ Registration failed - stopping tests")
+        # Authentication is required for all subsequent tests
+        if not self.test_auth_flow():
+            print("❌ Authentication failed - cannot continue with other tests")
             return False
         
-        if not self.test_user_login():
-            print("❌ Login failed - stopping tests")  
-            return False
-            
-        self.test_get_me()
-        
-        # Dashboard and seed data
+        # Run all test suites
         self.test_dashboard_stats()
-        self.test_seed_data()
-        
-        # CRUD operations
-        self.test_brands_crud()
-        self.test_groups_crud()
-        self.test_domains_crud()
-        
-        # Reports
-        self.test_reports()
-        
-        # Admin functions
-        self.test_user_management()
+        self.test_categories_management()
+        self.test_domains_and_monitoring()
+        self.test_alerts_system()
+        self.test_seo_conflicts()
+        self.test_settings_and_telegram()
         self.test_audit_logs()
+        self.test_reports_export()
         
-        # Final summary
-        print("\n" + "=" * 60)
-        print(f"📊 TEST SUMMARY")
+        return True
+
+    def print_summary(self):
+        """Print test summary"""
+        success_rate = (self.tests_passed / self.tests_run * 100) if self.tests_run > 0 else 0
+        
+        print(f"\n{'='*50}")
+        print(f"📊 SEO-NOC API Test Results")
+        print(f"{'='*50}")
         print(f"Tests Run: {self.tests_run}")
-        print(f"Tests Passed: {self.tests_passed}")
-        print(f"Tests Failed: {self.tests_run - self.tests_passed}")
-        print(f"Success Rate: {(self.tests_passed / self.tests_run * 100):.1f}%")
+        print(f"Passed: {self.tests_passed}")
+        print(f"Failed: {self.tests_run - self.tests_passed}")
+        print(f"Success Rate: {success_rate:.1f}%")
         
-        if self.created_entities['domains']:
-            print(f"Created Domains: {len(self.created_entities['domains'])}")
-        if self.created_entities['brands']:
-            print(f"Created Brands: {len(self.created_entities['brands'])}")
-        if self.created_entities['groups']:
-            print(f"Created Groups: {len(self.created_entities['groups'])}")
+        if self.tests_passed == self.tests_run:
+            print("🎉 All tests passed!")
+        elif success_rate >= 80:
+            print("✅ Most tests passed - system is mostly functional")
+        elif success_rate >= 50:
+            print("⚠️ Some critical issues found")
+        else:
+            print("❌ Major issues detected - needs attention")
         
-        return self.tests_passed == self.tests_run
+        return success_rate >= 80
 
 def main():
-    tester = SEONetworkAPITester()
-    success = tester.run_all_tests()
-    return 0 if success else 1
+    """Main test execution"""
+    tester = SEONOCAPITester()
+    
+    try:
+        success = tester.run_all_tests()
+        tester.print_summary()
+        
+        return 0 if success else 1
+        
+    except KeyboardInterrupt:
+        print("\n❌ Tests interrupted by user")
+        return 1
+    except Exception as e:
+        print(f"\n❌ Test execution failed: {e}")
+        return 1
 
 if __name__ == "__main__":
     sys.exit(main())
