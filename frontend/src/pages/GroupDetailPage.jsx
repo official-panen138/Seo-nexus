@@ -98,6 +98,21 @@ export default function GroupDetailPage() {
     const [saving, setSaving] = useState(false);
     const [availableTargets, setAvailableTargets] = useState([]);
     
+    // Delete confirmation state
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [entryToDelete, setEntryToDelete] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+    
+    // Add node state
+    const [addNodeDialogOpen, setAddNodeDialogOpen] = useState(false);
+    const [availableDomains, setAvailableDomains] = useState([]);
+    const [addNodeForm, setAddNodeForm] = useState({
+        asset_domain_id: '',
+        optimized_path: '',
+        domain_role: 'supporting',
+        target_entry_id: ''
+    });
+    
     // Import dialog state
     const [importDialogOpen, setImportDialogOpen] = useState(false);
     const [importData, setImportData] = useState([]);
@@ -112,13 +127,25 @@ export default function GroupDetailPage() {
     // Load available target entries (nodes) for the network
     const loadAvailableTargets = async (networkId, currentEntryId) => {
         try {
-            // For node-to-node relationships, get entries from the same network
-            const networkEntries = network?.entries || [];
-            // Filter out the current entry - can't target itself
-            const targets = networkEntries.filter(e => e.id !== currentEntryId);
-            setAvailableTargets(targets);
+            // Use API to get available targets (brand-scoped, same network only)
+            const { data } = await networksAPI.getAvailableTargets(networkId, currentEntryId);
+            setAvailableTargets(data);
         } catch (err) {
             console.error('Failed to load targets:', err);
+            // Fallback to local filter
+            const networkEntries = network?.entries || [];
+            const targets = networkEntries.filter(e => e.id !== currentEntryId);
+            setAvailableTargets(targets);
+        }
+    };
+    
+    // Load available domains (brand-scoped) for adding nodes
+    const loadAvailableDomains = async (networkId) => {
+        try {
+            const { data } = await networksAPI.getAvailableDomains(networkId);
+            setAvailableDomains(data);
+        } catch (err) {
+            console.error('Failed to load available domains:', err);
         }
     };
 
