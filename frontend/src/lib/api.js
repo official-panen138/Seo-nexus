@@ -184,6 +184,10 @@ export const networksAPI = {
     getAll: (params) => apiV3.get('/networks', { params }),
     getOne: (networkId) => apiV3.get(`/networks/${networkId}`),
     getTiers: (networkId) => apiV3.get(`/networks/${networkId}/tiers`),
+    getAvailableDomains: (networkId) => apiV3.get(`/networks/${networkId}/available-domains`),
+    getAvailableTargets: (networkId, excludeEntryId) => apiV3.get(`/networks/${networkId}/available-targets`, {
+        params: excludeEntryId ? { exclude_entry_id: excludeEntryId } : {}
+    }),
     create: (data) => apiV3.post('/networks', data),
     update: (networkId, data) => apiV3.put(`/networks/${networkId}`, data),
     delete: (networkId) => apiV3.delete(`/networks/${networkId}`)
@@ -207,7 +211,7 @@ export const activityLogsAPI = {
 // V3 Reports API
 export const v3ReportsAPI = {
     getDashboard: () => apiV3.get('/reports/dashboard'),
-    getConflicts: () => apiV3.get('/reports/conflicts')
+    getConflicts: (networkId) => apiV3.get('/reports/conflicts', { params: networkId ? { network_id: networkId } : {} })
 };
 
 // V3 Export API
