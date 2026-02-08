@@ -227,28 +227,28 @@ async def dry_run(db) -> Dict[str, Any]:
     
     # Validate
     validation = await validate_prerequisites(db)
-    print(f"\n[Validation]")
+    print("\n[Validation]")
     print(f"  Asset domains (Phase 2): {validation['asset_domains_count']}")
     print(f"  SEO networks (Phase 3): {validation['seo_networks_count']}")
     print(f"  Domains in groups: {validation['domains_in_groups']}")
     print(f"  Target collection: {validation['target_count']} existing")
     
     if validation['issues']:
-        print(f"\n[Issues Found]")
+        print("\n[Issues Found]")
         for issue in validation['issues']:
             print(f"  ❌ {issue}")
     
     if validation['warnings']:
-        print(f"\n[Warnings]")
+        print("\n[Warnings]")
         for warning in validation['warnings']:
             print(f"  ⚠️  {warning}")
     
     if not validation['can_proceed']:
-        print(f"\n❌ Migration cannot proceed. Fix issues first.")
+        print("\n❌ Migration cannot proceed. Fix issues first.")
         return validation
     
     # Load mappings
-    print(f"\n[Loading ID Mappings]...")
+    print("\n[Loading ID Mappings]...")
     mappings = await load_mappings(db)
     print(f"  Domain mappings: {len(mappings['domains'])}")
     print(f"  Network mappings: {len(mappings['groups'])}")
@@ -288,7 +288,7 @@ async def dry_run(db) -> Dict[str, Any]:
             )
             
             print(f"\n  V2 Domain: {domain['domain_name']}")
-            print(f"    → V3 SeoStructureEntry:")
+            print("    → V3 SeoStructureEntry:")
             print(f"       id: {entry['id']}")
             print(f"       legacy_domain_id: {entry['legacy_domain_id']}")
             print(f"       asset_domain: {asset['domain_name'] if asset else 'N/A'}")
@@ -319,19 +319,19 @@ async def dry_run(db) -> Dict[str, Any]:
             skipped += 1
     
     # Show what will be logged
-    print(f"\n[Activity Logs to be Created]")
+    print("\n[Activity Logs to be Created]")
     print(f"  Actor: {MIGRATION_ACTOR}")
     print(f"  Phase: {MIGRATION_PHASE}")
     print(f"  Entries: {total_main + total_supporting}")
     
     # Summary
-    print(f"\n[Migration Summary]")
+    print("\n[Migration Summary]")
     print(f"  Entries to create: {total_main + total_supporting}")
     print(f"    - Main domains: {total_main}")
     print(f"    - Supporting domains: {total_supporting}")
     print(f"  Skipped (no mapping): {skipped}")
-    print(f"  New collection: seo_structure_entries")
-    print(f"  Indexes: asset_domain_id, network_id, legacy_domain_id, domain_role")
+    print("  New collection: seo_structure_entries")
+    print("  Indexes: asset_domain_id, network_id, legacy_domain_id, domain_role")
     
     print("\n" + "="*60)
     print("DRY RUN COMPLETE - No changes made")
@@ -358,13 +358,13 @@ async def execute_migration(db) -> Dict[str, Any]:
     # Validate first
     validation = await validate_prerequisites(db)
     if not validation['can_proceed']:
-        print(f"\n❌ Migration cannot proceed. Issues found:")
+        print("\n❌ Migration cannot proceed. Issues found:")
         for issue in validation['issues']:
             print(f"  ❌ {issue}")
         return {"success": False, "validation": validation}
     
     # Load mappings
-    print(f"\n[Step 1] Loading ID mappings...")
+    print("\n[Step 1] Loading ID mappings...")
     mappings = await load_mappings(db)
     print(f"  Domain mappings: {len(mappings['domains'])}")
     print(f"  Network mappings: {len(mappings['groups'])}")
@@ -392,7 +392,7 @@ async def execute_migration(db) -> Dict[str, Any]:
     print(f"[Step 3] Transformed {len(structure_entries)} documents (skipped {skipped})")
     
     # Create indexes
-    print(f"[Step 4] Creating indexes...")
+    print("[Step 4] Creating indexes...")
     await db.seo_structure_entries.create_index("asset_domain_id")
     await db.seo_structure_entries.create_index("network_id")
     await db.seo_structure_entries.create_index("legacy_domain_id")
@@ -413,7 +413,7 @@ async def execute_migration(db) -> Dict[str, Any]:
         print(f"  Inserted {inserted_count}/{len(structure_entries)}")
     
     # Create activity logs
-    print(f"[Step 6] Creating activity logs...")
+    print("[Step 6] Creating activity logs...")
     activity_logs = []
     now = datetime.now(timezone.utc).isoformat()
     
@@ -471,7 +471,7 @@ async def execute_migration(db) -> Dict[str, Any]:
     main_count = await db.seo_structure_entries.count_documents({"domain_role": "main"})
     supporting_count = await db.seo_structure_entries.count_documents({"domain_role": "supporting"})
     
-    print(f"\n[Verification]")
+    print("\n[Verification]")
     print(f"  Expected: {len(structure_entries)}")
     print(f"  Actual: {final_count}")
     print(f"  Main domains: {main_count}")
