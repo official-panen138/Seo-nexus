@@ -1686,8 +1686,18 @@ async def seed_demo_data(current_user: dict = Depends(require_roles([UserRole.SU
     
     return {"message": f"Seeded {len(brands)} brands, {len(groups)} groups, {len(domains)} domains"}
 
-# Include router
-app.include_router(api_router)
+# Initialize V3 router with dependencies
+init_v3_router(
+    database=db,
+    current_user_dep=get_current_user,
+    roles_dep=require_roles,
+    activity_service=activity_log_service,
+    tier_svc=tier_service
+)
+
+# Include routers
+app.include_router(api_router)  # V2 API (legacy)
+app.include_router(v3_router)   # V3 API (new architecture)
 
 app.add_middleware(
     CORSMiddleware,
