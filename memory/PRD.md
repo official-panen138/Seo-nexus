@@ -195,8 +195,9 @@ Build a full-stack SEO Network Operations Center combining:
 ## Demo Data
 - 3 brands (Panen138, PANEN77, DEWI138)
 - 8 default categories
-- 3 networks (Main SEO Network, Support Network, Test Network)
-- 22 domains with hierarchy
+- 2 registrars (GoDaddy, Namecheap)
+- 5 networks (Main SEO Network, Support Network, Test Network, Domain A, Test V3 Network)
+- 23-25 domains with hierarchy
 - 14 SEO conflicts detected
 
 ## Prioritized Backlog
@@ -210,6 +211,10 @@ Build a full-stack SEO Network Operations Center combining:
 - ✅ Ranking & Path Tracking UI
 - ✅ Bulk CSV Import
 - ✅ Activity Logs Viewer
+- ✅ **Registrar as Master Data** (Feb 8, 2026)
+- ✅ **SEO Networks with Brand Association** (Feb 8, 2026)
+- ✅ **Path-Level SEO Nodes** (Feb 8, 2026)
+- ✅ **SEO Workflow Refinement** (Feb 8, 2026)
 
 ### P1 (High Priority - Remaining)
 - Email notification channel (Resend/SendGrid)
