@@ -51,18 +51,21 @@ def init_v3_router(
     tier_svc
 ):
     """Initialize V3 router with dependencies"""
-    global db, get_current_user, require_roles, activity_log_service, tier_service
+    global db, get_current_user_func, require_roles, activity_log_service, tier_service
     db = database
-    get_current_user = current_user_dep
+    get_current_user_func = current_user_dep
     require_roles = roles_dep
     activity_log_service = activity_service
     tier_service = tier_svc
 
 
-# Wrapper to properly use the dependency
-def get_user_dependency():
-    """Returns the actual dependency function"""
-    return get_current_user
+# The get_current_user dependency from main app
+get_current_user_func = None
+
+
+def get_current_user():
+    """Returns the auth dependency"""
+    return Depends(get_current_user_func)
 
 
 # ==================== TELEGRAM HELPER ====================
