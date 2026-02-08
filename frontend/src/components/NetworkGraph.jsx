@@ -180,7 +180,8 @@ export const NetworkGraph = ({ domains, entries, onNodeClick, selectedNodeId, us
             .data(links)
             .join('line')
             .attr('class', 'graph-link')
-            .attr('stroke-width', 1.5);
+            .attr('stroke', '#6b7280')
+            .attr('stroke-width', 2);
 
         // Draw nodes
         const node = g.append('g')
