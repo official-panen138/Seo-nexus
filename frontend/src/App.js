@@ -123,6 +123,11 @@ function AppRoutes() {
                     <AuditLogsPage />
                 </ProtectedRoute>
             } />
+            <Route path="/activity-logs" element={
+                <ProtectedRoute>
+                    <ActivityLogsPage />
+                </ProtectedRoute>
+            } />
             <Route path="/settings" element={
                 <ProtectedRoute>
                     <SettingsPage />
