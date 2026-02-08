@@ -107,6 +107,13 @@ export const Layout = ({ children }) => {
                     </div>
                 </div>
 
+                {/* Brand Switcher */}
+                {!collapsed && (
+                    <div className="px-3 mb-3 border-t border-zinc-800 pt-3">
+                        <BrandSwitcher />
+                    </div>
+                )}
+
                 {/* Navigation */}
                 <ScrollArea className="sidebar-nav">
                     <nav className="px-3 space-y-1">
