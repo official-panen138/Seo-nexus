@@ -251,8 +251,12 @@ class SeoStructureEntryResponse(SeoStructureEntryBase):
     # Enriched data
     domain_name: Optional[str] = None
     target_domain_name: Optional[str] = None
+    target_entry_path: Optional[str] = None  # For node-to-node display
     network_name: Optional[str] = None
     brand_name: Optional[str] = None
+    
+    # Node identifier for display (domain + path)
+    node_label: Optional[str] = None
     
     # DERIVED tier (calculated, not stored)
     calculated_tier: Optional[int] = None
