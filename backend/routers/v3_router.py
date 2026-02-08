@@ -983,7 +983,7 @@ async def send_conflict_alerts(
         return {"message": "No conflicts found", "sent": 0}
     
     # Build message
-    message = f"<b>🚨 SEO-NOC V3 Conflict Report</b>\n\n"
+    message = "<b>🚨 SEO-NOC V3 Conflict Report</b>\n\n"
     message += f"<b>Total conflicts:</b> {len(conflicts)}\n\n"
     
     for i, c in enumerate(conflicts[:10], 1):  # Limit to 10
