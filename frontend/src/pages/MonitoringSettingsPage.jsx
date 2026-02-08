@@ -74,7 +74,7 @@ export default function MonitoringSettingsPage() {
     const saveSettings = async () => {
         setSaving(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('seo_nexus_token');
             const response = await fetch(`${API_URL}/api/v3/monitoring/settings`, {
                 method: 'PUT',
                 headers: {
