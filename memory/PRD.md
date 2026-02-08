@@ -188,11 +188,11 @@ Build a full-stack SEO Network Operations Center combining:
 - White-label option
 
 ## Next Tasks List
-1. Update DomainsPage to use assetDomainsAPI (V3 asset inventory view)
-2. Update DomainDetailPanel for V3 structure entries
-3. Add ranking & path tracking fields to UI
-4. Configure Telegram Chat ID for live alerts
-5. Test complete V3 flow with new domain creation
+1. Configure Telegram Chat ID for live alerts
+2. Add ranking & path tracking fields to structure entry UI
+3. Bulk domain CSV import feature
+4. Activity logs viewer page
+5. Export V3 data functionality
 
 ## Test Credentials
 - **Super Admin**: `superadmin@seonoc.com` / `SuperAdmin123!`
