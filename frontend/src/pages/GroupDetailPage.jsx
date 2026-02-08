@@ -1,19 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { groupsAPI, networksAPI, structureAPI, assetDomainsAPI } from '../lib/api';
+import { groupsAPI, networksAPI, structureAPI, assetDomainsAPI, exportAPI, importAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { NetworkGraph } from '../components/NetworkGraph';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
+import { Switch } from '../components/ui/switch';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { 
     ArrowLeft, 
@@ -26,7 +28,11 @@ import {
     Edit,
     TrendingUp,
     Target,
-    Search
+    Search,
+    Download,
+    Upload,
+    FileSpreadsheet,
+    Plus
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
