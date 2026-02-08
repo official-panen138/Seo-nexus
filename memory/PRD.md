@@ -98,16 +98,23 @@ Build a full-stack SEO Network Operations Center combining:
 
 **Phase 6 - Frontend Update: COMPLETED**
 - ✅ V3 API service layer (`/app/frontend/src/lib/api.js`)
-  - assetDomainsAPI, networksAPI, structureAPI, activityLogsAPI, v3ReportsAPI
 - ✅ NetworkGraph.jsx updated for V3 with derived tiers
-- ✅ GroupDetailPage.jsx uses V3 API with automatic fallback to V2
-  - Tier distribution displayed (Derived)
-  - D3 visualization shows correct tier colors
-  - Domain list shows Role, Target, and calculated tier
+- ✅ GroupDetailPage.jsx uses V3 API with tier distribution
 - ✅ DomainsPage.jsx updated to use V3 assetDomainsAPI
-  - Shows Asset Domains with V3 badge
-  - Columns: Domain, Brand, Status, Monitoring, Expiration
-  - Create/Edit dialog supports V3 asset fields
+
+### New Features (Feb 8, 2026)
+- ✅ **Telegram Integration**: Bot @monitoringseo_bot configured
+  - Test alerts, Conflict alerts, Domain change alerts
+- ✅ **Ranking & Path Tracking**: Fields added to structure entries
+  - ranking_url, primary_keyword, ranking_position
+  - Edit dialog in Network detail page
+- ✅ **Bulk CSV Import**: `/api/v3/import/domains`
+  - Import CSV button on Domains page
+  - Template download, preview, import results
+- ✅ **Activity Logs Viewer**: `/activity-logs` page
+  - Filter by entity, action, actor
+  - View log details with before/after values
+  - Stats cards for action types
 
 **V3 Architecture - FULLY COMPLETE**
 
