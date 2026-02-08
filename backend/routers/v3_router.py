@@ -2492,3 +2492,272 @@ async def get_dashboard_stats_only(
     stats["active_alerts"] = await db.alerts.count_documents({"acknowledged": False})
     
     return stats
+
+
+# ==================== MONITORING ENDPOINTS ====================
+
+@router.get("/monitoring/settings")
+async def get_monitoring_settings(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get monitoring configuration settings"""
+    from services.monitoring_service import MonitoringSettingsService
+    settings_service = MonitoringSettingsService(db)
+    settings = await settings_service.get_settings()
+    return settings
+
+
+@router.put("/monitoring/settings")
+async def update_monitoring_settings(
+    updates: MonitoringSettingsUpdate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Update monitoring configuration settings (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only super admins can update monitoring settings")
+    
+    from services.monitoring_service import MonitoringSettingsService
+    settings_service = MonitoringSettingsService(db)
+    
+    # Convert Pydantic model to dict
+    update_dict = {}
+    if updates.expiration:
+        update_dict["expiration"] = updates.expiration
+    if updates.availability:
+        update_dict["availability"] = updates.availability
+    if updates.telegram:
+        update_dict["telegram"] = updates.telegram
+    
+    settings = await settings_service.update_settings(update_dict)
+    return {"success": True, "settings": settings}
+
+
+@router.get("/monitoring/stats")
+async def get_monitoring_stats(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get current monitoring statistics"""
+    now = datetime.now(timezone.utc)
+    
+    # Availability stats
+    total_monitored = await db.asset_domains.count_documents({"monitoring_enabled": True})
+    up_count = await db.asset_domains.count_documents({"monitoring_enabled": True, "ping_status": "up"})
+    down_count = await db.asset_domains.count_documents({"monitoring_enabled": True, "ping_status": "down"})
+    unknown_count = await db.asset_domains.count_documents({"monitoring_enabled": True, "ping_status": "unknown"})
+    
+    # Expiration stats
+    from datetime import timedelta
+    week_later = (now + timedelta(days=7)).isoformat()
+    month_later = (now + timedelta(days=30)).isoformat()
+    
+    expiring_7_days = await db.asset_domains.count_documents({
+        "expiration_date": {"$ne": None, "$lte": week_later, "$gt": now.isoformat()}
+    })
+    
+    expiring_30_days = await db.asset_domains.count_documents({
+        "expiration_date": {"$ne": None, "$lte": month_later, "$gt": now.isoformat()}
+    })
+    
+    expired = await db.asset_domains.count_documents({
+        "expiration_date": {"$ne": None, "$lte": now.isoformat()}
+    })
+    
+    # Alert stats
+    monitoring_alerts = await db.alerts.count_documents({"alert_type": "monitoring", "acknowledged": False})
+    expiration_alerts = await db.alerts.count_documents({"alert_type": "expiration", "acknowledged": False})
+    
+    return {
+        "availability": {
+            "total_monitored": total_monitored,
+            "up": up_count,
+            "down": down_count,
+            "unknown": unknown_count
+        },
+        "expiration": {
+            "expiring_7_days": expiring_7_days,
+            "expiring_30_days": expiring_30_days,
+            "expired": expired
+        },
+        "alerts": {
+            "monitoring_unacknowledged": monitoring_alerts,
+            "expiration_unacknowledged": expiration_alerts
+        },
+        "updated_at": now.isoformat()
+    }
+
+
+@router.post("/monitoring/check-expiration")
+async def trigger_expiration_check(
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Manually trigger expiration check for all domains (Admin only)"""
+    if current_user.get("role") not in ["super_admin", "admin"]:
+        raise HTTPException(status_code=403, detail="Admin role required")
+    
+    from services.monitoring_service import ExpirationMonitoringService
+    expiration_service = ExpirationMonitoringService(db)
+    
+    # Run in background
+    async def run_check():
+        result = await expiration_service.check_all_domains()
+        logger.info(f"Manual expiration check complete: {result}")
+    
+    background_tasks.add_task(run_check)
+    
+    return {"message": "Expiration check scheduled", "status": "running"}
+
+
+@router.post("/monitoring/check-availability")
+async def trigger_availability_check(
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Manually trigger availability check for all monitored domains (Admin only)"""
+    if current_user.get("role") not in ["super_admin", "admin"]:
+        raise HTTPException(status_code=403, detail="Admin role required")
+    
+    from services.monitoring_service import AvailabilityMonitoringService
+    availability_service = AvailabilityMonitoringService(db)
+    
+    # Run in background
+    async def run_check():
+        result = await availability_service.check_all_domains()
+        logger.info(f"Manual availability check complete: {result}")
+    
+    background_tasks.add_task(run_check)
+    
+    return {"message": "Availability check scheduled", "status": "running"}
+
+
+@router.post("/monitoring/check-domain/{domain_id}")
+async def check_single_domain(
+    domain_id: str,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Trigger availability check for a single domain"""
+    domain = await db.asset_domains.find_one({"id": domain_id}, {"_id": 0})
+    if not domain:
+        raise HTTPException(status_code=404, detail="Domain not found")
+    
+    from services.monitoring_service import AvailabilityMonitoringService
+    availability_service = AvailabilityMonitoringService(db)
+    
+    # Get settings
+    from services.monitoring_service import MonitoringSettingsService
+    settings_service = MonitoringSettingsService(db)
+    settings = await settings_service.get_settings()
+    avail_settings = settings.get("availability", {})
+    
+    # Run check
+    result = await availability_service._check_domain_availability(domain, avail_settings)
+    
+    return {
+        "domain_name": domain["domain_name"],
+        "status": result["status"],
+        "http_code": result.get("http_code"),
+        "alert_sent": result.get("alert_sent", False)
+    }
+
+
+@router.get("/monitoring/expiring-domains")
+async def get_expiring_domains(
+    days: int = Query(default=30, ge=1, le=365),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get list of domains expiring within specified days"""
+    now = datetime.now(timezone.utc)
+    cutoff = (now + timedelta(days=days)).isoformat()
+    
+    domains = await db.asset_domains.find(
+        {
+            "expiration_date": {"$ne": None, "$lte": cutoff}
+        },
+        {"_id": 0}
+    ).sort("expiration_date", 1).to_list(1000)
+    
+    # Enrich with brand names and calculate days remaining
+    result = []
+    for domain in domains:
+        exp_date = domain.get("expiration_date", "")
+        days_remaining = None
+        if exp_date:
+            try:
+                exp = datetime.fromisoformat(exp_date.replace("Z", "+00:00"))
+                days_remaining = (exp.date() - now.date()).days
+            except:
+                pass
+        
+        # Get brand name
+        brand_name = None
+        if domain.get("brand_id"):
+            brand = await db.brands.find_one({"id": domain["brand_id"]}, {"_id": 0, "name": 1})
+            brand_name = brand["name"] if brand else None
+        
+        result.append({
+            "id": domain["id"],
+            "domain_name": domain["domain_name"],
+            "brand_name": brand_name,
+            "expiration_date": exp_date[:10] if exp_date else None,
+            "days_remaining": days_remaining,
+            "auto_renew": domain.get("auto_renew", False),
+            "registrar": domain.get("registrar"),
+            "status": "expired" if days_remaining and days_remaining < 0 else (
+                "critical" if days_remaining and days_remaining <= 3 else (
+                    "warning" if days_remaining and days_remaining <= 7 else "upcoming"
+                )
+            )
+        })
+    
+    return {
+        "domains": result,
+        "total": len(result),
+        "query_days": days
+    }
+
+
+@router.get("/monitoring/down-domains")
+async def get_down_domains(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get list of domains currently down"""
+    domains = await db.asset_domains.find(
+        {"monitoring_enabled": True, "ping_status": "down"},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    result = []
+    for domain in domains:
+        # Get brand name
+        brand_name = None
+        if domain.get("brand_id"):
+            brand = await db.brands.find_one({"id": domain["brand_id"]}, {"_id": 0, "name": 1})
+            brand_name = brand["name"] if brand else None
+        
+        # Check if in SEO network
+        entry = await db.seo_structure_entries.find_one(
+            {"asset_domain_id": domain["id"]},
+            {"_id": 0, "network_id": 1, "domain_role": 1}
+        )
+        
+        network_name = None
+        if entry:
+            network = await db.seo_networks.find_one({"id": entry["network_id"]}, {"_id": 0, "name": 1})
+            network_name = network["name"] if network else None
+        
+        result.append({
+            "id": domain["id"],
+            "domain_name": domain["domain_name"],
+            "brand_name": brand_name,
+            "last_http_code": domain.get("last_http_code") or domain.get("http_status_code"),
+            "last_checked_at": domain.get("last_checked_at") or domain.get("last_check"),
+            "network_name": network_name,
+            "domain_role": entry.get("domain_role") if entry else None
+        })
+    
+    return {
+        "domains": result,
+        "total": len(result)
+    }
+
