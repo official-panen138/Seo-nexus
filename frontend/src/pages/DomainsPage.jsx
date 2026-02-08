@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../lib/auth';
-import { domainsAPI, brandsAPI, groupsAPI } from '../lib/api';
+import { domainsAPI, brandsAPI, groupsAPI, categoriesAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { DomainDetailPanel } from '../components/DomainDetailPanel';
 import { Button } from '../components/ui/button';
