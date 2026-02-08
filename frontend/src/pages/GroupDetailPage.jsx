@@ -122,6 +122,118 @@ export default function GroupDetailPage() {
         }
     };
 
+    // Export network structure
+    const handleExport = async (format) => {
+        if (!network?.id) return;
+        try {
+            toast.info(`Exporting network as ${format.toUpperCase()}...`);
+            const response = await exportAPI.network(network.id, format);
+            
+            if (format === 'csv') {
+                const blob = new Blob([response.data], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `network_${network.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                toast.success('CSV exported');
+            } else {
+                const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `network_${network.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                toast.success(`JSON exported (${response.data.total_entries} entries)`);
+            }
+        } catch (err) {
+            toast.error('Export failed');
+            console.error(err);
+        }
+    };
+
+    // Import nodes - parse CSV
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const text = event.target.result;
+            const lines = text.split('\n').filter(line => line.trim());
+            
+            if (lines.length < 2) {
+                toast.error('CSV must have header row and at least one data row');
+                return;
+            }
+            
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const domainIndex = headers.indexOf('domain_name');
+            
+            if (domainIndex === -1) {
+                toast.error('CSV must have a "domain_name" column');
+                return;
+            }
+            
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values[domainIndex]) {
+                    data.push({
+                        domain_name: values[domainIndex],
+                        optimized_path: values[headers.indexOf('optimized_path')] || '',
+                        domain_role: values[headers.indexOf('domain_role')] || 'supporting',
+                        domain_status: values[headers.indexOf('domain_status')] || 'canonical',
+                        index_status: values[headers.indexOf('index_status')] || 'index',
+                        target_domain: values[headers.indexOf('target_domain')] || '',
+                        target_path: values[headers.indexOf('target_path')] || '',
+                        primary_keyword: values[headers.indexOf('primary_keyword')] || '',
+                        notes: values[headers.indexOf('notes')] || ''
+                    });
+                }
+            }
+            
+            setImportData(data);
+            toast.success(`Parsed ${data.length} nodes from CSV`);
+        };
+        reader.readAsText(file);
+    };
+
+    // Execute import
+    const handleImportSubmit = async () => {
+        if (!network?.id || importData.length === 0) return;
+        
+        setImporting(true);
+        try {
+            const response = await importAPI.nodes({
+                network_id: network.id,
+                nodes: importData,
+                create_missing_domains: createMissingDomains
+            });
+            
+            const { summary } = response.data;
+            toast.success(`Imported ${summary.imported} nodes (${summary.skipped} skipped, ${summary.errors} errors)`);
+            
+            if (summary.domains_created > 0) {
+                toast.info(`${summary.domains_created} new domains created`);
+            }
+            
+            setImportDialogOpen(false);
+            setImportData([]);
+            loadNetwork();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Import failed');
+        } finally {
+            setImporting(false);
+        }
+    };
+
     const loadNetwork = async () => {
         setLoading(true);
         try {
