@@ -1005,22 +1005,46 @@ async def delete_structure_entry(
     entry_id: str,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Delete an SEO structure entry"""
+    """
+    Delete an SEO structure entry (node).
+    
+    If other entries target this node, they become orphans.
+    A warning is included in the response but deletion proceeds.
+    """
     existing = await db.seo_structure_entries.find_one({"id": entry_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Structure entry not found")
     
-    # Check if other entries point to this one's asset
-    pointing_to = await db.seo_structure_entries.count_documents({
-        "target_asset_domain_id": existing["asset_domain_id"],
+    # Check if this is the main node
+    if existing.get("domain_role") == DomainRole.MAIN.value:
+        # Count other entries in network
+        other_entries = await db.seo_structure_entries.count_documents({
+            "network_id": existing["network_id"],
+            "id": {"$ne": entry_id}
+        })
+        if other_entries > 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot delete main node while other nodes exist. Delete supporting nodes first or reassign main role."
+            )
+    
+    # Check how many entries point to this one (they will become orphans)
+    orphan_count = await db.seo_structure_entries.count_documents({
+        "target_entry_id": entry_id,
         "id": {"$ne": entry_id}
     })
     
-    if pointing_to > 0:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Cannot delete: {pointing_to} other entries point to this domain"
+    # Clear target_entry_id on orphaned entries
+    if orphan_count > 0:
+        await db.seo_structure_entries.update_many(
+            {"target_entry_id": entry_id},
+            {"$set": {"target_entry_id": None, "updated_at": datetime.now(timezone.utc).isoformat()}}
         )
+    
+    # Get domain name for logging
+    domain = await db.asset_domains.find_one({"id": existing["asset_domain_id"]}, {"_id": 0, "domain_name": 1})
+    domain_name = domain["domain_name"] if domain else "unknown"
+    node_label = f"{domain_name}{existing.get('optimized_path', '') or ''}"
     
     await db.seo_structure_entries.delete_one({"id": entry_id})
     
@@ -1031,10 +1055,121 @@ async def delete_structure_entry(
             action_type=ActionType.DELETE,
             entity_type=EntityType.SEO_STRUCTURE_ENTRY,
             entity_id=entry_id,
-            before_value=existing
+            before_value=existing,
+            metadata={"node_label": node_label, "orphaned_entries": orphan_count}
         )
     
-    return {"message": "Structure entry deleted"}
+    return {
+        "message": "Structure entry deleted",
+        "orphaned_entries": orphan_count,
+        "warning": f"{orphan_count} entries now have no target (orphaned)" if orphan_count > 0 else None
+    }
+
+
+# ==================== BRAND-SCOPED DOMAIN SELECTION ====================
+
+@router.get("/networks/{network_id}/available-domains")
+async def get_available_domains_for_network(
+    network_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get domains available for adding to a network.
+    
+    Returns only domains that:
+    1. Belong to the same brand as the network
+    2. Are not already used in the network (or show which paths are available)
+    """
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    brand_id = network.get("brand_id")
+    if not brand_id:
+        raise HTTPException(status_code=400, detail="Network has no brand")
+    
+    # Get all domains for this brand
+    domains = await db.asset_domains.find(
+        {"brand_id": brand_id, "status": "active"},
+        {"_id": 0, "id": 1, "domain_name": 1}
+    ).to_list(10000)
+    
+    # Get existing entries in this network
+    existing_entries = await db.seo_structure_entries.find(
+        {"network_id": network_id},
+        {"_id": 0, "asset_domain_id": 1, "optimized_path": 1}
+    ).to_list(10000)
+    
+    # Build set of used (domain_id, path) combinations
+    used_nodes = set()
+    for e in existing_entries:
+        path = e.get("optimized_path") or ""
+        used_nodes.add((e["asset_domain_id"], path))
+    
+    # Annotate domains with usage info
+    result = []
+    for d in domains:
+        # Check if root path is used
+        root_used = (d["id"], "") in used_nodes or (d["id"], "/") in used_nodes
+        
+        # Count how many paths are used for this domain
+        used_paths = [node[1] for node in used_nodes if node[0] == d["id"]]
+        
+        result.append({
+            "id": d["id"],
+            "domain_name": d["domain_name"],
+            "root_available": not root_used,
+            "used_paths": used_paths
+        })
+    
+    return result
+
+
+@router.get("/networks/{network_id}/available-targets")
+async def get_available_target_nodes(
+    network_id: str,
+    exclude_entry_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get available target nodes for a network.
+    
+    Returns all entries in the network except the one being edited.
+    Used for the Target Node dropdown.
+    """
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    query = {"network_id": network_id}
+    if exclude_entry_id:
+        query["id"] = {"$ne": exclude_entry_id}
+    
+    entries = await db.seo_structure_entries.find(query, {"_id": 0}).to_list(10000)
+    
+    # Enrich with domain names
+    domain_ids = list(set([e["asset_domain_id"] for e in entries]))
+    domains = await db.asset_domains.find(
+        {"id": {"$in": domain_ids}},
+        {"_id": 0, "id": 1, "domain_name": 1}
+    ).to_list(10000)
+    domain_lookup = {d["id"]: d["domain_name"] for d in domains}
+    
+    result = []
+    for e in entries:
+        domain_name = domain_lookup.get(e["asset_domain_id"], "")
+        path = e.get("optimized_path") or ""
+        node_label = f"{domain_name}{path}" if path else domain_name
+        
+        result.append({
+            "id": e["id"],
+            "domain_name": domain_name,
+            "optimized_path": path,
+            "node_label": node_label,
+            "domain_role": e.get("domain_role", "supporting")
+        })
+    
+    return result
 
 
 # ==================== TIER CALCULATION ENDPOINTS ====================
