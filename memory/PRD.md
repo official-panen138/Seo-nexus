@@ -176,11 +176,11 @@ Build a full-stack SEO Network Operations Center combining:
 - White-label option
 
 ## Next Tasks List
-1. Update frontend API service to consume V3 endpoints
-2. Adapt NetworkGraph.js to show derived tiers from API
-3. Update DomainsPage to list asset_domains
-4. Update DomainDetailPanel for structure entry editing
-5. Test complete V3 flow end-to-end
+1. Update DomainsPage to use assetDomainsAPI (V3 asset inventory view)
+2. Update DomainDetailPanel for V3 structure entries
+3. Add ranking & path tracking fields to UI
+4. Configure Telegram Chat ID for live alerts
+5. Test complete V3 flow with new domain creation
 
 ## Test Credentials
 - **Super Admin**: `superadmin@seonoc.com` / `SuperAdmin123!`
