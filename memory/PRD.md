@@ -130,14 +130,11 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## Prioritized Backlog
 
-### P0 (Critical - V3 Migration)
-- 🟡 Phase 2: Execute domains → asset_domains migration (PENDING USER APPROVAL)
-- 🟡 Phase 3: Execute groups → seo_networks migration (PENDING USER APPROVAL)
-- 🟡 Phase 4: Execute SEO structure entries migration (PENDING USER APPROVAL)
-- ⬜ Phase 5: Implement auto-calculated tiers in API
-- ⬜ Phase 6: Refactor backend API for V3 collections
-- ⬜ Phase 7: Refactor frontend for V3 data structures
-- ⬜ Phase 8: Validation & full switch to V3
+### P0 (Critical - V3 API & Frontend)
+- ⬜ Create V3 API endpoints for asset_domains, seo_networks, seo_structure_entries
+- ⬜ Integrate tier calculation into API responses
+- ⬜ Refactor frontend for V3 data structures
+- ⬜ Update D3 visualization for derived tiers
 
 ### P1 (High Priority - Post Migration)
 - Configure Telegram Chat ID for live alerts
