@@ -56,8 +56,14 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting SEO-NOC application...")
     await initialize_default_categories()
-    asyncio.create_task(start_monitoring_scheduler())
-    logger.info("V3 services initialized: ActivityLog, TierCalculation")
+    
+    # Start V3 monitoring scheduler (two independent engines)
+    from services.monitoring_service import MonitoringScheduler
+    monitoring_scheduler = MonitoringScheduler(db)
+    asyncio.create_task(monitoring_scheduler.start())
+    logger.info("V3 Monitoring Scheduler started (Expiration + Availability engines)")
+    
+    logger.info("V3 services initialized: ActivityLog, TierCalculation, Monitoring")
     yield
     # Shutdown
     logger.info("Shutting down SEO-NOC application...")
