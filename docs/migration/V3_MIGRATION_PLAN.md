@@ -206,22 +206,22 @@ Main Domain (domain_role = "main") = Tier 0 (LP/Money Site)
 - [x] Create dry-run migration scripts (Phase 2, 3, 4)
 - [x] Validate migration scripts
 
-### Phase 2: Migrate Domains → AssetDomains
-- [ ] Create dry-run migration script
-- [ ] Review and validate script
+### Phase 2: Migrate Domains → AssetDomains (READY FOR REVIEW)
+- [x] Create dry-run migration script (`/app/backend/migrations/migration_phase2_domains.py`)
+- [ ] Review and validate script (USER APPROVAL NEEDED)
 - [ ] Execute migration with logging
 - [ ] Verify data integrity
 
-### Phase 3: Migrate Networks
-- [ ] Create dry-run migration script
-- [ ] Review and validate script
+### Phase 3: Migrate Networks (READY FOR REVIEW)
+- [x] Create dry-run migration script (`/app/backend/migrations/migration_phase3_networks.py`)
+- [ ] Review and validate script (USER APPROVAL NEEDED)
 - [ ] Execute migration with logging
 - [ ] Verify data integrity
 
-### Phase 4: Migrate SEO Structure
-- [ ] Create dry-run migration script
-- [ ] Implement main/supporting domain logic
-- [ ] Review and validate script
+### Phase 4: Migrate SEO Structure (READY FOR REVIEW)
+- [x] Create dry-run migration script (`/app/backend/migrations/migration_phase4_structure.py`)
+- [x] Implement main/supporting domain logic
+- [ ] Review and validate script (USER APPROVAL NEEDED)
 - [ ] Execute migration with logging
 - [ ] Verify data integrity
 
