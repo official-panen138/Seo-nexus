@@ -918,14 +918,17 @@ async def create_structure_entry(
         if not target:
             raise HTTPException(status_code=400, detail="Target asset domain not found")
     
+    # Normalize the optimized_path
+    normalized_path = normalize_path(data.optimized_path)
+    
     # Check for duplicate node (same domain + path in same network)
     # A node is unique by: network_id + asset_domain_id + optimized_path
     existing_query = {
         "asset_domain_id": data.asset_domain_id,
         "network_id": data.network_id
     }
-    if data.optimized_path:
-        existing_query["optimized_path"] = data.optimized_path
+    if normalized_path:
+        existing_query["optimized_path"] = normalized_path
     else:
         existing_query["$or"] = [
             {"optimized_path": None},
@@ -935,14 +938,17 @@ async def create_structure_entry(
     
     existing = await db.seo_structure_entries.find_one(existing_query)
     if existing:
-        path_info = f" with path '{data.optimized_path}'" if data.optimized_path else ""
+        path_info = f" with path '{normalized_path}'" if normalized_path else ""
         raise HTTPException(status_code=400, detail=f"Node{path_info} already exists in this network")
     
     now = datetime.now(timezone.utc).isoformat()
+    entry_data = data.model_dump()
+    entry_data["optimized_path"] = normalized_path  # Use normalized path
+    
     entry = {
         "id": str(uuid.uuid4()),
         "legacy_domain_id": None,
-        **data.model_dump(),
+        **entry_data,
         "created_at": now,
         "updated_at": now
     }
