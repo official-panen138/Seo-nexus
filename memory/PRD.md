@@ -168,10 +168,10 @@ Build a full-stack SEO Network Operations Center combining:
 - White-label option
 
 ## Next Tasks List
-1. Create V3 API router with endpoints for new collections
-2. Integrate TierCalculationService into structure entry responses
-3. Update frontend API service to use V3 endpoints
-4. Adapt NetworkGraph.js for derived tier visualization
+1. Update frontend API service to consume V3 endpoints
+2. Adapt NetworkGraph.js to show derived tiers from API
+3. Update DomainsPage to list asset_domains
+4. Update DomainDetailPanel for structure entry editing
 5. Test complete V3 flow end-to-end
 
 ## Test Credentials
