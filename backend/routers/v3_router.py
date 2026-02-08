@@ -1783,6 +1783,91 @@ async def bulk_import_nodes(
         raise HTTPException(status_code=404, detail="Network not found")
     
     results = {
+
+
+
+# ==================== SETTINGS ENDPOINTS ====================
+
+@router.get("/settings/dashboard-refresh")
+async def get_dashboard_refresh_setting(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get dashboard refresh interval setting"""
+    # Get from user preferences or default
+    user_id = current_user.get("id")
+    pref = await db.user_preferences.find_one({"user_id": user_id}, {"_id": 0})
+    
+    return {
+        "refresh_interval": pref.get("dashboard_refresh_interval", 0) if pref else 0,
+        "options": [
+            {"value": 0, "label": "Manual only"},
+            {"value": 30, "label": "30 seconds"},
+            {"value": 60, "label": "1 minute"},
+            {"value": 300, "label": "5 minutes"},
+            {"value": 900, "label": "15 minutes"}
+        ]
+    }
+
+
+@router.put("/settings/dashboard-refresh")
+async def update_dashboard_refresh_setting(
+    interval: int = Query(..., ge=0, le=900),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Update dashboard refresh interval setting"""
+    user_id = current_user.get("id")
+    
+    valid_intervals = [0, 30, 60, 300, 900]
+    if interval not in valid_intervals:
+        raise HTTPException(status_code=400, detail=f"Invalid interval. Must be one of: {valid_intervals}")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    await db.user_preferences.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {
+                "dashboard_refresh_interval": interval,
+                "updated_at": now
+            },
+            "$setOnInsert": {
+                "user_id": user_id,
+                "created_at": now
+            }
+        },
+        upsert=True
+    )
+    
+    return {
+        "success": True,
+        "refresh_interval": interval
+    }
+
+
+@router.get("/dashboard/stats")
+async def get_dashboard_stats_only(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get lightweight dashboard stats for auto-refresh (no heavy computations)"""
+    # Quick counts only - no joins or complex queries
+    stats = {
+        "total_domains": await db.asset_domains.count_documents({}),
+        "total_networks": await db.seo_networks.count_documents({}),
+        "active_domains": await db.asset_domains.count_documents({"status": "active"}),
+        "monitored_count": await db.asset_domains.count_documents({"monitoring_enabled": True}),
+        "indexed_count": await db.seo_structure_entries.count_documents({"index_status": "index"}),
+        "noindex_count": await db.seo_structure_entries.count_documents({"index_status": "noindex"}),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Quick ping status
+    stats["ping_up"] = await db.asset_domains.count_documents({"ping_status": "up"})
+    stats["ping_down"] = await db.asset_domains.count_documents({"ping_status": "down"})
+    
+    # Active alerts count
+    stats["active_alerts"] = await db.alerts.count_documents({"acknowledged": False})
+    
+    return stats
         "imported": [],
         "skipped": [],
         "errors": [],
