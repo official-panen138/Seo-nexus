@@ -688,7 +688,8 @@ export default function GroupDetailPage() {
                                     ) : useV3 ? (
                                         // V3 entries
                                         network.entries?.map((entry) => {
-                                            const isOrphan = entry.domain_role !== 'main' && !entry.target_asset_domain_id;
+                                            // V3: Orphan detection uses target_entry_id (node-to-node)
+                                            const isOrphan = entry.domain_role !== 'main' && !entry.target_entry_id;
                                             
                                             return (
                                                 <TableRow 
@@ -699,9 +700,10 @@ export default function GroupDetailPage() {
                                                     <TableCell>
                                                         <div className="flex items-center gap-2">
                                                             {isOrphan && <AlertTriangle className="h-4 w-4 text-red-500" />}
-                                                            <span className="font-mono text-sm">{entry.domain_name}</span>
+                                                            {/* Show node_label (domain + path) */}
+                                                            <span className="font-mono text-sm">{entry.node_label || entry.domain_name}</span>
                                                             <a 
-                                                                href={`https://${entry.domain_name}`}
+                                                                href={`https://${entry.domain_name}${entry.optimized_path || ''}`}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 onClick={(e) => e.stopPropagation()}
