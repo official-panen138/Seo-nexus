@@ -24,7 +24,7 @@ import {
     Zap,
     History,
     Building,
-    MonitorCheck
+    Radio
 } from 'lucide-react';
 
 const navItems = [
@@ -40,7 +40,7 @@ const navItems = [
     { path: '/users', label: 'Users', icon: Users, roles: ['super_admin'] },
     { path: '/audit-logs', label: 'Audit Logs', icon: Activity, roles: ['super_admin'] },
     { path: '/activity-logs', label: 'V3 Activity', icon: History, roles: ['super_admin', 'admin'] },
-    { path: '/settings/monitoring', label: 'Monitoring', icon: MonitorCheck, roles: ['super_admin', 'admin'] },
+    { path: '/settings/monitoring', label: 'Monitoring', icon: Radio, roles: ['super_admin', 'admin'] },
     { path: '/settings', label: 'Settings', icon: Settings, roles: ['super_admin'] },
 ];
 
