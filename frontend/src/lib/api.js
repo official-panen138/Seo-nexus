@@ -128,4 +128,77 @@ export const seedAPI = {
     seedData: () => api.post('/seed-data')
 };
 
+// ==================== V3 API ====================
+// New architecture with separated concerns
+
+const V3_BASE = process.env.REACT_APP_BACKEND_URL + '/api/v3';
+
+const apiV3 = axios.create({
+    baseURL: V3_BASE,
+    headers: {
+        'Content-Type': 'application/json'
+    }
+});
+
+// Add auth interceptor for V3
+apiV3.interceptors.request.use((config) => {
+    const token = localStorage.getItem('seo_nexus_token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+apiV3.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('seo_nexus_token');
+            localStorage.removeItem('seo_nexus_user');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
+// V3 Asset Domains API
+export const assetDomainsAPI = {
+    getAll: (params) => apiV3.get('/asset-domains', { params }),
+    getOne: (assetId) => apiV3.get(`/asset-domains/${assetId}`),
+    create: (data) => apiV3.post('/asset-domains', data),
+    update: (assetId, data) => apiV3.put(`/asset-domains/${assetId}`, data),
+    delete: (assetId) => apiV3.delete(`/asset-domains/${assetId}`)
+};
+
+// V3 SEO Networks API
+export const networksAPI = {
+    getAll: (params) => apiV3.get('/networks', { params }),
+    getOne: (networkId) => apiV3.get(`/networks/${networkId}`),
+    getTiers: (networkId) => apiV3.get(`/networks/${networkId}/tiers`),
+    create: (data) => apiV3.post('/networks', data),
+    update: (networkId, data) => apiV3.put(`/networks/${networkId}`, data),
+    delete: (networkId) => apiV3.delete(`/networks/${networkId}`)
+};
+
+// V3 Structure Entries API
+export const structureAPI = {
+    getAll: (params) => apiV3.get('/structure', { params }),
+    getOne: (entryId) => apiV3.get(`/structure/${entryId}`),
+    create: (data) => apiV3.post('/structure', data),
+    update: (entryId, data) => apiV3.put(`/structure/${entryId}`, data),
+    delete: (entryId) => apiV3.delete(`/structure/${entryId}`)
+};
+
+// V3 Activity Logs API
+export const activityLogsAPI = {
+    getAll: (params) => apiV3.get('/activity-logs', { params }),
+    getStats: () => apiV3.get('/activity-logs/stats')
+};
+
+// V3 Reports API
+export const v3ReportsAPI = {
+    getDashboard: () => apiV3.get('/reports/dashboard'),
+    getConflicts: () => apiV3.get('/reports/conflicts')
+};
+
 export default api;
