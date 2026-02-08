@@ -809,7 +809,7 @@ async def create_structure_entry(
     data: SeoStructureEntryCreate,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Create a new SEO structure entry"""
+    """Create a new SEO structure entry (node-based)"""
     # Validate asset domain exists
     asset = await db.asset_domains.find_one({"id": data.asset_domain_id})
     if not asset:
@@ -820,19 +820,40 @@ async def create_structure_entry(
     if not network:
         raise HTTPException(status_code=400, detail="Network not found")
     
-    # Validate target domain if provided
+    # Validate target_entry_id if provided (new node-to-node relationship)
+    if data.target_entry_id:
+        target_entry = await db.seo_structure_entries.find_one({"id": data.target_entry_id})
+        if not target_entry:
+            raise HTTPException(status_code=400, detail="Target entry not found")
+        # Ensure target entry is in the same network
+        if target_entry.get("network_id") != data.network_id:
+            raise HTTPException(status_code=400, detail="Target entry must be in the same network")
+    
+    # Validate target domain if provided (legacy support)
     if data.target_asset_domain_id:
         target = await db.asset_domains.find_one({"id": data.target_asset_domain_id})
         if not target:
             raise HTTPException(status_code=400, detail="Target asset domain not found")
     
-    # Check for duplicate entry (same domain in same network)
-    existing = await db.seo_structure_entries.find_one({
+    # Check for duplicate node (same domain + path in same network)
+    # A node is unique by: network_id + asset_domain_id + optimized_path
+    existing_query = {
         "asset_domain_id": data.asset_domain_id,
         "network_id": data.network_id
-    })
+    }
+    if data.optimized_path:
+        existing_query["optimized_path"] = data.optimized_path
+    else:
+        existing_query["$or"] = [
+            {"optimized_path": None},
+            {"optimized_path": ""},
+            {"optimized_path": {"$exists": False}}
+        ]
+    
+    existing = await db.seo_structure_entries.find_one(existing_query)
     if existing:
-        raise HTTPException(status_code=400, detail="Domain already exists in this network")
+        path_info = f" with path '{data.optimized_path}'" if data.optimized_path else ""
+        raise HTTPException(status_code=400, detail=f"Node{path_info} already exists in this network")
     
     now = datetime.now(timezone.utc).isoformat()
     entry = {
