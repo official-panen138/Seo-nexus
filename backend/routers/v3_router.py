@@ -377,6 +377,7 @@ async def delete_registrar(
 async def get_asset_domains(
     brand_id: Optional[str] = None,
     category_id: Optional[str] = None,
+    registrar_id: Optional[str] = None,
     status: Optional[AssetStatus] = None,
     monitoring_enabled: Optional[bool] = None,
     search: Optional[str] = None,
@@ -391,6 +392,8 @@ async def get_asset_domains(
         query["brand_id"] = brand_id
     if category_id:
         query["category_id"] = category_id
+    if registrar_id:
+        query["registrar_id"] = registrar_id
     if status:
         query["status"] = status.value
     if monitoring_enabled is not None:
@@ -403,10 +406,13 @@ async def get_asset_domains(
     # Batch enrich
     brands = {b["id"]: b["name"] for b in await db.brands.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)}
     categories = {c["id"]: c["name"] for c in await db.categories.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)}
+    registrars = {r["id"]: r["name"] for r in await db.registrars.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)}
     
     for asset in assets:
         asset["brand_name"] = brands.get(asset.get("brand_id"))
         asset["category_name"] = categories.get(asset.get("category_id"))
+        # Use registrar_id lookup, fallback to legacy field
+        asset["registrar_name"] = registrars.get(asset.get("registrar_id")) or asset.get("registrar")
     
     return [AssetDomainResponse(**a) for a in assets]
 
