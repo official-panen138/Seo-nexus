@@ -204,6 +204,173 @@ async def enrich_structure_entry(entry: dict, network_tiers: Dict[str, int] = No
     return entry
 
 
+# ==================== REGISTRAR ENDPOINTS (MASTER DATA) ====================
+
+@router.get("/registrars", response_model=List[RegistrarResponse])
+async def get_registrars(
+    status: Optional[RegistrarStatus] = None,
+    search: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get all registrars with optional filters"""
+    query = {}
+    
+    if status:
+        query["status"] = status.value
+    if search:
+        query["name"] = {"$regex": search, "$options": "i"}
+    
+    registrars = await db.registrars.find(query, {"_id": 0}).to_list(1000)
+    
+    # Add domain counts
+    for reg in registrars:
+        reg["domain_count"] = await db.asset_domains.count_documents({"registrar_id": reg["id"]})
+    
+    return [RegistrarResponse(**r) for r in registrars]
+
+
+@router.get("/registrars/{registrar_id}", response_model=RegistrarResponse)
+async def get_registrar(
+    registrar_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get a single registrar by ID"""
+    registrar = await db.registrars.find_one({"id": registrar_id}, {"_id": 0})
+    if not registrar:
+        raise HTTPException(status_code=404, detail="Registrar not found")
+    
+    registrar["domain_count"] = await db.asset_domains.count_documents({"registrar_id": registrar_id})
+    return RegistrarResponse(**registrar)
+
+
+@router.post("/registrars", response_model=RegistrarResponse)
+async def create_registrar(
+    data: RegistrarCreate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Create a new registrar (super_admin only)"""
+    # Check super_admin role
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only super_admin can manage registrars")
+    
+    # Check for duplicate name
+    existing = await db.registrars.find_one({"name": {"$regex": f"^{data.name}$", "$options": "i"}})
+    if existing:
+        raise HTTPException(status_code=400, detail="Registrar name already exists")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    registrar = {
+        "id": str(uuid.uuid4()),
+        **data.model_dump(),
+        "created_at": now,
+        "updated_at": now
+    }
+    
+    # Convert enums
+    if registrar.get("status") and hasattr(registrar["status"], "value"):
+        registrar["status"] = registrar["status"].value
+    
+    await db.registrars.insert_one(registrar)
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.CREATE,
+            entity_type=EntityType.REGISTRAR,
+            entity_id=registrar["id"],
+            after_value=registrar
+        )
+    
+    registrar["domain_count"] = 0
+    return RegistrarResponse(**registrar)
+
+
+@router.put("/registrars/{registrar_id}", response_model=RegistrarResponse)
+async def update_registrar(
+    registrar_id: str,
+    data: RegistrarUpdate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Update a registrar (super_admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only super_admin can manage registrars")
+    
+    existing = await db.registrars.find_one({"id": registrar_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Registrar not found")
+    
+    update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
+    
+    # Check for duplicate name if changing
+    if "name" in update_dict and update_dict["name"] != existing["name"]:
+        dup = await db.registrars.find_one({
+            "name": {"$regex": f"^{update_dict['name']}$", "$options": "i"},
+            "id": {"$ne": registrar_id}
+        })
+        if dup:
+            raise HTTPException(status_code=400, detail="Registrar name already exists")
+    
+    # Convert enums
+    if update_dict.get("status") and hasattr(update_dict["status"], "value"):
+        update_dict["status"] = update_dict["status"].value
+    
+    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.registrars.update_one({"id": registrar_id}, {"$set": update_dict})
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.REGISTRAR,
+            entity_id=registrar_id,
+            before_value=existing,
+            after_value={**existing, **update_dict}
+        )
+    
+    updated = await db.registrars.find_one({"id": registrar_id}, {"_id": 0})
+    updated["domain_count"] = await db.asset_domains.count_documents({"registrar_id": registrar_id})
+    return RegistrarResponse(**updated)
+
+
+@router.delete("/registrars/{registrar_id}")
+async def delete_registrar(
+    registrar_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Delete a registrar (super_admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only super_admin can manage registrars")
+    
+    existing = await db.registrars.find_one({"id": registrar_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Registrar not found")
+    
+    # Check if used by any domains
+    domain_count = await db.asset_domains.count_documents({"registrar_id": registrar_id})
+    if domain_count > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete: {domain_count} domains use this registrar"
+        )
+    
+    await db.registrars.delete_one({"id": registrar_id})
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.DELETE,
+            entity_type=EntityType.REGISTRAR,
+            entity_id=registrar_id,
+            before_value=existing
+        )
+    
+    return {"message": "Registrar deleted"}
+
+
 # ==================== ASSET DOMAINS ENDPOINTS ====================
 
 @router.get("/asset-domains", response_model=List[AssetDomainResponse])
