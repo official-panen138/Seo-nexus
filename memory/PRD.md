@@ -178,11 +178,19 @@ Build a full-stack SEO Network Operations Center combining:
 - White-label option
 
 ## Next Tasks List
-1. Configure Telegram Chat ID for live alerts
-2. Add ranking & path tracking fields to structure entry UI
-3. Bulk domain CSV import feature
-4. Activity logs viewer page
+1. Add ranking & path tracking fields to structure entry UI
+2. Bulk domain CSV import feature
+3. Activity logs viewer page
+4. Email notification channel
 5. Export V3 data functionality
+
+## Telegram Configuration
+- **Bot**: @monitoringseo_bot
+- **Chat ID**: 5125449265 (configured in settings collection)
+- **V3 Alert Endpoints**:
+  - `POST /api/v3/alerts/test` - Send test alert
+  - `POST /api/v3/alerts/send-conflicts` - Send all SEO conflicts
+  - `POST /api/v3/alerts/domain-change` - Alert on domain changes
 
 ## Test Credentials
 - **Super Admin**: `superadmin@seonoc.com` / `SuperAdmin123!`
