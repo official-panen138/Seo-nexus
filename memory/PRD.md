@@ -157,8 +157,21 @@ Build a full-stack SEO Network Operations Center combining:
 - White-label option
 
 ## Next Tasks List
-1. Configure Telegram Chat ID (use @userinfobot or add bot to group)
-2. Test live alert delivery
-3. Enable monitoring on critical domains
-4. Set up expiration alert thresholds
-5. Document API endpoints for external integrations
+1. **REVIEW** dry-run output for Phase 2 migration (23 domains → asset_domains)
+2. **APPROVE** Phase 2 migration for execution
+3. Execute Phase 2, then Phase 3, then Phase 4 in sequence
+4. Implement V3 API endpoints after migration
+5. Update frontend to use V3 data structures
+6. Validate derived tier calculations
+
+## Test Credentials
+- **Super Admin**: `superadmin@seonoc.com` / `SuperAdmin123!`
+- **Admin**: `admin@seonoc.com` / `Admin123!`
+
+## Key Files Reference
+- V2 Backend: `/app/backend/server.py`
+- V3 Models: `/app/backend/models_v3.py`
+- V3 Services: `/app/backend/services/`
+- Migration Scripts: `/app/backend/migrations/`
+- Migration Plan: `/app/docs/migration/V3_MIGRATION_PLAN.md`
+- Database Backup: `/app/backups/v2_backup_20260208_085617/`
