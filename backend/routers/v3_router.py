@@ -662,11 +662,15 @@ async def get_networks(
     limit: int = 100,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Get all SEO networks"""
-    query = {}
+    """Get all SEO networks - BRAND SCOPED"""
+    # Start with brand scope filter
+    query = build_brand_filter(current_user)
     
+    # If specific brand requested, validate access
     if brand_id:
+        require_brand_access(brand_id, current_user)
         query["brand_id"] = brand_id
+    
     if status:
         query["status"] = status.value
     
@@ -688,10 +692,13 @@ async def get_network(
     include_tiers: bool = True,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Get a single SEO network with structure entries and calculated tiers"""
+    """Get a single SEO network with structure entries and calculated tiers - BRAND SCOPED"""
     network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
     if not network:
         raise HTTPException(status_code=404, detail="Network not found")
+    
+    # Validate brand access
+    require_brand_access(network.get("brand_id", ""), current_user)
     
     # Get brand name
     if network.get("brand_id"):
