@@ -81,6 +81,8 @@ export default function GroupDetailPage() {
         domain_role: 'supporting',
         domain_status: 'canonical',
         index_status: 'index',
+        optimized_path: '',
+        target_entry_id: '',
         target_asset_domain_id: '',
         ranking_url: '',
         primary_keyword: '',
