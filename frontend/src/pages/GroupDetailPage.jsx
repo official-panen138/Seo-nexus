@@ -152,13 +152,15 @@ export default function GroupDetailPage() {
             domain_role: entry.domain_role || 'supporting',
             domain_status: entry.domain_status || 'canonical',
             index_status: entry.index_status || 'index',
+            optimized_path: entry.optimized_path || '',
+            target_entry_id: entry.target_entry_id || '',
             target_asset_domain_id: entry.target_asset_domain_id || '',
             ranking_url: entry.ranking_url || '',
             primary_keyword: entry.primary_keyword || '',
             ranking_position: entry.ranking_position || '',
             notes: entry.notes || ''
         });
-        loadAvailableTargets(network?.id, entry.asset_domain_id);
+        loadAvailableTargets(network?.id, entry.id);
         setEditDialogOpen(true);
     };
 
