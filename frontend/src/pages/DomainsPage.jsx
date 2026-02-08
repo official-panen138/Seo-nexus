@@ -513,6 +513,7 @@ export default function DomainsPage() {
                     allDomains={domains}
                     brands={brands}
                     groups={groups}
+                    categories={categories}
                 />
 
                 {/* Create/Edit Dialog */}
