@@ -83,18 +83,22 @@ export default function GroupsPage() {
             toast.error('Network name is required');
             return;
         }
+        if (!form.brand_id) {
+            toast.error('Brand is required');
+            return;
+        }
 
         setSaving(true);
         try {
-            if (selectedGroup) {
-                await groupsAPI.update(selectedGroup.id, form);
+            if (selectedNetwork) {
+                await networksAPI.update(selectedNetwork.id, form);
                 toast.success('Network updated');
             } else {
-                await groupsAPI.create(form);
+                await networksAPI.create(form);
                 toast.success('Network created');
             }
             setDialogOpen(false);
-            loadGroups();
+            loadData();
         } catch (err) {
             toast.error(err.response?.data?.detail || 'Failed to save network');
         } finally {
@@ -103,15 +107,15 @@ export default function GroupsPage() {
     };
 
     const handleDelete = async () => {
-        if (!selectedGroup) return;
+        if (!selectedNetwork) return;
         
         setSaving(true);
         try {
-            await groupsAPI.delete(selectedGroup.id);
+            await networksAPI.delete(selectedNetwork.id);
             toast.success('Network deleted');
             setDeleteDialogOpen(false);
-            setSelectedGroup(null);
-            loadGroups();
+            setSelectedNetwork(null);
+            loadData();
         } catch (err) {
             toast.error(err.response?.data?.detail || 'Failed to delete network');
         } finally {
@@ -119,12 +123,18 @@ export default function GroupsPage() {
         }
     };
 
-    const openDeleteDialog = (group, e) => {
+    const openDeleteDialog = (network, e) => {
         e.preventDefault();
         e.stopPropagation();
-        setSelectedGroup(group);
+        setSelectedNetwork(network);
         setDeleteDialogOpen(true);
     };
+
+    // Filter networks by brand
+    const filteredNetworks = networks.filter(n => {
+        if (filterBrand !== 'all' && n.brand_id !== filterBrand) return false;
+        return true;
+    });
 
     if (loading) {
         return (
