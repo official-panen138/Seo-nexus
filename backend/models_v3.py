@@ -132,7 +132,8 @@ class AssetDomainUpdate(BaseModel):
     brand_id: Optional[str] = None
     category_id: Optional[str] = None
     domain_type_id: Optional[str] = None
-    registrar: Optional[str] = None
+    registrar_id: Optional[str] = None
+    registrar: Optional[str] = None  # Legacy
     buy_date: Optional[str] = None
     expiration_date: Optional[str] = None
     auto_renew: Optional[bool] = None
