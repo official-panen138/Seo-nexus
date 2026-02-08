@@ -174,6 +174,8 @@ export default function GroupDetailPage() {
                 domain_role: editForm.domain_role,
                 domain_status: editForm.domain_status,
                 index_status: editForm.index_status,
+                optimized_path: editForm.optimized_path || null,
+                target_entry_id: editForm.target_entry_id || null,
                 target_asset_domain_id: editForm.target_asset_domain_id || null,
                 ranking_url: editForm.ranking_url || null,
                 primary_keyword: editForm.primary_keyword || null,
