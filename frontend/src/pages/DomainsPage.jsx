@@ -210,7 +210,7 @@ export default function DomainsPage() {
                 domain_name: item.domain_name,
                 brand_id: item.brand_id || '',
                 category_id: item.category_id || '',
-                registrar: item.registrar || '',
+                registrar_id: item.registrar_id || '',
                 expiration_date: item.expiration_date ? item.expiration_date.split('T')[0] : '',
                 auto_renew: item.auto_renew || false,
                 status: item.status || 'active',
