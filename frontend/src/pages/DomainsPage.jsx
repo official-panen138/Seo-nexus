@@ -313,6 +313,96 @@ export default function DomainsPage() {
 
     const hasActiveFilters = filterBrand !== 'all' || filterStatus !== 'all' || filterMonitoring !== 'all';
 
+    // CSV Import handlers
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const text = event.target.result;
+            const lines = text.split('\n').filter(line => line.trim());
+            
+            if (lines.length < 2) {
+                toast.error('CSV must have header row and at least one data row');
+                return;
+            }
+            
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const domainIndex = headers.indexOf('domain_name');
+            
+            if (domainIndex === -1) {
+                toast.error('CSV must have a "domain_name" column');
+                return;
+            }
+            
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values[domainIndex]) {
+                    data.push({
+                        domain_name: values[domainIndex],
+                        brand_name: values[headers.indexOf('brand_name')] || '',
+                        registrar: values[headers.indexOf('registrar')] || '',
+                        expiration_date: values[headers.indexOf('expiration_date')] || '',
+                        status: values[headers.indexOf('status')] || 'active',
+                        notes: values[headers.indexOf('notes')] || ''
+                    });
+                }
+            }
+            
+            setImportData(data);
+            setImportResult(null);
+        };
+        reader.readAsText(file);
+    };
+
+    const handleImport = async () => {
+        if (importData.length === 0) {
+            toast.error('No data to import');
+            return;
+        }
+        
+        setImporting(true);
+        try {
+            const token = localStorage.getItem('seo_nexus_token');
+            const response = await axios.post(
+                `${process.env.REACT_APP_BACKEND_URL}/api/v3/import/domains`,
+                { domains: importData, skip_duplicates: true },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
+            setImportResult(response.data);
+            
+            if (response.data.imported > 0) {
+                toast.success(`Imported ${response.data.imported} domains`);
+                loadData();
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Import failed');
+        } finally {
+            setImporting(false);
+        }
+    };
+
+    const resetImport = () => {
+        setImportData([]);
+        setImportResult(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const downloadTemplate = () => {
+        const csv = 'domain_name,brand_name,registrar,expiration_date,status,notes\nexample.com,MyBrand,GoDaddy,2026-12-31,active,Main site\nexample2.com,MyBrand,Namecheap,2027-06-15,active,Secondary site';
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'domains_import_template.csv';
+        a.click();
+    };
+
     // Refresh detail panel when data updates
     const handleDetailUpdate = () => {
         loadData();
