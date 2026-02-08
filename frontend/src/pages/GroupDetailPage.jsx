@@ -400,15 +400,52 @@ export default function GroupDetailPage() {
                                 <p className="page-subtitle mt-2">{network.description}</p>
                             )}
                         </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={loadNetwork}
-                            className="text-zinc-400"
-                        >
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Refresh
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            {/* Export dropdown */}
+                            {useV3 && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" data-testid="export-network-btn">
+                                            <Download className="h-4 w-4 mr-2" />
+                                            Export
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem onClick={() => handleExport('csv')}>
+                                            <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                            Export as CSV
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleExport('json')}>
+                                            <Download className="h-4 w-4 mr-2" />
+                                            Export as JSON
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+                            
+                            {/* Import nodes */}
+                            {useV3 && (
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => setImportDialogOpen(true)}
+                                    data-testid="import-nodes-btn"
+                                >
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Import Nodes
+                                </Button>
+                            )}
+                            
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={loadNetwork}
+                                className="text-zinc-400"
+                            >
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Refresh
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
