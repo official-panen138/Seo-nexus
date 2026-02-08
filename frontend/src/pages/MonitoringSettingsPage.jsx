@@ -34,7 +34,7 @@ export default function MonitoringSettingsPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('seo_nexus_token');
             const headers = { 'Authorization': `Bearer ${token}` };
 
             // Load settings, stats, expiring and down domains in parallel
