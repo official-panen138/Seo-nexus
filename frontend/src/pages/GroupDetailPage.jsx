@@ -947,18 +947,20 @@ export default function GroupDetailPage() {
                                     </div>
                                 )}
 
-                                {/* Child Domains (find entries pointing to this one) */}
+                                {/* Child Nodes (find entries pointing to this one) */}
                                 {useV3 && (() => {
-                                    const children = network.entries?.filter(e => e.target_asset_domain_id === selectedEntry.asset_domain_id) || [];
+                                    // V3: Use target_entry_id to find nodes pointing to this entry
+                                    const children = network.entries?.filter(e => e.target_entry_id === selectedEntry.id) || [];
                                     if (children.length === 0) return null;
                                     
                                     return (
                                         <div className="pt-4 border-t border-border">
-                                            <span className="text-sm text-zinc-500 block mb-2">Pointing Domains ({children.length})</span>
+                                            <span className="text-sm text-zinc-500 block mb-2">Pointing Nodes ({children.length})</span>
                                             <div className="space-y-2 max-h-40 overflow-y-auto">
                                                 {children.map(child => (
                                                     <div key={child.id} className="bg-black rounded-md p-3 flex items-center justify-between">
-                                                        <span className="font-mono text-sm">{child.domain_name}</span>
+                                                        {/* Show node_label (domain + path) */}
+                                                        <span className="font-mono text-sm">{child.node_label || child.domain_name}</span>
                                                         <span 
                                                             className="text-xs px-2 py-0.5 rounded-full"
                                                             style={{ 
