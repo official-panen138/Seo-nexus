@@ -62,17 +62,14 @@ def init_v3_router(
 
 # Store the dependency reference
 _get_current_user_dep = None
+_security = HTTPBearer()
 
 
-async def get_current_user_wrapper(credentials = Depends(HTTPBearer())):
+async def get_current_user_wrapper(credentials: HTTPAuthorizationCredentials = Depends(_security)):
     """Wrapper that calls the injected auth dependency"""
     if _get_current_user_dep is None:
         raise HTTPException(status_code=500, detail="Auth not initialized")
     return await _get_current_user_dep(credentials)
-
-
-# Import HTTPBearer for the wrapper
-from fastapi.security import HTTPBearer
 
 
 # ==================== TELEGRAM HELPER ====================
