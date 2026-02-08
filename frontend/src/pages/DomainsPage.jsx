@@ -103,6 +103,13 @@ export default function DomainsPage() {
     const [detailPanelOpen, setDetailPanelOpen] = useState(false);
     const [detailDomain, setDetailDomain] = useState(null);
     
+    // Import state
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
+    const [importData, setImportData] = useState([]);
+    const [importResult, setImportResult] = useState(null);
+    const [importing, setImporting] = useState(false);
+    const fileInputRef = useRef(null);
+    
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
     const [filterBrand, setFilterBrand] = useState('all');
