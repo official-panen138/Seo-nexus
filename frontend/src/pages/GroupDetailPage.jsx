@@ -468,9 +468,43 @@ export default function GroupDetailPage() {
                                                         {entry.target_domain_name || '-'}
                                                     </TableCell>
                                                     <TableCell>
-                                                        <Badge variant="outline" className="font-normal">
-                                                            {entry.brand_name || '-'}
-                                                        </Badge>
+                                                        {entry.primary_keyword ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <Target className="h-3 w-3 text-emerald-500" />
+                                                                <span className="text-xs text-zinc-300">{entry.primary_keyword}</span>
+                                                                {entry.ranking_position && (
+                                                                    <Badge variant="outline" className="text-xs px-1.5 py-0">
+                                                                        #{entry.ranking_position}
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-zinc-600 text-xs">-</span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex items-center justify-end gap-1">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleNodeClick(entry)}
+                                                                className="h-7 px-2 text-zinc-400 hover:text-white"
+                                                            >
+                                                                View
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    openEditDialog(entry);
+                                                                }}
+                                                                className="h-7 w-7 hover:bg-blue-500/10 hover:text-blue-400"
+                                                                data-testid={`edit-entry-${entry.id}`}
+                                                            >
+                                                                <Edit className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
                                             );
