@@ -223,9 +223,9 @@ class TierCalculationService:
         
         Returns:
             Dictionary of issues found:
-            - orphans: Domains not connected to main domain
-            - cycles: Domains involved in circular references
-            - multiple_mains: Multiple main domains (may be valid)
+            - orphans: Entries not connected to main domain
+            - cycles: Entries involved in circular references
+            - multiple_mains: Multiple main entries (may be valid)
         """
         entries = await self.db.seo_structure_entries.find(
             {"network_id": network_id},
@@ -241,30 +241,28 @@ class TierCalculationService:
         if not entries:
             return issues
         
-        # Find main domains
-        main_domains = [
-            entry["asset_domain_id"]
+        # Find main entries
+        main_entries = [
+            entry["id"]
             for entry in entries
             if entry.get("domain_role") == DomainRole.MAIN.value
         ]
         
-        if len(main_domains) > 1:
-            issues["multiple_mains"] = main_domains
+        if len(main_entries) > 1:
+            issues["multiple_mains"] = main_entries
         
         # Calculate tiers to find orphans
         tiers = await self.calculate_network_tiers(network_id)
         
         for entry in entries:
-            asset_id = entry["asset_domain_id"]
+            entry_id = entry["id"]
             
             # Check for orphans (not main but not connected)
             if entry.get("domain_role") != DomainRole.MAIN.value:
-                if tiers.get(asset_id, self.MAX_TIER) == self.MAX_TIER:
+                if tiers.get(entry_id, self.MAX_TIER) == self.MAX_TIER:
                     # Check if it has no target
-                    if not entry.get("target_asset_domain_id"):
-                        issues["orphans"].append(asset_id)
-        
-        # TODO: Add cycle detection if needed
+                    if not entry.get("target_entry_id") and not entry.get("target_asset_domain_id"):
+                        issues["orphans"].append(entry_id)
         
         return issues
     
