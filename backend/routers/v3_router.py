@@ -987,6 +987,10 @@ async def update_structure_entry(
     
     update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
     
+    # Normalize optimized_path if provided
+    if "optimized_path" in update_dict:
+        update_dict["optimized_path"] = normalize_path(update_dict["optimized_path"])
+    
     # Validate target_entry_id if changing (node-to-node relationship)
     if "target_entry_id" in update_dict and update_dict["target_entry_id"]:
         target_entry = await db.seo_structure_entries.find_one({"id": update_dict["target_entry_id"]})
