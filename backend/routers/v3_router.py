@@ -101,6 +101,51 @@ async def send_v3_telegram_alert(message: str) -> bool:
         return False
 
 
+# ==================== BRAND SCOPING HELPERS ====================
+
+def get_user_brand_scope(user: dict) -> Optional[List[str]]:
+    """
+    Get user's brand scope.
+    Returns None for Super Admin (full access), or list of brand_ids for restricted users.
+    """
+    if user.get("role") == "super_admin":
+        return None  # Full access
+    return user.get("brand_scope_ids") or []
+
+
+def build_brand_filter(user: dict, brand_field: str = "brand_id") -> dict:
+    """
+    Build MongoDB filter for brand scoping.
+    Super Admin: no filter (empty dict)
+    Others: filter by brand_scope_ids
+    """
+    brand_scope = get_user_brand_scope(user)
+    if brand_scope is None:
+        return {}  # Super Admin - no filter
+    if not brand_scope:
+        return {brand_field: {"$in": []}}  # No brands = no access
+    return {brand_field: {"$in": brand_scope}}
+
+
+def check_brand_access(user: dict, brand_id: str) -> bool:
+    """
+    Check if user has access to a specific brand.
+    Returns True for Super Admin or if brand_id is in user's scope.
+    """
+    brand_scope = get_user_brand_scope(user)
+    if brand_scope is None:
+        return True  # Super Admin
+    return brand_id in brand_scope
+
+
+def require_brand_access(brand_id: str, user: dict):
+    """
+    Raise 403 if user doesn't have access to the brand.
+    """
+    if not check_brand_access(user, brand_id):
+        raise HTTPException(status_code=403, detail="Access denied for this brand.")
+
+
 # ==================== HELPER FUNCTIONS ====================
 
 def normalize_path(path: str | None) -> str | None:
