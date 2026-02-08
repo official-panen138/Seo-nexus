@@ -17,7 +17,7 @@ export default function RegistrarsPage() {
     const [registrars, setRegistrars] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedRegistrar, setSelectedRegistrar] = useState(null);
