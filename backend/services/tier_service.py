@@ -133,10 +133,30 @@ class TierCalculationService:
     async def calculate_domain_tier(
         self, 
         network_id: str, 
+        entry_id: str
+    ) -> Tuple[int, str]:
+        """
+        Calculate tier for a single entry (node).
+        
+        Args:
+            network_id: ID of the SEO network
+            entry_id: ID of the structure entry (node)
+        
+        Returns:
+            Tuple of (tier_number, tier_label)
+        """
+        tiers = await self.calculate_network_tiers(network_id)
+        tier = tiers.get(entry_id, self.MAX_TIER)
+        return tier, get_tier_label(tier)
+    
+    async def get_tier_by_asset_domain(
+        self,
+        network_id: str,
         asset_domain_id: str
     ) -> Tuple[int, str]:
         """
-        Calculate tier for a single domain.
+        Calculate tier for an asset domain (legacy support).
+        Finds the entry for this domain and returns its tier.
         
         Args:
             network_id: ID of the SEO network
@@ -145,9 +165,16 @@ class TierCalculationService:
         Returns:
             Tuple of (tier_number, tier_label)
         """
-        tiers = await self.calculate_network_tiers(network_id)
-        tier = tiers.get(asset_domain_id, self.MAX_TIER)
-        return tier, get_tier_label(tier)
+        # Find entry for this domain
+        entry = await self.db.seo_structure_entries.find_one({
+            "network_id": network_id,
+            "asset_domain_id": asset_domain_id
+        }, {"_id": 0, "id": 1})
+        
+        if not entry:
+            return self.MAX_TIER, get_tier_label(self.MAX_TIER)
+        
+        return await self.calculate_domain_tier(network_id, entry["id"])
     
     async def get_tier_distribution(self, network_id: str) -> Dict[str, int]:
         """
