@@ -651,7 +651,7 @@ async def run_monitoring_cycle():
                 last_check = datetime.fromisoformat(last_check_str.replace("Z", "+00:00"))
                 if (now - last_check).total_seconds() < interval_secs:
                     should_check = False
-            except:
+            except (ValueError, TypeError):
                 pass
         
         if should_check:
