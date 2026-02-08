@@ -96,17 +96,13 @@ export default function GroupDetailPage() {
         loadNetwork();
     }, [groupId]);
 
-    // Load available target domains for the network
+    // Load available target entries (nodes) for the network
     const loadAvailableTargets = async (networkId, currentEntryId) => {
         try {
-            const res = await assetDomainsAPI.getAll();
-            // Filter to domains that are in this network (have structure entries)
+            // For node-to-node relationships, get entries from the same network
             const networkEntries = network?.entries || [];
-            const networkDomainIds = new Set(networkEntries.map(e => e.asset_domain_id));
-            
-            const targets = res.data.filter(d => 
-                networkDomainIds.has(d.id) && d.id !== currentEntryId
-            );
+            // Filter out the current entry - can't target itself
+            const targets = networkEntries.filter(e => e.id !== currentEntryId);
             setAvailableTargets(targets);
         } catch (err) {
             console.error('Failed to load targets:', err);
