@@ -178,7 +178,7 @@ class TierCalculationService:
     
     async def get_tier_distribution(self, network_id: str) -> Dict[str, int]:
         """
-        Get distribution of domains across tiers for a network.
+        Get distribution of nodes across tiers for a network.
         
         Args:
             network_id: ID of the SEO network
@@ -195,26 +195,26 @@ class TierCalculationService:
         
         return distribution
     
-    async def get_domains_at_tier(
+    async def get_entries_at_tier(
         self, 
         network_id: str, 
         tier: int
     ) -> List[str]:
         """
-        Get all domain IDs at a specific tier.
+        Get all entry IDs at a specific tier.
         
         Args:
             network_id: ID of the SEO network
             tier: Tier level (0-5)
         
         Returns:
-            List of asset_domain_ids at the specified tier
+            List of entry_ids at the specified tier
         """
         tiers = await self.calculate_network_tiers(network_id)
         return [
-            domain_id 
-            for domain_id, domain_tier in tiers.items() 
-            if domain_tier == tier
+            entry_id 
+            for entry_id, entry_tier in tiers.items() 
+            if entry_tier == tier
         ]
     
     async def validate_hierarchy(self, network_id: str) -> Dict[str, List[str]]:
