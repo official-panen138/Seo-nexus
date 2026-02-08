@@ -346,6 +346,76 @@ export default function GroupDetailPage() {
         }
     };
 
+    // Open delete confirmation dialog
+    const openDeleteDialog = (entry) => {
+        setEntryToDelete(entry);
+        setDeleteDialogOpen(true);
+    };
+
+    // Delete node handler
+    const handleDeleteNode = async () => {
+        if (!entryToDelete?.id) return;
+        
+        setDeleting(true);
+        try {
+            const response = await structureAPI.delete(entryToDelete.id);
+            
+            if (response.data.orphaned_entries > 0) {
+                toast.warning(`Node deleted. ${response.data.orphaned_entries} entries are now orphaned.`);
+            } else {
+                toast.success('Node deleted');
+            }
+            
+            setDeleteDialogOpen(false);
+            setEntryToDelete(null);
+            loadNetwork(); // Refresh data
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to delete node');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    // Open add node dialog
+    const openAddNodeDialog = () => {
+        setAddNodeForm({
+            asset_domain_id: '',
+            optimized_path: '',
+            domain_role: 'supporting',
+            target_entry_id: ''
+        });
+        loadAvailableDomains(network?.id);
+        loadAvailableTargets(network?.id, null);
+        setAddNodeDialogOpen(true);
+    };
+
+    // Add node handler
+    const handleAddNode = async () => {
+        if (!addNodeForm.asset_domain_id) {
+            toast.error('Please select a domain');
+            return;
+        }
+        
+        setSaving(true);
+        try {
+            await structureAPI.create({
+                network_id: network.id,
+                asset_domain_id: addNodeForm.asset_domain_id,
+                optimized_path: addNodeForm.optimized_path || null,
+                domain_role: addNodeForm.domain_role,
+                target_entry_id: addNodeForm.target_entry_id || null
+            });
+            
+            toast.success('Node added to network');
+            setAddNodeDialogOpen(false);
+            loadNetwork();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to add node');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     // Calculate stats based on V3 or V2 data
     const stats = (() => {
         if (useV3 && network?.entries) {
