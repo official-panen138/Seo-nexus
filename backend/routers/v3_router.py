@@ -736,15 +736,17 @@ async def create_network(
     current_user: dict = Depends(get_current_user_wrapper)
 ):
     """
-    Create a new SEO network with initial main node.
+    Create a new SEO network with initial main node - BRAND SCOPED.
     
     Every network MUST have a main node defined at creation time.
     The main domain MUST belong to the same brand as the network.
     """
-    # Validate brand exists (required field)
+    # Validate brand exists (required field) and user has access
     brand = await db.brands.find_one({"id": data.brand_id})
     if not brand:
         raise HTTPException(status_code=400, detail="Brand not found")
+    
+    require_brand_access(data.brand_id, current_user)
     
     # Validate main domain exists and belongs to the same brand
     main_domain = await db.asset_domains.find_one({"id": data.main_node.asset_domain_id})
