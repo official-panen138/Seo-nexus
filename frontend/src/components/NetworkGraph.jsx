@@ -245,8 +245,9 @@ export const NetworkGraph = ({ domains, entries, onNodeClick, selectedNodeId, us
             .attr('font-size', '10px')
             .attr('font-family', 'JetBrains Mono, monospace')
             .text(d => {
-                const name = d.domain_name || '';
-                return name.length > 15 ? name.substring(0, 15) + '...' : name;
+                // V3: Use node_label (domain + path), V2: use domain_name
+                const name = (useV3 && d.node_label) ? d.node_label : (d.domain_name || '');
+                return name.length > 20 ? name.substring(0, 20) + '...' : name;
             })
             .style('pointer-events', 'none');
 
