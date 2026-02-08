@@ -150,6 +150,7 @@ class AssetDomainResponse(AssetDomainBase):
     legacy_id: Optional[str] = None  # Traceability to V2
     brand_name: Optional[str] = None
     category_name: Optional[str] = None
+    registrar_name: Optional[str] = None  # Enriched from registrar_id
     created_at: str
     updated_at: str
 
