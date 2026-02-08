@@ -134,6 +134,11 @@ function AppRoutes() {
                     <SettingsPage />
                 </ProtectedRoute>
             } />
+            <Route path="/registrars" element={
+                <ProtectedRoute>
+                    <RegistrarsPage />
+                </ProtectedRoute>
+            } />
             
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
