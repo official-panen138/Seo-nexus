@@ -199,11 +199,12 @@ Main Domain (domain_role = "main") = Tier 0 (LP/Money Site)
 - [x] Document current schema
 - [x] Create migration plan
 
-### Phase 1: Create New Schema (IN PROGRESS)
-- [ ] Define V3 Pydantic models
-- [ ] Create empty collections with indexes
-- [ ] Implement ActivityLog service
-- [ ] Test schema creation
+### Phase 1: Create New Schema (COMPLETED)
+- [x] Define V3 Pydantic models (`/app/backend/models_v3.py`)
+- [x] Implement ActivityLog service (`/app/backend/services/activity_log_service.py`)
+- [x] Implement Tier Calculation service (`/app/backend/services/tier_service.py`)
+- [x] Create dry-run migration scripts (Phase 2, 3, 4)
+- [x] Validate migration scripts
 
 ### Phase 2: Migrate Domains → AssetDomains
 - [ ] Create dry-run migration script
