@@ -516,12 +516,15 @@ async def create_asset_domain(
     data: AssetDomainCreate,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Create a new asset domain"""
-    # Validate brand exists
+    """Create a new asset domain - BRAND SCOPED"""
+    # Validate brand exists and user has access
     if data.brand_id:
         brand = await db.brands.find_one({"id": data.brand_id})
         if not brand:
             raise HTTPException(status_code=400, detail="Brand not found")
+        require_brand_access(data.brand_id, current_user)
+    else:
+        raise HTTPException(status_code=400, detail="brand_id is required")
     
     # Validate registrar exists if provided
     if data.registrar_id:
@@ -573,10 +576,13 @@ async def update_asset_domain(
     data: AssetDomainUpdate,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Update an asset domain"""
+    """Update an asset domain - BRAND SCOPED"""
     existing = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Asset domain not found")
+    
+    # Validate brand access for existing domain
+    require_brand_access(existing.get("brand_id", ""), current_user)
     
     update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
     
