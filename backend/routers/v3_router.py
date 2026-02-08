@@ -6,9 +6,10 @@ New API endpoints for V3 architecture:
 - /api/v3/networks - SEO network management
 - /api/v3/structure - SEO structure entries with derived tiers
 - /api/v3/activity-logs - Activity log queries
+- /api/v3/monitoring - Domain monitoring settings and controls
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
@@ -27,6 +28,7 @@ from models_v3 import (
     ActivityLogResponse,
     RegistrarCreate, RegistrarUpdate, RegistrarResponse, RegistrarStatus,
     SeoConflict, ConflictType, ConflictSeverity,
+    MonitoringSettings, MonitoringSettingsUpdate,
     AssetStatus, NetworkStatus, DomainRole, SeoStatus, IndexStatus,
     ActionType, EntityType, get_tier_label
 )
