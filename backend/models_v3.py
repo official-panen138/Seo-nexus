@@ -160,7 +160,7 @@ class AssetDomainResponse(AssetDomainBase):
 class SeoNetworkBase(BaseModel):
     """Base model for SEO network - strategy container"""
     name: str
-    brand_id: Optional[str] = None
+    brand_id: str  # Required - networks must be associated with a brand
     description: Optional[str] = ""
     status: NetworkStatus = NetworkStatus.ACTIVE
 
