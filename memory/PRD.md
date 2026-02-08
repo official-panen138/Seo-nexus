@@ -273,10 +273,14 @@ Build a full-stack SEO Network Operations Center combining:
 - ✅ **Path-Level SEO Nodes** (Feb 8, 2026)
 - ✅ **SEO Workflow Refinement** (Feb 8, 2026)
 
-### P1 (High Priority) - ALL COMPLETED
+### P1 (High Priority)
 - ✅ **Export V3 Data to CSV/JSON** (Feb 8, 2026)
 - ✅ **Dashboard Refresh Interval** (Feb 8, 2026)
 - ✅ **Bulk Node Import with Path Support** (Feb 8, 2026)
+- 🟡 **Conflict Detection UI** - Backend API exists, frontend needed:
+  - Alert Center integration
+  - Node highlighting in D3 graph
+  - Conflict details in node panel
 
 ### P2 (Medium Priority - Remaining)
 - Email notification channel (Resend/SendGrid)
