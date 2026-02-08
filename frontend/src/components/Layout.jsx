@@ -21,7 +21,8 @@ import {
     Activity,
     Bell,
     Folder,
-    Zap
+    Zap,
+    History
 } from 'lucide-react';
 
 const navItems = [
@@ -35,6 +36,7 @@ const navItems = [
     { path: '/categories', label: 'Categories', icon: Folder, roles: ['super_admin'] },
     { path: '/users', label: 'Users', icon: Users, roles: ['super_admin'] },
     { path: '/audit-logs', label: 'Audit Logs', icon: Activity, roles: ['super_admin'] },
+    { path: '/activity-logs', label: 'V3 Activity', icon: History, roles: ['super_admin', 'admin'] },
     { path: '/settings', label: 'Settings', icon: Settings, roles: ['super_admin'] },
 ];
 
