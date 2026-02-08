@@ -100,7 +100,7 @@ export default function MonitoringSettingsPage() {
     const runManualCheck = async (type) => {
         setRunningCheck(type);
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('seo_nexus_token');
             const endpoint = type === 'expiration' 
                 ? `${API_URL}/api/v3/monitoring/check-expiration`
                 : `${API_URL}/api/v3/monitoring/check-availability`;
