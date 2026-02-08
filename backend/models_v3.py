@@ -164,6 +164,11 @@ class AssetDomainResponse(AssetDomainBase):
     brand_name: Optional[str] = None
     category_name: Optional[str] = None
     registrar_name: Optional[str] = None  # Enriched from registrar_id
+    
+    # Monitoring status display
+    monitoring_status: Optional[str] = None  # up/down/unknown
+    days_until_expiration: Optional[int] = None  # Calculated field
+    
     created_at: str
     updated_at: str
 
