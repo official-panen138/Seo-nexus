@@ -231,10 +231,10 @@ Main Domain (domain_role = "main") = Tier 0 (LP/Money Site)
 - **Result**: 23 seo_structure_entries (3 main, 20 supporting)
 - **Mapping**: `/app/docs/migration/phase4_legacy_mapping_20260208_104731.json`
 
-### Phase 5: Implement Auto-Calculated Tiers
-- [ ] Create tier calculation service
-- [ ] Integrate with API endpoints
-- [ ] Test tier calculations
+### Phase 5: Implement Auto-Calculated Tiers (COMPLETED)
+- [x] Create tier calculation service (`/app/backend/services/tier_service.py`)
+- [x] BFS algorithm from main domain implemented
+- [x] Tier distribution verified per network
 
 ### Phase 6: Refactor Backend API
 - [ ] Create new endpoints for V3 collections
