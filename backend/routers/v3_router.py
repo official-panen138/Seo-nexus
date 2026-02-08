@@ -1462,7 +1462,7 @@ async def get_v3_conflicts(
                                 "node_b_id": target["id"],
                                 "node_b_path": target.get("optimized_path"),
                                 "node_b_label": node_label(target),
-                                "description": f"Redirects to indexed path",
+                                "description": "Redirects to indexed path",
                                 "suggestion": "Review canonical chain or noindex the target",
                                 "detected_at": now
                             })
