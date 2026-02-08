@@ -1059,6 +1059,150 @@ export default function DomainsPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* CSV Import Dialog */}
+                <Dialog open={importDialogOpen} onOpenChange={(open) => {
+                    setImportDialogOpen(open);
+                    if (!open) resetImport();
+                }}>
+                    <DialogContent className="bg-card border-border max-w-2xl max-h-[85vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <FileSpreadsheet className="h-5 w-5" />
+                                Import Domains from CSV
+                            </DialogTitle>
+                            <DialogDescription>
+                                Upload a CSV file to bulk import domains. Download the template for the correct format.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-6">
+                            {/* Template Download */}
+                            <div className="flex items-center justify-between p-4 bg-zinc-900 rounded-lg">
+                                <div>
+                                    <p className="text-sm font-medium">CSV Template</p>
+                                    <p className="text-xs text-zinc-500">Required column: domain_name</p>
+                                </div>
+                                <Button variant="outline" size="sm" onClick={downloadTemplate}>
+                                    Download Template
+                                </Button>
+                            </div>
+
+                            {/* File Upload */}
+                            <div className="space-y-2">
+                                <Label>Select CSV File</Label>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".csv"
+                                    onChange={handleFileSelect}
+                                    className="block w-full text-sm text-zinc-400
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-md file:border-0
+                                        file:text-sm file:font-medium
+                                        file:bg-zinc-800 file:text-white
+                                        hover:file:bg-zinc-700
+                                        cursor-pointer"
+                                />
+                            </div>
+
+                            {/* Preview */}
+                            {importData.length > 0 && !importResult && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label>Preview ({importData.length} domains)</Label>
+                                        <Button variant="ghost" size="sm" onClick={resetImport}>
+                                            <X className="h-4 w-4 mr-1" />
+                                            Clear
+                                        </Button>
+                                    </div>
+                                    <div className="max-h-60 overflow-y-auto border border-border rounded-md">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Domain</TableHead>
+                                                    <TableHead>Brand</TableHead>
+                                                    <TableHead>Status</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {importData.slice(0, 10).map((item, i) => (
+                                                    <TableRow key={i}>
+                                                        <TableCell className="font-mono text-sm">{item.domain_name}</TableCell>
+                                                        <TableCell className="text-sm">{item.brand_name || '-'}</TableCell>
+                                                        <TableCell className="text-sm">{item.status}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                                {importData.length > 10 && (
+                                                    <TableRow>
+                                                        <TableCell colSpan={3} className="text-center text-zinc-500">
+                                                            ...and {importData.length - 10} more
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Import Results */}
+                            {importResult && (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="p-4 bg-emerald-500/10 rounded-lg text-center">
+                                            <CheckCircle className="h-6 w-6 text-emerald-500 mx-auto mb-1" />
+                                            <p className="text-2xl font-bold text-emerald-500">{importResult.imported}</p>
+                                            <p className="text-xs text-zinc-500">Imported</p>
+                                        </div>
+                                        <div className="p-4 bg-amber-500/10 rounded-lg text-center">
+                                            <AlertCircle className="h-6 w-6 text-amber-500 mx-auto mb-1" />
+                                            <p className="text-2xl font-bold text-amber-500">{importResult.skipped}</p>
+                                            <p className="text-xs text-zinc-500">Skipped</p>
+                                        </div>
+                                        <div className="p-4 bg-red-500/10 rounded-lg text-center">
+                                            <XCircle className="h-6 w-6 text-red-500 mx-auto mb-1" />
+                                            <p className="text-2xl font-bold text-red-500">{importResult.errors?.length || 0}</p>
+                                            <p className="text-xs text-zinc-500">Errors</p>
+                                        </div>
+                                    </div>
+
+                                    {importResult.errors?.length > 0 && (
+                                        <div className="max-h-32 overflow-y-auto border border-red-900/50 rounded-md p-2">
+                                            {importResult.errors.map((err, i) => (
+                                                <p key={i} className="text-xs text-red-400">
+                                                    {err.domain}: {err.error}
+                                                </p>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setImportDialogOpen(false);
+                                    resetImport();
+                                }}
+                            >
+                                {importResult ? 'Close' : 'Cancel'}
+                            </Button>
+                            {!importResult && (
+                                <Button
+                                    onClick={handleImport}
+                                    disabled={importing || importData.length === 0}
+                                    className="bg-white text-black hover:bg-zinc-200"
+                                >
+                                    {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                    Import {importData.length} Domains
+                                </Button>
+                            )}
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </Layout>
     );
