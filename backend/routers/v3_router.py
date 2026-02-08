@@ -917,3 +917,134 @@ async def get_v3_conflicts(
             "orphan": len([c for c in conflicts if c["type"] == "orphan"])
         }
     }
+
+
+# ==================== TELEGRAM ALERT ENDPOINTS ====================
+
+@router.post("/alerts/send-conflicts")
+async def send_conflict_alerts(
+    current_user: dict = Depends(lambda: get_current_user)
+):
+    """Send all V3 conflicts as Telegram alerts"""
+    # Get conflicts
+    conflicts = []
+    
+    networks = await db.seo_networks.find({}, {"_id": 0}).to_list(1000)
+    
+    for network in networks:
+        if not tier_service:
+            continue
+        
+        tiers = await tier_service.calculate_network_tiers(network["id"])
+        entries = await db.seo_structure_entries.find(
+            {"network_id": network["id"]},
+            {"_id": 0}
+        ).to_list(10000)
+        
+        for entry in entries:
+            asset_id = entry["asset_domain_id"]
+            tier = tiers.get(asset_id, 5)
+            
+            asset = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0, "domain_name": 1})
+            domain_name = asset["domain_name"] if asset else asset_id
+            
+            if entry.get("index_status") == "noindex" and tier <= 2:
+                conflicts.append({
+                    "type": "NOINDEX in high tier",
+                    "severity": "🔴 HIGH",
+                    "network": network["name"],
+                    "domain": domain_name,
+                    "tier": get_tier_label(tier)
+                })
+            
+            if entry.get("domain_role") != "main" and not entry.get("target_asset_domain_id") and tier >= 5:
+                conflicts.append({
+                    "type": "Orphan domain",
+                    "severity": "🟡 MEDIUM",
+                    "network": network["name"],
+                    "domain": domain_name,
+                    "tier": get_tier_label(tier)
+                })
+    
+    if not conflicts:
+        return {"message": "No conflicts found", "sent": 0}
+    
+    # Build message
+    message = f"<b>🚨 SEO-NOC V3 Conflict Report</b>\n\n"
+    message += f"<b>Total conflicts:</b> {len(conflicts)}\n\n"
+    
+    for i, c in enumerate(conflicts[:10], 1):  # Limit to 10
+        message += f"<b>{i}. {c['severity']} - {c['type']}</b>\n"
+        message += f"   📁 Network: {c['network']}\n"
+        message += f"   🌐 Domain: <code>{c['domain']}</code>\n"
+        message += f"   📊 Tier: {c['tier']}\n\n"
+    
+    if len(conflicts) > 10:
+        message += f"<i>...and {len(conflicts) - 10} more conflicts</i>\n"
+    
+    message += f"\n<i>Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}</i>"
+    
+    success = await send_v3_telegram_alert(message)
+    
+    return {
+        "message": "Conflict alerts sent" if success else "Failed to send alerts",
+        "sent": len(conflicts) if success else 0,
+        "conflicts": len(conflicts)
+    }
+
+
+@router.post("/alerts/test")
+async def send_v3_test_alert(
+    current_user: dict = Depends(lambda: get_current_user)
+):
+    """Send a test alert from V3 system"""
+    message = f"""<b>🧪 SEO-NOC V3 Test Alert</b>
+
+This is a test message from the V3 API.
+
+<b>System Status:</b>
+✅ V3 API: Online
+✅ Tier Calculation: Active
+✅ Activity Logging: Enabled
+
+<i>Sent by: {current_user['email']}</i>
+<i>Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}</i>"""
+    
+    success = await send_v3_telegram_alert(message)
+    
+    if success:
+        return {"message": "V3 test alert sent successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send V3 test alert. Check Telegram configuration.")
+
+
+@router.post("/alerts/domain-change")
+async def send_domain_change_alert(
+    asset_domain_id: str,
+    action: str,
+    current_user: dict = Depends(lambda: get_current_user)
+):
+    """Send alert when a domain is changed"""
+    asset = await db.asset_domains.find_one({"id": asset_domain_id}, {"_id": 0})
+    
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset domain not found")
+    
+    action_emoji = {
+        "create": "➕",
+        "update": "✏️",
+        "delete": "🗑️"
+    }.get(action.lower(), "📝")
+    
+    message = f"""<b>{action_emoji} Domain {action.capitalize()}</b>
+
+<b>Domain:</b> <code>{asset['domain_name']}</code>
+<b>Status:</b> {asset.get('status', 'N/A')}
+<b>Monitoring:</b> {'✅ Enabled' if asset.get('monitoring_enabled') else '❌ Disabled'}
+
+<i>By: {current_user['email']}</i>
+<i>Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}</i>"""
+    
+    success = await send_v3_telegram_alert(message)
+    
+    return {"message": "Alert sent" if success else "Failed to send alert", "success": success}
