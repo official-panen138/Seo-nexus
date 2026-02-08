@@ -210,4 +210,38 @@ export const v3ReportsAPI = {
     getConflicts: () => apiV3.get('/reports/conflicts')
 };
 
+// V3 Export API
+export const exportAPI = {
+    assetDomains: (format = 'json', params = {}) => apiV3.get(`/export/asset-domains?format=${format}`, { 
+        params,
+        responseType: format === 'csv' ? 'blob' : 'json'
+    }),
+    network: (networkId, format = 'json') => apiV3.get(`/export/networks/${networkId}?format=${format}`, {
+        responseType: format === 'csv' ? 'blob' : 'json'
+    }),
+    allNetworks: (format = 'json', params = {}) => apiV3.get(`/export/networks?format=${format}`, {
+        params,
+        responseType: format === 'csv' ? 'blob' : 'json'
+    }),
+    activityLogs: (format = 'json', params = {}) => apiV3.get(`/export/activity-logs?format=${format}`, {
+        params,
+        responseType: format === 'csv' ? 'blob' : 'json'
+    })
+};
+
+// V3 Import API
+export const importAPI = {
+    domains: (data) => apiV3.post('/import/domains', data),
+    domainsTemplate: () => apiV3.get('/import/template'),
+    nodes: (data) => apiV3.post('/import/nodes', data),
+    nodesTemplate: () => apiV3.get('/import/nodes/template')
+};
+
+// V3 Dashboard Settings API
+export const dashboardSettingsAPI = {
+    getRefreshInterval: () => apiV3.get('/settings/dashboard-refresh'),
+    setRefreshInterval: (interval) => apiV3.put(`/settings/dashboard-refresh?interval=${interval}`),
+    getStats: () => apiV3.get('/dashboard/stats')
+};
+
 export default api;
