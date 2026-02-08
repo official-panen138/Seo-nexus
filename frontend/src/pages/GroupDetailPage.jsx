@@ -734,6 +734,197 @@ export default function GroupDetailPage() {
                         )}
                     </SheetContent>
                 </Sheet>
+
+                {/* Edit Structure Entry Dialog */}
+                {useV3 && (
+                    <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                        <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                    <Edit className="h-5 w-5" />
+                                    Edit Structure Entry
+                                </DialogTitle>
+                            </DialogHeader>
+                            
+                            {selectedEntry && (
+                                <div className="space-y-6">
+                                    {/* Domain Info */}
+                                    <div className="bg-black rounded-lg p-4">
+                                        <div className="text-xs text-zinc-500 mb-1">Domain</div>
+                                        <div className="font-mono text-lg">{selectedEntry.domain_name}</div>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <span 
+                                                className="text-xs px-2 py-0.5 rounded-full"
+                                                style={{ 
+                                                    backgroundColor: `${V3_TIER_COLORS[selectedEntry.calculated_tier]}20`,
+                                                    color: V3_TIER_COLORS[selectedEntry.calculated_tier]
+                                                }}
+                                            >
+                                                {selectedEntry.tier_label}
+                                            </span>
+                                            <span className="text-xs text-zinc-500">Derived from hierarchy</span>
+                                        </div>
+                                    </div>
+
+                                    {/* SEO Structure Settings */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                                            <Network className="h-4 w-4" />
+                                            SEO Structure
+                                        </h3>
+                                        
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label>Role</Label>
+                                                <Select 
+                                                    value={editForm.domain_role} 
+                                                    onValueChange={(v) => setEditForm({...editForm, domain_role: v})}
+                                                >
+                                                    <SelectTrigger className="bg-black border-border">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {ROLE_OPTIONS.map(opt => (
+                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label>Index Status</Label>
+                                                <Select 
+                                                    value={editForm.index_status} 
+                                                    onValueChange={(v) => setEditForm({...editForm, index_status: v})}
+                                                >
+                                                    <SelectTrigger className="bg-black border-border">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {INDEX_OPTIONS.map(opt => (
+                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label>Domain Status</Label>
+                                                <Select 
+                                                    value={editForm.domain_status} 
+                                                    onValueChange={(v) => setEditForm({...editForm, domain_status: v})}
+                                                >
+                                                    <SelectTrigger className="bg-black border-border">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {SEO_STATUS_OPTIONS.map(opt => (
+                                                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label>Target Domain</Label>
+                                                <Select 
+                                                    value={editForm.target_asset_domain_id || 'none'} 
+                                                    onValueChange={(v) => setEditForm({...editForm, target_asset_domain_id: v === 'none' ? '' : v})}
+                                                    disabled={editForm.domain_role === 'main'}
+                                                >
+                                                    <SelectTrigger className="bg-black border-border">
+                                                        <SelectValue placeholder="Select target" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">None</SelectItem>
+                                                        {availableTargets.map(t => (
+                                                            <SelectItem key={t.id} value={t.id}>{t.domain_name}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Ranking & Path Tracking */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                                            <TrendingUp className="h-4 w-4" />
+                                            Ranking & Path Tracking
+                                        </h3>
+                                        
+                                        <div className="space-y-2">
+                                            <Label>Ranking URL (specific path)</Label>
+                                            <Input
+                                                value={editForm.ranking_url}
+                                                onChange={(e) => setEditForm({...editForm, ranking_url: e.target.value})}
+                                                placeholder="/blog/best-product-review"
+                                                className="bg-black border-border font-mono text-sm"
+                                            />
+                                            <p className="text-xs text-zinc-500">The specific URL path that ranks for your keyword</p>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label>Primary Keyword</Label>
+                                                <Input
+                                                    value={editForm.primary_keyword}
+                                                    onChange={(e) => setEditForm({...editForm, primary_keyword: e.target.value})}
+                                                    placeholder="best product 2026"
+                                                    className="bg-black border-border"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label>Ranking Position</Label>
+                                                <Input
+                                                    type="number"
+                                                    min="1"
+                                                    max="100"
+                                                    value={editForm.ranking_position}
+                                                    onChange={(e) => setEditForm({...editForm, ranking_position: e.target.value})}
+                                                    placeholder="1-100"
+                                                    className="bg-black border-border"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Notes */}
+                                    <div className="space-y-2">
+                                        <Label>Notes</Label>
+                                        <Textarea
+                                            value={editForm.notes}
+                                            onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
+                                            placeholder="SEO strategy notes..."
+                                            className="bg-black border-border resize-none"
+                                            rows={3}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <DialogFooter>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setEditDialogOpen(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleSaveEntry}
+                                    disabled={saving}
+                                    className="bg-white text-black hover:bg-zinc-200"
+                                >
+                                    {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                    Save Changes
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                )}
             </div>
         </Layout>
     );
