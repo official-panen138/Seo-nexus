@@ -110,13 +110,22 @@ class AssetDomainBase(BaseModel):
     auto_renew: bool = False
     status: AssetStatus = AssetStatus.ACTIVE
     
-    # Monitoring
+    # Monitoring - Availability (Ping/HTTP)
     monitoring_enabled: bool = False
     monitoring_interval: MonitoringInterval = MonitoringInterval.ONE_HOUR
+    last_checked_at: Optional[str] = None  # Last availability check timestamp
+    last_ping_status: Optional[str] = None  # Previous ping status for transition detection
+    last_http_code: Optional[int] = None  # Last HTTP response code
+    
+    # Legacy monitoring fields (kept for backward compatibility)
     last_check: Optional[str] = None
     ping_status: PingStatus = PingStatus.UNKNOWN
     http_status: Optional[str] = None
     http_status_code: Optional[int] = None
+    
+    # Monitoring - Expiration
+    expiration_alert_sent_at: Optional[str] = None  # Track when last expiration alert was sent
+    last_expiration_days: Optional[int] = None  # Days remaining when last alert was sent
     
     notes: Optional[str] = ""
 
