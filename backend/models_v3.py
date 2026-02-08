@@ -339,3 +339,35 @@ class DomainTypeResponse(DomainTypeBase):
 
 # Forward reference update
 SeoNetworkDetail.model_rebuild()
+
+
+# ==================== REGISTRAR MODELS (MASTER DATA) ====================
+
+class RegistrarBase(BaseModel):
+    """Base model for registrar - master data"""
+    name: str
+    website: Optional[str] = None
+    status: RegistrarStatus = RegistrarStatus.ACTIVE
+    notes: Optional[str] = ""
+
+
+class RegistrarCreate(RegistrarBase):
+    """Model for creating a registrar"""
+    pass
+
+
+class RegistrarUpdate(BaseModel):
+    """Model for updating a registrar"""
+    name: Optional[str] = None
+    website: Optional[str] = None
+    status: Optional[RegistrarStatus] = None
+    notes: Optional[str] = None
+
+
+class RegistrarResponse(RegistrarBase):
+    """Response model for registrar"""
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    domain_count: int = 0  # Number of domains using this registrar
+    created_at: str
+    updated_at: str
