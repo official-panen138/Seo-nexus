@@ -616,10 +616,13 @@ async def delete_asset_domain(
     asset_id: str,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Delete an asset domain"""
+    """Delete an asset domain - BRAND SCOPED"""
     existing = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Asset domain not found")
+    
+    # Validate brand access
+    require_brand_access(existing.get("brand_id", ""), current_user)
     
     # Check if used in structure entries
     structure_count = await db.seo_structure_entries.count_documents({
