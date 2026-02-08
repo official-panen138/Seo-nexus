@@ -639,7 +639,12 @@ async def create_network(
     data: SeoNetworkCreate,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Create a new SEO network"""
+    """Create a new SEO network (brand_id is required)"""
+    # Validate brand exists (required field)
+    brand = await db.brands.find_one({"id": data.brand_id})
+    if not brand:
+        raise HTTPException(status_code=400, detail="Brand not found")
+    
     now = datetime.now(timezone.utc).isoformat()
     network = {
         "id": str(uuid.uuid4()),
@@ -666,7 +671,7 @@ async def create_network(
         )
     
     network["domain_count"] = 0
-    network["brand_name"] = None
+    network["brand_name"] = brand["name"]
     
     return SeoNetworkResponse(**network)
 
