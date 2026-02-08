@@ -184,7 +184,7 @@ async def get_asset_domains(
     search: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Get all asset domains with optional filters"""
     query = {}
@@ -216,7 +216,7 @@ async def get_asset_domains(
 @router.get("/asset-domains/{asset_id}", response_model=AssetDomainResponse)
 async def get_asset_domain(
     asset_id: str,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Get a single asset domain by ID"""
     asset = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
@@ -230,7 +230,7 @@ async def get_asset_domain(
 @router.post("/asset-domains", response_model=AssetDomainResponse)
 async def create_asset_domain(
     data: AssetDomainCreate,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Create a new asset domain"""
     # Validate brand exists
@@ -281,7 +281,7 @@ async def create_asset_domain(
 async def update_asset_domain(
     asset_id: str,
     data: AssetDomainUpdate,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Update an asset domain"""
     existing = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
@@ -318,7 +318,7 @@ async def update_asset_domain(
 @router.delete("/asset-domains/{asset_id}")
 async def delete_asset_domain(
     asset_id: str,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Delete an asset domain"""
     existing = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
@@ -361,7 +361,7 @@ async def get_networks(
     status: Optional[NetworkStatus] = None,
     skip: int = 0,
     limit: int = 100,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Get all SEO networks"""
     query = {}
@@ -387,7 +387,7 @@ async def get_networks(
 async def get_network(
     network_id: str,
     include_tiers: bool = True,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Get a single SEO network with structure entries and calculated tiers"""
     network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
@@ -427,7 +427,7 @@ async def get_network(
 @router.post("/networks", response_model=SeoNetworkResponse)
 async def create_network(
     data: SeoNetworkCreate,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Create a new SEO network"""
     now = datetime.now(timezone.utc).isoformat()
@@ -465,7 +465,7 @@ async def create_network(
 async def update_network(
     network_id: str,
     data: SeoNetworkUpdate,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Update an SEO network"""
     existing = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
@@ -508,7 +508,7 @@ async def update_network(
 @router.delete("/networks/{network_id}")
 async def delete_network(
     network_id: str,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Delete an SEO network"""
     existing = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
@@ -544,7 +544,7 @@ async def get_structure_entries(
     index_status: Optional[IndexStatus] = None,
     skip: int = 0,
     limit: int = 100,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Get SEO structure entries with calculated tiers"""
     query = {}
@@ -578,7 +578,7 @@ async def get_structure_entries(
 @router.get("/structure/{entry_id}", response_model=SeoStructureEntryResponse)
 async def get_structure_entry(
     entry_id: str,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Get a single structure entry with calculated tier"""
     entry = await db.seo_structure_entries.find_one({"id": entry_id}, {"_id": 0})
@@ -592,7 +592,7 @@ async def get_structure_entry(
 @router.post("/structure", response_model=SeoStructureEntryResponse)
 async def create_structure_entry(
     data: SeoStructureEntryCreate,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Create a new SEO structure entry"""
     # Validate asset domain exists
@@ -653,7 +653,7 @@ async def create_structure_entry(
 async def update_structure_entry(
     entry_id: str,
     data: SeoStructureEntryUpdate,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Update an SEO structure entry"""
     existing = await db.seo_structure_entries.find_one({"id": entry_id}, {"_id": 0})
@@ -696,7 +696,7 @@ async def update_structure_entry(
 @router.delete("/structure/{entry_id}")
 async def delete_structure_entry(
     entry_id: str,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Delete an SEO structure entry"""
     existing = await db.seo_structure_entries.find_one({"id": entry_id}, {"_id": 0})
@@ -735,7 +735,7 @@ async def delete_structure_entry(
 @router.get("/networks/{network_id}/tiers")
 async def get_network_tiers(
     network_id: str,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Get tier distribution for a network"""
     network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
@@ -782,7 +782,7 @@ async def get_activity_logs(
     actor: Optional[str] = None,
     limit: int = 100,
     skip: int = 0,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Get activity logs"""
     if not activity_log_service:
@@ -799,7 +799,7 @@ async def get_activity_logs(
 
 @router.get("/activity-logs/stats")
 async def get_activity_stats(
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Get activity log statistics"""
     if not activity_log_service:
@@ -812,7 +812,7 @@ async def get_activity_stats(
 
 @router.get("/reports/dashboard")
 async def get_v3_dashboard(
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Get V3 dashboard statistics"""
     asset_count = await db.asset_domains.count_documents({})
@@ -866,7 +866,7 @@ async def get_v3_dashboard(
 
 @router.get("/reports/conflicts")
 async def get_v3_conflicts(
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Detect SEO conflicts using V3 data and derived tiers"""
     conflicts = []
@@ -938,7 +938,7 @@ async def get_v3_conflicts(
 
 @router.post("/alerts/send-conflicts")
 async def send_conflict_alerts(
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Send all V3 conflicts as Telegram alerts"""
     # Get conflicts
@@ -1010,7 +1010,7 @@ async def send_conflict_alerts(
 
 @router.post("/alerts/test")
 async def send_v3_test_alert(
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Send a test alert from V3 system"""
     message = f"""<b>🧪 SEO-NOC V3 Test Alert</b>
@@ -1037,7 +1037,7 @@ This is a test message from the V3 API.
 async def send_domain_change_alert(
     asset_domain_id: str,
     action: str,
-    current_user: dict = Depends(lambda: get_current_user_func)
+    current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Send alert when a domain is changed"""
     asset = await db.asset_domains.find_one({"id": asset_domain_id}, {"_id": 0})
