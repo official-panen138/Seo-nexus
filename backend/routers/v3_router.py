@@ -2686,7 +2686,7 @@ async def get_expiring_domains(
             try:
                 exp = datetime.fromisoformat(exp_date.replace("Z", "+00:00"))
                 days_remaining = (exp.date() - now.date()).days
-            except:
+            except (ValueError, TypeError):
                 pass
         
         # Get brand name
