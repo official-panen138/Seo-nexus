@@ -298,8 +298,15 @@ export const NetworkGraph = ({ domains, entries, onNodeClick, selectedNodeId, us
                     style={{ left: tooltip.x, top: tooltip.y }}
                 >
                     <div className="font-mono text-sm text-white font-semibold mb-2">
-                        {tooltip.data.domain_name}
+                        {/* V3: show node_label (domain + path), V2: show domain_name */}
+                        {(useV3 && tooltip.data.node_label) ? tooltip.data.node_label : tooltip.data.domain_name}
                     </div>
+                    {/* Show path separately if exists */}
+                    {useV3 && tooltip.data.optimized_path && (
+                        <div className="text-xs text-blue-400 mb-2 font-mono">
+                            Path: {tooltip.data.optimized_path}
+                        </div>
+                    )}
                     <div className="space-y-1 text-xs">
                         <div className="flex justify-between gap-4">
                             <span className="text-zinc-500">Tier</span>
@@ -323,9 +330,18 @@ export const NetworkGraph = ({ domains, entries, onNodeClick, selectedNodeId, us
                                 <span className="text-white capitalize">{tooltip.data.domain_role}</span>
                             </div>
                         )}
+                        {/* Show target node for V3 */}
+                        {useV3 && tooltip.data.target_domain_name && (
+                            <div className="flex justify-between gap-4">
+                                <span className="text-zinc-500">Target</span>
+                                <span className="text-blue-400 font-mono text-xs truncate max-w-[150px]">
+                                    {tooltip.data.target_domain_name}{tooltip.data.target_entry_path || ''}
+                                </span>
+                            </div>
+                        )}
                         {tooltip.data.hasError && (
                             <div className="mt-2 pt-2 border-t border-zinc-800 text-red-400">
-                                Orphan domain - no target
+                                Orphan node - no target
                             </div>
                         )}
                     </div>
