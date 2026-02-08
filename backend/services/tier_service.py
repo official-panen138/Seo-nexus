@@ -293,7 +293,7 @@ class TierCalculationService:
                     networks[nid] = []
                 networks[nid].append(entry)
         
-        # Calculate tiers for each network
+        # Calculate tiers for each network (now by entry_id)
         network_tiers: Dict[str, Dict[str, int]] = {}
         for nid in networks.keys():
             network_tiers[nid] = await self.calculate_network_tiers(nid)
@@ -301,10 +301,10 @@ class TierCalculationService:
         # Enrich entries
         for entry in entries:
             nid = entry.get("network_id") or network_id
-            asset_id = entry.get("asset_domain_id")
+            entry_id = entry.get("id")
             
-            if nid and asset_id:
-                tier = network_tiers.get(nid, {}).get(asset_id, self.MAX_TIER)
+            if nid and entry_id:
+                tier = network_tiers.get(nid, {}).get(entry_id, self.MAX_TIER)
                 entry["calculated_tier"] = tier
                 entry["tier_label"] = get_tier_label(tier)
             else:
