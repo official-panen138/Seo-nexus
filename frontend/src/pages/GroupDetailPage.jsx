@@ -780,6 +780,18 @@ export default function GroupDetailPage() {
                                                             >
                                                                 <Edit className="h-3.5 w-3.5" />
                                                             </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    openDeleteDialog(entry);
+                                                                }}
+                                                                className="h-7 w-7 hover:bg-red-500/10 hover:text-red-400"
+                                                                data-testid={`delete-entry-${entry.id}`}
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </Button>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
