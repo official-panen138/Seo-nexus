@@ -22,9 +22,11 @@ sys.path.insert(0, '/app/backend')
 from models_v3 import (
     AssetDomainCreate, AssetDomainUpdate, AssetDomainResponse,
     SeoNetworkCreate, SeoNetworkUpdate, SeoNetworkResponse, SeoNetworkDetail,
+    SeoNetworkCreateLegacy, MainNodeConfig,
     SeoStructureEntryCreate, SeoStructureEntryUpdate, SeoStructureEntryResponse,
     ActivityLogResponse,
     RegistrarCreate, RegistrarUpdate, RegistrarResponse, RegistrarStatus,
+    SeoConflict, ConflictType, ConflictSeverity,
     AssetStatus, NetworkStatus, DomainRole, SeoStatus, IndexStatus,
     ActionType, EntityType, get_tier_label
 )
