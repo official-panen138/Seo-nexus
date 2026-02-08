@@ -166,9 +166,19 @@ class UserBase(BaseModel):
     email: EmailStr
     name: str
     role: UserRole = UserRole.VIEWER
+    brand_scope_ids: Optional[List[str]] = None  # NULL = Super Admin (all brands), array = restricted to specific brands
+
 
 class UserCreate(UserBase):
     password: str
+
+
+class UserUpdate(BaseModel):
+    """Model for updating user"""
+    name: Optional[str] = None
+    role: Optional[UserRole] = None
+    brand_scope_ids: Optional[List[str]] = None
+
 
 class UserResponse(UserBase):
     model_config = ConfigDict(extra="ignore")
@@ -176,21 +186,26 @@ class UserResponse(UserBase):
     created_at: str
     updated_at: str
 
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
 
+
 class CategoryBase(BaseModel):
     name: str
     description: Optional[str] = ""
 
+
 class CategoryCreate(CategoryBase):
     pass
+
 
 class CategoryResponse(CategoryBase):
     model_config = ConfigDict(extra="ignore")
@@ -198,12 +213,27 @@ class CategoryResponse(CategoryBase):
     created_at: str
     updated_at: str
 
+
 class BrandBase(BaseModel):
     name: str
+    slug: Optional[str] = None
     description: Optional[str] = ""
+    status: BrandStatus = BrandStatus.ACTIVE
+    notes: Optional[str] = ""
+
 
 class BrandCreate(BrandBase):
     pass
+
+
+class BrandUpdate(BaseModel):
+    """Model for updating brand"""
+    name: Optional[str] = None
+    slug: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[BrandStatus] = None
+    notes: Optional[str] = None
+
 
 class BrandResponse(BrandBase):
     model_config = ConfigDict(extra="ignore")
