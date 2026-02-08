@@ -865,12 +865,50 @@ export default function DomainsPage() {
 
                                         <div className="space-y-2">
                                             <Label>Registrar</Label>
-                                            <Input
-                                                value={form.registrar}
-                                                onChange={(e) => setForm({...form, registrar: e.target.value})}
-                                                placeholder="GoDaddy, Namecheap..."
-                                                className="bg-black border-border"
-                                            />
+                                            <Popover open={registrarSearchOpen} onOpenChange={setRegistrarSearchOpen}>
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        aria-expanded={registrarSearchOpen}
+                                                        className="w-full justify-between bg-black border-border"
+                                                        data-testid="registrar-combobox"
+                                                    >
+                                                        {form.registrar_id
+                                                            ? registrars.find((r) => r.id === form.registrar_id)?.name
+                                                            : "Select registrar..."}
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[300px] p-0">
+                                                    <Command>
+                                                        <CommandInput placeholder="Search registrar..." />
+                                                        <CommandList>
+                                                            <CommandEmpty>No registrar found.</CommandEmpty>
+                                                            <CommandGroup>
+                                                                {registrars.map((registrar) => (
+                                                                    <CommandItem
+                                                                        key={registrar.id}
+                                                                        value={registrar.name}
+                                                                        onSelect={() => {
+                                                                            setForm({...form, registrar_id: registrar.id});
+                                                                            setRegistrarSearchOpen(false);
+                                                                        }}
+                                                                    >
+                                                                        <Check
+                                                                            className={cn(
+                                                                                "mr-2 h-4 w-4",
+                                                                                form.registrar_id === registrar.id ? "opacity-100" : "opacity-0"
+                                                                            )}
+                                                                        />
+                                                                        {registrar.name}
+                                                                    </CommandItem>
+                                                                ))}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
                                         </div>
                                     </div>
 
