@@ -752,8 +752,15 @@ export default function GroupDetailPage() {
                                 <div className="space-y-6">
                                     {/* Domain Info */}
                                     <div className="bg-black rounded-lg p-4">
-                                        <div className="text-xs text-zinc-500 mb-1">Domain</div>
-                                        <div className="font-mono text-lg">{selectedEntry.domain_name}</div>
+                                        <div className="text-xs text-zinc-500 mb-1">Node</div>
+                                        <div className="font-mono text-lg">
+                                            {selectedEntry.node_label || selectedEntry.domain_name}
+                                        </div>
+                                        {selectedEntry.optimized_path && (
+                                            <div className="text-sm text-zinc-400 mt-1">
+                                                Path: {selectedEntry.optimized_path}
+                                            </div>
+                                        )}
                                         <div className="flex items-center gap-2 mt-2">
                                             <span 
                                                 className="text-xs px-2 py-0.5 rounded-full"
@@ -765,6 +772,27 @@ export default function GroupDetailPage() {
                                                 {selectedEntry.tier_label}
                                             </span>
                                             <span className="text-xs text-zinc-500">Derived from hierarchy</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Path Configuration */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                                            <Target className="h-4 w-4" />
+                                            Path Configuration
+                                        </h3>
+                                        
+                                        <div className="space-y-2">
+                                            <Label>Optimized Path (optional)</Label>
+                                            <Input
+                                                value={editForm.optimized_path}
+                                                onChange={(e) => setEditForm({...editForm, optimized_path: e.target.value})}
+                                                placeholder="/blog/best-product or /landing-page"
+                                                className="bg-black border-border font-mono"
+                                            />
+                                            <p className="text-xs text-zinc-500">
+                                                Leave empty for domain-level. Add path for page-level SEO targeting.
+                                            </p>
                                         </div>
                                     </div>
 
@@ -830,19 +858,21 @@ export default function GroupDetailPage() {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <Label>Target Domain</Label>
+                                                <Label>Target Node</Label>
                                                 <Select 
-                                                    value={editForm.target_asset_domain_id || 'none'} 
-                                                    onValueChange={(v) => setEditForm({...editForm, target_asset_domain_id: v === 'none' ? '' : v})}
+                                                    value={editForm.target_entry_id || 'none'} 
+                                                    onValueChange={(v) => setEditForm({...editForm, target_entry_id: v === 'none' ? '' : v})}
                                                     disabled={editForm.domain_role === 'main'}
                                                 >
                                                     <SelectTrigger className="bg-black border-border">
-                                                        <SelectValue placeholder="Select target" />
+                                                        <SelectValue placeholder="Select target node" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="none">None</SelectItem>
+                                                        <SelectItem value="none">None (Orphan)</SelectItem>
                                                         {availableTargets.map(t => (
-                                                            <SelectItem key={t.id} value={t.id}>{t.domain_name}</SelectItem>
+                                                            <SelectItem key={t.id} value={t.id}>
+                                                                {t.node_label || t.domain_name}
+                                                            </SelectItem>
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
