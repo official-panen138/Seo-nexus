@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../lib/auth';
 import { domainsAPI, brandsAPI, groupsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
+import { DomainDetailPanel } from '../components/DomainDetailPanel';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -20,7 +21,8 @@ import {
     Globe,
     ExternalLink,
     Filter,
-    X
+    X,
+    Eye
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
@@ -53,6 +55,10 @@ export default function DomainsPage() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedDomain, setSelectedDomain] = useState(null);
     const [form, setForm] = useState(INITIAL_FORM);
+    
+    // Detail panel state
+    const [detailPanelOpen, setDetailPanelOpen] = useState(false);
+    const [detailDomain, setDetailDomain] = useState(null);
     
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
@@ -145,6 +151,11 @@ export default function DomainsPage() {
         setDialogOpen(true);
     };
 
+    const openDetailPanel = (domain) => {
+        setDetailDomain(domain);
+        setDetailPanelOpen(true);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!form.domain_name || !form.brand_id) {
@@ -204,6 +215,19 @@ export default function DomainsPage() {
 
     const hasActiveFilters = filterBrand !== 'all' || filterStatus !== 'all' || 
         filterIndex !== 'all' || filterTier !== 'all' || filterGroup !== 'all';
+
+    // Refresh detail panel when data updates
+    const handleDetailUpdate = () => {
+        loadData();
+        // Also refresh the detail domain data
+        if (detailDomain) {
+            domainsAPI.getOne(detailDomain.id).then(res => {
+                setDetailDomain(res.data);
+            }).catch(() => {
+                setDetailPanelOpen(false);
+            });
+        }
+    };
 
     if (loading) {
         return (
@@ -359,13 +383,13 @@ export default function DomainsPage() {
                                 <TableHead>Index</TableHead>
                                 <TableHead>Network</TableHead>
                                 <TableHead>Created</TableHead>
-                                {canEdit() && <TableHead className="text-right">Actions</TableHead>}
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredDomains.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={canEdit() ? 8 : 7} className="h-32 text-center">
+                                    <TableCell colSpan={8} className="h-32 text-center">
                                         <div className="empty-state py-8">
                                             <Globe className="empty-state-icon mx-auto" />
                                             <p className="empty-state-title">No domains found</p>
@@ -427,39 +451,65 @@ export default function DomainsPage() {
                                                 {formatDate(domain.created_at)}
                                             </span>
                                         </TableCell>
-                                        {canEdit() && (
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-1">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => openEditDialog(domain)}
-                                                        className="h-8 w-8 hover:bg-white/5"
-                                                        data-testid={`edit-domain-${domain.id}`}
-                                                    >
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => {
-                                                            setSelectedDomain(domain);
-                                                            setDeleteDialogOpen(true);
-                                                        }}
-                                                        className="h-8 w-8 hover:bg-red-500/10 hover:text-red-500"
-                                                        data-testid={`delete-domain-${domain.id}`}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        )}
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => openDetailPanel(domain)}
+                                                    className="h-8 px-2 hover:bg-blue-500/10 hover:text-blue-400 text-zinc-400"
+                                                    data-testid={`show-detail-${domain.id}`}
+                                                >
+                                                    <Eye className="h-4 w-4 mr-1" />
+                                                    Detail
+                                                </Button>
+                                                {canEdit() && (
+                                                    <>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => openEditDialog(domain)}
+                                                            className="h-8 w-8 hover:bg-white/5"
+                                                            data-testid={`edit-domain-${domain.id}`}
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => {
+                                                                setSelectedDomain(domain);
+                                                                setDeleteDialogOpen(true);
+                                                            }}
+                                                            className="h-8 w-8 hover:bg-red-500/10 hover:text-red-500"
+                                                            data-testid={`delete-domain-${domain.id}`}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             )}
                         </TableBody>
                     </Table>
                 </div>
+
+                {/* Domain Detail Panel */}
+                <DomainDetailPanel
+                    domain={detailDomain}
+                    isOpen={detailPanelOpen}
+                    onClose={() => {
+                        setDetailPanelOpen(false);
+                        setDetailDomain(null);
+                    }}
+                    onUpdate={handleDetailUpdate}
+                    allDomains={domains}
+                    brands={brands}
+                    groups={groups}
+                />
 
                 {/* Create/Edit Dialog */}
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
