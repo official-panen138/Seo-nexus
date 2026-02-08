@@ -443,6 +443,12 @@ async def create_asset_domain(
         if not brand:
             raise HTTPException(status_code=400, detail="Brand not found")
     
+    # Validate registrar exists if provided
+    if data.registrar_id:
+        registrar = await db.registrars.find_one({"id": data.registrar_id})
+        if not registrar:
+            raise HTTPException(status_code=400, detail="Registrar not found")
+    
     # Check for duplicate domain name
     existing = await db.asset_domains.find_one({"domain_name": data.domain_name})
     if existing:
