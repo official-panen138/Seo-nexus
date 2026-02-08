@@ -93,12 +93,16 @@ export default function DomainsPage() {
     const [groups, setGroups] = useState([]);
     const [networks, setNetworks] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [registrars, setRegistrars] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [form, setForm] = useState(INITIAL_FORM);
+    
+    // Registrar combobox state
+    const [registrarSearchOpen, setRegistrarSearchOpen] = useState(false);
     
     // V3 mode
     const [useV3, setUseV3] = useState(true);
