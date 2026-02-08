@@ -158,12 +158,11 @@ Build a full-stack SEO Network Operations Center combining:
 - White-label option
 
 ## Next Tasks List
-1. **REVIEW** dry-run output for Phase 2 migration (23 domains → asset_domains)
-2. **APPROVE** Phase 2 migration for execution
-3. Execute Phase 2, then Phase 3, then Phase 4 in sequence
-4. Implement V3 API endpoints after migration
-5. Update frontend to use V3 data structures
-6. Validate derived tier calculations
+1. Create V3 API router with endpoints for new collections
+2. Integrate TierCalculationService into structure entry responses
+3. Update frontend API service to use V3 endpoints
+4. Adapt NetworkGraph.js for derived tier visualization
+5. Test complete V3 flow end-to-end
 
 ## Test Credentials
 - **Super Admin**: `superadmin@seonoc.com` / `SuperAdmin123!`
