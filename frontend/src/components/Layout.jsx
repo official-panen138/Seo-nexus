@@ -22,7 +22,8 @@ import {
     Bell,
     Folder,
     Zap,
-    History
+    History,
+    Building
 } from 'lucide-react';
 
 const navItems = [
@@ -34,6 +35,7 @@ const navItems = [
     { type: 'divider', roles: ['super_admin'] },
     { path: '/brands', label: 'Brands', icon: Tag, roles: ['super_admin'] },
     { path: '/categories', label: 'Categories', icon: Folder, roles: ['super_admin'] },
+    { path: '/registrars', label: 'Registrars', icon: Building, roles: ['super_admin'] },
     { path: '/users', label: 'Users', icon: Users, roles: ['super_admin'] },
     { path: '/audit-logs', label: 'Audit Logs', icon: Activity, roles: ['super_admin'] },
     { path: '/activity-logs', label: 'V3 Activity', icon: History, roles: ['super_admin', 'admin'] },
