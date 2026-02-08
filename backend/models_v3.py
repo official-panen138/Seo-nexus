@@ -384,3 +384,46 @@ class RegistrarResponse(RegistrarBase):
     domain_count: int = 0  # Number of domains using this registrar
     created_at: str
     updated_at: str
+
+
+# ==================== CONFLICT DETECTION MODELS ====================
+
+class ConflictSeverity(str, Enum):
+    """Severity levels for SEO conflicts"""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class ConflictType(str, Enum):
+    """Types of SEO conflicts"""
+    KEYWORD_CANNIBALIZATION = "keyword_cannibalization"  # Same keyword, different paths
+    COMPETING_TARGETS = "competing_targets"  # Different paths targeting different nodes
+    CANONICAL_MISMATCH = "canonical_mismatch"  # Path A canonical to B, B still indexed
+    TIER_INVERSION = "tier_inversion"  # Higher tier supports lower tier
+
+
+class SeoConflict(BaseModel):
+    """Model for a detected SEO conflict"""
+    conflict_type: ConflictType
+    severity: ConflictSeverity
+    network_id: str
+    network_name: Optional[str] = None
+    domain_name: str
+    
+    # Involved nodes
+    node_a_id: str
+    node_a_path: Optional[str] = None
+    node_a_label: str
+    
+    node_b_id: Optional[str] = None
+    node_b_path: Optional[str] = None
+    node_b_label: Optional[str] = None
+    
+    # Details
+    description: str
+    suggestion: Optional[str] = None
+    
+    # Metadata
+    detected_at: str
