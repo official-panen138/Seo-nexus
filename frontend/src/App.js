@@ -12,8 +12,11 @@ import GroupsPage from "./pages/GroupsPage";
 import GroupDetailPage from "./pages/GroupDetailPage";
 import ReportsPage from "./pages/ReportsPage";
 import BrandsPage from "./pages/BrandsPage";
+import CategoriesPage from "./pages/CategoriesPage";
 import UsersPage from "./pages/UsersPage";
 import AuditLogsPage from "./pages/AuditLogsPage";
+import AlertsPage from "./pages/AlertsPage";
+import SettingsPage from "./pages/SettingsPage";
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -89,6 +92,11 @@ function AppRoutes() {
                     <GroupDetailPage />
                 </ProtectedRoute>
             } />
+            <Route path="/alerts" element={
+                <ProtectedRoute>
+                    <AlertsPage />
+                </ProtectedRoute>
+            } />
             <Route path="/reports" element={
                 <ProtectedRoute>
                     <ReportsPage />
@@ -99,6 +107,11 @@ function AppRoutes() {
                     <BrandsPage />
                 </ProtectedRoute>
             } />
+            <Route path="/categories" element={
+                <ProtectedRoute>
+                    <CategoriesPage />
+                </ProtectedRoute>
+            } />
             <Route path="/users" element={
                 <ProtectedRoute>
                     <UsersPage />
@@ -107,6 +120,11 @@ function AppRoutes() {
             <Route path="/audit-logs" element={
                 <ProtectedRoute>
                     <AuditLogsPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+                <ProtectedRoute>
+                    <SettingsPage />
                 </ProtectedRoute>
             } />
             
