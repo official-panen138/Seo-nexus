@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { groupsAPI, networksAPI, brandsAPI } from '../lib/api';
+import { networksAPI, brandsAPI, assetDomainsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -21,20 +21,38 @@ import {
     Eye,
     Globe,
     Tag,
-    Filter
+    Filter,
+    ArrowRight,
+    ArrowLeft,
+    Target,
+    CheckCircle
 } from 'lucide-react';
 import { formatDate } from '../lib/utils';
 
 export default function GroupsPage() {
     const { canEdit } = useAuth();
+    const navigate = useNavigate();
     const [networks, setNetworks] = useState([]);
     const [brands, setBrands] = useState([]);
+    const [domains, setDomains] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedNetwork, setSelectedNetwork] = useState(null);
-    const [form, setForm] = useState({ name: '', brand_id: '', description: '' });
+    
+    // Multi-step form state
+    const [createStep, setCreateStep] = useState(1);
+    const [form, setForm] = useState({ 
+        name: '', 
+        brand_id: '', 
+        description: '',
+        main_domain_id: '',
+        main_path: ''
+    });
+    
+    // Filtered domains based on selected brand
+    const [brandDomains, setBrandDomains] = useState([]);
     
     // Filter state
     const [filterBrand, setFilterBrand] = useState('all');
@@ -43,14 +61,30 @@ export default function GroupsPage() {
         loadData();
     }, []);
 
+    // Filter domains when brand changes
+    useEffect(() => {
+        if (form.brand_id && domains.length > 0) {
+            const filtered = domains.filter(d => d.brand_id === form.brand_id);
+            setBrandDomains(filtered);
+            // Reset domain selection if not in filtered list
+            if (form.main_domain_id && !filtered.find(d => d.id === form.main_domain_id)) {
+                setForm(prev => ({ ...prev, main_domain_id: '' }));
+            }
+        } else {
+            setBrandDomains([]);
+        }
+    }, [form.brand_id, domains]);
+
     const loadData = async () => {
         try {
-            const [networksRes, brandsRes] = await Promise.all([
+            const [networksRes, brandsRes, domainsRes] = await Promise.all([
                 networksAPI.getAll(),
-                brandsAPI.getAll()
+                brandsAPI.getAll(),
+                assetDomainsAPI.getAll()
             ]);
             setNetworks(networksRes.data);
             setBrands(brandsRes.data);
+            setDomains(domainsRes.data);
         } catch (err) {
             console.error('Failed to load data:', err);
             toast.error('Failed to load networks');
@@ -61,7 +95,8 @@ export default function GroupsPage() {
 
     const openCreateDialog = () => {
         setSelectedNetwork(null);
-        setForm({ name: '', brand_id: '', description: '' });
+        setCreateStep(1);
+        setForm({ name: '', brand_id: '', description: '', main_domain_id: '', main_path: '' });
         setDialogOpen(true);
     };
 
@@ -72,35 +107,82 @@ export default function GroupsPage() {
         setForm({ 
             name: network.name, 
             brand_id: network.brand_id || '',
-            description: network.description || '' 
+            description: network.description || '',
+            main_domain_id: '',
+            main_path: ''
         });
         setDialogOpen(true);
     };
 
+    const handleNextStep = () => {
+        if (createStep === 1) {
+            if (!form.name.trim()) {
+                toast.error('Network name is required');
+                return;
+            }
+            if (!form.brand_id) {
+                toast.error('Brand is required');
+                return;
+            }
+            setCreateStep(2);
+        }
+    };
+
+    const handlePrevStep = () => {
+        if (createStep > 1) {
+            setCreateStep(createStep - 1);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.name) {
-            toast.error('Network name is required');
+        
+        // For edit mode - just update network
+        if (selectedNetwork) {
+            setSaving(true);
+            try {
+                await networksAPI.update(selectedNetwork.id, {
+                    name: form.name,
+                    brand_id: form.brand_id,
+                    description: form.description
+                });
+                toast.success('Network updated');
+                setDialogOpen(false);
+                loadData();
+            } catch (err) {
+                toast.error(err.response?.data?.detail || 'Failed to update network');
+            } finally {
+                setSaving(false);
+            }
             return;
         }
-        if (!form.brand_id) {
-            toast.error('Brand is required');
+        
+        // For create mode - validate main domain
+        if (!form.main_domain_id) {
+            toast.error('Main domain is required');
             return;
         }
 
         setSaving(true);
         try {
-            if (selectedNetwork) {
-                await networksAPI.update(selectedNetwork.id, form);
-                toast.success('Network updated');
-            } else {
-                await networksAPI.create(form);
-                toast.success('Network created');
-            }
+            const payload = {
+                name: form.name,
+                brand_id: form.brand_id,
+                description: form.description,
+                main_node: {
+                    asset_domain_id: form.main_domain_id,
+                    optimized_path: form.main_path || null
+                }
+            };
+            
+            const response = await networksAPI.create(payload);
+            toast.success('Network created with main node');
             setDialogOpen(false);
-            loadData();
+            
+            // Redirect to the new network's detail page
+            navigate(`/groups/${response.data.id}`);
         } catch (err) {
-            toast.error(err.response?.data?.detail || 'Failed to save network');
+            toast.error(err.response?.data?.detail || 'Failed to create network');
         } finally {
             setSaving(false);
         }
@@ -259,10 +341,19 @@ export default function GroupsPage() {
                                                 {network.description}
                                             </p>
                                         )}
+                                        
+                                        {/* Main domain indicator */}
+                                        {network.main_domain_name && (
+                                            <div className="flex items-center gap-2 text-xs text-green-500 mb-2">
+                                                <Target className="h-3 w-3" />
+                                                <span className="font-mono">{network.main_domain_name}</span>
+                                            </div>
+                                        )}
+                                        
                                         <div className="flex items-center justify-between text-sm">
                                             <div className="flex items-center gap-2 text-zinc-400">
                                                 <Globe className="h-4 w-4" />
-                                                <span>{network.domain_count || 0} domain{network.domain_count !== 1 ? 's' : ''}</span>
+                                                <span>{network.domain_count || 0} node{network.domain_count !== 1 ? 's' : ''}</span>
                                             </div>
                                             <div className="flex items-center gap-1 text-blue-500">
                                                 <Eye className="h-4 w-4" />
@@ -281,63 +372,163 @@ export default function GroupsPage() {
                     </div>
                 )}
 
-                {/* Create/Edit Dialog */}
+                {/* Multi-Step Create / Edit Dialog */}
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                    <DialogContent className="bg-card border-border max-w-md">
+                    <DialogContent className="bg-card border-border max-w-lg">
                         <DialogHeader>
                             <DialogTitle>
-                                {selectedNetwork ? 'Edit Network' : 'Create Network'}
+                                {selectedNetwork ? 'Edit Network' : (
+                                    createStep === 1 ? 'Create Network - Step 1' : 'Create Network - Step 2'
+                                )}
                             </DialogTitle>
                             <DialogDescription>
                                 {selectedNetwork 
                                     ? 'Update network details below.' 
-                                    : 'Create a new SEO network. You can add domains to it later.'}
+                                    : createStep === 1 
+                                        ? 'Define network name, brand, and description.'
+                                        : 'Configure the main (money) node for this network.'}
                             </DialogDescription>
                         </DialogHeader>
+                        
+                        {/* Step Indicator for Create mode */}
+                        {!selectedNetwork && (
+                            <div className="flex items-center justify-center gap-2 py-2">
+                                <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm ${createStep === 1 ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-800 text-zinc-500'}`}>
+                                    <span>1</span>
+                                    <span className="hidden sm:inline">Network Info</span>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-zinc-600" />
+                                <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm ${createStep === 2 ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-800 text-zinc-500'}`}>
+                                    <span>2</span>
+                                    <span className="hidden sm:inline">Main Node</span>
+                                </div>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Network Name *</Label>
-                                <Input
-                                    value={form.name}
-                                    onChange={(e) => setForm({...form, name: e.target.value})}
-                                    placeholder="Main SEO Network"
-                                    className="bg-black border-border"
-                                    data-testid="network-name-input"
-                                />
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <Label>Brand *</Label>
-                                <Select 
-                                    value={form.brand_id} 
-                                    onValueChange={(v) => setForm({...form, brand_id: v})}
-                                >
-                                    <SelectTrigger className="bg-black border-border" data-testid="network-brand-select">
-                                        <SelectValue placeholder="Select brand..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {brands.map(b => (
-                                            <SelectItem key={b.id} value={b.id}>
-                                                {b.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            {/* Step 1: Network Info (always visible for edit, step 1 for create) */}
+                            {(selectedNetwork || createStep === 1) && (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label>Network Name *</Label>
+                                        <Input
+                                            value={form.name}
+                                            onChange={(e) => setForm({...form, name: e.target.value})}
+                                            placeholder="Main SEO Network"
+                                            className="bg-black border-border"
+                                            data-testid="network-name-input"
+                                        />
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        <Label>Brand *</Label>
+                                        <Select 
+                                            value={form.brand_id} 
+                                            onValueChange={(v) => setForm({...form, brand_id: v})}
+                                            disabled={selectedNetwork}
+                                        >
+                                            <SelectTrigger className="bg-black border-border" data-testid="network-brand-select">
+                                                <SelectValue placeholder="Select brand..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {brands.map(b => (
+                                                    <SelectItem key={b.id} value={b.id}>
+                                                        {b.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {!selectedNetwork && (
+                                            <p className="text-xs text-zinc-500">
+                                                Only domains from this brand will be available for selection.
+                                            </p>
+                                        )}
+                                    </div>
 
-                            <div className="space-y-2">
-                                <Label>Description</Label>
-                                <Textarea
-                                    value={form.description}
-                                    onChange={(e) => setForm({...form, description: e.target.value})}
-                                    placeholder="Optional description..."
-                                    className="bg-black border-border resize-none"
-                                    rows={3}
-                                    data-testid="network-description-input"
-                                />
-                            </div>
+                                    <div className="space-y-2">
+                                        <Label>Description</Label>
+                                        <Textarea
+                                            value={form.description}
+                                            onChange={(e) => setForm({...form, description: e.target.value})}
+                                            placeholder="Optional description..."
+                                            className="bg-black border-border resize-none"
+                                            rows={3}
+                                            data-testid="network-description-input"
+                                        />
+                                    </div>
+                                </>
+                            )}
 
-                            <DialogFooter>
+                            {/* Step 2: Main Node Config (create mode only) */}
+                            {!selectedNetwork && createStep === 2 && (
+                                <>
+                                    <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                                        <div className="flex items-center gap-2 text-green-400 mb-2">
+                                            <Target className="h-5 w-5" />
+                                            <span className="font-medium">Main Node Configuration</span>
+                                        </div>
+                                        <p className="text-sm text-zinc-400">
+                                            Every SEO Network requires a main (money) node. This is the primary target for your link building strategy.
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        <Label>Main Asset Domain *</Label>
+                                        <Select 
+                                            value={form.main_domain_id} 
+                                            onValueChange={(v) => setForm({...form, main_domain_id: v})}
+                                        >
+                                            <SelectTrigger className="bg-black border-border" data-testid="main-domain-select">
+                                                <SelectValue placeholder="Select main domain..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {brandDomains.length === 0 ? (
+                                                    <div className="p-2 text-sm text-zinc-500">
+                                                        No domains found for this brand
+                                                    </div>
+                                                ) : (
+                                                    brandDomains.map(d => (
+                                                        <SelectItem key={d.id} value={d.id}>
+                                                            {d.domain_name}
+                                                        </SelectItem>
+                                                    ))
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-zinc-500">
+                                            Only domains belonging to "{brands.find(b => b.id === form.brand_id)?.name}" are shown.
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Optimized Path (optional)</Label>
+                                        <Input
+                                            value={form.main_path}
+                                            onChange={(e) => setForm({...form, main_path: e.target.value})}
+                                            placeholder="/best-product or leave empty for root"
+                                            className="bg-black border-border font-mono"
+                                            data-testid="main-path-input"
+                                        />
+                                        <p className="text-xs text-zinc-500">
+                                            Leave empty to target the root domain (/). Enter a path for page-level targeting.
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+
+                            <DialogFooter className="flex gap-2">
+                                {/* Back button for step 2 */}
+                                {!selectedNetwork && createStep === 2 && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={handlePrevStep}
+                                    >
+                                        <ArrowLeft className="h-4 w-4 mr-2" />
+                                        Back
+                                    </Button>
+                                )}
+                                
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -345,15 +536,33 @@ export default function GroupsPage() {
                                 >
                                     Cancel
                                 </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={saving}
-                                    className="bg-white text-black hover:bg-zinc-200"
-                                    data-testid="save-network-btn"
-                                >
-                                    {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                    {selectedNetwork ? 'Update' : 'Create'}
-                                </Button>
+                                
+                                {/* Next or Submit button */}
+                                {!selectedNetwork && createStep === 1 ? (
+                                    <Button
+                                        type="button"
+                                        onClick={handleNextStep}
+                                        className="bg-white text-black hover:bg-zinc-200"
+                                    >
+                                        Next
+                                        <ArrowRight className="h-4 w-4 ml-2" />
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        type="submit"
+                                        disabled={saving}
+                                        className="bg-white text-black hover:bg-zinc-200"
+                                        data-testid="save-network-btn"
+                                    >
+                                        {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                        {selectedNetwork ? 'Update' : (
+                                            <>
+                                                <CheckCircle className="h-4 w-4 mr-2" />
+                                                Create Network
+                                            </>
+                                        )}
+                                    </Button>
+                                )}
                             </DialogFooter>
                         </form>
                     </DialogContent>
@@ -367,7 +576,7 @@ export default function GroupsPage() {
                         </DialogHeader>
                         <p className="text-zinc-400">
                             Are you sure you want to delete <span className="text-white font-medium">{selectedNetwork?.name}</span>?
-                            All domains will be removed from this network (but not deleted).
+                            All nodes will be removed from this network.
                         </p>
                         <DialogFooter>
                             <Button
