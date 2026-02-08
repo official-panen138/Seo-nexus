@@ -49,6 +49,27 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## What's Been Implemented (Feb 8, 2026)
 
+### P0 Critical Bug Fix - Node Linking (Feb 8, 2026) - COMPLETE
+**Issue:** Node-to-node linking was broken in UI and graph visualization
+
+**6-Point Fix Applied:**
+1. ✅ **API Fix:** `GET /api/v3/structure` returns `node_label` (domain + path) and `entry.id`
+2. ✅ **Frontend Dropdown:** Target Node dropdown populated from structure entries (not asset domains)
+3. ✅ **Dropdown Rules:**
+   - label = node_label
+   - value = entry.id
+   - Includes "None (Orphan)" option
+   - Excludes self from list
+4. ✅ **Save Logic:** Sends `target_entry_id` (entry.id) to backend
+5. ✅ **D3 Graph:** Links built using `source: e.id`, `target: e.target_entry_id`, `forceLink().id(d => d.id)`
+6. ✅ **Path Normalization:** Empty/null paths → None; paths always start with `/`
+
+**Results:**
+- Correct node-to-node linking
+- Connected visual graph with visible links
+- Accurate derived tiers via BFS algorithm
+- All tests passed (16/16 backend, 100% frontend)
+
 ### V3 P0 Features - COMPLETE (Feb 8, 2026)
 
 **Feature 1: Registrar as Master Data - COMPLETE**
