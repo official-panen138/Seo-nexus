@@ -124,7 +124,7 @@ async def enrich_asset_domain(asset: dict) -> dict:
 
 
 async def enrich_structure_entry(entry: dict, network_tiers: Dict[str, int] = None) -> dict:
-    """Enrich structure entry with names and calculated tier"""
+    """Enrich structure entry with names, node label, and calculated tier"""
     # Get asset domain name
     if entry.get("asset_domain_id"):
         asset = await db.asset_domains.find_one(
@@ -133,6 +133,15 @@ async def enrich_structure_entry(entry: dict, network_tiers: Dict[str, int] = No
         )
         entry["domain_name"] = asset["domain_name"] if asset else None
         
+        # Build node_label (domain + optional path)
+        if asset:
+            if entry.get("optimized_path"):
+                entry["node_label"] = f"{asset['domain_name']}{entry['optimized_path']}"
+            else:
+                entry["node_label"] = asset["domain_name"]
+        else:
+            entry["node_label"] = None
+        
         # Get brand name
         if asset and asset.get("brand_id"):
             brand = await db.brands.find_one({"id": asset["brand_id"]}, {"_id": 0, "name": 1})
@@ -140,15 +149,31 @@ async def enrich_structure_entry(entry: dict, network_tiers: Dict[str, int] = No
         else:
             entry["brand_name"] = None
     
-    # Get target domain name
-    if entry.get("target_asset_domain_id"):
+    # Get target info - support both new (target_entry_id) and legacy (target_asset_domain_id)
+    entry["target_domain_name"] = None
+    entry["target_entry_path"] = None
+    
+    if entry.get("target_entry_id"):
+        # Node-to-node relationship
+        target_entry = await db.seo_structure_entries.find_one(
+            {"id": entry["target_entry_id"]},
+            {"_id": 0, "asset_domain_id": 1, "optimized_path": 1}
+        )
+        if target_entry:
+            target_asset = await db.asset_domains.find_one(
+                {"id": target_entry["asset_domain_id"]},
+                {"_id": 0, "domain_name": 1}
+            )
+            if target_asset:
+                entry["target_domain_name"] = target_asset["domain_name"]
+                entry["target_entry_path"] = target_entry.get("optimized_path")
+    elif entry.get("target_asset_domain_id"):
+        # Legacy domain-to-domain relationship
         target = await db.asset_domains.find_one(
             {"id": entry["target_asset_domain_id"]},
             {"_id": 0, "domain_name": 1}
         )
         entry["target_domain_name"] = target["domain_name"] if target else None
-    else:
-        entry["target_domain_name"] = None
     
     # Get network name
     if entry.get("network_id"):
@@ -160,15 +185,15 @@ async def enrich_structure_entry(entry: dict, network_tiers: Dict[str, int] = No
     else:
         entry["network_name"] = None
     
-    # Calculate tier if not provided
-    if network_tiers and entry.get("asset_domain_id"):
-        tier = network_tiers.get(entry["asset_domain_id"], 5)
+    # Calculate tier based on entry_id (node-based)
+    if network_tiers and entry.get("id"):
+        tier = network_tiers.get(entry["id"], 5)
         entry["calculated_tier"] = tier
         entry["tier_label"] = get_tier_label(tier)
     elif entry.get("network_id") and tier_service:
         tier, label = await tier_service.calculate_domain_tier(
             entry["network_id"],
-            entry["asset_domain_id"]
+            entry["id"]
         )
         entry["calculated_tier"] = tier
         entry["tier_label"] = label
