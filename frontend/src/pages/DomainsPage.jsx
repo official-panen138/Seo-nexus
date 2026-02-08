@@ -252,7 +252,7 @@ export default function DomainsPage() {
                     domain_name: form.domain_name,
                     brand_id: form.brand_id,
                     category_id: form.category_id || null,
-                    registrar: form.registrar || null,
+                    registrar_id: form.registrar_id || null,
                     expiration_date: form.expiration_date ? new Date(form.expiration_date).toISOString() : null,
                     auto_renew: form.auto_renew,
                     status: form.status,
