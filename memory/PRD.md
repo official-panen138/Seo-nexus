@@ -161,17 +161,18 @@ Build a full-stack SEO Network Operations Center combining:
 - ✅ V3 API Endpoints
 - ✅ Frontend V3 Integration (Networks, Domains)
 - ✅ Derived Tier Calculation
+- ✅ Telegram Integration
+- ✅ Ranking & Path Tracking UI
+- ✅ Bulk CSV Import
+- ✅ Activity Logs Viewer
 
 ### P1 (High Priority - Remaining)
-- ✅ Configure Telegram Chat ID for live alerts - DONE
-- Bulk domain import from CSV
-- Ranking & Path Tracking UI (new V3 fields)
 - Email notification channel (Resend/SendGrid)
 - Dashboard refresh interval setting
+- Scheduled conflict alerts (cron job)
+- Export V3 data to CSV/JSON
 
 ### P2 (Medium Priority)
-- Activity logs viewer page
-- Export V3 data to CSV/JSON
 - Domain health check improvements
 - Alert history and analytics
 - Mobile push notifications
