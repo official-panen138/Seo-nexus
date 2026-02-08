@@ -149,10 +149,11 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## Prioritized Backlog
 
-### P0 (Critical) - COMPLETED
+### P0 (Critical) - ALL COMPLETED
 - ✅ V3 Architecture Migration (Phases 0-4)
 - ✅ V3 API Endpoints
-- ✅ Frontend V3 Integration
+- ✅ Frontend V3 Integration (Networks, Domains)
+- ✅ Derived Tier Calculation
 
 ### P1 (High Priority - Remaining)
 - Configure Telegram Chat ID for live alerts
@@ -160,6 +161,17 @@ Build a full-stack SEO Network Operations Center combining:
 - Ranking & Path Tracking UI (new V3 fields)
 - Email notification channel (Resend/SendGrid)
 - Dashboard refresh interval setting
+
+### P2 (Medium Priority)
+- Activity logs viewer page
+- Export V3 data to CSV/JSON
+- Domain health check improvements
+- Alert history and analytics
+
+### P3 (Low Priority)
+- Multi-user collaboration features
+- API documentation (OpenAPI)
+- Webhook integrations
 
 ### P2 (Medium Priority)
 - Mobile push notifications
