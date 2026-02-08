@@ -830,10 +830,13 @@ async def update_network(
     data: SeoNetworkUpdate,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Update an SEO network"""
+    """Update an SEO network - BRAND SCOPED"""
     existing = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Network not found")
+    
+    # Validate brand access
+    require_brand_access(existing.get("brand_id", ""), current_user)
     
     update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
     
@@ -873,10 +876,13 @@ async def delete_network(
     network_id: str,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Delete an SEO network"""
+    """Delete an SEO network - BRAND SCOPED"""
     existing = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Network not found")
+    
+    # Validate brand access
+    require_brand_access(existing.get("brand_id", ""), current_user)
     
     # Delete associated structure entries
     deleted = await db.seo_structure_entries.delete_many({"network_id": network_id})
