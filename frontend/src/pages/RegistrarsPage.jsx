@@ -40,7 +40,7 @@ export default function RegistrarsPage() {
             setLoading(true);
             const params = {};
             if (search) params.search = search;
-            if (statusFilter) params.status = statusFilter;
+            if (statusFilter && statusFilter !== 'all') params.status = statusFilter;
             
             const { data } = await registrarsAPI.getAll(params);
             setRegistrars(data);
