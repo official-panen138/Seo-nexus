@@ -84,6 +84,13 @@ class EntityType(str, Enum):
     BRAND = "brand"
     CATEGORY = "category"
     USER = "user"
+    REGISTRAR = "registrar"
+
+
+class RegistrarStatus(str, Enum):
+    """Status of registrar in master data"""
+    ACTIVE = "active"
+    INACTIVE = "inactive"
 
 
 # ==================== ASSET DOMAIN MODELS ====================
