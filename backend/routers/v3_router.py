@@ -101,6 +101,30 @@ async def send_v3_telegram_alert(message: str) -> bool:
 
 # ==================== HELPER FUNCTIONS ====================
 
+def normalize_path(path: str | None) -> str | None:
+    """
+    Normalize an optimized_path value.
+    
+    Rules:
+    - Empty/None/whitespace-only → None (represents domain root)
+    - "/" alone → None (represents domain root)
+    - Otherwise, ensure path starts with "/"
+    - Strip trailing slashes (except root)
+    """
+    if not path or path.strip() == "" or path.strip() == "/":
+        return None
+    
+    path = path.strip()
+    if not path.startswith("/"):
+        path = "/" + path
+    
+    # Remove trailing slash if not root
+    if len(path) > 1 and path.endswith("/"):
+        path = path.rstrip("/")
+    
+    return path
+
+
 async def enrich_asset_domain(asset: dict) -> dict:
     """Enrich asset domain with brand/category/registrar names"""
     if asset.get("brand_id"):
