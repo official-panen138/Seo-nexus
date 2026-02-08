@@ -100,7 +100,7 @@ async def send_v3_telegram_alert(message: str) -> bool:
 # ==================== HELPER FUNCTIONS ====================
 
 async def enrich_asset_domain(asset: dict) -> dict:
-    """Enrich asset domain with brand/category names"""
+    """Enrich asset domain with brand/category/registrar names"""
     if asset.get("brand_id"):
         brand = await db.brands.find_one({"id": asset["brand_id"]}, {"_id": 0, "name": 1})
         asset["brand_name"] = brand["name"] if brand else None
@@ -112,6 +112,13 @@ async def enrich_asset_domain(asset: dict) -> dict:
         asset["category_name"] = category["name"] if category else None
     else:
         asset["category_name"] = None
+    
+    # Enrich registrar name from registrar_id
+    if asset.get("registrar_id"):
+        registrar = await db.registrars.find_one({"id": asset["registrar_id"]}, {"_id": 0, "name": 1})
+        asset["registrar_name"] = registrar["name"] if registrar else None
+    else:
+        asset["registrar_name"] = asset.get("registrar")  # Legacy fallback
     
     return asset
 
