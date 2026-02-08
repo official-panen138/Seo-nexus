@@ -1,26 +1,32 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { groupsAPI, networksAPI } from '../lib/api';
+import { groupsAPI, networksAPI, structureAPI, assetDomainsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { NetworkGraph } from '../components/NetworkGraph';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Textarea } from '../components/ui/textarea';
 import { toast } from 'sonner';
 import { 
     ArrowLeft, 
     Loader2, 
-    ZoomIn, 
-    ZoomOut, 
-    Maximize2,
     Globe,
     ExternalLink,
     Network,
     AlertTriangle,
-    RefreshCw
+    RefreshCw,
+    Edit,
+    TrendingUp,
+    Target,
+    Search
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
@@ -40,6 +46,24 @@ const V3_TIER_COLORS = {
     4: '#8B5CF6',
     5: '#6B7280'
 };
+
+// SEO Status options
+const SEO_STATUS_OPTIONS = [
+    { value: 'canonical', label: 'Canonical' },
+    { value: '301_redirect', label: '301 Redirect' },
+    { value: '302_redirect', label: '302 Redirect' },
+    { value: 'restore', label: 'Restore' }
+];
+
+const INDEX_OPTIONS = [
+    { value: 'index', label: 'Index' },
+    { value: 'noindex', label: 'Noindex' }
+];
+
+const ROLE_OPTIONS = [
+    { value: 'main', label: 'Main (Money Site)' },
+    { value: 'supporting', label: 'Supporting' }
+];
 
 export default function GroupDetailPage() {
     const { groupId } = useParams();
