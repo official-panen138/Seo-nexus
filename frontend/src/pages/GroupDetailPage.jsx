@@ -1119,6 +1119,109 @@ export default function GroupDetailPage() {
                         </DialogContent>
                     </Dialog>
                 )}
+
+                {/* Import Nodes Dialog */}
+                <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+                    <DialogContent className="bg-card border-border max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Import Nodes (Path-Level SEO)</DialogTitle>
+                            <DialogDescription>
+                                Import nodes from a CSV file. Each node is a domain + optional path combination.
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4">
+                            {/* File upload */}
+                            <div className="space-y-2">
+                                <Label>CSV File</Label>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        type="file"
+                                        accept=".csv"
+                                        onChange={handleFileSelect}
+                                        ref={fileInputRef}
+                                        className="bg-black border-border"
+                                    />
+                                </div>
+                                <p className="text-xs text-zinc-500">
+                                    Required columns: domain_name. Optional: optimized_path, domain_role, target_domain, target_path, etc.
+                                </p>
+                            </div>
+
+                            {/* Options */}
+                            <div className="flex items-center gap-2 p-3 bg-black rounded-lg">
+                                <Switch 
+                                    checked={createMissingDomains}
+                                    onCheckedChange={setCreateMissingDomains}
+                                    id="create-domains"
+                                />
+                                <Label htmlFor="create-domains" className="text-sm">
+                                    Create missing domains automatically
+                                </Label>
+                            </div>
+
+                            {/* Preview */}
+                            {importData.length > 0 && (
+                                <div className="space-y-2">
+                                    <Label>Preview ({importData.length} nodes)</Label>
+                                    <div className="max-h-[200px] overflow-auto bg-black rounded-lg p-2">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="text-xs">Domain</TableHead>
+                                                    <TableHead className="text-xs">Path</TableHead>
+                                                    <TableHead className="text-xs">Role</TableHead>
+                                                    <TableHead className="text-xs">Target</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {importData.slice(0, 10).map((node, i) => (
+                                                    <TableRow key={i}>
+                                                        <TableCell className="text-xs font-mono">{node.domain_name}</TableCell>
+                                                        <TableCell className="text-xs font-mono">{node.optimized_path || '-'}</TableCell>
+                                                        <TableCell className="text-xs">
+                                                            <Badge variant={node.domain_role === 'main' ? 'default' : 'secondary'} className="text-xs">
+                                                                {node.domain_role}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="text-xs font-mono">
+                                                            {node.target_domain ? `${node.target_domain}${node.target_path || ''}` : '-'}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                        {importData.length > 10 && (
+                                            <p className="text-xs text-zinc-500 text-center mt-2">
+                                                ... and {importData.length - 10} more
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setImportDialogOpen(false);
+                                    setImportData([]);
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleImportSubmit}
+                                disabled={importing || importData.length === 0}
+                                className="bg-white text-black hover:bg-zinc-200"
+                            >
+                                {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                Import {importData.length} Nodes
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </Layout>
     );
