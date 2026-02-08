@@ -155,7 +155,15 @@ class ActivityLogService:
         cursor = cursor.sort("created_at", -1).skip(skip).limit(limit)
         
         logs = await cursor.to_list(limit)
-        return [ActivityLogResponse(**log) for log in logs]
+        
+        # Sanitize any nested ObjectId in before_value/after_value
+        sanitized_logs = []
+        for log in logs:
+            log["before_value"] = self._sanitize_for_storage(log.get("before_value"))
+            log["after_value"] = self._sanitize_for_storage(log.get("after_value"))
+            sanitized_logs.append(ActivityLogResponse(**log))
+        
+        return sanitized_logs
     
     async def get_entity_history(
         self,
