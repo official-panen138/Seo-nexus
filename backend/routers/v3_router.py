@@ -12,6 +12,8 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import uuid
+import httpx
+import logging
 
 # Import models
 import sys
@@ -24,6 +26,8 @@ from models_v3 import (
     AssetStatus, NetworkStatus, DomainRole, SeoStatus, IndexStatus,
     ActionType, EntityType, get_tier_label
 )
+
+logger = logging.getLogger(__name__)
 
 # Router
 router = APIRouter(prefix="/api/v3", tags=["V3 API"])
