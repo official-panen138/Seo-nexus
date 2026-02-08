@@ -149,6 +149,10 @@ class AssetDomainUpdate(BaseModel):
     status: Optional[AssetStatus] = None
     monitoring_enabled: Optional[bool] = None
     monitoring_interval: Optional[MonitoringInterval] = None
+    last_checked_at: Optional[str] = None
+    last_ping_status: Optional[str] = None
+    last_http_code: Optional[int] = None
+    expiration_alert_sent_at: Optional[str] = None
     notes: Optional[str] = None
 
 
