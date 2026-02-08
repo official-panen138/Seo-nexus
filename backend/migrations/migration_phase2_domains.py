@@ -147,17 +147,17 @@ async def dry_run(db) -> Dict[str, Any]:
     
     # Validate
     validation = await validate_prerequisites(db)
-    print(f"\n[Validation]")
+    print("\n[Validation]")
     print(f"  Source documents: {validation['source_count']}")
     print(f"  Target documents: {validation['target_count']}")
     
     if validation['issues']:
-        print(f"\n[Issues Found]")
+        print("\n[Issues Found]")
         for issue in validation['issues']:
             print(f"  ⚠️  {issue}")
     
     if not validation['can_proceed']:
-        print(f"\n❌ Migration cannot proceed. Fix issues first.")
+        print("\n❌ Migration cannot proceed. Fix issues first.")
         return validation
     
     # Sample transformations
@@ -172,23 +172,23 @@ async def dry_run(db) -> Dict[str, Any]:
         transformed.append(asset)
         
         print(f"\n  V2 Domain: {domain['domain_name']}")
-        print(f"    → V3 AssetDomain:")
+        print("    → V3 AssetDomain:")
         print(f"       id: {asset['id']}")
         print(f"       legacy_id: {asset['legacy_id']}")
         print(f"       status: {asset['status']}")
         print(f"       monitoring_enabled: {asset['monitoring_enabled']}")
     
     # Show what will be logged
-    print(f"\n[Activity Logs to be Created]")
+    print("\n[Activity Logs to be Created]")
     print(f"  Actor: {MIGRATION_ACTOR}")
     print(f"  Phase: {MIGRATION_PHASE}")
     print(f"  Entries: {validation['source_count']}")
     
     # Summary
-    print(f"\n[Migration Summary]")
+    print("\n[Migration Summary]")
     print(f"  Documents to migrate: {validation['source_count']}")
-    print(f"  New collection: asset_domains")
-    print(f"  Indexes to create: domain_name (unique), legacy_id, brand_id")
+    print("  New collection: asset_domains")
+    print("  Indexes to create: domain_name (unique), legacy_id, brand_id")
     
     print("\n" + "="*60)
     print("DRY RUN COMPLETE - No changes made")
@@ -213,7 +213,7 @@ async def execute_migration(db) -> Dict[str, Any]:
     # Validate first
     validation = await validate_prerequisites(db)
     if not validation['can_proceed']:
-        print(f"\n❌ Migration cannot proceed. Issues found:")
+        print("\n❌ Migration cannot proceed. Issues found:")
         for issue in validation['issues']:
             print(f"  ⚠️  {issue}")
         return {"success": False, "validation": validation}
@@ -234,7 +234,7 @@ async def execute_migration(db) -> Dict[str, Any]:
     print(f"[Step 2] Transformed {len(asset_domains)} documents")
     
     # Create indexes on target collection
-    print(f"[Step 3] Creating indexes...")
+    print("[Step 3] Creating indexes...")
     await db.asset_domains.create_index("domain_name", unique=True)
     await db.asset_domains.create_index("legacy_id")
     await db.asset_domains.create_index("brand_id")
@@ -253,7 +253,7 @@ async def execute_migration(db) -> Dict[str, Any]:
         print(f"  Inserted {inserted_count}/{len(asset_domains)}")
     
     # Create activity logs
-    print(f"[Step 5] Creating activity logs...")
+    print("[Step 5] Creating activity logs...")
     activity_logs = []
     now = datetime.now(timezone.utc).isoformat()
     
@@ -294,7 +294,7 @@ async def execute_migration(db) -> Dict[str, Any]:
     # Verify
     final_count = await db.asset_domains.count_documents({})
     
-    print(f"\n[Verification]")
+    print("\n[Verification]")
     print(f"  Source count: {len(domains)}")
     print(f"  Target count: {final_count}")
     print(f"  Match: {'✅' if final_count == len(domains) else '❌'}")
