@@ -51,12 +51,83 @@ export const INDEX_STATUS_LABELS = {
     'noindex': 'Noindex'
 };
 
+// Monitoring interval labels
+export const MONITORING_INTERVAL_LABELS = {
+    '5min': '5 Minutes',
+    '15min': '15 Minutes',
+    '1hour': '1 Hour',
+    'daily': 'Daily'
+};
+
+// Ping status labels
+export const PING_STATUS_LABELS = {
+    'up': 'Up',
+    'down': 'Down',
+    'unknown': 'Unknown'
+};
+
+// HTTP status labels
+export const HTTP_STATUS_LABELS = {
+    '200': '200 OK',
+    '3xx': '3xx Redirect',
+    '4xx': '4xx Client Error',
+    '5xx': '5xx Server Error',
+    'timeout': 'Timeout',
+    'error': 'Error'
+};
+
+// Alert severity labels and colors
+export const SEVERITY_LABELS = {
+    'critical': 'Critical',
+    'high': 'High',
+    'medium': 'Medium',
+    'low': 'Low'
+};
+
+export const SEVERITY_COLORS = {
+    'critical': '#EF4444',
+    'high': '#F59E0B',
+    'medium': '#3B82F6',
+    'low': '#6B7280'
+};
+
+export const getSeverityBadgeClass = (severity) => {
+    const classes = {
+        'critical': 'bg-red-500/20 text-red-400 border-red-500/30',
+        'high': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+        'medium': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+        'low': 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'
+    };
+    return classes[severity] || classes.low;
+};
+
+// Alert type labels
+export const ALERT_TYPE_LABELS = {
+    'monitoring': 'Monitoring',
+    'expiration': 'Expiration',
+    'seo_conflict': 'SEO Conflict'
+};
+
 // Role display helpers
 export const ROLE_LABELS = {
     'super_admin': 'Super Admin',
     'admin': 'Admin',
     'viewer': 'Viewer'
 };
+
+// Common registrars
+export const REGISTRARS = [
+    'Namecheap',
+    'GoDaddy',
+    'Dynadot',
+    'Cloudflare',
+    'Google Domains',
+    'Name.com',
+    'Porkbun',
+    'Hover',
+    'Gandi',
+    'Other'
+];
 
 // Format date
 export const formatDate = (dateString) => {
@@ -79,6 +150,24 @@ export const formatDateTime = (dateString) => {
         hour: '2-digit',
         minute: '2-digit'
     });
+};
+
+// Calculate days until expiration
+export const getDaysUntilExpiration = (expirationDate) => {
+    if (!expirationDate) return null;
+    const expDate = new Date(expirationDate);
+    const now = new Date();
+    const diffTime = expDate - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+};
+
+export const getExpirationBadgeClass = (days) => {
+    if (days === null) return '';
+    if (days <= 0) return 'bg-red-500/20 text-red-400 border-red-500/30';
+    if (days <= 7) return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+    if (days <= 30) return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+    return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
 };
 
 // Download helper
