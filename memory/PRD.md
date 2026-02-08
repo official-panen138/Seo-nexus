@@ -140,11 +140,11 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## Prioritized Backlog
 
-### P0 (Critical - V3 API & Frontend)
-- ⬜ Create V3 API endpoints for asset_domains, seo_networks, seo_structure_entries
-- ⬜ Integrate tier calculation into API responses
-- ⬜ Refactor frontend for V3 data structures
-- ⬜ Update D3 visualization for derived tiers
+### P0 (Critical - Frontend Update)
+- ⬜ Update frontend API service to use V3 endpoints
+- ⬜ Adapt NetworkGraph.js for derived tier visualization
+- ⬜ Update DomainDetailPanel for V3 data structure
+- ⬜ Update DomainsPage for asset_domains
 
 ### P1 (High Priority - Post Migration)
 - Configure Telegram Chat ID for live alerts
