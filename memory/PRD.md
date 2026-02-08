@@ -158,6 +158,42 @@ Build a full-stack SEO Network Operations Center combining:
   - Template download, preview, import results
 - ✅ **Activity Logs Viewer**: `/activity-logs` page
   - Filter by entity, action, actor
+
+### P1 Features (Feb 8, 2026) - ALL COMPLETED
+
+**Feature 1: Export V3 Data to CSV/JSON - COMPLETE**
+- ✅ Export Asset Domains: `GET /api/v3/export/asset-domains?format=csv|json`
+  - Enriched with brand_name, category_name, registrar_name
+  - Filter by brand_id, status
+- ✅ Export Network Structure: `GET /api/v3/export/networks/{id}?format=csv|json`
+  - Full structure with all entries, tiers, relationships
+  - tier_distribution summary
+- ✅ Export All Networks: `GET /api/v3/export/networks?format=csv|json`
+  - Metadata with domain_count
+- ✅ Export Activity Logs: `GET /api/v3/export/activity-logs?format=csv|json`
+  - Filter by entity_type, action_type, actor, days
+- ✅ Frontend: Export dropdown on Domains page and Network detail page
+
+**Feature 2: Dashboard Refresh Interval - COMPLETE**
+- ✅ User preference setting: `GET/PUT /api/v3/settings/dashboard-refresh`
+  - Options: Manual (0), 30s, 1m, 5m, 15m
+  - Stored in user_preferences collection
+- ✅ Lightweight stats API: `GET /api/v3/dashboard/stats`
+  - Only counts (no heavy joins) for smooth refresh
+- ✅ Frontend: Refresh interval dropdown in Dashboard header
+  - Data-only refresh (no page flicker)
+
+**Feature 3: Bulk Node Import with Path Support - COMPLETE**
+- ✅ Node Import API: `POST /api/v3/import/nodes`
+  - CSV format: domain_name, optimized_path, domain_role, target_domain, target_path, etc.
+  - create_missing_domains option
+  - Resolves target_domain + target_path → target_entry_id
+  - Returns summary with imported/skipped/errors counts
+- ✅ Template API: `GET /api/v3/import/nodes/template`
+  - Example rows for main and supporting nodes
+- ✅ Frontend: Import Nodes button and dialog on Network detail page
+  - CSV file upload with preview
+  - Create missing domains toggle
   - View log details with before/after values
   - Stats cards for action types
 
