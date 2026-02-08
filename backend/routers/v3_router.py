@@ -891,14 +891,26 @@ async def update_structure_entry(
     data: SeoStructureEntryUpdate,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Update an SEO structure entry"""
+    """Update an SEO structure entry (node-based)"""
     existing = await db.seo_structure_entries.find_one({"id": entry_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Structure entry not found")
     
     update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
     
-    # Validate target if changing
+    # Validate target_entry_id if changing (node-to-node relationship)
+    if "target_entry_id" in update_dict and update_dict["target_entry_id"]:
+        target_entry = await db.seo_structure_entries.find_one({"id": update_dict["target_entry_id"]})
+        if not target_entry:
+            raise HTTPException(status_code=400, detail="Target entry not found")
+        # Prevent self-reference
+        if update_dict["target_entry_id"] == entry_id:
+            raise HTTPException(status_code=400, detail="Entry cannot target itself")
+        # Ensure same network
+        if target_entry.get("network_id") != existing.get("network_id"):
+            raise HTTPException(status_code=400, detail="Target entry must be in the same network")
+    
+    # Validate target domain if changing (legacy support)
     if "target_asset_domain_id" in update_dict and update_dict["target_asset_domain_id"]:
         target = await db.asset_domains.find_one({"id": update_dict["target_asset_domain_id"]})
         if not target:
