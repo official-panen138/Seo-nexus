@@ -133,16 +133,18 @@ export default function DomainsPage() {
         setLoading(true);
         try {
             if (useV3) {
-                const [assetsRes, brandsRes, networksRes, categoriesRes] = await Promise.all([
+                const [assetsRes, brandsRes, networksRes, categoriesRes, registrarsRes] = await Promise.all([
                     assetDomainsAPI.getAll(),
                     brandsAPI.getAll(),
                     networksAPI.getAll(),
-                    categoriesAPI.getAll()
+                    categoriesAPI.getAll(),
+                    registrarsAPI.getAll({ status: 'active' })
                 ]);
                 setAssets(assetsRes.data);
                 setBrands(brandsRes.data);
                 setNetworks(networksRes.data);
                 setCategories(categoriesRes.data);
+                setRegistrars(registrarsRes.data);
             } else {
                 // V2 fallback
                 const [domainsRes, brandsRes, groupsRes, categoriesRes] = await Promise.all([
