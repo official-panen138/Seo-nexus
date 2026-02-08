@@ -49,7 +49,7 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## What's Been Implemented (Feb 8, 2026)
 
-### Backend
+### V2 Backend (LEGACY - Functional)
 - ✅ JWT authentication with RBAC (super_admin, admin, viewer)
 - ✅ Categories CRUD with 8 default categories
 - ✅ Brands CRUD
@@ -63,6 +63,30 @@ Build a full-stack SEO Network Operations Center combining:
 - ✅ Telegram Bot integration
 - ✅ Audit logging
 - ✅ CSV/JSON export
+
+### V3 Architecture (IN PROGRESS - Feb 8, 2026)
+**Phase 0 - Preparation: COMPLETED**
+- ✅ Full database backup at `/app/backups/v2_backup_20260208_085617`
+- ✅ Migration plan documented at `/app/docs/migration/V3_MIGRATION_PLAN.md`
+
+**Phase 1 - Create New Schema: COMPLETED**
+- ✅ V3 Models defined (`/app/backend/models_v3.py`)
+  - AssetDomain: Pure inventory (no SEO structure)
+  - SeoNetwork: Strategy containers
+  - SeoStructureEntry: Relationship layer
+  - ActivityLog: Enhanced audit trail
+- ✅ ActivityLog service (`/app/backend/services/activity_log_service.py`)
+- ✅ Tier Calculation service (`/app/backend/services/tier_service.py`)
+  - Tiers are DERIVED from graph distance, not stored
+- ✅ Migration scripts with dry-run mode:
+  - Phase 2: `/app/backend/migrations/migration_phase2_domains.py`
+  - Phase 3: `/app/backend/migrations/migration_phase3_networks.py`
+  - Phase 4: `/app/backend/migrations/migration_phase4_structure.py`
+
+**Migration Scripts - Ready for Review**
+- All scripts include legacy_id mapping for traceability
+- All scripts log to activity_logs_v3 with actor: system:migration_v3
+- Dry-run mode validates prerequisites before execution
 
 ### Frontend
 - ✅ SEO-NOC Dashboard with:
