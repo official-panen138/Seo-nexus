@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { groupsAPI } from '../lib/api';
+import { groupsAPI, networksAPI, brandsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
 import { 
     Plus, 
@@ -17,29 +19,40 @@ import {
     Trash2, 
     Loader2, 
     Eye,
-    Globe
+    Globe,
+    Tag,
+    Filter
 } from 'lucide-react';
 import { formatDate } from '../lib/utils';
 
 export default function GroupsPage() {
     const { canEdit } = useAuth();
-    const [groups, setGroups] = useState([]);
+    const [networks, setNetworks] = useState([]);
+    const [brands, setBrands] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [selectedGroup, setSelectedGroup] = useState(null);
-    const [form, setForm] = useState({ name: '', description: '' });
+    const [selectedNetwork, setSelectedNetwork] = useState(null);
+    const [form, setForm] = useState({ name: '', brand_id: '', description: '' });
+    
+    // Filter state
+    const [filterBrand, setFilterBrand] = useState('all');
 
     useEffect(() => {
-        loadGroups();
+        loadData();
     }, []);
 
-    const loadGroups = async () => {
+    const loadData = async () => {
         try {
-            const res = await groupsAPI.getAll();
-            setGroups(res.data);
+            const [networksRes, brandsRes] = await Promise.all([
+                networksAPI.getAll(),
+                brandsAPI.getAll()
+            ]);
+            setNetworks(networksRes.data);
+            setBrands(brandsRes.data);
         } catch (err) {
+            console.error('Failed to load data:', err);
             toast.error('Failed to load networks');
         } finally {
             setLoading(false);
@@ -47,16 +60,20 @@ export default function GroupsPage() {
     };
 
     const openCreateDialog = () => {
-        setSelectedGroup(null);
-        setForm({ name: '', description: '' });
+        setSelectedNetwork(null);
+        setForm({ name: '', brand_id: '', description: '' });
         setDialogOpen(true);
     };
 
-    const openEditDialog = (group, e) => {
+    const openEditDialog = (network, e) => {
         e.preventDefault();
         e.stopPropagation();
-        setSelectedGroup(group);
-        setForm({ name: group.name, description: group.description || '' });
+        setSelectedNetwork(network);
+        setForm({ 
+            name: network.name, 
+            brand_id: network.brand_id || '',
+            description: network.description || '' 
+        });
         setDialogOpen(true);
     };
 
