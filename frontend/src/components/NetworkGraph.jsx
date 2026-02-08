@@ -110,14 +110,16 @@ export const NetworkGraph = ({ domains, entries, onNodeClick, selectedNodeId, us
         const links = [];
         
         if (useV3) {
-            // V3: Use target_asset_domain_id for relationships
-            const nodeMap = new Map(data.map(d => [d.asset_domain_id, d]));
+            // V3: Use entry.id as node identifier and target_entry_id for relationships
+            // A node is a unique combination of domain + path, represented by entry.id
+            const nodeMap = new Map(data.map(d => [d.id, d]));
             
             data.forEach(entry => {
-                if (entry.target_asset_domain_id && nodeMap.has(entry.target_asset_domain_id)) {
+                // Use target_entry_id (node-to-node relationship)
+                if (entry.target_entry_id && nodeMap.has(entry.target_entry_id)) {
                     links.push({
-                        source: entry.asset_domain_id,
-                        target: entry.target_asset_domain_id
+                        source: entry.id,
+                        target: entry.target_entry_id
                     });
                 }
             });
@@ -139,12 +141,14 @@ export const NetworkGraph = ({ domains, entries, onNodeClick, selectedNodeId, us
         const nodes = data.map(d => {
             const tier = getTier(d);
             const isMain = useV3 ? d.domain_role === 'main' : d.tier_level === 'lp_money_site';
-            const hasTarget = useV3 ? !!d.target_asset_domain_id : !!d.parent_domain_id;
+            // V3: Use target_entry_id (node-to-node), V2: use parent_domain_id
+            const hasTarget = useV3 ? !!d.target_entry_id : !!d.parent_domain_id;
             const hasError = !isMain && !hasTarget;
             
             return {
                 ...d,
-                id: useV3 ? d.asset_domain_id : d.id,
+                // V3: Use entry.id (not asset_domain_id) as the node identifier
+                id: useV3 ? d.id : d.id,
                 hasError
             };
         });
