@@ -232,7 +232,9 @@ class SeoStructureEntryUpdate(BaseModel):
     domain_role: Optional[DomainRole] = None
     domain_status: Optional[SeoStatus] = None
     index_status: Optional[IndexStatus] = None
-    target_asset_domain_id: Optional[str] = None
+    optimized_path: Optional[str] = None
+    target_entry_id: Optional[str] = None
+    target_asset_domain_id: Optional[str] = None  # Legacy
     ranking_url: Optional[str] = None
     primary_keyword: Optional[str] = None
     ranking_position: Optional[int] = None
