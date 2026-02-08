@@ -127,18 +127,18 @@ async def dry_run(db) -> Dict[str, Any]:
     
     # Validate
     validation = await validate_prerequisites(db)
-    print(f"\n[Validation]")
+    print("\n[Validation]")
     print(f"  Source documents (groups): {validation['source_count']}")
     print(f"  Target documents: {validation['target_count']}")
     print(f"  Asset domains (from Phase 2): {validation['asset_domains_count']}")
     
     if validation['issues']:
-        print(f"\n[Issues Found]")
+        print("\n[Issues Found]")
         for issue in validation['issues']:
             print(f"  ⚠️  {issue}")
     
     if not validation['can_proceed']:
-        print(f"\n❌ Migration cannot proceed. Fix issues first.")
+        print("\n❌ Migration cannot proceed. Fix issues first.")
         return validation
     
     # Sample transformations
@@ -167,7 +167,7 @@ async def dry_run(db) -> Dict[str, Any]:
         transformed.append(network)
         
         print(f"\n  V2 Group: {group['name']}")
-        print(f"    → V3 SeoNetwork:")
+        print("    → V3 SeoNetwork:")
         print(f"       id: {network['id']}")
         print(f"       legacy_id: {network['legacy_id']}")
         print(f"       brand: {brand_name or 'None'}")
@@ -175,16 +175,16 @@ async def dry_run(db) -> Dict[str, Any]:
         print(f"       domains in network: {domain_count}")
     
     # Show what will be logged
-    print(f"\n[Activity Logs to be Created]")
+    print("\n[Activity Logs to be Created]")
     print(f"  Actor: {MIGRATION_ACTOR}")
     print(f"  Phase: {MIGRATION_PHASE}")
     print(f"  Entries: {validation['source_count']}")
     
     # Summary
-    print(f"\n[Migration Summary]")
+    print("\n[Migration Summary]")
     print(f"  Documents to migrate: {validation['source_count']}")
-    print(f"  New collection: seo_networks")
-    print(f"  Indexes to create: name, legacy_id, brand_id, status")
+    print("  New collection: seo_networks")
+    print("  Indexes to create: name, legacy_id, brand_id, status")
     
     print("\n" + "="*60)
     print("DRY RUN COMPLETE - No changes made")
@@ -209,7 +209,7 @@ async def execute_migration(db) -> Dict[str, Any]:
     # Validate first
     validation = await validate_prerequisites(db)
     if not validation['can_proceed']:
-        print(f"\n❌ Migration cannot proceed. Issues found:")
+        print("\n❌ Migration cannot proceed. Issues found:")
         for issue in validation['issues']:
             print(f"  ⚠️  {issue}")
         return {"success": False, "validation": validation}
@@ -235,7 +235,7 @@ async def execute_migration(db) -> Dict[str, Any]:
     print(f"[Step 2] Transformed {len(seo_networks)} documents")
     
     # Create indexes on target collection
-    print(f"[Step 3] Creating indexes...")
+    print("[Step 3] Creating indexes...")
     await db.seo_networks.create_index("name")
     await db.seo_networks.create_index("legacy_id")
     await db.seo_networks.create_index("brand_id")
@@ -243,14 +243,14 @@ async def execute_migration(db) -> Dict[str, Any]:
     
     # Insert all networks
     if seo_networks:
-        print(f"[Step 4] Inserting documents...")
+        print("[Step 4] Inserting documents...")
         await db.seo_networks.insert_many(seo_networks)
         print(f"  Inserted {len(seo_networks)} networks")
     else:
-        print(f"[Step 4] No networks to insert")
+        print("[Step 4] No networks to insert")
     
     # Create activity logs
-    print(f"[Step 5] Creating activity logs...")
+    print("[Step 5] Creating activity logs...")
     activity_logs = []
     now = datetime.now(timezone.utc).isoformat()
     
@@ -288,7 +288,7 @@ async def execute_migration(db) -> Dict[str, Any]:
     # Verify
     final_count = await db.seo_networks.count_documents({})
     
-    print(f"\n[Verification]")
+    print("\n[Verification]")
     print(f"  Source count: {len(groups)}")
     print(f"  Target count: {final_count}")
     print(f"  Match: {'✅' if final_count == len(groups) else '❌'}")
