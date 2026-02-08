@@ -1061,3 +1061,144 @@ async def send_domain_change_alert(
     success = await send_v3_telegram_alert(message)
     
     return {"message": "Alert sent" if success else "Failed to send alert", "success": success}
+
+
+# ==================== BULK IMPORT ENDPOINTS ====================
+
+class BulkImportItem(BaseModel):
+    domain_name: str
+    brand_name: Optional[str] = None
+    registrar: Optional[str] = None
+    expiration_date: Optional[str] = None
+    status: Optional[str] = "active"
+    notes: Optional[str] = None
+
+class BulkImportRequest(BaseModel):
+    domains: List[BulkImportItem]
+    skip_duplicates: bool = True
+
+from pydantic import BaseModel as PydanticBaseModel
+
+@router.post("/import/domains")
+async def bulk_import_domains(
+    request: BulkImportRequest,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Bulk import asset domains from CSV data.
+    
+    Expected fields: domain_name, brand_name (optional), registrar (optional), 
+    expiration_date (optional), status (optional), notes (optional)
+    """
+    results = {
+        "imported": 0,
+        "skipped": 0,
+        "errors": [],
+        "details": []
+    }
+    
+    # Get brand mapping
+    brands = await db.brands.find({}, {"_id": 0}).to_list(1000)
+    brand_map = {b["name"].lower(): b["id"] for b in brands}
+    
+    for item in request.domains:
+        try:
+            # Check for duplicate
+            existing = await db.asset_domains.find_one({"domain_name": item.domain_name})
+            if existing:
+                if request.skip_duplicates:
+                    results["skipped"] += 1
+                    results["details"].append({
+                        "domain": item.domain_name,
+                        "status": "skipped",
+                        "reason": "Domain already exists"
+                    })
+                    continue
+                else:
+                    results["errors"].append({
+                        "domain": item.domain_name,
+                        "error": "Domain already exists"
+                    })
+                    continue
+            
+            # Find or create brand
+            brand_id = None
+            if item.brand_name:
+                brand_id = brand_map.get(item.brand_name.lower())
+                if not brand_id:
+                    # Create new brand
+                    new_brand = {
+                        "id": str(uuid.uuid4()),
+                        "name": item.brand_name,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.brands.insert_one(new_brand)
+                    brand_id = new_brand["id"]
+                    brand_map[item.brand_name.lower()] = brand_id
+            
+            # Create asset domain
+            now = datetime.now(timezone.utc).isoformat()
+            asset = {
+                "id": str(uuid.uuid4()),
+                "legacy_id": None,
+                "domain_name": item.domain_name,
+                "brand_id": brand_id,
+                "category_id": None,
+                "domain_type_id": None,
+                "registrar": item.registrar,
+                "buy_date": None,
+                "expiration_date": item.expiration_date,
+                "auto_renew": False,
+                "status": item.status or "active",
+                "monitoring_enabled": False,
+                "monitoring_interval": "1hour",
+                "last_check": None,
+                "ping_status": "unknown",
+                "http_status": None,
+                "http_status_code": None,
+                "notes": item.notes or "",
+                "created_at": now,
+                "updated_at": now
+            }
+            
+            await db.asset_domains.insert_one(asset)
+            
+            # Log activity
+            if activity_log_service:
+                await activity_log_service.log(
+                    actor=current_user["email"],
+                    action_type=ActionType.CREATE,
+                    entity_type=EntityType.ASSET_DOMAIN,
+                    entity_id=asset["id"],
+                    after_value=asset,
+                    metadata={"source": "bulk_import"}
+                )
+            
+            results["imported"] += 1
+            results["details"].append({
+                "domain": item.domain_name,
+                "status": "imported",
+                "id": asset["id"]
+            })
+            
+        except Exception as e:
+            results["errors"].append({
+                "domain": item.domain_name,
+                "error": str(e)
+            })
+    
+    return results
+
+
+@router.get("/import/template")
+async def get_import_template(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get CSV template for bulk import"""
+    return {
+        "headers": ["domain_name", "brand_name", "registrar", "expiration_date", "status", "notes"],
+        "example_row": ["example.com", "MyBrand", "GoDaddy", "2026-12-31", "active", "Main site"],
+        "status_options": ["active", "inactive", "pending", "expired"],
+        "notes": "domain_name is required. Other fields are optional."
+    }
