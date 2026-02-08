@@ -743,7 +743,10 @@ export default function GroupDetailPage() {
                                                         </span>
                                                     </TableCell>
                                                     <TableCell className="text-zinc-400 text-sm font-mono">
-                                                        {entry.target_domain_name || '-'}
+                                                        {/* Show target node label (domain + path) */}
+                                                        {entry.target_domain_name 
+                                                            ? `${entry.target_domain_name}${entry.target_entry_path || ''}`
+                                                            : '-'}
                                                     </TableCell>
                                                     <TableCell>
                                                         {entry.primary_keyword ? (
