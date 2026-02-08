@@ -17,6 +17,7 @@ import UsersPage from "./pages/UsersPage";
 import AuditLogsPage from "./pages/AuditLogsPage";
 import AlertsPage from "./pages/AlertsPage";
 import SettingsPage from "./pages/SettingsPage";
+import ActivityLogsPage from "./pages/ActivityLogsPage";
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
