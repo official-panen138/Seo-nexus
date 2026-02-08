@@ -1306,14 +1306,27 @@ async def get_v3_dashboard(
     }
 
 
-@router.get("/reports/conflicts")
+@router.get("/reports/conflicts", response_model=None)
 async def get_v3_conflicts(
+    network_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Detect SEO conflicts using V3 data and derived tiers"""
-    conflicts = []
+    """
+    Detect SEO conflicts including cross-path conflicts within the same domain.
     
-    networks = await db.seo_networks.find({}, {"_id": 0}).to_list(1000)
+    Conflict Types:
+    - Type A: Keyword Cannibalization (same keyword, different paths)
+    - Type B: Competing Targets (different paths targeting different nodes)
+    - Type C: Canonical Mismatch (path A canonical to B, B still indexed)
+    - Type D: Tier Inversion (higher tier supports lower tier)
+    - Legacy: NOINDEX in high tier, Orphan nodes
+    """
+    conflicts = []
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Filter by network if provided
+    query = {"id": network_id} if network_id else {}
+    networks = await db.seo_networks.find(query, {"_id": 0}).to_list(1000)
     
     for network in networks:
         if not tier_service:
@@ -1328,50 +1341,232 @@ async def get_v3_conflicts(
             {"_id": 0}
         ).to_list(10000)
         
+        # Build lookup structures
+        domain_entries = {}  # asset_domain_id -> [entries]
+        entry_lookup = {e["id"]: e for e in entries}
+        
         for entry in entries:
+            did = entry["asset_domain_id"]
+            if did not in domain_entries:
+                domain_entries[did] = []
+            domain_entries[did].append(entry)
+        
+        # Get all domain names
+        domain_ids = list(domain_entries.keys())
+        domains = await db.asset_domains.find(
+            {"id": {"$in": domain_ids}},
+            {"_id": 0, "id": 1, "domain_name": 1}
+        ).to_list(10000)
+        domain_name_lookup = {d["id"]: d["domain_name"] for d in domains}
+        
+        # Helper to build node label
+        def node_label(entry):
+            dname = domain_name_lookup.get(entry["asset_domain_id"], "")
+            path = entry.get("optimized_path") or ""
+            return f"{dname}{path}" if path else dname
+        
+        # ============ CROSS-PATH CONFLICT DETECTION ============
+        
+        for domain_id, domain_entry_list in domain_entries.items():
+            domain_name = domain_name_lookup.get(domain_id, domain_id)
+            
+            if len(domain_entry_list) < 2:
+                continue  # Need at least 2 paths to have cross-path conflicts
+            
+            # TYPE A: Keyword Cannibalization
+            # Same domain, different paths, same or similar primary_keyword
+            keywords = {}
+            for e in domain_entry_list:
+                kw = (e.get("primary_keyword") or "").lower().strip()
+                if kw:
+                    if kw not in keywords:
+                        keywords[kw] = []
+                    keywords[kw].append(e)
+            
+            for kw, kw_entries in keywords.items():
+                if len(kw_entries) > 1:
+                    # Multiple paths targeting same keyword
+                    for i, e1 in enumerate(kw_entries):
+                        for e2 in kw_entries[i+1:]:
+                            conflicts.append({
+                                "conflict_type": ConflictType.KEYWORD_CANNIBALIZATION.value,
+                                "severity": ConflictSeverity.HIGH.value,
+                                "network_id": network["id"],
+                                "network_name": network["name"],
+                                "domain_name": domain_name,
+                                "node_a_id": e1["id"],
+                                "node_a_path": e1.get("optimized_path"),
+                                "node_a_label": node_label(e1),
+                                "node_b_id": e2["id"],
+                                "node_b_path": e2.get("optimized_path"),
+                                "node_b_label": node_label(e2),
+                                "description": f"Both paths target keyword '{kw}'",
+                                "suggestion": "Consolidate content or differentiate keywords",
+                                "detected_at": now
+                            })
+            
+            # TYPE B: Competing Targets
+            # Different paths of same domain targeting different nodes
+            targets = {}
+            for e in domain_entry_list:
+                target_id = e.get("target_entry_id")
+                if target_id:
+                    if target_id not in targets:
+                        targets[target_id] = []
+                    targets[target_id].append(e)
+            
+            if len(targets) > 1:
+                # Multiple different targets from same domain
+                target_entries = list(targets.values())
+                for i, group1 in enumerate(target_entries):
+                    for group2 in target_entries[i+1:]:
+                        e1 = group1[0]
+                        e2 = group2[0]
+                        t1 = entry_lookup.get(e1.get("target_entry_id"))
+                        t2 = entry_lookup.get(e2.get("target_entry_id"))
+                        
+                        conflicts.append({
+                            "conflict_type": ConflictType.COMPETING_TARGETS.value,
+                            "severity": ConflictSeverity.MEDIUM.value,
+                            "network_id": network["id"],
+                            "network_name": network["name"],
+                            "domain_name": domain_name,
+                            "node_a_id": e1["id"],
+                            "node_a_path": e1.get("optimized_path"),
+                            "node_a_label": node_label(e1),
+                            "node_b_id": e2["id"],
+                            "node_b_path": e2.get("optimized_path"),
+                            "node_b_label": node_label(e2),
+                            "description": f"Paths target different nodes: {node_label(t1) if t1 else 'unknown'} vs {node_label(t2) if t2 else 'unknown'}",
+                            "suggestion": "Consolidate link strategy for this domain",
+                            "detected_at": now
+                        })
+            
+            # TYPE C: Canonical Mismatch
+            # Path A has canonical pointing to Path B, but B is still indexed
+            for e in domain_entry_list:
+                if e.get("domain_status") == "redirect_301" or e.get("domain_status") == "redirect_302":
+                    target_id = e.get("target_entry_id")
+                    if target_id:
+                        target = entry_lookup.get(target_id)
+                        if target and target.get("index_status") == "index":
+                            conflicts.append({
+                                "conflict_type": ConflictType.CANONICAL_MISMATCH.value,
+                                "severity": ConflictSeverity.HIGH.value,
+                                "network_id": network["id"],
+                                "network_name": network["name"],
+                                "domain_name": domain_name,
+                                "node_a_id": e["id"],
+                                "node_a_path": e.get("optimized_path"),
+                                "node_a_label": node_label(e),
+                                "node_b_id": target["id"],
+                                "node_b_path": target.get("optimized_path"),
+                                "node_b_label": node_label(target),
+                                "description": f"Redirects to indexed path",
+                                "suggestion": "Review canonical chain or noindex the target",
+                                "detected_at": now
+                            })
+            
+            # TYPE D: Tier Inversion (within same domain)
+            # Higher-tier path supports lower-tier path
+            for e in domain_entry_list:
+                if e.get("domain_role") == "supporting":
+                    target_id = e.get("target_entry_id")
+                    if target_id:
+                        target = entry_lookup.get(target_id)
+                        if target:
+                            e_tier = tiers.get(e["id"], 5)
+                            t_tier = tiers.get(target_id, 5)
+                            
+                            if e_tier < t_tier:
+                                conflicts.append({
+                                    "conflict_type": ConflictType.TIER_INVERSION.value,
+                                    "severity": ConflictSeverity.CRITICAL.value,
+                                    "network_id": network["id"],
+                                    "network_name": network["name"],
+                                    "domain_name": domain_name,
+                                    "node_a_id": e["id"],
+                                    "node_a_path": e.get("optimized_path"),
+                                    "node_a_label": node_label(e),
+                                    "node_b_id": target["id"],
+                                    "node_b_path": target.get("optimized_path"),
+                                    "node_b_label": node_label(target),
+                                    "description": f"Tier {e_tier} ({get_tier_label(e_tier)}) supports Tier {t_tier} ({get_tier_label(t_tier)})",
+                                    "suggestion": "Reverse the relationship or restructure hierarchy",
+                                    "detected_at": now
+                                })
+        
+        # ============ LEGACY CONFLICT DETECTION ============
+        
+        for entry in entries:
+            entry_id = entry["id"]
             asset_id = entry["asset_domain_id"]
-            tier = tiers.get(asset_id, 5)
+            tier = tiers.get(entry_id, 5)
+            domain_name = domain_name_lookup.get(asset_id, asset_id)
             
-            # Get domain name
-            asset = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0, "domain_name": 1})
-            domain_name = asset["domain_name"] if asset else asset_id
-            
-            # Conflict 1: NOINDEX in high tier (0-2)
+            # NOINDEX in high tier (0-2)
             if entry.get("index_status") == "noindex" and tier <= 2:
                 conflicts.append({
-                    "type": "noindex_high_tier",
-                    "severity": "high",
+                    "conflict_type": "noindex_high_tier",
+                    "severity": ConflictSeverity.HIGH.value,
                     "network_id": network["id"],
                     "network_name": network["name"],
-                    "asset_domain_id": asset_id,
                     "domain_name": domain_name,
-                    "tier": tier,
-                    "tier_label": get_tier_label(tier),
-                    "message": f"NOINDEX domain in {get_tier_label(tier)}"
+                    "node_a_id": entry_id,
+                    "node_a_path": entry.get("optimized_path"),
+                    "node_a_label": node_label(entry),
+                    "node_b_id": None,
+                    "node_b_path": None,
+                    "node_b_label": None,
+                    "description": f"NOINDEX node in {get_tier_label(tier)}",
+                    "suggestion": "Change to INDEX or move to lower tier",
+                    "detected_at": now
                 })
             
-            # Conflict 2: Orphan (no target and not main)
-            if entry.get("domain_role") != "main" and not entry.get("target_asset_domain_id"):
-                # Check if it's truly orphaned (tier 5)
+            # Orphan (no target and not main)
+            if entry.get("domain_role") != "main" and not entry.get("target_entry_id") and not entry.get("target_asset_domain_id"):
                 if tier >= 5:
                     conflicts.append({
-                        "type": "orphan",
-                        "severity": "medium",
+                        "conflict_type": "orphan",
+                        "severity": ConflictSeverity.MEDIUM.value,
                         "network_id": network["id"],
                         "network_name": network["name"],
-                        "asset_domain_id": asset_id,
                         "domain_name": domain_name,
-                        "tier": tier,
-                        "tier_label": get_tier_label(tier),
-                        "message": "Domain not connected to main domain hierarchy"
+                        "node_a_id": entry_id,
+                        "node_a_path": entry.get("optimized_path"),
+                        "node_a_label": node_label(entry),
+                        "node_b_id": None,
+                        "node_b_path": None,
+                        "node_b_label": None,
+                        "description": "Node not connected to main hierarchy",
+                        "suggestion": "Assign a target node or remove from network",
+                        "detected_at": now
                     })
+    
+    # Sort by severity
+    severity_order = {
+        ConflictSeverity.CRITICAL.value: 0,
+        ConflictSeverity.HIGH.value: 1,
+        ConflictSeverity.MEDIUM.value: 2,
+        ConflictSeverity.LOW.value: 3
+    }
+    conflicts.sort(key=lambda c: severity_order.get(c.get("severity"), 4))
+    
+    # Count by type
+    by_type = {}
+    for c in conflicts:
+        ct = c.get("conflict_type")
+        by_type[ct] = by_type.get(ct, 0) + 1
     
     return {
         "conflicts": conflicts,
         "total": len(conflicts),
-        "by_type": {
-            "noindex_high_tier": len([c for c in conflicts if c["type"] == "noindex_high_tier"]),
-            "orphan": len([c for c in conflicts if c["type"] == "orphan"])
+        "by_type": by_type,
+        "by_severity": {
+            "critical": len([c for c in conflicts if c.get("severity") == ConflictSeverity.CRITICAL.value]),
+            "high": len([c for c in conflicts if c.get("severity") == ConflictSeverity.HIGH.value]),
+            "medium": len([c for c in conflicts if c.get("severity") == ConflictSeverity.MEDIUM.value]),
+            "low": len([c for c in conflicts if c.get("severity") == ConflictSeverity.LOW.value])
         }
     }
 
