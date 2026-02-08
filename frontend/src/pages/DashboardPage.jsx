@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { reportsAPI, seedAPI, brandsAPI, monitoringAPI, alertsAPI, conflictsAPI } from '../lib/api';
+import { reportsAPI, seedAPI, brandsAPI, monitoringAPI, alertsAPI, conflictsAPI, dashboardSettingsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -24,7 +24,9 @@ import {
     AlertCircle,
     Clock,
     Zap,
-    XCircle
+    XCircle,
+    RefreshCw,
+    Settings
 } from 'lucide-react';
 import { 
     BarChart, 
@@ -43,6 +45,14 @@ import { TIER_LABELS, TIER_COLORS, SEVERITY_LABELS, getSeverityBadgeClass, forma
 const PIE_COLORS = ['#22C55E', '#52525B'];
 const MONITORING_COLORS = ['#22C55E', '#EF4444', '#6B7280'];
 
+const REFRESH_OPTIONS = [
+    { value: 0, label: 'Manual' },
+    { value: 30, label: '30s' },
+    { value: 60, label: '1m' },
+    { value: 300, label: '5m' },
+    { value: 900, label: '15m' }
+];
+
 export default function DashboardPage() {
     const { user, isSuperAdmin } = useAuth();
     const [stats, setStats] = useState(null);
@@ -55,6 +65,82 @@ export default function DashboardPage() {
     const [monitoringStats, setMonitoringStats] = useState(null);
     const [recentAlerts, setRecentAlerts] = useState([]);
     const [conflicts, setConflicts] = useState([]);
+    
+    // Auto-refresh state
+    const [refreshInterval, setRefreshInterval] = useState(0);
+    const [lastRefresh, setLastRefresh] = useState(null);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const refreshTimerRef = useRef(null);
+
+    // Load refresh interval setting
+    useEffect(() => {
+        const loadRefreshSetting = async () => {
+            try {
+                const { data } = await dashboardSettingsAPI.getRefreshInterval();
+                setRefreshInterval(data.refresh_interval || 0);
+            } catch (err) {
+                // Use localStorage fallback
+                const saved = localStorage.getItem('dashboard_refresh_interval');
+                if (saved) setRefreshInterval(parseInt(saved, 10));
+            }
+        };
+        loadRefreshSetting();
+    }, []);
+
+    // Lightweight stats refresh (no heavy re-renders)
+    const refreshStatsOnly = useCallback(async () => {
+        if (isRefreshing) return;
+        setIsRefreshing(true);
+        try {
+            const { data } = await dashboardSettingsAPI.getStats();
+            setStats(prev => ({
+                ...prev,
+                total_domains: data.total_domains,
+                total_networks: data.total_networks,
+                monitored: data.monitored_count,
+                indexed: data.indexed_count,
+                noindex: data.noindex_count,
+                ping_up: data.ping_up,
+                ping_down: data.ping_down
+            }));
+            setLastRefresh(new Date());
+        } catch (err) {
+            console.error('Stats refresh failed:', err);
+        } finally {
+            setIsRefreshing(false);
+        }
+    }, [isRefreshing]);
+
+    // Setup auto-refresh timer
+    useEffect(() => {
+        if (refreshTimerRef.current) {
+            clearInterval(refreshTimerRef.current);
+            refreshTimerRef.current = null;
+        }
+        
+        if (refreshInterval > 0) {
+            refreshTimerRef.current = setInterval(refreshStatsOnly, refreshInterval * 1000);
+        }
+        
+        return () => {
+            if (refreshTimerRef.current) {
+                clearInterval(refreshTimerRef.current);
+            }
+        };
+    }, [refreshInterval, refreshStatsOnly]);
+
+    // Handle refresh interval change
+    const handleRefreshIntervalChange = async (value) => {
+        const interval = parseInt(value, 10);
+        setRefreshInterval(interval);
+        localStorage.setItem('dashboard_refresh_interval', interval.toString());
+        
+        try {
+            await dashboardSettingsAPI.setRefreshInterval(interval);
+        } catch (err) {
+            console.error('Failed to save refresh setting:', err);
+        }
+    };
 
     useEffect(() => {
         loadData();
