@@ -462,6 +462,16 @@ export default function DomainsPage() {
                             <RefreshCw className="h-4 w-4 mr-1" />
                             Refresh
                         </Button>
+                        {canEdit() && useV3 && (
+                            <Button 
+                                variant="outline"
+                                onClick={() => setImportDialogOpen(true)}
+                                data-testid="import-csv-btn"
+                            >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Import CSV
+                            </Button>
+                        )}
                         {canEdit() && (
                             <Button 
                                 onClick={openCreateDialog}
