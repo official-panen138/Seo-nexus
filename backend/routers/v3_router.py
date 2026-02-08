@@ -51,21 +51,27 @@ def init_v3_router(
     tier_svc
 ):
     """Initialize V3 router with dependencies"""
-    global db, get_current_user_func, require_roles, activity_log_service, tier_service
+    global db, _get_current_user_dep, require_roles, activity_log_service, tier_service
     db = database
-    get_current_user_func = current_user_dep
+    _get_current_user_dep = current_user_dep
     require_roles = roles_dep
     activity_log_service = activity_service
     tier_service = tier_svc
 
 
-# The get_current_user dependency from main app
-get_current_user_func = None
+# Store the dependency reference
+_get_current_user_dep = None
 
 
-def get_current_user():
-    """Returns the auth dependency"""
-    return Depends(get_current_user_func)
+async def get_current_user_wrapper(credentials = Depends(HTTPBearer())):
+    """Wrapper that calls the injected auth dependency"""
+    if _get_current_user_dep is None:
+        raise HTTPException(status_code=500, detail="Auth not initialized")
+    return await _get_current_user_dep(credentials)
+
+
+# Import HTTPBearer for the wrapper
+from fastapi.security import HTTPBearer
 
 
 # ==================== TELEGRAM HELPER ====================
