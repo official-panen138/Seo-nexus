@@ -161,6 +161,15 @@ apiV3.interceptors.response.use(
     }
 );
 
+// V3 Registrars API (Master Data)
+export const registrarsAPI = {
+    getAll: (params) => apiV3.get('/registrars', { params }),
+    getOne: (registrarId) => apiV3.get(`/registrars/${registrarId}`),
+    create: (data) => apiV3.post('/registrars', data),
+    update: (registrarId, data) => apiV3.put(`/registrars/${registrarId}`, data),
+    delete: (registrarId) => apiV3.delete(`/registrars/${registrarId}`)
+};
+
 // V3 Asset Domains API
 export const assetDomainsAPI = {
     getAll: (params) => apiV3.get('/asset-domains', { params }),
