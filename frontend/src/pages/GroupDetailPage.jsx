@@ -74,10 +74,42 @@ export default function GroupDetailPage() {
     const [selectedEntry, setSelectedEntry] = useState(null);
     const [sheetOpen, setSheetOpen] = useState(false);
     const [useV3, setUseV3] = useState(true);
+    
+    // Edit dialog state
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [editForm, setEditForm] = useState({
+        domain_role: 'supporting',
+        domain_status: 'canonical',
+        index_status: 'index',
+        target_asset_domain_id: '',
+        ranking_url: '',
+        primary_keyword: '',
+        ranking_position: '',
+        notes: ''
+    });
+    const [saving, setSaving] = useState(false);
+    const [availableTargets, setAvailableTargets] = useState([]);
 
     useEffect(() => {
         loadNetwork();
     }, [groupId]);
+
+    // Load available target domains for the network
+    const loadAvailableTargets = async (networkId, currentEntryId) => {
+        try {
+            const res = await assetDomainsAPI.getAll();
+            // Filter to domains that are in this network (have structure entries)
+            const networkEntries = network?.entries || [];
+            const networkDomainIds = new Set(networkEntries.map(e => e.asset_domain_id));
+            
+            const targets = res.data.filter(d => 
+                networkDomainIds.has(d.id) && d.id !== currentEntryId
+            );
+            setAvailableTargets(targets);
+        } catch (err) {
+            console.error('Failed to load targets:', err);
+        }
+    };
 
     const loadNetwork = async () => {
         setLoading(true);
