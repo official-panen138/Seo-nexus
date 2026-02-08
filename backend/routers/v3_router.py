@@ -458,11 +458,15 @@ async def get_asset_domains(
     limit: int = 100,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Get all asset domains with optional filters"""
-    query = {}
+    """Get all asset domains with optional filters - BRAND SCOPED"""
+    # Start with brand scope filter
+    query = build_brand_filter(current_user)
     
+    # If specific brand requested, validate access
     if brand_id:
+        require_brand_access(brand_id, current_user)
         query["brand_id"] = brand_id
+    
     if category_id:
         query["category_id"] = category_id
     if registrar_id:
@@ -495,10 +499,13 @@ async def get_asset_domain(
     asset_id: str,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Get a single asset domain by ID"""
+    """Get a single asset domain by ID - BRAND SCOPED"""
     asset = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
     if not asset:
         raise HTTPException(status_code=404, detail="Asset domain not found")
+    
+    # Validate brand access
+    require_brand_access(asset.get("brand_id", ""), current_user)
     
     asset = await enrich_asset_domain(asset)
     return AssetDomainResponse(**asset)
