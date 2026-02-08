@@ -18,17 +18,24 @@ import {
     Menu,
     X,
     Shield,
-    Activity
+    Activity,
+    Bell,
+    Folder,
+    Zap
 } from 'lucide-react';
 
 const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin', 'admin', 'viewer'] },
-    { path: '/domains', label: 'Domains', icon: Globe, roles: ['super_admin', 'admin', 'viewer'] },
-    { path: '/groups', label: 'Networks', icon: Network, roles: ['super_admin', 'admin', 'viewer'] },
+    { path: '/domains', label: 'Asset Domains', icon: Globe, roles: ['super_admin', 'admin', 'viewer'] },
+    { path: '/groups', label: 'SEO Networks', icon: Network, roles: ['super_admin', 'admin', 'viewer'] },
+    { path: '/alerts', label: 'Alert Center', icon: Bell, roles: ['super_admin', 'admin', 'viewer'] },
     { path: '/reports', label: 'Reports', icon: FileText, roles: ['super_admin', 'admin', 'viewer'] },
+    { type: 'divider', roles: ['super_admin'] },
     { path: '/brands', label: 'Brands', icon: Tag, roles: ['super_admin'] },
+    { path: '/categories', label: 'Categories', icon: Folder, roles: ['super_admin'] },
     { path: '/users', label: 'Users', icon: Users, roles: ['super_admin'] },
     { path: '/audit-logs', label: 'Audit Logs', icon: Activity, roles: ['super_admin'] },
+    { path: '/settings', label: 'Settings', icon: Settings, roles: ['super_admin'] },
 ];
 
 export const Layout = ({ children }) => {
@@ -68,8 +75,9 @@ export const Layout = ({ children }) => {
                     <div className="flex items-center justify-between">
                         {!collapsed && (
                             <Link to="/dashboard" className="flex items-center gap-2">
+                                <Zap className="h-5 w-5 text-blue-500" />
                                 <span className="font-mono text-lg font-bold text-white tracking-tighter">
-                                    SEO<span className="text-blue-500">//</span>NEXUS
+                                    SEO<span className="text-blue-500">//</span>NOC
                                 </span>
                             </Link>
                         )}
@@ -95,7 +103,13 @@ export const Layout = ({ children }) => {
                 {/* Navigation */}
                 <ScrollArea className="sidebar-nav">
                     <nav className="px-3 space-y-1">
-                        {filteredNavItems.map((item) => {
+                        {filteredNavItems.map((item, idx) => {
+                            if (item.type === 'divider') {
+                                return (
+                                    <div key={`divider-${idx}`} className="my-3 border-t border-zinc-800" />
+                                );
+                            }
+                            
                             const Icon = item.icon;
                             const isActive = location.pathname === item.path || 
                                 (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
@@ -167,8 +181,9 @@ export const Layout = ({ children }) => {
                         >
                             <Menu size={20} />
                         </Button>
-                        <span className="font-mono text-lg font-bold text-white tracking-tighter">
-                            SEO<span className="text-blue-500">//</span>NEXUS
+                        <span className="font-mono text-lg font-bold text-white tracking-tighter flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-blue-500" />
+                            SEO<span className="text-blue-500">//</span>NOC
                         </span>
                         <div className="w-9" />
                     </div>
