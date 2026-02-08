@@ -227,14 +227,14 @@ export const NetworkGraph = ({ domains, entries, onNodeClick, selectedNodeId, us
                 
                 // Highlight connected links
                 link.attr('stroke', l => 
-                    l.source.id === d.id || l.target.id === d.id ? '#fff' : 'hsl(240 4% 16%)'
+                    l.source.id === d.id || l.target.id === d.id ? '#fff' : '#6b7280'
                 ).attr('stroke-width', l => 
-                    l.source.id === d.id || l.target.id === d.id ? 2.5 : 1.5
+                    l.source.id === d.id || l.target.id === d.id ? 3 : 2
                 );
             })
             .on('mouseleave', () => {
                 setTooltip(null);
-                link.attr('stroke', 'hsl(240 4% 16%)').attr('stroke-width', 1.5);
+                link.attr('stroke', '#6b7280').attr('stroke-width', 2);
             });
 
         // Node labels (only for larger nodes)
