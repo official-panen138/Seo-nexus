@@ -872,6 +872,13 @@ async def create_structure_entry(
     if not network:
         raise HTTPException(status_code=400, detail="Network not found")
     
+    # BRAND SCOPING: Validate domain belongs to the same brand as the network
+    if asset.get("brand_id") != network.get("brand_id"):
+        raise HTTPException(
+            status_code=400, 
+            detail="Domain must belong to the same brand as the SEO Network"
+        )
+    
     # Validate target_entry_id if provided (new node-to-node relationship)
     if data.target_entry_id:
         target_entry = await db.seo_structure_entries.find_one({"id": data.target_entry_id})
