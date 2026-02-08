@@ -13,7 +13,7 @@ import {
     Settings, Activity, Clock, AlertTriangle, CheckCircle, XCircle, 
     RefreshCw, Calendar, Globe, Loader2, Play, ExternalLink
 } from 'lucide-react';
-import { useToast } from '../components/ui/use-toast';
+import { useToast } from '../hooks/use-toast';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
