@@ -41,6 +41,15 @@ logger = logging.getLogger(__name__)
 # Background monitoring state
 monitoring_tasks = {}
 
+# V3 Services
+from services.activity_log_service import init_activity_log_service
+from services.tier_service import init_tier_service
+from routers.v3_router import router as v3_router, init_v3_router
+
+# Initialize V3 services
+activity_log_service = init_activity_log_service(db)
+tier_service = init_tier_service(db)
+
 # Create the main app with lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,6 +57,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting SEO-NOC application...")
     await initialize_default_categories()
     asyncio.create_task(start_monitoring_scheduler())
+    logger.info("V3 services initialized: ActivityLog, TierCalculation")
     yield
     # Shutdown
     logger.info("Shutting down SEO-NOC application...")
