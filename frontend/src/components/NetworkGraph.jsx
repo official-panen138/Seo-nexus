@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { TIER_COLORS, TIER_LABELS } from '../lib/utils';
 
+// V3 tier mapping (derived tiers are numeric 0-5)
 const TIER_HIERARCHY = {
     'tier_5': 5,
     'tier_4': 4,
@@ -11,32 +12,76 @@ const TIER_HIERARCHY = {
     'lp_money_site': 0
 };
 
-export const NetworkGraph = ({ domains, onNodeClick, selectedNodeId }) => {
+// V3 tier colors by numeric tier
+const V3_TIER_COLORS = {
+    0: '#F97316', // LP/Money Site - orange
+    1: '#EAB308', // Tier 1 - yellow
+    2: '#22C55E', // Tier 2 - green
+    3: '#3B82F6', // Tier 3 - blue
+    4: '#8B5CF6', // Tier 4 - purple
+    5: '#6B7280'  // Tier 5+ - gray
+};
+
+const V3_TIER_LABELS = {
+    0: 'LP/Money Site',
+    1: 'Tier 1',
+    2: 'Tier 2',
+    3: 'Tier 3',
+    4: 'Tier 4',
+    5: 'Tier 5+'
+};
+
+export const NetworkGraph = ({ domains, entries, onNodeClick, selectedNodeId, useV3 = false }) => {
     const svgRef = useRef(null);
     const containerRef = useRef(null);
     const [tooltip, setTooltip] = useState(null);
     const simulationRef = useRef(null);
 
+    // Get tier from domain - supports both V2 (tier_level) and V3 (calculated_tier)
+    const getTier = useCallback((d) => {
+        if (useV3 && d.calculated_tier !== undefined) {
+            return d.calculated_tier;
+        }
+        return TIER_HIERARCHY[d.tier_level] ?? 5;
+    }, [useV3]);
+
     const getNodeColor = useCallback((d) => {
         if (d.index_status === 'noindex') return '#52525B';
         if (d.hasError) return '#EF4444';
+        
+        if (useV3 && d.calculated_tier !== undefined) {
+            return V3_TIER_COLORS[d.calculated_tier] || '#3B82F6';
+        }
         return TIER_COLORS[d.tier_level] || '#3B82F6';
-    }, []);
+    }, [useV3]);
 
     const getNodeRadius = useCallback((d) => {
-        const baseSize = {
-            'lp_money_site': 28,
-            'tier_1': 22,
-            'tier_2': 18,
-            'tier_3': 15,
-            'tier_4': 12,
-            'tier_5': 10
+        const tier = getTier(d);
+        const sizeByTier = {
+            0: 28, // LP/Money Site
+            1: 22, // Tier 1
+            2: 18, // Tier 2
+            3: 15, // Tier 3
+            4: 12, // Tier 4
+            5: 10  // Tier 5+
         };
-        return baseSize[d.tier_level] || 12;
-    }, []);
+        return sizeByTier[tier] || 12;
+    }, [getTier]);
+
+    const getTierLabel = useCallback((d) => {
+        if (useV3 && d.tier_label) {
+            return d.tier_label;
+        }
+        if (useV3 && d.calculated_tier !== undefined) {
+            return V3_TIER_LABELS[d.calculated_tier] || `Tier ${d.calculated_tier}`;
+        }
+        return TIER_LABELS[d.tier_level] || 'Unknown';
+    }, [useV3]);
 
     useEffect(() => {
-        if (!domains || domains.length === 0 || !containerRef.current) return;
+        // Use entries for V3, domains for V2
+        const data = useV3 ? entries : domains;
+        if (!data || data.length === 0 || !containerRef.current) return;
 
         const container = containerRef.current;
         const width = container.clientWidth;
@@ -61,24 +106,48 @@ export const NetworkGraph = ({ domains, onNodeClick, selectedNodeId }) => {
 
         const g = svg.append('g');
 
-        // Build links from parent-child relationships
+        // Build links from relationships
         const links = [];
-        const nodeMap = new Map(domains.map(d => [d.id, d]));
+        
+        if (useV3) {
+            // V3: Use target_asset_domain_id for relationships
+            const nodeMap = new Map(data.map(d => [d.asset_domain_id, d]));
+            
+            data.forEach(entry => {
+                if (entry.target_asset_domain_id && nodeMap.has(entry.target_asset_domain_id)) {
+                    links.push({
+                        source: entry.asset_domain_id,
+                        target: entry.target_asset_domain_id
+                    });
+                }
+            });
+        } else {
+            // V2: Use parent_domain_id for relationships
+            const nodeMap = new Map(data.map(d => [d.id, d]));
+            
+            data.forEach(domain => {
+                if (domain.parent_domain_id && nodeMap.has(domain.parent_domain_id)) {
+                    links.push({
+                        source: domain.parent_domain_id,
+                        target: domain.id
+                    });
+                }
+            });
+        }
 
-        domains.forEach(domain => {
-            if (domain.parent_domain_id && nodeMap.has(domain.parent_domain_id)) {
-                links.push({
-                    source: domain.parent_domain_id,
-                    target: domain.id
-                });
-            }
+        // Build nodes with error detection
+        const nodes = data.map(d => {
+            const tier = getTier(d);
+            const isMain = useV3 ? d.domain_role === 'main' : d.tier_level === 'lp_money_site';
+            const hasTarget = useV3 ? !!d.target_asset_domain_id : !!d.parent_domain_id;
+            const hasError = !isMain && !hasTarget;
+            
+            return {
+                ...d,
+                id: useV3 ? d.asset_domain_id : d.id,
+                hasError
+            };
         });
-
-        // Mark orphan domains (in group but no parent and not LP)
-        const nodes = domains.map(d => ({
-            ...d,
-            hasError: d.tier_level !== 'lp_money_site' && !d.parent_domain_id && d.group_id
-        }));
 
         // Create force simulation
         const simulation = d3.forceSimulation(nodes)
@@ -93,7 +162,7 @@ export const NetworkGraph = ({ domains, onNodeClick, selectedNodeId }) => {
             .force('collision', d3.forceCollide().radius(d => getNodeRadius(d) + 10))
             .force('y', d3.forceY()
                 .y(d => {
-                    const tier = TIER_HIERARCHY[d.tier_level] || 0;
+                    const tier = getTier(d);
                     return height * 0.15 + tier * (height * 0.14);
                 })
                 .strength(0.3));
@@ -171,7 +240,10 @@ export const NetworkGraph = ({ domains, onNodeClick, selectedNodeId }) => {
             .attr('fill', '#A1A1AA')
             .attr('font-size', '10px')
             .attr('font-family', 'JetBrains Mono, monospace')
-            .text(d => d.domain_name.length > 15 ? d.domain_name.substring(0, 15) + '...' : d.domain_name)
+            .text(d => {
+                const name = d.domain_name || '';
+                return name.length > 15 ? name.substring(0, 15) + '...' : name;
+            })
             .style('pointer-events', 'none');
 
         // Simulation tick
@@ -189,7 +261,7 @@ export const NetworkGraph = ({ domains, onNodeClick, selectedNodeId }) => {
         return () => {
             simulation.stop();
         };
-    }, [domains, selectedNodeId, onNodeClick, getNodeColor, getNodeRadius]);
+    }, [domains, entries, selectedNodeId, onNodeClick, getNodeColor, getNodeRadius, getTier, useV3]);
 
     // Handle resize
     useEffect(() => {
@@ -205,6 +277,10 @@ export const NetworkGraph = ({ domains, onNodeClick, selectedNodeId }) => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    // Determine which tier system to use for legend
+    const tierLabels = useV3 ? V3_TIER_LABELS : TIER_LABELS;
+    const tierColors = useV3 ? V3_TIER_COLORS : TIER_COLORS;
 
     return (
         <div ref={containerRef} className="relative w-full h-full min-h-[500px]">
@@ -222,23 +298,29 @@ export const NetworkGraph = ({ domains, onNodeClick, selectedNodeId }) => {
                     <div className="space-y-1 text-xs">
                         <div className="flex justify-between gap-4">
                             <span className="text-zinc-500">Tier</span>
-                            <span className="font-mono" style={{ color: TIER_COLORS[tooltip.data.tier_level] }}>
-                                {TIER_LABELS[tooltip.data.tier_level]}
+                            <span className="font-mono" style={{ color: getNodeColor(tooltip.data) }}>
+                                {getTierLabel(tooltip.data)}
                             </span>
                         </div>
                         <div className="flex justify-between gap-4">
                             <span className="text-zinc-500">Index</span>
                             <span className={tooltip.data.index_status === 'index' ? 'text-emerald-400' : 'text-zinc-400'}>
-                                {tooltip.data.index_status.toUpperCase()}
+                                {(tooltip.data.index_status || '').toUpperCase()}
                             </span>
                         </div>
                         <div className="flex justify-between gap-4">
                             <span className="text-zinc-500">Status</span>
                             <span className="text-white">{tooltip.data.domain_status}</span>
                         </div>
+                        {useV3 && tooltip.data.domain_role && (
+                            <div className="flex justify-between gap-4">
+                                <span className="text-zinc-500">Role</span>
+                                <span className="text-white capitalize">{tooltip.data.domain_role}</span>
+                            </div>
+                        )}
                         {tooltip.data.hasError && (
                             <div className="mt-2 pt-2 border-t border-zinc-800 text-red-400">
-                                Orphan domain - no parent
+                                Orphan domain - no target
                             </div>
                         )}
                     </div>
@@ -247,16 +329,32 @@ export const NetworkGraph = ({ domains, onNodeClick, selectedNodeId }) => {
 
             {/* Legend */}
             <div className="absolute bottom-4 left-4 p-3 glass rounded-md text-xs space-y-2">
-                <div className="text-zinc-400 font-medium mb-2">Tier Legend</div>
-                {Object.entries(TIER_LABELS).reverse().map(([key, label]) => (
-                    <div key={key} className="flex items-center gap-2">
-                        <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: TIER_COLORS[key] }}
-                        />
-                        <span className="text-zinc-300">{label}</span>
-                    </div>
-                ))}
+                <div className="text-zinc-400 font-medium mb-2">
+                    {useV3 ? 'Derived Tiers' : 'Tier Legend'}
+                </div>
+                {useV3 ? (
+                    // V3 legend (numeric tiers)
+                    Object.entries(V3_TIER_LABELS).map(([tier, label]) => (
+                        <div key={tier} className="flex items-center gap-2">
+                            <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: V3_TIER_COLORS[tier] }}
+                            />
+                            <span className="text-zinc-300">{label}</span>
+                        </div>
+                    ))
+                ) : (
+                    // V2 legend
+                    Object.entries(TIER_LABELS).reverse().map(([key, label]) => (
+                        <div key={key} className="flex items-center gap-2">
+                            <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: TIER_COLORS[key] }}
+                            />
+                            <span className="text-zinc-300">{label}</span>
+                        </div>
+                    ))
+                )}
                 <div className="pt-2 border-t border-zinc-700 mt-2">
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-zinc-500" />
