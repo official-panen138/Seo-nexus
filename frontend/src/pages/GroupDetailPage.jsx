@@ -398,13 +398,14 @@ export default function GroupDetailPage() {
                                         <TableHead>Status</TableHead>
                                         <TableHead>Index</TableHead>
                                         <TableHead>Target</TableHead>
-                                        <TableHead>Brand</TableHead>
+                                        <TableHead>Ranking</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {!displayData?.length ? (
                                         <TableRow>
-                                            <TableCell colSpan={7} className="h-32 text-center text-zinc-500">
+                                            <TableCell colSpan={8} className="h-32 text-center text-zinc-500">
                                                 No domains in this network
                                             </TableCell>
                                         </TableRow>
@@ -416,8 +417,7 @@ export default function GroupDetailPage() {
                                             return (
                                                 <TableRow 
                                                     key={entry.id} 
-                                                    className={`table-row-hover cursor-pointer ${isOrphan ? 'bg-red-950/10' : ''}`}
-                                                    onClick={() => handleNodeClick(entry)}
+                                                    className={`table-row-hover ${isOrphan ? 'bg-red-950/10' : ''}`}
                                                     data-testid={`entry-row-${entry.id}`}
                                                 >
                                                     <TableCell>
