@@ -97,6 +97,13 @@ export default function GroupDetailPage() {
     });
     const [saving, setSaving] = useState(false);
     const [availableTargets, setAvailableTargets] = useState([]);
+    
+    // Import dialog state
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
+    const [importData, setImportData] = useState([]);
+    const [importing, setImporting] = useState(false);
+    const [createMissingDomains, setCreateMissingDomains] = useState(false);
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         loadNetwork();
