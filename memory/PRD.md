@@ -186,11 +186,10 @@ Build a full-stack SEO Network Operations Center combining:
 - White-label option
 
 ## Next Tasks List
-1. Add ranking & path tracking fields to structure entry UI
-2. Bulk domain CSV import feature
-3. Activity logs viewer page
-4. Email notification channel
-5. Export V3 data functionality
+1. Email notification integration (Resend/SendGrid)
+2. Export V3 data to CSV/JSON
+3. Scheduled conflict alerts (cron)
+4. Dashboard refresh interval setting
 
 ## Telegram Configuration
 - **Bot**: @monitoringseo_bot
@@ -199,6 +198,11 @@ Build a full-stack SEO Network Operations Center combining:
   - `POST /api/v3/alerts/test` - Send test alert
   - `POST /api/v3/alerts/send-conflicts` - Send all SEO conflicts
   - `POST /api/v3/alerts/domain-change` - Alert on domain changes
+
+## New Features (Feb 8, 2026)
+- **Ranking & Path Tracking**: Network detail → Domain List → Edit button
+- **Bulk CSV Import**: Domains page → Import CSV → Upload → Import
+- **Activity Logs**: Sidebar → V3 Activity → Filter and view details
 
 ## Test Credentials
 - **Super Admin**: `superadmin@seonoc.com` / `SuperAdmin123!`
