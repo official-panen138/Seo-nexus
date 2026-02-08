@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../lib/auth';
-import { domainsAPI, brandsAPI, groupsAPI, categoriesAPI } from '../lib/api';
+import { domainsAPI, brandsAPI, groupsAPI, categoriesAPI, assetDomainsAPI, networksAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { DomainDetailPanel } from '../components/DomainDetailPanel';
 import { Button } from '../components/ui/button';
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Switch } from '../components/ui/switch';
 import { toast } from 'sonner';
 import { 
     Plus, 
@@ -22,7 +23,10 @@ import {
     ExternalLink,
     Filter,
     X,
-    Eye
+    Eye,
+    RefreshCw,
+    Database,
+    Sparkles
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
@@ -33,7 +37,36 @@ import {
     debounce
 } from '../lib/utils';
 
+// V3 Asset Status
+const ASSET_STATUS_LABELS = {
+    'active': 'Active',
+    'inactive': 'Inactive',
+    'pending': 'Pending',
+    'expired': 'Expired'
+};
+
+const ASSET_STATUS_COLORS = {
+    'active': 'text-emerald-400 border-emerald-400/30',
+    'inactive': 'text-zinc-400 border-zinc-400/30',
+    'pending': 'text-amber-400 border-amber-400/30',
+    'expired': 'text-red-400 border-red-400/30'
+};
+
 const INITIAL_FORM = {
+    domain_name: '',
+    brand_id: '',
+    category_id: '',
+    registrar: '',
+    expiration_date: '',
+    auto_renew: false,
+    status: 'active',
+    monitoring_enabled: false,
+    monitoring_interval: '1hour',
+    notes: ''
+};
+
+// Legacy form for V2
+const INITIAL_FORM_V2 = {
     domain_name: '',
     brand_id: '',
     domain_status: 'canonical',
@@ -46,16 +79,21 @@ const INITIAL_FORM = {
 
 export default function DomainsPage() {
     const { canEdit } = useAuth();
-    const [domains, setDomains] = useState([]);
+    const [assets, setAssets] = useState([]);
+    const [domains, setDomains] = useState([]); // V2 fallback
     const [brands, setBrands] = useState([]);
     const [groups, setGroups] = useState([]);
+    const [networks, setNetworks] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [selectedDomain, setSelectedDomain] = useState(null);
+    const [selectedAsset, setSelectedAsset] = useState(null);
     const [form, setForm] = useState(INITIAL_FORM);
+    
+    // V3 mode
+    const [useV3, setUseV3] = useState(true);
     
     // Detail panel state
     const [detailPanelOpen, setDetailPanelOpen] = useState(false);
@@ -65,97 +103,117 @@ export default function DomainsPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterBrand, setFilterBrand] = useState('all');
     const [filterStatus, setFilterStatus] = useState('all');
-    const [filterIndex, setFilterIndex] = useState('all');
-    const [filterTier, setFilterTier] = useState('all');
-    const [filterGroup, setFilterGroup] = useState('all');
+    const [filterMonitoring, setFilterMonitoring] = useState('all');
     const [showFilters, setShowFilters] = useState(false);
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [useV3]);
 
     const loadData = async () => {
+        setLoading(true);
         try {
-            const [domainsRes, brandsRes, groupsRes, categoriesRes] = await Promise.all([
-                domainsAPI.getAll(),
-                brandsAPI.getAll(),
-                groupsAPI.getAll(),
-                categoriesAPI.getAll()
-            ]);
-            setDomains(domainsRes.data);
-            setBrands(brandsRes.data);
-            setGroups(groupsRes.data);
-            setCategories(categoriesRes.data);
+            if (useV3) {
+                const [assetsRes, brandsRes, networksRes, categoriesRes] = await Promise.all([
+                    assetDomainsAPI.getAll(),
+                    brandsAPI.getAll(),
+                    networksAPI.getAll(),
+                    categoriesAPI.getAll()
+                ]);
+                setAssets(assetsRes.data);
+                setBrands(brandsRes.data);
+                setNetworks(networksRes.data);
+                setCategories(categoriesRes.data);
+            } else {
+                // V2 fallback
+                const [domainsRes, brandsRes, groupsRes, categoriesRes] = await Promise.all([
+                    domainsAPI.getAll(),
+                    brandsAPI.getAll(),
+                    groupsAPI.getAll(),
+                    categoriesAPI.getAll()
+                ]);
+                setDomains(domainsRes.data);
+                setBrands(brandsRes.data);
+                setGroups(groupsRes.data);
+                setCategories(categoriesRes.data);
+            }
         } catch (err) {
+            console.error('Failed to load data:', err);
             toast.error('Failed to load domains');
+            // Try V2 fallback if V3 fails
+            if (useV3) {
+                setUseV3(false);
+            }
         } finally {
             setLoading(false);
         }
     };
 
-    // Filtered domains
-    const filteredDomains = useMemo(() => {
-        return domains.filter(domain => {
-            if (searchQuery && !domain.domain_name.toLowerCase().includes(searchQuery.toLowerCase())) {
+    // Filtered data
+    const filteredData = useMemo(() => {
+        const data = useV3 ? assets : domains;
+        return data.filter(item => {
+            if (searchQuery && !item.domain_name.toLowerCase().includes(searchQuery.toLowerCase())) {
                 return false;
             }
-            if (filterBrand !== 'all' && domain.brand_id !== filterBrand) return false;
-            if (filterStatus !== 'all' && domain.domain_status !== filterStatus) return false;
-            if (filterIndex !== 'all' && domain.index_status !== filterIndex) return false;
-            if (filterTier !== 'all' && domain.tier_level !== filterTier) return false;
-            if (filterGroup !== 'all') {
-                if (filterGroup === 'none' && domain.group_id) return false;
-                if (filterGroup !== 'none' && domain.group_id !== filterGroup) return false;
+            if (filterBrand !== 'all' && item.brand_id !== filterBrand) return false;
+            
+            if (useV3) {
+                if (filterStatus !== 'all' && item.status !== filterStatus) return false;
+                if (filterMonitoring !== 'all') {
+                    if (filterMonitoring === 'enabled' && !item.monitoring_enabled) return false;
+                    if (filterMonitoring === 'disabled' && item.monitoring_enabled) return false;
+                }
+            } else {
+                if (filterStatus !== 'all' && item.domain_status !== filterStatus) return false;
             }
+            
             return true;
         });
-    }, [domains, searchQuery, filterBrand, filterStatus, filterIndex, filterTier, filterGroup]);
-
-    // Potential parent domains (same group, higher tier)
-    const parentDomainOptions = useMemo(() => {
-        if (!form.group_id || !form.tier_level) return [];
-        
-        const currentTierValue = {
-            'tier_5': 5, 'tier_4': 4, 'tier_3': 3, 'tier_2': 2, 'tier_1': 1, 'lp_money_site': 0
-        }[form.tier_level];
-        
-        return domains.filter(d => {
-            if (d.id === selectedDomain?.id) return false;
-            if (d.group_id !== form.group_id) return false;
-            const dTierValue = {
-                'tier_5': 5, 'tier_4': 4, 'tier_3': 3, 'tier_2': 2, 'tier_1': 1, 'lp_money_site': 0
-            }[d.tier_level];
-            return dTierValue < currentTierValue;
-        });
-    }, [domains, form.group_id, form.tier_level, selectedDomain]);
+    }, [assets, domains, searchQuery, filterBrand, filterStatus, filterMonitoring, useV3]);
 
     const handleSearchChange = debounce((value) => {
         setSearchQuery(value);
     }, 300);
 
     const openCreateDialog = () => {
-        setSelectedDomain(null);
-        setForm(INITIAL_FORM);
+        setSelectedAsset(null);
+        setForm(useV3 ? INITIAL_FORM : INITIAL_FORM_V2);
         setDialogOpen(true);
     };
 
-    const openEditDialog = (domain) => {
-        setSelectedDomain(domain);
-        setForm({
-            domain_name: domain.domain_name,
-            brand_id: domain.brand_id,
-            domain_status: domain.domain_status,
-            index_status: domain.index_status,
-            tier_level: domain.tier_level,
-            group_id: domain.group_id || '',
-            parent_domain_id: domain.parent_domain_id || '',
-            notes: domain.notes || ''
-        });
+    const openEditDialog = (item) => {
+        setSelectedAsset(item);
+        if (useV3) {
+            setForm({
+                domain_name: item.domain_name,
+                brand_id: item.brand_id || '',
+                category_id: item.category_id || '',
+                registrar: item.registrar || '',
+                expiration_date: item.expiration_date ? item.expiration_date.split('T')[0] : '',
+                auto_renew: item.auto_renew || false,
+                status: item.status || 'active',
+                monitoring_enabled: item.monitoring_enabled || false,
+                monitoring_interval: item.monitoring_interval || '1hour',
+                notes: item.notes || ''
+            });
+        } else {
+            setForm({
+                domain_name: item.domain_name,
+                brand_id: item.brand_id,
+                domain_status: item.domain_status,
+                index_status: item.index_status,
+                tier_level: item.tier_level,
+                group_id: item.group_id || '',
+                parent_domain_id: item.parent_domain_id || '',
+                notes: item.notes || ''
+            });
+        }
         setDialogOpen(true);
     };
 
-    const openDetailPanel = (domain) => {
-        setDetailDomain(domain);
+    const openDetailPanel = (item) => {
+        setDetailDomain(item);
         setDetailPanelOpen(true);
     };
 
@@ -168,18 +226,42 @@ export default function DomainsPage() {
 
         setSaving(true);
         try {
-            const payload = {
-                ...form,
-                group_id: form.group_id || null,
-                parent_domain_id: form.parent_domain_id || null
-            };
+            if (useV3) {
+                const payload = {
+                    domain_name: form.domain_name,
+                    brand_id: form.brand_id,
+                    category_id: form.category_id || null,
+                    registrar: form.registrar || null,
+                    expiration_date: form.expiration_date ? new Date(form.expiration_date).toISOString() : null,
+                    auto_renew: form.auto_renew,
+                    status: form.status,
+                    monitoring_enabled: form.monitoring_enabled,
+                    monitoring_interval: form.monitoring_interval,
+                    notes: form.notes
+                };
 
-            if (selectedDomain) {
-                await domainsAPI.update(selectedDomain.id, payload);
-                toast.success('Domain updated');
+                if (selectedAsset) {
+                    await assetDomainsAPI.update(selectedAsset.id, payload);
+                    toast.success('Asset domain updated');
+                } else {
+                    await assetDomainsAPI.create(payload);
+                    toast.success('Asset domain created');
+                }
             } else {
-                await domainsAPI.create(payload);
-                toast.success('Domain created');
+                // V2 logic
+                const payload = {
+                    ...form,
+                    group_id: form.group_id || null,
+                    parent_domain_id: form.parent_domain_id || null
+                };
+
+                if (selectedAsset) {
+                    await domainsAPI.update(selectedAsset.id, payload);
+                    toast.success('Domain updated');
+                } else {
+                    await domainsAPI.create(payload);
+                    toast.success('Domain created');
+                }
             }
             setDialogOpen(false);
             loadData();
@@ -191,14 +273,18 @@ export default function DomainsPage() {
     };
 
     const handleDelete = async () => {
-        if (!selectedDomain) return;
+        if (!selectedAsset) return;
         
         setSaving(true);
         try {
-            await domainsAPI.delete(selectedDomain.id);
+            if (useV3) {
+                await assetDomainsAPI.delete(selectedAsset.id);
+            } else {
+                await domainsAPI.delete(selectedAsset.id);
+            }
             toast.success('Domain deleted');
             setDeleteDialogOpen(false);
-            setSelectedDomain(null);
+            setSelectedAsset(null);
             loadData();
         } catch (err) {
             toast.error(err.response?.data?.detail || 'Failed to delete domain');
@@ -211,24 +297,28 @@ export default function DomainsPage() {
         setSearchQuery('');
         setFilterBrand('all');
         setFilterStatus('all');
-        setFilterIndex('all');
-        setFilterTier('all');
-        setFilterGroup('all');
+        setFilterMonitoring('all');
     };
 
-    const hasActiveFilters = filterBrand !== 'all' || filterStatus !== 'all' || 
-        filterIndex !== 'all' || filterTier !== 'all' || filterGroup !== 'all';
+    const hasActiveFilters = filterBrand !== 'all' || filterStatus !== 'all' || filterMonitoring !== 'all';
 
     // Refresh detail panel when data updates
     const handleDetailUpdate = () => {
         loadData();
-        // Also refresh the detail domain data
         if (detailDomain) {
-            domainsAPI.getOne(detailDomain.id).then(res => {
-                setDetailDomain(res.data);
-            }).catch(() => {
-                setDetailPanelOpen(false);
-            });
+            if (useV3) {
+                assetDomainsAPI.getOne(detailDomain.id).then(res => {
+                    setDetailDomain(res.data);
+                }).catch(() => {
+                    setDetailPanelOpen(false);
+                });
+            } else {
+                domainsAPI.getOne(detailDomain.id).then(res => {
+                    setDetailDomain(res.data);
+                }).catch(() => {
+                    setDetailPanelOpen(false);
+                });
+            }
         }
     };
 
@@ -248,21 +338,40 @@ export default function DomainsPage() {
                 {/* Header */}
                 <div className="page-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h1 className="page-title">Domains</h1>
+                        <div className="flex items-center gap-3">
+                            <h1 className="page-title">Asset Domains</h1>
+                            <Badge 
+                                variant="outline" 
+                                className={useV3 ? 'text-emerald-400 border-emerald-400/30' : 'text-zinc-400 border-zinc-400/30'}
+                            >
+                                {useV3 ? 'V3' : 'V2 Legacy'}
+                            </Badge>
+                        </div>
                         <p className="page-subtitle">
-                            {filteredDomains.length} of {domains.length} domains
+                            {filteredData.length} of {useV3 ? assets.length : domains.length} domains
                         </p>
                     </div>
-                    {canEdit() && (
+                    <div className="flex items-center gap-3">
                         <Button 
-                            onClick={openCreateDialog}
-                            className="bg-white text-black hover:bg-zinc-200"
-                            data-testid="add-domain-btn"
+                            variant="ghost"
+                            size="sm"
+                            onClick={loadData}
+                            className="text-zinc-400"
                         >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Domain
+                            <RefreshCw className="h-4 w-4 mr-1" />
+                            Refresh
                         </Button>
-                    )}
+                        {canEdit() && (
+                            <Button 
+                                onClick={openCreateDialog}
+                                className="bg-white text-black hover:bg-zinc-200"
+                                data-testid="add-domain-btn"
+                            >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Domain
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Search and Filters */}
@@ -288,7 +397,7 @@ export default function DomainsPage() {
                             Filters
                             {hasActiveFilters && (
                                 <Badge variant="secondary" className="ml-2 h-5 px-1.5">
-                                    {[filterBrand, filterStatus, filterIndex, filterTier, filterGroup]
+                                    {[filterBrand, filterStatus, filterMonitoring]
                                         .filter(f => f !== 'all').length}
                                 </Badge>
                             )}
@@ -315,48 +424,30 @@ export default function DomainsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Status</SelectItem>
-                                    {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                                        <SelectItem key={k} value={k}>{v}</SelectItem>
-                                    ))}
+                                    {useV3 ? (
+                                        Object.entries(ASSET_STATUS_LABELS).map(([k, v]) => (
+                                            <SelectItem key={k} value={k}>{v}</SelectItem>
+                                        ))
+                                    ) : (
+                                        Object.entries(STATUS_LABELS).map(([k, v]) => (
+                                            <SelectItem key={k} value={k}>{v}</SelectItem>
+                                        ))
+                                    )}
                                 </SelectContent>
                             </Select>
 
-                            <Select value={filterIndex} onValueChange={setFilterIndex}>
-                                <SelectTrigger className="w-[150px] bg-black border-border" data-testid="filter-index">
-                                    <SelectValue placeholder="Index" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Index</SelectItem>
-                                    {Object.entries(INDEX_STATUS_LABELS).map(([k, v]) => (
-                                        <SelectItem key={k} value={k}>{v}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <Select value={filterTier} onValueChange={setFilterTier}>
-                                <SelectTrigger className="w-[150px] bg-black border-border" data-testid="filter-tier">
-                                    <SelectValue placeholder="Tier" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Tiers</SelectItem>
-                                    {Object.entries(TIER_LABELS).map(([k, v]) => (
-                                        <SelectItem key={k} value={k}>{v}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <Select value={filterGroup} onValueChange={setFilterGroup}>
-                                <SelectTrigger className="w-[150px] bg-black border-border" data-testid="filter-group">
-                                    <SelectValue placeholder="Network" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Networks</SelectItem>
-                                    <SelectItem value="none">No Network</SelectItem>
-                                    {groups.map(g => (
-                                        <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            {useV3 && (
+                                <Select value={filterMonitoring} onValueChange={setFilterMonitoring}>
+                                    <SelectTrigger className="w-[150px] bg-black border-border" data-testid="filter-monitoring">
+                                        <SelectValue placeholder="Monitoring" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All</SelectItem>
+                                        <SelectItem value="enabled">Monitored</SelectItem>
+                                        <SelectItem value="disabled">Not Monitored</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
 
                             {hasActiveFilters && (
                                 <Button
@@ -381,23 +472,32 @@ export default function DomainsPage() {
                             <TableRow>
                                 <TableHead>Domain</TableHead>
                                 <TableHead>Brand</TableHead>
-                                <TableHead>Tier</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Index</TableHead>
-                                <TableHead>Network</TableHead>
+                                {useV3 ? (
+                                    <>
+                                        <TableHead>Monitoring</TableHead>
+                                        <TableHead>Expiration</TableHead>
+                                    </>
+                                ) : (
+                                    <>
+                                        <TableHead>Tier</TableHead>
+                                        <TableHead>Index</TableHead>
+                                        <TableHead>Network</TableHead>
+                                    </>
+                                )}
                                 <TableHead>Created</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredDomains.length === 0 ? (
+                            {filteredData.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="h-32 text-center">
+                                    <TableCell colSpan={useV3 ? 7 : 8} className="h-32 text-center">
                                         <div className="empty-state py-8">
                                             <Globe className="empty-state-icon mx-auto" />
                                             <p className="empty-state-title">No domains found</p>
                                             <p className="empty-state-description">
-                                                {domains.length === 0 
+                                                {(useV3 ? assets : domains).length === 0 
                                                     ? 'Add your first domain to get started'
                                                     : 'Try adjusting your filters'}
                                             </p>
@@ -405,13 +505,13 @@ export default function DomainsPage() {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredDomains.map((domain) => (
-                                    <TableRow key={domain.id} className="table-row-hover" data-testid={`domain-row-${domain.id}`}>
+                                filteredData.map((item) => (
+                                    <TableRow key={item.id} className="table-row-hover" data-testid={`domain-row-${item.id}`}>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                <span className="font-mono text-sm">{domain.domain_name}</span>
+                                                <span className="font-mono text-sm">{item.domain_name}</span>
                                                 <a 
-                                                    href={`https://${domain.domain_name}`} 
+                                                    href={`https://${item.domain_name}`} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer"
                                                     className="text-zinc-500 hover:text-blue-500"
@@ -422,58 +522,87 @@ export default function DomainsPage() {
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline" className="font-normal">
-                                                {domain.brand_name || '-'}
+                                                {item.brand_name || '-'}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <span className={`badge-tier ${getTierBadgeClass(domain.tier_level)}`}>
-                                                {TIER_LABELS[domain.tier_level]}
-                                            </span>
+                                            {useV3 ? (
+                                                <Badge variant="outline" className={ASSET_STATUS_COLORS[item.status] || ''}>
+                                                    {ASSET_STATUS_LABELS[item.status] || item.status}
+                                                </Badge>
+                                            ) : (
+                                                <span className="text-sm text-zinc-400">
+                                                    {STATUS_LABELS[item.domain_status]}
+                                                </span>
+                                            )}
                                         </TableCell>
-                                        <TableCell>
-                                            <span className="text-sm text-zinc-400">
-                                                {STATUS_LABELS[domain.domain_status]}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className={`text-xs px-2 py-1 rounded-full font-mono uppercase ${
-                                                domain.index_status === 'index' 
-                                                    ? 'status-indexed' 
-                                                    : 'status-noindex'
-                                            }`}>
-                                                {domain.index_status}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="text-sm text-zinc-400">
-                                                {domain.group_name || '-'}
-                                            </span>
-                                        </TableCell>
+                                        {useV3 ? (
+                                            <>
+                                                <TableCell>
+                                                    <span className={`text-xs px-2 py-1 rounded-full ${
+                                                        item.monitoring_enabled 
+                                                            ? 'bg-emerald-500/10 text-emerald-400' 
+                                                            : 'bg-zinc-500/10 text-zinc-500'
+                                                    }`}>
+                                                        {item.monitoring_enabled ? (item.ping_status === 'up' ? '● UP' : item.ping_status === 'down' ? '● DOWN' : 'ON') : 'OFF'}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span className="text-sm text-zinc-400">
+                                                        {item.expiration_date ? formatDate(item.expiration_date) : '-'}
+                                                    </span>
+                                                </TableCell>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <TableCell>
+                                                    <span className={`badge-tier ${getTierBadgeClass(item.tier_level)}`}>
+                                                        {TIER_LABELS[item.tier_level]}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span className={`text-xs px-2 py-1 rounded-full font-mono uppercase ${
+                                                        item.index_status === 'index' 
+                                                            ? 'status-indexed' 
+                                                            : 'status-noindex'
+                                                    }`}>
+                                                        {item.index_status}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span className="text-sm text-zinc-400">
+                                                        {item.group_name || '-'}
+                                                    </span>
+                                                </TableCell>
+                                            </>
+                                        )}
                                         <TableCell>
                                             <span className="text-sm text-zinc-500">
-                                                {formatDate(domain.created_at)}
+                                                {formatDate(item.created_at)}
                                             </span>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => openDetailPanel(domain)}
-                                                    className="h-8 px-2 hover:bg-blue-500/10 hover:text-blue-400 text-zinc-400"
-                                                    data-testid={`show-detail-${domain.id}`}
-                                                >
-                                                    <Eye className="h-4 w-4 mr-1" />
-                                                    Detail
-                                                </Button>
+                                                {!useV3 && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => openDetailPanel(item)}
+                                                        className="h-8 px-2 hover:bg-blue-500/10 hover:text-blue-400 text-zinc-400"
+                                                        data-testid={`show-detail-${item.id}`}
+                                                    >
+                                                        <Eye className="h-4 w-4 mr-1" />
+                                                        Detail
+                                                    </Button>
+                                                )}
                                                 {canEdit() && (
                                                     <>
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            onClick={() => openEditDialog(domain)}
+                                                            onClick={() => openEditDialog(item)}
                                                             className="h-8 w-8 hover:bg-white/5"
-                                                            data-testid={`edit-domain-${domain.id}`}
+                                                            data-testid={`edit-domain-${item.id}`}
                                                         >
                                                             <Edit className="h-4 w-4" />
                                                         </Button>
@@ -481,11 +610,11 @@ export default function DomainsPage() {
                                                             variant="ghost"
                                                             size="icon"
                                                             onClick={() => {
-                                                                setSelectedDomain(domain);
+                                                                setSelectedAsset(item);
                                                                 setDeleteDialogOpen(true);
                                                             }}
                                                             className="h-8 w-8 hover:bg-red-500/10 hover:text-red-500"
-                                                            data-testid={`delete-domain-${domain.id}`}
+                                                            data-testid={`delete-domain-${item.id}`}
                                                         >
                                                             <Trash2 className="h-4 w-4" />
                                                         </Button>
@@ -500,27 +629,29 @@ export default function DomainsPage() {
                     </Table>
                 </div>
 
-                {/* Domain Detail Panel */}
-                <DomainDetailPanel
-                    domain={detailDomain}
-                    isOpen={detailPanelOpen}
-                    onClose={() => {
-                        setDetailPanelOpen(false);
-                        setDetailDomain(null);
-                    }}
-                    onUpdate={handleDetailUpdate}
-                    allDomains={domains}
-                    brands={brands}
-                    groups={groups}
-                    categories={categories}
-                />
+                {/* Domain Detail Panel (V2 only) */}
+                {!useV3 && (
+                    <DomainDetailPanel
+                        domain={detailDomain}
+                        isOpen={detailPanelOpen}
+                        onClose={() => {
+                            setDetailPanelOpen(false);
+                            setDetailDomain(null);
+                        }}
+                        onUpdate={handleDetailUpdate}
+                        allDomains={domains}
+                        brands={brands}
+                        groups={groups}
+                        categories={categories}
+                    />
+                )}
 
                 {/* Create/Edit Dialog */}
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                    <DialogContent className="bg-card border-border max-w-lg">
+                    <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>
-                                {selectedDomain ? 'Edit Domain' : 'Add Domain'}
+                                {selectedAsset ? 'Edit Domain' : 'Add Domain'}
                             </DialogTitle>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
@@ -553,100 +684,206 @@ export default function DomainsPage() {
                                     </Select>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label>Tier Level</Label>
-                                    <Select 
-                                        value={form.tier_level} 
-                                        onValueChange={(v) => setForm({...form, tier_level: v, parent_domain_id: ''})}
-                                    >
-                                        <SelectTrigger className="bg-black border-border" data-testid="domain-tier-select">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {Object.entries(TIER_LABELS).map(([k, v]) => (
-                                                <SelectItem key={k} value={k}>{v}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                {useV3 ? (
+                                    <div className="space-y-2">
+                                        <Label>Status</Label>
+                                        <Select 
+                                            value={form.status} 
+                                            onValueChange={(v) => setForm({...form, status: v})}
+                                        >
+                                            <SelectTrigger className="bg-black border-border">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {Object.entries(ASSET_STATUS_LABELS).map(([k, v]) => (
+                                                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <Label>Tier Level</Label>
+                                        <Select 
+                                            value={form.tier_level} 
+                                            onValueChange={(v) => setForm({...form, tier_level: v, parent_domain_id: ''})}
+                                        >
+                                            <SelectTrigger className="bg-black border-border" data-testid="domain-tier-select">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {Object.entries(TIER_LABELS).map(([k, v]) => (
+                                                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Domain Status</Label>
-                                    <Select 
-                                        value={form.domain_status} 
-                                        onValueChange={(v) => setForm({...form, domain_status: v})}
-                                    >
-                                        <SelectTrigger className="bg-black border-border" data-testid="domain-status-select">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                                                <SelectItem key={k} value={k}>{v}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                            {useV3 ? (
+                                <>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Category</Label>
+                                            <Select 
+                                                value={form.category_id || 'none'} 
+                                                onValueChange={(v) => setForm({...form, category_id: v === 'none' ? '' : v})}
+                                            >
+                                                <SelectTrigger className="bg-black border-border">
+                                                    <SelectValue placeholder="None" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">None</SelectItem>
+                                                    {categories.map(c => (
+                                                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
 
-                                <div className="space-y-2">
-                                    <Label>Index Status</Label>
-                                    <Select 
-                                        value={form.index_status} 
-                                        onValueChange={(v) => setForm({...form, index_status: v})}
-                                    >
-                                        <SelectTrigger className="bg-black border-border" data-testid="domain-index-select">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {Object.entries(INDEX_STATUS_LABELS).map(([k, v]) => (
-                                                <SelectItem key={k} value={k}>{v}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
+                                        <div className="space-y-2">
+                                            <Label>Registrar</Label>
+                                            <Input
+                                                value={form.registrar}
+                                                onChange={(e) => setForm({...form, registrar: e.target.value})}
+                                                placeholder="GoDaddy, Namecheap..."
+                                                className="bg-black border-border"
+                                            />
+                                        </div>
+                                    </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Network</Label>
-                                    <Select 
-                                        value={form.group_id || 'none'} 
-                                        onValueChange={(v) => setForm({...form, group_id: v === 'none' ? '' : v, parent_domain_id: ''})}
-                                    >
-                                        <SelectTrigger className="bg-black border-border" data-testid="domain-group-select">
-                                            <SelectValue placeholder="None" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">None</SelectItem>
-                                            {groups.map(g => (
-                                                <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Expiration Date</Label>
+                                            <Input
+                                                type="date"
+                                                value={form.expiration_date}
+                                                onChange={(e) => setForm({...form, expiration_date: e.target.value})}
+                                                className="bg-black border-border"
+                                            />
+                                        </div>
 
-                                <div className="space-y-2">
-                                    <Label>Parent Domain</Label>
-                                    <Select 
-                                        value={form.parent_domain_id || 'none'} 
-                                        onValueChange={(v) => setForm({...form, parent_domain_id: v === 'none' ? '' : v})}
-                                        disabled={!form.group_id || form.tier_level === 'lp_money_site'}
-                                    >
-                                        <SelectTrigger className="bg-black border-border" data-testid="domain-parent-select">
-                                            <SelectValue placeholder="None" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">None</SelectItem>
-                                            {parentDomainOptions.map(d => (
-                                                <SelectItem key={d.id} value={d.id}>
-                                                    {d.domain_name} ({TIER_LABELS[d.tier_level]})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
+                                        <div className="space-y-2">
+                                            <Label>Auto-Renew</Label>
+                                            <div className="flex items-center gap-2 py-2">
+                                                <Switch 
+                                                    checked={form.auto_renew} 
+                                                    onCheckedChange={(v) => setForm({...form, auto_renew: v})} 
+                                                />
+                                                <span className="text-sm text-zinc-400">{form.auto_renew ? 'Enabled' : 'Disabled'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Enable Monitoring</Label>
+                                            <div className="flex items-center gap-2 py-2">
+                                                <Switch 
+                                                    checked={form.monitoring_enabled} 
+                                                    onCheckedChange={(v) => setForm({...form, monitoring_enabled: v})} 
+                                                />
+                                                <span className="text-sm text-zinc-400">{form.monitoring_enabled ? 'Active' : 'Inactive'}</span>
+                                            </div>
+                                        </div>
+
+                                        {form.monitoring_enabled && (
+                                            <div className="space-y-2">
+                                                <Label>Check Interval</Label>
+                                                <Select 
+                                                    value={form.monitoring_interval} 
+                                                    onValueChange={(v) => setForm({...form, monitoring_interval: v})}
+                                                >
+                                                    <SelectTrigger className="bg-black border-border">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="5min">Every 5 min</SelectItem>
+                                                        <SelectItem value="15min">Every 15 min</SelectItem>
+                                                        <SelectItem value="1hour">Every hour</SelectItem>
+                                                        <SelectItem value="daily">Daily</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Domain Status</Label>
+                                            <Select 
+                                                value={form.domain_status} 
+                                                onValueChange={(v) => setForm({...form, domain_status: v})}
+                                            >
+                                                <SelectTrigger className="bg-black border-border" data-testid="domain-status-select">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                                                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label>Index Status</Label>
+                                            <Select 
+                                                value={form.index_status} 
+                                                onValueChange={(v) => setForm({...form, index_status: v})}
+                                            >
+                                                <SelectTrigger className="bg-black border-border" data-testid="domain-index-select">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {Object.entries(INDEX_STATUS_LABELS).map(([k, v]) => (
+                                                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Network</Label>
+                                            <Select 
+                                                value={form.group_id || 'none'} 
+                                                onValueChange={(v) => setForm({...form, group_id: v === 'none' ? '' : v, parent_domain_id: ''})}
+                                            >
+                                                <SelectTrigger className="bg-black border-border" data-testid="domain-group-select">
+                                                    <SelectValue placeholder="None" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">None</SelectItem>
+                                                    {groups.map(g => (
+                                                        <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label>Parent Domain</Label>
+                                            <Select 
+                                                value={form.parent_domain_id || 'none'} 
+                                                onValueChange={(v) => setForm({...form, parent_domain_id: v === 'none' ? '' : v})}
+                                                disabled={!form.group_id || form.tier_level === 'lp_money_site'}
+                                            >
+                                                <SelectTrigger className="bg-black border-border" data-testid="domain-parent-select">
+                                                    <SelectValue placeholder="None" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">None</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
 
                             <div className="space-y-2">
                                 <Label>Notes</Label>
@@ -675,7 +912,7 @@ export default function DomainsPage() {
                                     data-testid="save-domain-btn"
                                 >
                                     {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                    {selectedDomain ? 'Update' : 'Create'}
+                                    {selectedAsset ? 'Update' : 'Create'}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -689,7 +926,7 @@ export default function DomainsPage() {
                             <DialogTitle>Delete Domain</DialogTitle>
                         </DialogHeader>
                         <p className="text-zinc-400">
-                            Are you sure you want to delete <span className="text-white font-mono">{selectedDomain?.domain_name}</span>?
+                            Are you sure you want to delete <span className="text-white font-mono">{selectedAsset?.domain_name}</span>?
                             This action cannot be undone.
                         </p>
                         <DialogFooter>
