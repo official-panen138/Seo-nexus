@@ -24,6 +24,7 @@ from models_v3 import (
     SeoNetworkCreate, SeoNetworkUpdate, SeoNetworkResponse, SeoNetworkDetail,
     SeoStructureEntryCreate, SeoStructureEntryUpdate, SeoStructureEntryResponse,
     ActivityLogResponse,
+    RegistrarCreate, RegistrarUpdate, RegistrarResponse, RegistrarStatus,
     AssetStatus, NetworkStatus, DomainRole, SeoStatus, IndexStatus,
     ActionType, EntityType, get_tier_label
 )
