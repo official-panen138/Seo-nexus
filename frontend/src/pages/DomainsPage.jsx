@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../lib/auth';
 import { domainsAPI, brandsAPI, groupsAPI, categoriesAPI, assetDomainsAPI, networksAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
@@ -25,8 +25,11 @@ import {
     X,
     Eye,
     RefreshCw,
-    Database,
-    Sparkles
+    Upload,
+    FileSpreadsheet,
+    CheckCircle,
+    XCircle,
+    AlertCircle
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
@@ -36,6 +39,7 @@ import {
     formatDate,
     debounce
 } from '../lib/utils';
+import axios from 'axios';
 
 // V3 Asset Status
 const ASSET_STATUS_LABELS = {
