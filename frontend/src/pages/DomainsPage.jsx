@@ -515,6 +515,29 @@ export default function DomainsPage() {
                             <RefreshCw className="h-4 w-4 mr-1" />
                             Refresh
                         </Button>
+                        
+                        {/* Export dropdown */}
+                        {useV3 && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" data-testid="export-btn">
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Export
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => handleExport('csv')}>
+                                        <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                        Export as CSV
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleExport('json')}>
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Export as JSON
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+                        
                         {canEdit() && useV3 && (
                             <Button 
                                 variant="outline"
