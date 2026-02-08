@@ -77,14 +77,16 @@ export default function DomainsPage() {
 
     const loadData = async () => {
         try {
-            const [domainsRes, brandsRes, groupsRes] = await Promise.all([
+            const [domainsRes, brandsRes, groupsRes, categoriesRes] = await Promise.all([
                 domainsAPI.getAll(),
                 brandsAPI.getAll(),
-                groupsAPI.getAll()
+                groupsAPI.getAll(),
+                categoriesAPI.getAll()
             ]);
             setDomains(domainsRes.data);
             setBrands(brandsRes.data);
             setGroups(groupsRes.data);
+            setCategories(categoriesRes.data);
         } catch (err) {
             toast.error('Failed to load domains');
         } finally {
