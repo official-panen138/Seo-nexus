@@ -528,7 +528,6 @@ async def check_domain_health(domain: dict):
     
     url = f"https://{domain_name}"
     previous_ping = domain.get("ping_status", "unknown")
-    previous_http = domain.get("http_status_code")
     
     new_ping = PingStatus.DOWN
     new_http_status = "error"
