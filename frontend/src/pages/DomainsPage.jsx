@@ -64,7 +64,7 @@ const INITIAL_FORM = {
     domain_name: '',
     brand_id: '',
     category_id: '',
-    registrar: '',
+    registrar_id: '',
     expiration_date: '',
     auto_renew: false,
     status: 'active',
