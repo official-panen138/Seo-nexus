@@ -912,38 +912,171 @@ async def delete_category(category_id: str, current_user: dict = Depends(require
 # ==================== BRAND ENDPOINTS ====================
 
 @api_router.get("/brands", response_model=List[BrandResponse])
-async def get_brands(current_user: dict = Depends(get_current_user)):
-    brands = await db.brands.find({}, {"_id": 0}).to_list(1000)
+async def get_brands(
+    status: Optional[BrandStatus] = None,
+    include_archived: bool = False,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get brands - filtered by user's brand scope"""
+    # Build base filter
+    query = {}
+    
+    # Status filter
+    if status:
+        query["status"] = status.value
+    elif not include_archived:
+        # By default, exclude archived brands
+        query["$or"] = [
+            {"status": {"$ne": BrandStatus.ARCHIVED.value}},
+            {"status": {"$exists": False}}
+        ]
+    
+    # Brand scope filter for non-Super Admin
+    brand_scope = get_user_brand_scope(current_user)
+    if brand_scope is not None:
+        if brand_scope:
+            query["id"] = {"$in": brand_scope}
+        else:
+            return []  # No brands in scope
+    
+    brands = await db.brands.find(query, {"_id": 0}).to_list(1000)
     return [BrandResponse(**b) for b in brands]
+
+
+@api_router.get("/brands/{brand_id}", response_model=BrandResponse)
+async def get_brand(brand_id: str, current_user: dict = Depends(get_current_user)):
+    """Get single brand - requires brand access"""
+    require_brand_access(brand_id, current_user)
+    
+    brand = await db.brands.find_one({"id": brand_id}, {"_id": 0})
+    if not brand:
+        raise HTTPException(status_code=404, detail="Brand not found")
+    return BrandResponse(**brand)
+
 
 @api_router.post("/brands", response_model=BrandResponse)
 async def create_brand(brand_data: BrandCreate, current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))):
+    """Create brand - Super Admin only"""
     now = datetime.now(timezone.utc).isoformat()
-    brand = {"id": str(uuid.uuid4()), **brand_data.model_dump(), "created_at": now, "updated_at": now}
+    
+    # Generate slug if not provided
+    slug = brand_data.slug
+    if not slug:
+        slug = brand_data.name.lower().replace(" ", "-").replace("_", "-")
+        # Ensure unique slug
+        existing = await db.brands.find_one({"slug": slug})
+        if existing:
+            slug = f"{slug}-{str(uuid.uuid4())[:8]}"
+    
+    brand = {
+        "id": str(uuid.uuid4()),
+        **brand_data.model_dump(),
+        "slug": slug,
+        "status": brand_data.status.value if brand_data.status else BrandStatus.ACTIVE.value,
+        "created_at": now,
+        "updated_at": now
+    }
     await db.brands.insert_one(brand)
     await log_audit(current_user["id"], current_user["email"], "create", "brand", brand["id"], brand_data.model_dump())
     return BrandResponse(**brand)
 
+
 @api_router.put("/brands/{brand_id}", response_model=BrandResponse)
-async def update_brand(brand_id: str, brand_data: BrandCreate, current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))):
+async def update_brand(brand_id: str, brand_data: BrandUpdate, current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))):
+    """Update brand - Super Admin only"""
+    existing = await db.brands.find_one({"id": brand_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Brand not found")
+    
+    # Check if archived - archived brands are read-only
+    if existing.get("status") == BrandStatus.ARCHIVED.value:
+        # Only allow status change (unarchive)
+        if brand_data.status != BrandStatus.ACTIVE:
+            raise HTTPException(status_code=400, detail="Archived brands are read-only. Unarchive first to edit.")
+    
+    update_dict = {k: v for k, v in brand_data.model_dump().items() if v is not None}
+    if "status" in update_dict and hasattr(update_dict["status"], "value"):
+        update_dict["status"] = update_dict["status"].value
+    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
     result = await db.brands.find_one_and_update(
         {"id": brand_id},
-        {"$set": {**brand_data.model_dump(), "updated_at": datetime.now(timezone.utc).isoformat()}},
+        {"$set": update_dict},
         return_document=True
     )
-    if not result:
-        raise HTTPException(status_code=404, detail="Brand not found")
-    await log_audit(current_user["id"], current_user["email"], "update", "brand", brand_id, brand_data.model_dump())
+    
+    await log_audit(current_user["id"], current_user["email"], "update", "brand", brand_id, {
+        "before": existing,
+        "after": update_dict
+    })
     return BrandResponse(**{k: v for k, v in result.items() if k != "_id"})
+
+
+@api_router.post("/brands/{brand_id}/archive", response_model=BrandResponse)
+async def archive_brand(brand_id: str, current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))):
+    """Archive brand - soft delete, data preserved"""
+    existing = await db.brands.find_one({"id": brand_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Brand not found")
+    
+    if existing.get("status") == BrandStatus.ARCHIVED.value:
+        raise HTTPException(status_code=400, detail="Brand is already archived")
+    
+    result = await db.brands.find_one_and_update(
+        {"id": brand_id},
+        {"$set": {"status": BrandStatus.ARCHIVED.value, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        return_document=True
+    )
+    
+    await log_audit(current_user["id"], current_user["email"], "archive", "brand", brand_id, {
+        "before_status": existing.get("status"),
+        "after_status": BrandStatus.ARCHIVED.value
+    })
+    return BrandResponse(**{k: v for k, v in result.items() if k != "_id"})
+
+
+@api_router.post("/brands/{brand_id}/unarchive", response_model=BrandResponse)
+async def unarchive_brand(brand_id: str, current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))):
+    """Unarchive brand - restore from archive"""
+    existing = await db.brands.find_one({"id": brand_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Brand not found")
+    
+    if existing.get("status") != BrandStatus.ARCHIVED.value:
+        raise HTTPException(status_code=400, detail="Brand is not archived")
+    
+    result = await db.brands.find_one_and_update(
+        {"id": brand_id},
+        {"$set": {"status": BrandStatus.ACTIVE.value, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        return_document=True
+    )
+    
+    await log_audit(current_user["id"], current_user["email"], "unarchive", "brand", brand_id, {
+        "before_status": BrandStatus.ARCHIVED.value,
+        "after_status": BrandStatus.ACTIVE.value
+    })
+    return BrandResponse(**{k: v for k, v in result.items() if k != "_id"})
+
 
 @api_router.delete("/brands/{brand_id}")
 async def delete_brand(brand_id: str, current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))):
-    domains_with_brand = await db.domains.count_documents({"brand_id": brand_id})
-    if domains_with_brand > 0:
-        raise HTTPException(status_code=400, detail=f"Cannot delete brand with {domains_with_brand} associated domains")
+    """Delete brand - only if no data exists. Use archive for soft delete."""
+    # Check for associated data
+    domains_count = await db.asset_domains.count_documents({"brand_id": brand_id})
+    networks_count = await db.seo_networks.count_documents({"brand_id": brand_id})
+    legacy_domains_count = await db.domains.count_documents({"brand_id": brand_id})
+    
+    total_data = domains_count + networks_count + legacy_domains_count
+    if total_data > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete brand with associated data ({domains_count} domains, {networks_count} networks). Use archive instead."
+        )
+    
     result = await db.brands.delete_one({"id": brand_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Brand not found")
+    
     await log_audit(current_user["id"], current_user["email"], "delete", "brand", brand_id, {})
     return {"message": "Brand deleted"}
 
