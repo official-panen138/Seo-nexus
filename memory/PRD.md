@@ -49,6 +49,44 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## What's Been Implemented (Feb 8, 2026)
 
+### Full Multi-Brand Support (Feb 8, 2026) - COMPLETE
+**Feature:** Enterprise-ready multi-brand data isolation
+
+**1. Brand Entity Enhancement:**
+- Brand model with: id, name, slug, status (active/archived), notes
+- Archive/unarchive functionality (soft delete)
+- Cannot hard-delete brands with associated data
+- API: `/api/brands`, `/api/brands/{id}/archive`, `/api/brands/{id}/unarchive`
+
+**2. User Brand Scoping:**
+- User model with `brand_scope_ids` array
+- Super Admin: `brand_scope_ids = null` (full access to all brands)
+- Admin/Viewer: Must have at least one brand assigned
+- Migration ran to assign all existing users to all brands
+
+**3. Backend Enforcement (API Level):**
+- `build_brand_filter()` - Build MongoDB filter based on user's brand scope
+- `require_brand_access()` - Validate brand access, returns 403 if unauthorized
+- All V3 APIs enforce brand scoping: asset-domains, networks, structure
+- POST operations validate brand ownership
+
+**4. Frontend Brand Filtering:**
+- `BrandContext` - Manages brand state and filtering
+- `BrandSwitcher` component in sidebar
+  - Super Admin: "All Brands" option + any brand
+  - Admin/Viewer: Only assigned brands (no "All Brands")
+- Brand selection persists in localStorage (Super Admin only)
+
+**5. User Management UI:**
+- Users page with "Brand Access" column
+- Shows "All Brands" badge (green) for Super Admin
+- Shows brand badges for Admin/Viewer users
+- Edit dialog with brand multi-select
+- "Select All" / "Clear" buttons
+- Validation: At least one brand required for non-Super Admin
+
+**Tests:** 100% pass rate (14/14 backend, 100% frontend)
+
 ### P0 Domain Monitoring Fix (Feb 8, 2026) - COMPLETE
 **Issue:** Monitoring was not properly split into independent engines
 
