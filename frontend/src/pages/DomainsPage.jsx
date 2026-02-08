@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../lib/auth';
-import { domainsAPI, brandsAPI, groupsAPI, categoriesAPI, assetDomainsAPI, networksAPI, registrarsAPI } from '../lib/api';
+import { domainsAPI, brandsAPI, groupsAPI, categoriesAPI, assetDomainsAPI, networksAPI, registrarsAPI, exportAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { DomainDetailPanel } from '../components/DomainDetailPanel';
 import { Button } from '../components/ui/button';
@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Switch } from '../components/ui/switch';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { 
     Plus, 
@@ -33,7 +34,8 @@ import {
     XCircle,
     AlertCircle,
     ChevronsUpDown,
-    Check
+    Check,
+    Download
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
