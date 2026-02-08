@@ -1,0 +1,142 @@
+{
+  "summary": "Completed comprehensive testing of P0 Critical Bug Fix: Node-to-node linking in UI and graph visualization. All 16 backend tests passed (100%). Frontend verification shows all 6 P0 fix requirements working correctly.",
+  
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  
+  "passed_tests": {
+    "backend": {
+      "authentication": [
+        "Login with admin@test.com / admin123 - SUCCESS"
+      ],
+      "v3_networks_api_node_label": [
+        "GET /api/v3/networks/{id} returns entries with node_label",
+        "Entries have id, node_label, domain_name, calculated_tier, tier_label"
+      ],
+      "available_targets_api": [
+        "GET /api/v3/networks/{id}/available-targets returns nodes from structure entries",
+        "Available targets excludes self (exclude_entry_id param works)",
+        "Targets have entry.id as value and node_label for display"
+      ],
+      "tier_calculation": [
+        "Main node (domain_role=main) is tier 0 (LP/Money Site)",
+        "Supporting nodes with target have tier >= 1 based on distance from main",
+        "BFS algorithm correctly calculates tiers from graph structure"
+      ],
+      "target_node_relationships": [
+        "Supporting nodes have target_entry_id pointing to target node",
+        "Main nodes have null target_entry_id",
+        "target_domain_name is enriched correctly"
+      ],
+      "graph_visualization_links": [
+        "Links can be built using source: entry.id, target: entry.target_entry_id",
+        "forceLink().id(d => d.id) pattern works with entry IDs"
+      ],
+      "orphan_detection": [
+        "Tiers endpoint reports orphans correctly",
+        "Orphan = supporting node without target_entry_id"
+      ],
+      "path_normalization": [
+        "Empty/null paths normalized correctly",
+        "node_label = domain + path (or just domain for root)"
+      ],
+      "update_structure_entry": [
+        "Can update target_entry_id via PUT /api/v3/structure/{id}",
+        "Cannot set target_entry_id to self (400 error)"
+      ]
+    },
+    "frontend": {
+      "graph_visualization": [
+        "Graph shows 4 links connecting nodes in TESTER2 network",
+        "Links rendered as line elements with graph-link class",
+        "Nodes colored by tier (orange=LP/Money, yellow=Tier1, green=Tier2)"
+      ],
+      "domain_list_view": [
+        "Target column shows correct target node labels",
+        "Main node shows '-' for target (no target)",
+        "Supporting nodes show target domain name (e.g., 'moneysite.com', 'tier1-site1.com')"
+      ],
+      "edit_dialog_target_dropdown": [
+        "Target Node dropdown shows node_label options",
+        "Dropdown shows 'None (Orphan)' option at top",
+        "Dropdown excludes self from options",
+        "Current target is pre-selected with checkmark",
+        "Path-level nodes shown with full path (e.g., 'domaina.com/example')"
+      ],
+      "tier_distribution": [
+        "Shows 'Tier Distribution (Derived)' section",
+        "LP/Money Site: 1, Tier 1: 3, Tier 2: 1",
+        "Derived tiers legend shows all tier colors"
+      ]
+    }
+  },
+  
+  "p0_bug_fix_verification": {
+    "1_api_returns_node_label_and_entry_id": {
+      "status": "WORKING",
+      "details": "V3 Networks API returns entries with id (entry.id), node_label (domain + optional path), domain_name, calculated_tier, tier_label"
+    },
+    "2_target_dropdown_populated_from_structure_entries": {
+      "status": "WORKING",
+      "details": "Target Node dropdown populated from /api/v3/networks/{id}/available-targets which returns structure entries (not asset domains)"
+    },
+    "3_dropdown_shows_node_label_with_entry_id_value": {
+      "status": "WORKING",
+      "details": "Dropdown shows node_label (domain + path) with entry.id as value. 'None (Orphan)' option present. Self excluded."
+    },
+    "4_save_sends_target_entry_id": {
+      "status": "WORKING",
+      "details": "Edit dialog sends target_entry_id (entry.id) when saving, not asset_domain_id"
+    },
+    "5_d3_graph_builds_links_correctly": {
+      "status": "WORKING",
+      "details": "Graph builds links using source: e.id, target: e.target_entry_id with forceLink().id(d => d.id)"
+    },
+    "6_path_normalization": {
+      "status": "WORKING",
+      "details": "Empty/null paths normalized to None. node_label = domain + path (or just domain for root)"
+    }
+  },
+  
+  "test_report_links": [
+    "/app/backend/tests/test_p0_node_linking_fix.py",
+    "/app/test_reports/pytest/p0_node_linking_results.xml"
+  ],
+  
+  "action_items": [],
+  
+  "critical_code_review_comments": [
+    "P0 bug fix successfully implemented - node-to-node linking works correctly",
+    "Graph visualization shows visible links between connected nodes",
+    "Target Node dropdown correctly excludes self and shows node_label options",
+    "Tier calculation correctly assigns tier 0 to main node and calculates supporting tiers via BFS"
+  ],
+  
+  "updated_files": [
+    "/app/backend/tests/test_p0_node_linking_fix.py"
+  ],
+  
+  "success_rate": {
+    "backend": "100% (16/16 tests passed)",
+    "frontend": "100% (all 6 P0 fix requirements verified)"
+  },
+  
+  "test_credentials": {
+    "super_admin": {"email": "admin@test.com", "password": "admin123"}
+  },
+  
+  "seed_data": "TESTER2 network (id: a8ea05d6-6d3a-4a5d-86c6-5d9c0be8dc21) with 5 nodes: moneysite.com (main, tier 0), tier1-site1.com (supporting, tier 1), tier1-site2.com (supporting, tier 1), domaina.com/example (supporting, tier 2), domaina.com (supporting, tier 1)",
+  
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  
+  "context_for_next_testing_agent": "P0 bug fix for node-to-node linking is complete and verified. Key components: 1) V3 Networks API returns entries with node_label and entry.id, 2) Available targets API returns nodes from structure entries with node_label, 3) Target Node dropdown shows node_label options with entry.id as value, 4) Graph visualization builds links using source: e.id, target: e.target_entry_id, 5) Tier calculation works via BFS from main node."
+}
