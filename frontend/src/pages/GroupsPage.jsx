@@ -243,9 +243,9 @@ export default function GroupsPage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        onClick={(e) => openDeleteDialog(group, e)}
+                                                        onClick={(e) => openDeleteDialog(network, e)}
                                                         className="h-8 w-8 hover:bg-red-500/10 hover:text-red-500"
-                                                        data-testid={`delete-network-${group.id}`}
+                                                        data-testid={`delete-network-${network.id}`}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
@@ -254,15 +254,15 @@ export default function GroupsPage() {
                                         </div>
                                     </CardHeader>
                                     <CardContent>
-                                        {group.description && (
+                                        {network.description && (
                                             <p className="text-sm text-zinc-500 mb-4 line-clamp-2">
-                                                {group.description}
+                                                {network.description}
                                             </p>
                                         )}
                                         <div className="flex items-center justify-between text-sm">
                                             <div className="flex items-center gap-2 text-zinc-400">
                                                 <Globe className="h-4 w-4" />
-                                                <span>{group.domain_count} domain{group.domain_count !== 1 ? 's' : ''}</span>
+                                                <span>{network.domain_count || 0} domain{network.domain_count !== 1 ? 's' : ''}</span>
                                             </div>
                                             <div className="flex items-center gap-1 text-blue-500">
                                                 <Eye className="h-4 w-4" />
@@ -271,7 +271,7 @@ export default function GroupsPage() {
                                         </div>
                                         <div className="mt-3 pt-3 border-t border-border">
                                             <span className="text-xs text-zinc-600">
-                                                Created {formatDate(group.created_at)}
+                                                Created {formatDate(network.created_at)}
                                             </span>
                                         </div>
                                     </CardContent>
@@ -286,8 +286,13 @@ export default function GroupsPage() {
                     <DialogContent className="bg-card border-border max-w-md">
                         <DialogHeader>
                             <DialogTitle>
-                                {selectedGroup ? 'Edit Network' : 'Create Network'}
+                                {selectedNetwork ? 'Edit Network' : 'Create Network'}
                             </DialogTitle>
+                            <DialogDescription>
+                                {selectedNetwork 
+                                    ? 'Update network details below.' 
+                                    : 'Create a new SEO network. You can add domains to it later.'}
+                            </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
@@ -299,6 +304,25 @@ export default function GroupsPage() {
                                     className="bg-black border-border"
                                     data-testid="network-name-input"
                                 />
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <Label>Brand *</Label>
+                                <Select 
+                                    value={form.brand_id} 
+                                    onValueChange={(v) => setForm({...form, brand_id: v})}
+                                >
+                                    <SelectTrigger className="bg-black border-border" data-testid="network-brand-select">
+                                        <SelectValue placeholder="Select brand..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {brands.map(b => (
+                                            <SelectItem key={b.id} value={b.id}>
+                                                {b.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div className="space-y-2">
