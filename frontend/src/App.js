@@ -1,6 +1,7 @@
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./lib/auth";
+import { BrandProvider } from "./contexts/BrandContext";
 import { Toaster } from "./components/ui/sonner";
 
 // Pages
