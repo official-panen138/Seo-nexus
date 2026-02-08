@@ -165,8 +165,19 @@ class SeoNetworkBase(BaseModel):
     status: NetworkStatus = NetworkStatus.ACTIVE
 
 
+class MainNodeConfig(BaseModel):
+    """Configuration for the initial main node when creating a network"""
+    asset_domain_id: str  # Required - the main domain
+    optimized_path: Optional[str] = None  # Optional - defaults to "/" if empty
+
+
 class SeoNetworkCreate(SeoNetworkBase):
-    """Model for creating an SEO network"""
+    """Model for creating an SEO network with initial main node"""
+    main_node: MainNodeConfig  # Required - every network must have a main node
+
+
+class SeoNetworkCreateLegacy(SeoNetworkBase):
+    """Legacy model for creating without main node (backward compat)"""
     pass
 
 
@@ -185,6 +196,8 @@ class SeoNetworkResponse(SeoNetworkBase):
     legacy_id: Optional[str] = None  # Traceability to V2 groups
     brand_name: Optional[str] = None
     domain_count: int = 0
+    main_node_id: Optional[str] = None  # ID of the main structure entry
+    main_domain_name: Optional[str] = None  # Name of main domain for display
     created_at: str
     updated_at: str
 
