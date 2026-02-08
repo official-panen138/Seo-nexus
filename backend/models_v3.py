@@ -197,19 +197,23 @@ class SeoNetworkDetail(SeoNetworkResponse):
 # ==================== SEO STRUCTURE ENTRY MODELS ====================
 
 class SeoStructureEntryBase(BaseModel):
-    """Base model for SEO structure entry - relationship layer"""
+    """Base model for SEO structure entry - relationship layer (node-based)"""
     asset_domain_id: str
     network_id: str
+    
+    # Path-level node: domain + optional path = node
+    optimized_path: Optional[str] = None  # e.g., /blog/best-product or /landing-page
     
     # Domain Role
     domain_role: DomainRole = DomainRole.SUPPORTING
     domain_status: SeoStatus = SeoStatus.CANONICAL
     index_status: IndexStatus = IndexStatus.INDEX
     
-    # Relationship (target domain this entry points to)
-    target_asset_domain_id: Optional[str] = None
+    # Node-to-node relationship (target is another SeoStructureEntry, not just a domain)
+    target_entry_id: Optional[str] = None  # FK to another SeoStructureEntry
+    target_asset_domain_id: Optional[str] = None  # Legacy field (for backward compat)
     
-    # Ranking & Path Tracking (NEW)
+    # Ranking & Path Tracking
     ranking_url: Optional[str] = None  # Specific path that ranks
     primary_keyword: Optional[str] = None
     ranking_position: Optional[int] = None
