@@ -9,6 +9,7 @@ New API endpoints for V3 architecture:
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 import uuid
