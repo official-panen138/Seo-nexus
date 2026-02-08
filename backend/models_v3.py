@@ -103,7 +103,8 @@ class AssetDomainBase(BaseModel):
     domain_type_id: Optional[str] = None
     
     # Asset Management
-    registrar: Optional[str] = None
+    registrar_id: Optional[str] = None  # FK to registrars collection
+    registrar: Optional[str] = None  # Legacy field (deprecated, use registrar_id)
     buy_date: Optional[str] = None
     expiration_date: Optional[str] = None
     auto_renew: bool = False
