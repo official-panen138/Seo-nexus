@@ -802,6 +802,10 @@ async def register(user_data: UserCreate):
     user_count = await db.users.count_documents({})
     role = UserRole.SUPER_ADMIN if user_count == 0 else user_data.role
     
+    # Super Admin has NULL brand_scope_ids (full access)
+    # Other roles need brand_scope_ids assigned later
+    brand_scope_ids = None if role == UserRole.SUPER_ADMIN else user_data.brand_scope_ids
+    
     now = datetime.now(timezone.utc).isoformat()
     user = {
         "id": str(uuid.uuid4()),
@@ -809,6 +813,7 @@ async def register(user_data: UserCreate):
         "name": user_data.name,
         "password": hash_password(user_data.password),
         "role": role.value if isinstance(role, UserRole) else role,
+        "brand_scope_ids": brand_scope_ids,
         "created_at": now,
         "updated_at": now
     }
@@ -817,9 +822,11 @@ async def register(user_data: UserCreate):
     token = create_token(user["id"], user["email"], user["role"])
     user_response = UserResponse(
         id=user["id"], email=user["email"], name=user["name"],
-        role=user["role"], created_at=user["created_at"], updated_at=user["updated_at"]
+        role=user["role"], brand_scope_ids=user["brand_scope_ids"],
+        created_at=user["created_at"], updated_at=user["updated_at"]
     )
     return TokenResponse(access_token=token, user=user_response)
+
 
 @api_router.post("/auth/login", response_model=TokenResponse)
 async def login(credentials: UserLogin):
@@ -830,13 +837,16 @@ async def login(credentials: UserLogin):
     token = create_token(user["id"], user["email"], user["role"])
     user_response = UserResponse(
         id=user["id"], email=user["email"], name=user["name"],
-        role=user["role"], created_at=user["created_at"], updated_at=user["updated_at"]
+        role=user["role"], brand_scope_ids=user.get("brand_scope_ids"),
+        created_at=user["created_at"], updated_at=user["updated_at"]
     )
     return TokenResponse(access_token=token, user=user_response)
+
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
     return UserResponse(**current_user)
+
 
 # ==================== USER MANAGEMENT ====================
 
@@ -845,17 +855,57 @@ async def get_users(current_user: dict = Depends(require_roles([UserRole.SUPER_A
     users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
     return [UserResponse(**u) for u in users]
 
+
+@api_router.get("/users/{user_id}", response_model=UserResponse)
+async def get_user(user_id: str, current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))):
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return UserResponse(**user)
+
+
 @api_router.put("/users/{user_id}", response_model=UserResponse)
-async def update_user(user_id: str, role: UserRole, current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))):
+async def update_user(user_id: str, user_data: UserUpdate, current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))):
+    """Update user - Super Admin only"""
+    existing = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    update_dict = {k: v for k, v in user_data.model_dump().items() if v is not None}
+    
+    # Validate brand scoping rules
+    new_role = update_dict.get("role", existing.get("role"))
+    if hasattr(new_role, "value"):
+        new_role = new_role.value
+    update_dict["role"] = new_role
+    
+    # Super Admin must have NULL brand_scope_ids
+    if new_role == UserRole.SUPER_ADMIN.value:
+        update_dict["brand_scope_ids"] = None
+    else:
+        # Admin/Viewer must have at least one brand
+        brand_scope = update_dict.get("brand_scope_ids", existing.get("brand_scope_ids"))
+        if not brand_scope or len(brand_scope) == 0:
+            raise HTTPException(
+                status_code=400, 
+                detail="Admin and Viewer users must have at least one brand assigned"
+            )
+        update_dict["brand_scope_ids"] = brand_scope
+    
+    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
     result = await db.users.find_one_and_update(
         {"id": user_id},
-        {"$set": {"role": role.value, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        {"$set": update_dict},
         return_document=True
     )
-    if not result:
-        raise HTTPException(status_code=404, detail="User not found")
-    await log_audit(current_user["id"], current_user["email"], "update", "user", user_id, {"new_role": role.value})
+    
+    await log_audit(current_user["id"], current_user["email"], "update", "user", user_id, {
+        "before": existing,
+        "after": update_dict
+    })
     return UserResponse(**{k: v for k, v in result.items() if k != "_id" and k != "password"})
+
 
 @api_router.delete("/users/{user_id}")
 async def delete_user(user_id: str, current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))):
