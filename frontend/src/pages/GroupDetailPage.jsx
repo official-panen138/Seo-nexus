@@ -1346,6 +1346,163 @@ export default function GroupDetailPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* Delete Node Confirmation Dialog */}
+                <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                    <DialogContent className="bg-card border-border max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Delete Node</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to delete this node?
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        {entryToDelete && (
+                            <div className="p-4 bg-black rounded-lg">
+                                <div className="font-mono text-lg text-white">
+                                    {entryToDelete.node_label || entryToDelete.domain_name}
+                                </div>
+                                <div className="text-sm text-zinc-400 mt-1">
+                                    {entryToDelete.domain_role === 'main' 
+                                        ? 'Main node - cannot delete while other nodes exist' 
+                                        : `Supporting node - Tier ${entryToDelete.calculated_tier || '?'}`}
+                                </div>
+                            </div>
+                        )}
+
+                        <p className="text-sm text-zinc-400">
+                            If other nodes are targeting this node, they will become orphans.
+                        </p>
+
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setDeleteDialogOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleDeleteNode}
+                                disabled={deleting}
+                                className="bg-red-600 hover:bg-red-700"
+                            >
+                                {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                Delete Node
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Add Node Dialog */}
+                <Dialog open={addNodeDialogOpen} onOpenChange={setAddNodeDialogOpen}>
+                    <DialogContent className="bg-card border-border max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle>Add Node to Network</DialogTitle>
+                            <DialogDescription>
+                                Add a new supporting node. Only domains from the same brand are available.
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Asset Domain *</Label>
+                                <Select 
+                                    value={addNodeForm.asset_domain_id} 
+                                    onValueChange={(v) => setAddNodeForm({...addNodeForm, asset_domain_id: v})}
+                                >
+                                    <SelectTrigger className="bg-black border-border">
+                                        <SelectValue placeholder="Select domain..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableDomains.length === 0 ? (
+                                            <div className="p-2 text-sm text-zinc-500">
+                                                No available domains
+                                            </div>
+                                        ) : (
+                                            availableDomains.map(d => (
+                                                <SelectItem key={d.id} value={d.id}>
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{d.domain_name}</span>
+                                                        {!d.root_available && (
+                                                            <Badge variant="outline" className="text-xs">root used</Badge>
+                                                        )}
+                                                    </div>
+                                                </SelectItem>
+                                            ))
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Optimized Path (optional)</Label>
+                                <Input
+                                    value={addNodeForm.optimized_path}
+                                    onChange={(e) => setAddNodeForm({...addNodeForm, optimized_path: e.target.value})}
+                                    placeholder="/blog/article or leave empty for root"
+                                    className="bg-black border-border font-mono"
+                                />
+                                <p className="text-xs text-zinc-500">
+                                    Leave empty for domain-level node. Enter path for page-level targeting.
+                                </p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Role</Label>
+                                <Select 
+                                    value={addNodeForm.domain_role} 
+                                    onValueChange={(v) => setAddNodeForm({...addNodeForm, domain_role: v})}
+                                >
+                                    <SelectTrigger className="bg-black border-border">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="supporting">Supporting</SelectItem>
+                                        <SelectItem value="main">Main</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Target Node</Label>
+                                <Select 
+                                    value={addNodeForm.target_entry_id || 'none'} 
+                                    onValueChange={(v) => setAddNodeForm({...addNodeForm, target_entry_id: v === 'none' ? '' : v})}
+                                    disabled={addNodeForm.domain_role === 'main'}
+                                >
+                                    <SelectTrigger className="bg-black border-border">
+                                        <SelectValue placeholder="Select target..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">None (Orphan)</SelectItem>
+                                        {availableTargets.map(t => (
+                                            <SelectItem key={t.id} value={t.id}>
+                                                {t.node_label || t.domain_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setAddNodeDialogOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleAddNode}
+                                disabled={saving || !addNodeForm.asset_domain_id}
+                                className="bg-white text-black hover:bg-zinc-200"
+                            >
+                                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                Add Node
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </Layout>
     );
