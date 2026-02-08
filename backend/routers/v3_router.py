@@ -59,6 +59,12 @@ def init_v3_router(
     tier_service = tier_svc
 
 
+# Wrapper to properly use the dependency
+def get_user_dependency():
+    """Returns the actual dependency function"""
+    return get_current_user
+
+
 # ==================== TELEGRAM HELPER ====================
 
 async def send_v3_telegram_alert(message: str) -> bool:
