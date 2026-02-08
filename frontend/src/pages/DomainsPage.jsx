@@ -49,6 +49,8 @@ export default function DomainsPage() {
     const [domains, setDomains] = useState([]);
     const [brands, setBrands] = useState([]);
     const [groups, setGroups] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
