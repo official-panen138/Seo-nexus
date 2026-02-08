@@ -225,6 +225,38 @@ export default function DashboardPage() {
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
+                        {/* Auto-refresh controls */}
+                        <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5">
+                            <RefreshCw 
+                                className={`h-4 w-4 text-zinc-400 ${isRefreshing ? 'animate-spin' : ''}`}
+                            />
+                            <Select 
+                                value={refreshInterval.toString()} 
+                                onValueChange={handleRefreshIntervalChange}
+                            >
+                                <SelectTrigger className="w-[80px] border-0 bg-transparent h-7 px-1" data-testid="refresh-interval">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {REFRESH_OPTIONS.map(opt => (
+                                        <SelectItem key={opt.value} value={opt.value.toString()}>
+                                            {opt.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={refreshStatsOnly}
+                                disabled={isRefreshing}
+                                data-testid="manual-refresh"
+                            >
+                                <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                            </Button>
+                        </div>
+                        
                         <Select value={selectedBrand} onValueChange={setSelectedBrand}>
                             <SelectTrigger className="w-[180px] bg-card border-border" data-testid="brand-filter">
                                 <SelectValue placeholder="All Brands" />
