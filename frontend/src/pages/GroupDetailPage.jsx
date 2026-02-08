@@ -147,6 +147,51 @@ export default function GroupDetailPage() {
         setSheetOpen(true);
     };
 
+    // Open edit dialog for a structure entry
+    const openEditDialog = (entry) => {
+        setSelectedEntry(entry);
+        setEditForm({
+            domain_role: entry.domain_role || 'supporting',
+            domain_status: entry.domain_status || 'canonical',
+            index_status: entry.index_status || 'index',
+            target_asset_domain_id: entry.target_asset_domain_id || '',
+            ranking_url: entry.ranking_url || '',
+            primary_keyword: entry.primary_keyword || '',
+            ranking_position: entry.ranking_position || '',
+            notes: entry.notes || ''
+        });
+        loadAvailableTargets(network?.id, entry.asset_domain_id);
+        setEditDialogOpen(true);
+    };
+
+    // Save structure entry changes
+    const handleSaveEntry = async () => {
+        if (!selectedEntry?.id) return;
+        
+        setSaving(true);
+        try {
+            const payload = {
+                domain_role: editForm.domain_role,
+                domain_status: editForm.domain_status,
+                index_status: editForm.index_status,
+                target_asset_domain_id: editForm.target_asset_domain_id || null,
+                ranking_url: editForm.ranking_url || null,
+                primary_keyword: editForm.primary_keyword || null,
+                ranking_position: editForm.ranking_position ? parseInt(editForm.ranking_position) : null,
+                notes: editForm.notes || null
+            };
+            
+            await structureAPI.update(selectedEntry.id, payload);
+            toast.success('Structure entry updated');
+            setEditDialogOpen(false);
+            loadNetwork(); // Refresh data
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to update entry');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     // Calculate stats based on V3 or V2 data
     const stats = (() => {
         if (useV3 && network?.entries) {
