@@ -80,6 +80,13 @@ class UserRole(str, Enum):
     ADMIN = "admin"
     VIEWER = "viewer"
 
+
+class BrandStatus(str, Enum):
+    """Status of brand"""
+    ACTIVE = "active"
+    ARCHIVED = "archived"
+
+
 class DomainStatus(str, Enum):
     CANONICAL = "canonical"
     REDIRECT_301 = "301_redirect"
