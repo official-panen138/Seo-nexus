@@ -534,6 +534,20 @@ export default function GroupDetailPage() {
                                 </Button>
                             )}
                             
+                            {/* Add Node Button */}
+                            {useV3 && (
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={openAddNodeDialog}
+                                    className="bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20"
+                                    data-testid="add-node-btn"
+                                >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Node
+                                </Button>
+                            )}
+                            
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -552,13 +566,13 @@ export default function GroupDetailPage() {
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                         <Card className="bg-card border-border">
                             <CardContent className="pt-4">
-                                <div className="text-sm text-zinc-500 mb-1">Total Domains</div>
+                                <div className="text-sm text-zinc-500 mb-1">Total Nodes</div>
                                 <div className="text-2xl font-bold font-mono">{stats.total}</div>
                             </CardContent>
                         </Card>
                         <Card className="bg-card border-border">
                             <CardContent className="pt-4">
-                                <div className="text-sm text-zinc-500 mb-1">Main Domains</div>
+                                <div className="text-sm text-zinc-500 mb-1">Main Nodes</div>
                                 <div className="text-2xl font-bold font-mono text-orange-500">{stats.main}</div>
                             </CardContent>
                         </Card>
