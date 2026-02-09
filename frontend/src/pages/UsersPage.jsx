@@ -111,7 +111,8 @@ export default function UsersPage() {
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     role: editForm.role,
-                    brand_scope_ids: editForm.role === 'super_admin' ? null : editForm.brand_scope_ids
+                    brand_scope_ids: editForm.role === 'super_admin' ? null : editForm.brand_scope_ids,
+                    telegram_username: editForm.telegram_username.trim() || null
                 })
             });
 
