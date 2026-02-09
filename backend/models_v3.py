@@ -196,10 +196,16 @@ class ComplaintStatus(str, Enum):
 
 
 class NetworkVisibilityMode(str, Enum):
-    """Visibility mode for SEO networks"""
-    RESTRICTED = "restricted"  # Only allowed_user_ids can see
-    BRAND_BASED = "brand_based"  # Users with brand access (default)
-    PUBLIC = "public"  # Super admin only setting - everyone can see
+    """Visibility mode for SEO networks
+    
+    - BRAND_BASED: All users with brand access can VIEW (default)
+    - RESTRICTED: Only managers and Super Admins can VIEW
+    
+    Note: Execution rights are controlled separately by manager_ids.
+    Only managers or Super Admins can execute (create/update optimizations).
+    """
+    RESTRICTED = "restricted"  # Only managers + Super Admins can view
+    BRAND_BASED = "brand_based"  # Users with brand access can view (default)
 
 
 class ComplaintPriority(str, Enum):
