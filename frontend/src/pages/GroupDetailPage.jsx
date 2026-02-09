@@ -1024,8 +1024,129 @@ export default function GroupDetailPage() {
                         </div>
                     </TabsContent>
 
-                    {/* List View */}
+                    {/* List View - Tier Grouped */}
                     <TabsContent value="list">
+                        {/* View Toggle */}
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-zinc-500">View:</span>
+                                <div className="flex items-center bg-card border border-border rounded-lg overflow-hidden">
+                                    <button
+                                        className={`px-3 py-1.5 text-sm flex items-center gap-1.5 ${
+                                            domainListView === 'grouped' 
+                                                ? 'bg-white/10 text-white' 
+                                                : 'text-zinc-400 hover:text-white'
+                                        }`}
+                                        onClick={() => setDomainListView('grouped')}
+                                        data-testid="grouped-view-btn"
+                                    >
+                                        <Layers className="h-3.5 w-3.5" />
+                                        Grouped
+                                    </button>
+                                    <button
+                                        className={`px-3 py-1.5 text-sm flex items-center gap-1.5 ${
+                                            domainListView === 'flat' 
+                                                ? 'bg-white/10 text-white' 
+                                                : 'text-zinc-400 hover:text-white'
+                                        }`}
+                                        onClick={() => setDomainListView('flat')}
+                                        data-testid="flat-view-btn"
+                                    >
+                                        <List className="h-3.5 w-3.5" />
+                                        Flat
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {/* Tier Legend */}
+                            <div className="flex items-center gap-3 text-xs">
+                                {[0, 1, 2, 3, 4].map(tier => (
+                                    <div key={tier} className="flex items-center gap-1">
+                                        <div 
+                                            className="w-3 h-3 rounded-full"
+                                            style={{ backgroundColor: V3_TIER_COLORS[tier] || '#6B7280' }}
+                                        />
+                                        <span className="text-zinc-500">
+                                            {tier === 0 ? 'LP' : tier === 4 ? 'T4+' : `T${tier}`}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {domainListView === 'grouped' && useV3 ? (
+                            /* Grouped View by Tier */
+                            <div className="space-y-4" data-testid="tier-grouped-view">
+                                {Object.entries(tierGroups).map(([tierKey, tierGroup]) => {
+                                    if (tierGroup.entries.length === 0) return null;
+                                    const tier = parseInt(tierKey);
+                                    const isCollapsed = collapsedTiers[tier];
+                                    
+                                    return (
+                                        <Card key={tierKey} className="bg-card border-border overflow-hidden">
+                                            <button
+                                                className="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-900/50 transition-colors"
+                                                onClick={() => toggleTierCollapse(tier)}
+                                                data-testid={`tier-header-${tier}`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div 
+                                                        className="w-4 h-4 rounded-full"
+                                                        style={{ backgroundColor: V3_TIER_COLORS[tier] || '#6B7280' }}
+                                                    />
+                                                    <span className="font-medium text-white">{tierGroup.label}</span>
+                                                    <Badge variant="outline" className="text-xs">
+                                                        {tierGroup.entries.length} {tierGroup.entries.length === 1 ? 'node' : 'nodes'}
+                                                    </Badge>
+                                                </div>
+                                                {isCollapsed ? <ChevronRight className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
+                                            </button>
+                                            {!isCollapsed && (
+                                                <div className="border-t border-border">
+                                                    <Table>
+                                                        <TableBody>
+                                                            {tierGroup.entries.map((entry) => {
+                                                                const isOrphan = entry.domain_role !== 'main' && !entry.target_entry_id;
+                                                                const isMainNode = entry.domain_role === 'main';
+                                                                return (
+                                                                    <TableRow key={entry.id} className={`table-row-hover ${isOrphan ? 'bg-red-950/10' : ''}`}>
+                                                                        <TableCell className="w-[40%]">
+                                                                            <div className="flex items-center gap-2">
+                                                                                {isMainNode && <Crown className="h-4 w-4 text-amber-400" />}
+                                                                                {isOrphan && <AlertTriangle className="h-4 w-4 text-red-500" />}
+                                                                                <span className="font-mono text-sm">{entry.node_label || entry.domain_name}</span>
+                                                                                {entry.optimized_path && entry.optimized_path !== '/' && <Badge variant="outline" className="text-xs text-zinc-500">Path</Badge>}
+                                                                            </div>
+                                                                        </TableCell>
+                                                                        <TableCell className="w-[15%]"><Badge variant="outline" className={isMainNode ? 'text-amber-400 border-amber-400/30' : ''}>{isMainNode ? 'Main' : 'Supporting'}</Badge></TableCell>
+                                                                        <TableCell className="w-[15%] text-sm text-zinc-400">{entry.domain_status === 'primary' ? 'Primary' : entry.domain_status === '301_redirect' ? '301' : entry.domain_status === '302_redirect' ? '302' : entry.domain_status || 'Canonical'}</TableCell>
+                                                                        <TableCell className="w-[15%] text-sm text-zinc-400 font-mono">{isMainNode ? '—' : (entry.target_node_label || '-')}</TableCell>
+                                                                        <TableCell className="w-[15%] text-right">
+                                                                            <div className="flex items-center justify-end gap-1">
+                                                                                <Button variant="ghost" size="sm" onClick={() => handleNodeClick(entry)} className="h-7 px-2 text-zinc-400 hover:text-white">View</Button>
+                                                                                <DropdownMenu>
+                                                                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="h-7 w-7"><MoreVertical className="h-3.5 w-3.5" /></Button></DropdownMenuTrigger>
+                                                                                    <DropdownMenuContent align="end">
+                                                                                        <DropdownMenuItem onClick={() => openEditDialog(entry)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+                                                                                        {!isMainNode && <DropdownMenuItem onClick={() => openSwitchMainDialog(entry)} className="text-amber-400"><Crown className="h-4 w-4 mr-2" />Make Main</DropdownMenuItem>}
+                                                                                        <DropdownMenuSeparator />
+                                                                                        <DropdownMenuItem onClick={() => openDeleteDialog(entry)} className="text-red-400"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                                                                                    </DropdownMenuContent>
+                                                                                </DropdownMenu>
+                                                                            </div>
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                );
+                                                            })}
+                                                        </TableBody>
+                                                    </Table>
+                                                </div>
+                                            )}
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+                        ) : (
                         <div className="data-table-container" data-testid="domains-list">
                             <Table>
                                 <TableHeader>
