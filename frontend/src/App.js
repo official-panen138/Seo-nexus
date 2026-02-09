@@ -14,6 +14,7 @@ import GroupDetailPage from "./pages/GroupDetailPage";
 import ReportsPage from "./pages/ReportsPage";
 import TeamEvaluationPage from "./pages/TeamEvaluationPage";
 import OptimizationDetailPage from "./pages/OptimizationDetailPage";
+import ActivityTypesPage from "./pages/ActivityTypesPage";
 import BrandsPage from "./pages/BrandsPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import UsersPage from "./pages/UsersPage";
