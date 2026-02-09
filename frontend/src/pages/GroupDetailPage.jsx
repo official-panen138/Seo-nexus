@@ -1005,6 +1005,10 @@ export default function GroupDetailPage() {
                                 </span>
                             )}
                         </TabsTrigger>
+                        <TabsTrigger value="settings" data-testid="settings-tab" className="flex items-center gap-2">
+                            <Settings className="h-4 w-4" />
+                            Settings
+                        </TabsTrigger>
                     </TabsList>
 
                     {/* Graph View */}
