@@ -38,7 +38,8 @@ import {
     AlertTriangle,
     MessageSquare,
     Eye,
-    AlertCircle
+    AlertCircle,
+    Download
 } from 'lucide-react';
 
 // Activity type configuration
