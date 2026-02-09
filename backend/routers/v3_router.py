@@ -3614,7 +3614,7 @@ async def send_seo_telegram_alert(message: str) -> bool:
         return False
 
 
-@router.post("/settings/telegram-seo")
+@router.put("/settings/telegram-seo")
 async def update_telegram_seo_settings(
     settings: dict,
     current_user: dict = Depends(get_current_user_wrapper)
@@ -3624,15 +3624,35 @@ async def update_telegram_seo_settings(
     if current_user.get("role") != "super_admin":
         raise HTTPException(status_code=403, detail="Only super admin can update Telegram settings")
     
+    # Get existing settings first
+    existing = await db.settings.find_one({"key": "telegram_seo"}, {"_id": 0})
+    
+    # Build update dict - only update provided fields
+    update_data = {
+        "key": "telegram_seo",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if "bot_token" in settings and settings["bot_token"]:
+        update_data["bot_token"] = settings["bot_token"]
+    elif existing and existing.get("bot_token"):
+        update_data["bot_token"] = existing["bot_token"]
+    
+    if "chat_id" in settings and settings["chat_id"]:
+        update_data["chat_id"] = settings["chat_id"]
+    elif existing and existing.get("chat_id"):
+        update_data["chat_id"] = existing["chat_id"]
+    
+    if "enabled" in settings:
+        update_data["enabled"] = settings["enabled"]
+    elif existing:
+        update_data["enabled"] = existing.get("enabled", True)
+    else:
+        update_data["enabled"] = True
+    
     await db.settings.update_one(
         {"key": "telegram_seo"},
-        {"$set": {
-            "key": "telegram_seo",
-            "bot_token": settings.get("bot_token"),
-            "chat_id": settings.get("chat_id"),
-            "enabled": settings.get("enabled", True),
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }},
+        {"$set": update_data},
         upsert=True
     )
     
