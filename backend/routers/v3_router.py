@@ -3342,9 +3342,6 @@ async def get_network_change_history(
         query, {"_id": 0}
     ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
     
-    # Get total count for pagination info
-    total_count = await db.seo_change_logs.count_documents(query)
-    
     # Helper function to enrich snapshot with human-readable labels
     async def enrich_snapshot(snapshot):
         if not snapshot:
