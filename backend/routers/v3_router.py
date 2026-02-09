@@ -1288,6 +1288,41 @@ async def update_structure_entry(
         if not target:
             raise HTTPException(status_code=400, detail="Target asset domain not found")
     
+    # === MAIN NODE VALIDATION RULES ===
+    # Determine the effective role after update
+    new_role = update_dict.get("domain_role", existing.get("domain_role"))
+    new_status = update_dict.get("domain_status", existing.get("domain_status"))
+    new_target = update_dict.get("target_entry_id", existing.get("target_entry_id"))
+    new_target_domain = update_dict.get("target_asset_domain_id", existing.get("target_asset_domain_id"))
+    
+    if new_role == "main" or new_role == DomainRole.MAIN:
+        # Rule 1: Main nodes MUST NOT have a target
+        if new_target or new_target_domain:
+            raise HTTPException(
+                status_code=400,
+                detail="Main (LP/Money Site) nodes cannot have a target. They are the primary target."
+            )
+        
+        # Rule 2: Main nodes MUST have PRIMARY status
+        if new_status and new_status not in ["primary", SeoStatus.PRIMARY]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Main nodes must have 'primary' status, not '{new_status}'. Main nodes don't redirect to themselves."
+            )
+        
+        # Rule 3: Check if changing TO main role, and another main already exists
+        if existing.get("domain_role") != "main" and (new_role == "main" or new_role == DomainRole.MAIN):
+            existing_main = await db.seo_structure_entries.find_one({
+                "network_id": existing["network_id"],
+                "domain_role": "main",
+                "id": {"$ne": entry_id}
+            })
+            if existing_main:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Network already has a main node. Use 'Switch Main Target' to change it safely."
+                )
+    
     # Convert enums
     for field in ["domain_role", "domain_status", "index_status"]:
         if field in update_dict and hasattr(update_dict[field], "value"):
