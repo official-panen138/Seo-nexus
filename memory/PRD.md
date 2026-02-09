@@ -496,6 +496,14 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
 - ✅ **Export V3 Data to CSV/JSON** (Feb 8, 2026)
 - ✅ **Dashboard Refresh Interval** (Feb 8, 2026)
 - ✅ **Bulk Node Import with Path Support** (Feb 8, 2026)
+- ✅ **Tier-based Grouping in Domain List** (Feb 9, 2026)
+  - Accordion-style tier groups (LP/Money Site, Tier 1, Tier 2, etc.)
+  - Node counts per tier, collapse/expand functionality
+  - Grouped/Flat view toggle
+- ✅ **Filterable SEO Change History Timeline** (Feb 9, 2026)
+  - Filters: User, Action type, Node, Date range
+  - Human-readable diffs (Role, Status, Target as domain names not IDs)
+  - "View Node in Graph" button for highlighting
 - 🟡 **Conflict Detection UI** - Backend API exists, frontend needed:
   - Alert Center integration
   - Node highlighting in D3 graph
