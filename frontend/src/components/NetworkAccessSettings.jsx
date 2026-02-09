@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../lib/auth';
 import api from '../lib/api';
 import { Button } from './ui/button';
@@ -21,8 +21,7 @@ import {
     CheckCircle,
     Info,
     Search,
-    Plus,
-    Trash2
+    Plus
 } from 'lucide-react';
 
 const VISIBILITY_OPTIONS = [
@@ -60,34 +59,46 @@ export function NetworkAccessSettings({ networkId, brandId }) {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [accessControl, setAccessControl] = useState(null);
-    const [allUsers, setAllUsers] = useState([]);
     const [selectedUserIds, setSelectedUserIds] = useState([]);
+    const [selectedUsers, setSelectedUsers] = useState([]);
     const [visibilityMode, setVisibilityMode] = useState('brand_based');
+    
+    // Search state
     const [searchQuery, setSearchQuery] = useState('');
-    const [showUserSelector, setShowUserSelector] = useState(false);
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const searchTimeoutRef = useRef(null);
+    const dropdownRef = useRef(null);
 
     const isSuperAdmin = user?.role === 'super_admin';
     const isAdmin = user?.role === 'admin' || isSuperAdmin;
 
+    // Load access control settings
     useEffect(() => {
         if (networkId) {
-            loadData();
+            loadAccessSettings();
         }
-    }, [networkId, brandId]);
+    }, [networkId]);
 
-    const loadData = async () => {
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const loadAccessSettings = async () => {
         setLoading(true);
         try {
-            // Load access control settings
-            const accessRes = await api.get(`/api/v3/networks/${networkId}/access-control`);
-            setAccessControl(accessRes.data);
-            setVisibilityMode(accessRes.data.visibility_mode || 'brand_based');
-            setSelectedUserIds(accessRes.data.allowed_user_ids || []);
-            
-            // Load all users
-            const usersRes = await api.get('/api/users');
-            setAllUsers(usersRes.data || []);
+            const res = await api.get(`/api/v3/networks/${networkId}/access-control`);
+            setVisibilityMode(res.data.visibility_mode || 'brand_based');
+            setSelectedUserIds(res.data.allowed_user_ids || []);
+            setSelectedUsers(res.data.allowed_users || []);
         } catch (err) {
             console.error('Failed to load access settings:', err);
             toast.error('Failed to load access settings');
@@ -96,47 +107,62 @@ export function NetworkAccessSettings({ networkId, brandId }) {
         }
     };
 
-    // Filter users based on eligibility rules
-    const eligibleUsers = useMemo(() => {
-        if (!allUsers.length) return [];
-        
-        return allUsers.filter(u => {
-            // Super Admin can assign anyone
-            if (isSuperAdmin) return true;
-            
-            // Admin can only assign users with same brand access
-            if (user?.role === 'admin') {
-                // Must share brand access
-                const hasSharedBrand = u.brand_ids?.includes(brandId) || u.role === 'super_admin';
-                // Can only assign Viewer or Admin (not Super Admin)
-                const isAssignable = u.role !== 'super_admin';
-                return hasSharedBrand && isAssignable;
-            }
-            
-            return false;
-        });
-    }, [allUsers, isSuperAdmin, user, brandId]);
+    // Debounced user search
+    const searchUsers = useCallback(async (query) => {
+        if (query.length < 2) {
+            setSearchResults([]);
+            return;
+        }
 
-    // Filter users for search
-    const filteredUsers = useMemo(() => {
-        if (!searchQuery.trim()) return eligibleUsers;
-        
-        const query = searchQuery.toLowerCase();
-        return eligibleUsers.filter(u => 
-            (u.name?.toLowerCase().includes(query)) ||
-            (u.email?.toLowerCase().includes(query))
-        );
-    }, [eligibleUsers, searchQuery]);
+        setIsSearching(true);
+        try {
+            const res = await api.get(`/api/v3/users/search`, {
+                params: { q: query, network_id: networkId }
+            });
+            // Filter out already selected users
+            const filtered = (res.data.results || []).filter(
+                u => !selectedUserIds.includes(u.id)
+            );
+            setSearchResults(filtered);
+        } catch (err) {
+            console.error('User search failed:', err);
+            setSearchResults([]);
+        } finally {
+            setIsSearching(false);
+        }
+    }, [networkId, selectedUserIds]);
 
-    // Get selected user objects
-    const selectedUsers = useMemo(() => {
-        return allUsers.filter(u => selectedUserIds.includes(u.id));
-    }, [allUsers, selectedUserIds]);
+    // Handle search input change with debounce
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchQuery(value);
+        setShowDropdown(true);
 
-    // Users available to add (not already selected)
-    const availableUsers = useMemo(() => {
-        return filteredUsers.filter(u => !selectedUserIds.includes(u.id));
-    }, [filteredUsers, selectedUserIds]);
+        // Clear previous timeout
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+
+        // Debounce search (300ms)
+        searchTimeoutRef.current = setTimeout(() => {
+            searchUsers(value);
+        }, 300);
+    };
+
+    const addUser = (user) => {
+        if (!selectedUserIds.includes(user.id)) {
+            setSelectedUserIds(prev => [...prev, user.id]);
+            setSelectedUsers(prev => [...prev, user]);
+        }
+        setSearchQuery('');
+        setSearchResults([]);
+        setShowDropdown(false);
+    };
+
+    const removeUser = (userId) => {
+        setSelectedUserIds(prev => prev.filter(id => id !== userId));
+        setSelectedUsers(prev => prev.filter(u => u.id !== userId));
+    };
 
     const handleSave = async () => {
         // Warn if restricted mode with no users
@@ -154,23 +180,12 @@ export function NetworkAccessSettings({ networkId, brandId }) {
                 allowed_user_ids: visibilityMode === 'restricted' ? selectedUserIds : []
             });
             toast.success('Access settings updated');
-            loadData();
+            loadAccessSettings();
         } catch (err) {
             toast.error(err.response?.data?.detail || 'Failed to update access settings');
         } finally {
             setSaving(false);
         }
-    };
-
-    const addUser = (userId) => {
-        if (!selectedUserIds.includes(userId)) {
-            setSelectedUserIds(prev => [...prev, userId]);
-        }
-        setSearchQuery('');
-    };
-
-    const removeUser = (userId) => {
-        setSelectedUserIds(prev => prev.filter(id => id !== userId));
     };
 
     if (!isAdmin) {
@@ -265,35 +280,40 @@ export function NetworkAccessSettings({ networkId, brandId }) {
                             </div>
                         )}
 
-                        {/* User Search & Add */}
-                        <div className="mb-4">
+                        {/* User Search Input */}
+                        <div className="mb-4 relative" ref={dropdownRef}>
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                                 <Input
                                     value={searchQuery}
-                                    onChange={(e) => {
-                                        setSearchQuery(e.target.value);
-                                        setShowUserSelector(true);
-                                    }}
-                                    onFocus={() => setShowUserSelector(true)}
-                                    placeholder="Search users by name or email..."
+                                    onChange={handleSearchChange}
+                                    onFocus={() => setShowDropdown(true)}
+                                    placeholder="Search users by name or email (min 2 chars)..."
                                     className="pl-10 bg-black border-border"
                                     data-testid="user-search-input"
                                 />
+                                {isSearching && (
+                                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 animate-spin" />
+                                )}
                             </div>
 
-                            {/* User Dropdown */}
-                            {showUserSelector && (searchQuery || availableUsers.length > 0) && (
-                                <div className="mt-2 border border-border rounded-lg bg-zinc-900 max-h-[200px] overflow-hidden">
-                                    <ScrollArea className="h-full max-h-[200px]">
-                                        {availableUsers.length > 0 ? (
+                            {/* Search Results Dropdown */}
+                            {showDropdown && searchQuery.length >= 2 && (
+                                <div className="absolute z-50 mt-2 w-full border border-border rounded-lg bg-zinc-900 max-h-[250px] overflow-hidden shadow-lg">
+                                    <ScrollArea className="h-full max-h-[250px]">
+                                        {isSearching ? (
+                                            <div className="p-4 text-center text-zinc-500 text-sm flex items-center justify-center gap-2">
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Searching...
+                                            </div>
+                                        ) : searchResults.length > 0 ? (
                                             <div className="p-1">
-                                                {availableUsers.slice(0, 10).map(u => (
+                                                {searchResults.map(u => (
                                                     <div
                                                         key={u.id}
-                                                        onClick={() => addUser(u.id)}
-                                                        className="flex items-center justify-between p-2 rounded hover:bg-zinc-800 cursor-pointer"
-                                                        data-testid={`add-user-${u.id}`}
+                                                        onClick={() => addUser(u)}
+                                                        className="flex items-center justify-between p-3 rounded hover:bg-zinc-800 cursor-pointer"
+                                                        data-testid={`search-result-${u.id}`}
                                                     >
                                                         <div className="flex items-center gap-3">
                                                             <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
@@ -303,7 +323,7 @@ export function NetworkAccessSettings({ networkId, brandId }) {
                                                                 {u.name?.charAt(0)?.toUpperCase() || u.email?.charAt(0)?.toUpperCase()}
                                                             </div>
                                                             <div>
-                                                                <p className="text-sm text-white font-medium">{u.name || u.email.split('@')[0]}</p>
+                                                                <p className="text-sm text-white font-medium">{u.name}</p>
                                                                 <p className="text-xs text-zinc-500">{u.email}</p>
                                                             </div>
                                                         </div>
@@ -318,10 +338,17 @@ export function NetworkAccessSettings({ networkId, brandId }) {
                                             </div>
                                         ) : (
                                             <div className="p-4 text-center text-zinc-500 text-sm">
-                                                {searchQuery ? 'No users found matching your search' : 'All eligible users have been added'}
+                                                No users found matching "{searchQuery}"
                                             </div>
                                         )}
                                     </ScrollArea>
+                                </div>
+                            )}
+
+                            {/* Hint when query is too short */}
+                            {showDropdown && searchQuery.length > 0 && searchQuery.length < 2 && (
+                                <div className="absolute z-50 mt-2 w-full border border-border rounded-lg bg-zinc-900 p-3 shadow-lg">
+                                    <p className="text-sm text-zinc-500 text-center">Type at least 2 characters to search</p>
                                 </div>
                             )}
                         </div>
@@ -345,7 +372,7 @@ export function NetworkAccessSettings({ networkId, brandId }) {
                                                     {u.name?.charAt(0)?.toUpperCase() || u.email?.charAt(0)?.toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p className="text-white font-medium">{u.name || u.email.split('@')[0]}</p>
+                                                    <p className="text-white font-medium">{u.name || u.email?.split('@')[0]}</p>
                                                     <p className="text-xs text-zinc-500">{u.email}</p>
                                                 </div>
                                             </div>
