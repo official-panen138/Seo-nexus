@@ -665,6 +665,7 @@ export default function DomainsPage() {
                                 <TableHead>Status</TableHead>
                                 {useV3 ? (
                                     <>
+                                        <TableHead>SEO Networks</TableHead>
                                         <TableHead>Monitoring</TableHead>
                                         <TableHead>Expiration</TableHead>
                                     </>
