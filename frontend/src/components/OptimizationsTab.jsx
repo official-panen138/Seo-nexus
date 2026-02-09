@@ -462,23 +462,68 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
                                         </div>
                                         
                                         {/* Actions */}
-                                        <div className="flex items-center gap-2 lg:ml-4">
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon"
-                                                onClick={() => openEditDialog(opt)}
-                                                className="h-8 w-8 hover:bg-blue-500/10 hover:text-blue-400"
-                                            >
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon"
-                                                onClick={() => { setSelectedOptimization(opt); setDeleteDialogOpen(true); }}
-                                                className="h-8 w-8 hover:bg-red-500/10 hover:text-red-400"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                        <div className="flex items-center gap-1 lg:ml-4">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon"
+                                                            onClick={() => openEditDialog(opt)}
+                                                            className="h-8 w-8 hover:bg-blue-500/10 hover:text-blue-400"
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Edit</TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                            
+                                            {/* Complaint button - Super Admin only */}
+                                            {isSuperAdmin() && (
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon"
+                                                                onClick={() => openComplaintDialog(opt)}
+                                                                className="h-8 w-8 hover:bg-amber-500/10 hover:text-amber-400"
+                                                            >
+                                                                <AlertTriangle className="h-4 w-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Submit Complaint</TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            )}
+                                            
+                                            {/* Delete button - Super Admin only */}
+                                            {isSuperAdmin() && (
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon"
+                                                                onClick={() => { setSelectedOptimization(opt); setDeleteDialogOpen(true); }}
+                                                                className="h-8 w-8 hover:bg-red-500/10 hover:text-red-400"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Delete (Super Admin)</TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            )}
+                                            
+                                            {/* Complaints indicator */}
+                                            {opt.complaints_count > 0 && (
+                                                <Badge variant="outline" className="text-amber-400 border-amber-500/30 text-xs">
+                                                    <MessageSquare className="h-3 w-3 mr-1" />
+                                                    {opt.complaints_count}
+                                                </Badge>
+                                            )}
                                         </div>
                                     </div>
                                 </CardContent>
