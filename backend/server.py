@@ -1966,7 +1966,8 @@ init_v3_router(
     current_user_dep=get_current_user,
     roles_dep=require_roles,
     activity_service=activity_log_service,
-    tier_svc=tier_service
+    tier_svc=tier_service,
+    seo_change_svc=seo_change_log_service
 )
 
 # Include routers
