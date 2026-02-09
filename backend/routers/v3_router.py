@@ -2536,7 +2536,7 @@ async def add_team_response(
     
     Rules:
     - Min 20 chars, max 2000 chars for note
-    - Admin or Super Admin only
+    - Only Managers or Super Admin can respond
     - Changes complaint_status to 'under_review' if currently 'complained'
     """
     # Validate response note length
@@ -2545,15 +2545,16 @@ async def add_team_response(
     if len(data.note.strip()) > 2000:
         raise HTTPException(status_code=400, detail="Response note cannot exceed 2000 characters")
     
-    # Check permissions
-    if current_user.get("role") not in ["admin", "super_admin"]:
-        raise HTTPException(status_code=403, detail="Admin access required to respond")
-    
     optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
     if not optimization:
         raise HTTPException(status_code=404, detail="Optimization not found")
     
     require_brand_access(optimization["brand_id"], current_user)
+    
+    # Check manager permission - only managers can respond to complaints
+    network = await db.seo_networks.find_one({"id": optimization["network_id"]}, {"_id": 0})
+    if network:
+        await require_manager_permission(network, current_user)
     
     # Create response entry
     response_entry = {
