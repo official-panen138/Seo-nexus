@@ -258,6 +258,47 @@ class SeoOptimizationResponse(BaseModel):
     # Enriched fields
     network_name: Optional[str] = None
     brand_name: Optional[str] = None
+    
+    # Optional outcome evaluation
+    outcome: Optional[str] = None
+    complaints_count: int = 0
+
+
+class OptimizationComplaintCreate(BaseModel):
+    """Create a complaint on an optimization"""
+    reason: str  # Required complaint text
+    responsible_user_ids: List[str] = []  # Users to tag
+    priority: Optional[ComplaintPriority] = ComplaintPriority.MEDIUM
+    report_urls: List[str] = []
+
+
+class OptimizationComplaintResponse(BaseModel):
+    """Response model for optimization complaint"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: str
+    optimization_id: str
+    created_by: OptimizationCreatedBy
+    created_at: str
+    reason: str
+    responsible_user_ids: List[str] = []
+    responsible_users: List[Dict[str, Any]] = []  # Enriched user info
+    priority: str
+    report_urls: List[str] = []
+    telegram_notified_at: Optional[str] = None
+    status: str = "open"  # open, resolved, dismissed
+
+
+class UserTelegramSettings(BaseModel):
+    """Telegram settings for user"""
+    telegram_username: Optional[str] = None
+    telegram_user_id: Optional[str] = None
+
+
+class NetworkAccessControl(BaseModel):
+    """Access control settings for SEO network"""
+    visibility_mode: NetworkVisibilityMode = NetworkVisibilityMode.BRAND_BASED
+    allowed_user_ids: List[str] = []
 
 
 # ==================== ASSET DOMAIN MODELS ====================
