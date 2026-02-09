@@ -64,6 +64,9 @@ async def lifespan(app: FastAPI):
     logger.info("Starting SEO-NOC application...")
     await initialize_default_categories()
     
+    # Create database indexes for performance
+    await create_database_indexes()
+    
     # Start V3 monitoring scheduler (two independent engines)
     from services.monitoring_service import MonitoringScheduler
     monitoring_scheduler = MonitoringScheduler(db)
@@ -75,6 +78,33 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down SEO-NOC application...")
     client.close()
+
+
+async def create_database_indexes():
+    """Create database indexes for optimal query performance"""
+    try:
+        # Asset domains indexes for pagination and filtering
+        await db.asset_domains.create_index("domain_name")
+        await db.asset_domains.create_index("brand_id")
+        await db.asset_domains.create_index("status")
+        await db.asset_domains.create_index("created_at")
+        await db.asset_domains.create_index([("domain_name", 1), ("brand_id", 1)])
+        
+        # SEO structure entries indexes
+        await db.seo_structure_entries.create_index("network_id")
+        await db.seo_structure_entries.create_index("asset_domain_id")
+        await db.seo_structure_entries.create_index([("network_id", 1), ("asset_domain_id", 1)])
+        
+        # SEO networks indexes
+        await db.seo_networks.create_index("brand_id")
+        await db.seo_networks.create_index("name")
+        
+        # Users index
+        await db.users.create_index("email", unique=True)
+        
+        logger.info("Database indexes created/verified")
+    except Exception as e:
+        logger.warning(f"Index creation warning (may already exist): {e}")
 
 app = FastAPI(title="SEO-NOC API", lifespan=lifespan)
 api_router = APIRouter(prefix="/api")
