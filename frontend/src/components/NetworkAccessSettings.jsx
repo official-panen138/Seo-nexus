@@ -133,7 +133,7 @@ export function NetworkAccessSettings({ networkId, brandId }) {
 
         setIsSearching(true);
         try {
-            const res = await api.get(`/api/v3/users/search`, {
+            const res = await apiV3.get(`/users/search`, {
                 params: { q: query, network_id: networkId }
             });
             // Filter out already selected users
