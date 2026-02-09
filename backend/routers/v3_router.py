@@ -707,11 +707,15 @@ async def delete_asset_domain(
 async def get_networks(
     brand_id: Optional[str] = None,
     status: Optional[NetworkStatus] = None,
+    ranking_status: Optional[str] = None,  # Filter: "ranking", "tracking", "none"
+    sort_by: Optional[str] = None,  # Sort: "best_position", "ranking_nodes"
     skip: int = 0,
     limit: int = 100,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Get all SEO networks - BRAND SCOPED"""
+    """Get all SEO networks - BRAND SCOPED, with ranking visibility"""
+    from models_v3 import RankingStatus
+    
     # Start with brand scope filter
     query = build_brand_filter(current_user)
     
@@ -725,14 +729,71 @@ async def get_networks(
     
     networks = await db.seo_networks.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
     
-    # Get brand names and domain counts
+    # Get brand names
     brands = {b["id"]: b["name"] for b in await db.brands.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)}
     
+    # Compute ranking metrics for each network
+    result = []
     for network in networks:
         network["brand_name"] = brands.get(network.get("brand_id"))
-        network["domain_count"] = await db.seo_structure_entries.count_documents({"network_id": network["id"]})
+        
+        # Get all structure entries for this network
+        entries = await db.seo_structure_entries.find(
+            {"network_id": network["id"]},
+            {"_id": 0, "ranking_position": 1, "ranking_url": 1, "primary_keyword": 1, "index_status": 1}
+        ).to_list(1000)
+        
+        network["domain_count"] = len(entries)
+        
+        # Calculate ranking metrics
+        ranking_nodes = []
+        tracked_urls = []
+        
+        for entry in entries:
+            pos = entry.get("ranking_position")
+            ranking_url = entry.get("ranking_url") or ""
+            primary_keyword = entry.get("primary_keyword") or ""
+            index_status = entry.get("index_status", "index")
+            
+            # Check if ranking (position 1-100 OR has ranking_url)
+            has_ranking = (pos is not None and 1 <= pos <= 100) or bool(ranking_url.strip())
+            if has_ranking:
+                if pos is not None and 1 <= pos <= 100:
+                    ranking_nodes.append(pos)
+            
+            # Check if tracking (has keyword/url AND indexed, but no ranking position)
+            has_tracking_data = bool(primary_keyword.strip()) or bool(ranking_url.strip())
+            is_indexed = index_status == "index"
+            if has_tracking_data and is_indexed:
+                tracked_urls.append(entry)
+        
+        # Determine ranking status
+        if ranking_nodes:
+            network["ranking_status"] = RankingStatus.RANKING.value
+        elif tracked_urls:
+            network["ranking_status"] = RankingStatus.TRACKING.value
+        else:
+            network["ranking_status"] = RankingStatus.NONE.value
+        
+        network["ranking_nodes_count"] = len(ranking_nodes)
+        network["best_ranking_position"] = min(ranking_nodes) if ranking_nodes else None
+        network["tracked_urls_count"] = len(tracked_urls)
+        
+        result.append(network)
     
-    return [SeoNetworkResponse(**n) for n in networks]
+    # Filter by ranking_status if specified
+    if ranking_status:
+        result = [n for n in result if n.get("ranking_status") == ranking_status]
+    
+    # Sort if specified
+    if sort_by == "best_position":
+        # Sort by best position (ascending), None values at end
+        result.sort(key=lambda x: (x.get("best_ranking_position") is None, x.get("best_ranking_position") or 999))
+    elif sort_by == "ranking_nodes":
+        # Sort by ranking nodes count (descending)
+        result.sort(key=lambda x: x.get("ranking_nodes_count", 0), reverse=True)
+    
+    return [SeoNetworkResponse(**n) for n in result]
 
 
 # ==================== NETWORK SEARCH ENDPOINT ====================
