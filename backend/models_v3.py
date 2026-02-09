@@ -41,10 +41,17 @@ class DomainRole(str, Enum):
 
 class SeoStatus(str, Enum):
     """SEO relationship status"""
+    PRIMARY = "primary"  # For main nodes - no redirect/canonical relationship
     CANONICAL = "canonical"
     REDIRECT_301 = "301_redirect"
     REDIRECT_302 = "302_redirect"
     RESTORE = "restore"
+
+
+# Status options allowed for main nodes (no redirect/canonical)
+MAIN_NODE_ALLOWED_STATUSES = [SeoStatus.PRIMARY]
+# Status options allowed for supporting nodes
+SUPPORTING_NODE_ALLOWED_STATUSES = [SeoStatus.CANONICAL, SeoStatus.REDIRECT_301, SeoStatus.REDIRECT_302, SeoStatus.RESTORE]
 
 
 class IndexStatus(str, Enum):
