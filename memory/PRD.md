@@ -87,6 +87,39 @@ Build a full-stack SEO Network Operations Center combining:
 
 **Tests:** 100% pass rate (14/14 backend, 100% frontend)
 
+### P0 Enhanced Change Note UX + Main Node Logic + Switch Main Target (Feb 9, 2026) - COMPLETE
+**Feature 1: Enhanced Change Note UX**
+- ✅ `ChangeNoteInput` reusable component with:
+  - Large auto-resize textarea (140px min-height)
+  - Character counter (0 / 2000)
+  - Quick templates dropdown (4 categories: Linking Strategy, Cannibalization Fix, Optimization, Maintenance)
+  - "Min 3 chars required" badge + "Recommended 150+" guidance
+  - Variant styles: default (amber), delete (red), add (emerald)
+- ✅ Used in: Add Node, Edit Node, Delete Node, Switch Main Target dialogs
+
+**Feature 2: Main Node Logic Fix**
+- ✅ Backend validation (v3_router.py):
+  - Main nodes MUST NOT have `target_entry_id` - returns 400 with clear message
+  - Main nodes MUST have `PRIMARY` status (not canonical/redirect)
+  - Network can only have ONE main node at a time
+- ✅ New `SeoStatus.PRIMARY` enum value for main nodes
+- ✅ Frontend Status dropdown shows role-specific options:
+  - Main: "Primary Target" only (dropdown disabled)
+  - Supporting: Canonical, 301/302 Redirect, Restore
+
+**Feature 3: Switch Main Target (Safe Role Swap)**
+- ✅ `POST /api/v3/networks/{id}/switch-main-target` endpoint
+- ✅ Safe operation (no node deletion):
+  1. Old main → Supporting (canonical, targets new main)
+  2. New main → Main (primary status, no target)
+  3. All tiers recalculated via BFS
+- ✅ Requires mandatory `change_note` (min 3 chars)
+- ✅ Creates SEO change logs and notification for main domain change
+- ✅ UI: "Switch to Main Target" in node dropdown menu (supporting nodes only)
+- ✅ Confirmation dialog shows what will happen
+
+**Tests:** 100% pass rate (7/7 backend pytest, 100% frontend Playwright)
+
 ### P0 SEO Change History & Alerts UI (Feb 9, 2026) - COMPLETE
 **Feature 1: Change History Tab**
 - ✅ Added "Change History" tab to Network Detail page
