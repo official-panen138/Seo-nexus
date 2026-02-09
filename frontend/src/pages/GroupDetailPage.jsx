@@ -63,12 +63,17 @@ const V3_TIER_COLORS = {
     5: '#6B7280'
 };
 
-// SEO Status options
-const SEO_STATUS_OPTIONS = [
+// SEO Status options for SUPPORTING nodes
+const SEO_STATUS_OPTIONS_SUPPORTING = [
     { value: 'canonical', label: 'Canonical' },
     { value: '301_redirect', label: '301 Redirect' },
     { value: '302_redirect', label: '302 Redirect' },
     { value: 'restore', label: 'Restore' }
+];
+
+// SEO Status options for MAIN nodes (no redirect/canonical)
+const SEO_STATUS_OPTIONS_MAIN = [
+    { value: 'primary', label: 'Primary Target' }
 ];
 
 const INDEX_OPTIONS = [
@@ -77,7 +82,7 @@ const INDEX_OPTIONS = [
 ];
 
 const ROLE_OPTIONS = [
-    { value: 'main', label: 'Main (Money Site)' },
+    { value: 'main', label: 'Main (LP/Money Site)' },
     { value: 'supporting', label: 'Supporting' }
 ];
 
