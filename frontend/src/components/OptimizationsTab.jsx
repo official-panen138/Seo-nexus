@@ -772,6 +772,83 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Complaint Dialog - Super Admin only */}
+            <Dialog open={complaintDialogOpen} onOpenChange={setComplaintDialogOpen}>
+                <DialogContent className="bg-card border-border max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-amber-500" />
+                            Submit Complaint
+                        </DialogTitle>
+                        <DialogDescription>
+                            Submit a complaint on "{selectedOptimization?.title}". Tagged users will be notified via Telegram.
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4 py-4">
+                        {/* Complaint Reason */}
+                        <div>
+                            <Label>Complaint Reason *</Label>
+                            <Textarea
+                                value={complaintForm.reason}
+                                onChange={(e) => setComplaintForm(prev => ({ ...prev, reason: e.target.value }))}
+                                placeholder="Describe the issue with this optimization..."
+                                className="mt-1 bg-black border-border min-h-[100px]"
+                                rows={4}
+                            />
+                        </div>
+                        
+                        {/* Priority */}
+                        <div>
+                            <Label>Priority</Label>
+                            <Select value={complaintForm.priority} onValueChange={(v) => setComplaintForm(prev => ({ ...prev, priority: v }))}>
+                                <SelectTrigger className="mt-1 bg-black border-border">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="low">🔵 Low</SelectItem>
+                                    <SelectItem value="medium">🟡 Medium</SelectItem>
+                                    <SelectItem value="high">🔴 High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        
+                        {/* Report URLs */}
+                        <div>
+                            <Label>Related Reports</Label>
+                            <div className="flex gap-2 mt-1">
+                                <Input
+                                    value={complaintUrlInput}
+                                    onChange={(e) => setComplaintUrlInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addComplaintUrl())}
+                                    placeholder="https://..."
+                                    className="bg-black border-border"
+                                />
+                                <Button type="button" variant="outline" onClick={addComplaintUrl}>Add</Button>
+                            </div>
+                            {complaintForm.report_urls.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {complaintForm.report_urls.map((url, i) => (
+                                        <Badge key={i} variant="secondary" className="pr-1">
+                                            {url.length > 30 ? url.slice(0, 30) + '...' : url}
+                                            <button onClick={() => removeComplaintUrl(url)} className="ml-1 hover:text-red-400">×</button>
+                                        </Badge>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setComplaintDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateComplaint} disabled={saving || !complaintForm.reason.trim()} className="bg-amber-600 hover:bg-amber-700">
+                            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            Submit Complaint
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
