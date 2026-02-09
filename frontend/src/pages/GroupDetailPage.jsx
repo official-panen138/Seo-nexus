@@ -1578,13 +1578,16 @@ export default function GroupDetailPage() {
                                 )}
 
                                 {/* Action Button - View in Graph */}
-                                {selectedChangeLog.entry_id && (
+                                {(selectedChangeLog.entry_id || selectedChangeLog.after_snapshot?.id) && (
                                     <Button
                                         variant="outline"
                                         className="w-full"
+                                        data-testid="view-node-graph-btn"
                                         onClick={() => {
                                             // Find the entry and highlight it in the graph
-                                            const entry = network?.entries?.find(e => e.id === selectedChangeLog.entry_id);
+                                            // Support both entry_id (new format) and after_snapshot.id (fallback)
+                                            const entryId = selectedChangeLog.entry_id || selectedChangeLog.after_snapshot?.id;
+                                            const entry = network?.entries?.find(e => e.id === entryId);
                                             if (entry) {
                                                 setHighlightedNodeId(entry.asset_domain_id);
                                                 setActiveTab('graph');
