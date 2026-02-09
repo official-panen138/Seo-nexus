@@ -1054,30 +1054,41 @@ export default function GroupDetailPage() {
                                                             >
                                                                 View
                                                             </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    openEditDialog(entry);
-                                                                }}
-                                                                className="h-7 w-7 hover:bg-blue-500/10 hover:text-blue-400"
-                                                                data-testid={`edit-entry-${entry.id}`}
-                                                            >
-                                                                <Edit className="h-3.5 w-3.5" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    openDeleteDialog(entry);
-                                                                }}
-                                                                className="h-7 w-7 hover:bg-red-500/10 hover:text-red-400"
-                                                                data-testid={`delete-entry-${entry.id}`}
-                                                            >
-                                                                <Trash2 className="h-3.5 w-3.5" />
-                                                            </Button>
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        className="h-7 w-7"
+                                                                    >
+                                                                        <MoreVertical className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end">
+                                                                    <DropdownMenuItem onClick={() => openEditDialog(entry)}>
+                                                                        <Edit className="h-4 w-4 mr-2" />
+                                                                        Edit Node
+                                                                    </DropdownMenuItem>
+                                                                    {entry.domain_role !== 'main' && (
+                                                                        <DropdownMenuItem 
+                                                                            onClick={() => openSwitchMainDialog(entry)}
+                                                                            className="text-amber-400"
+                                                                        >
+                                                                            <Crown className="h-4 w-4 mr-2" />
+                                                                            Switch to Main Target
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    <DropdownMenuSeparator />
+                                                                    <DropdownMenuItem 
+                                                                        onClick={() => openDeleteDialog(entry)}
+                                                                        className="text-red-400"
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                                        Delete Node
+                                                                    </DropdownMenuItem>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
