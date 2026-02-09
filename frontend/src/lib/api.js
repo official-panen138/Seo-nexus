@@ -220,7 +220,25 @@ export const optimizationsAPI = {
     getOne: (optimizationId) => apiV3.get(`/optimizations/${optimizationId}`),
     create: (networkId, data) => apiV3.post(`/networks/${networkId}/optimizations`, data),
     update: (optimizationId, data) => apiV3.put(`/optimizations/${optimizationId}`, data),
-    delete: (optimizationId) => apiV3.delete(`/optimizations/${optimizationId}`)
+    delete: (optimizationId) => apiV3.delete(`/optimizations/${optimizationId}`),
+    // Complaints
+    createComplaint: (optimizationId, data) => apiV3.post(`/optimizations/${optimizationId}/complaints`, data),
+    getComplaints: (optimizationId) => apiV3.get(`/optimizations/${optimizationId}/complaints`),
+    // Observed Impact
+    updateObservedImpact: (optimizationId, impact) => apiV3.patch(`/optimizations/${optimizationId}/observed-impact`, { observed_impact: impact })
+};
+
+// V3 Activity Types API (Master Data)
+export const activityTypesAPI = {
+    getAll: () => apiV3.get('/optimization-activity-types'),
+    create: (data) => apiV3.post('/optimization-activity-types', data),
+    delete: (typeId) => apiV3.delete(`/optimization-activity-types/${typeId}`)
+};
+
+// V3 Team Evaluation API
+export const teamEvaluationAPI = {
+    getSummary: (params = {}) => apiV3.get('/team-evaluation/summary', { params }),
+    getUsers: (params = {}) => apiV3.get('/team-evaluation/users', { params })
 };
 
 // V3 Structure Entries API
