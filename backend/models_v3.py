@@ -472,6 +472,42 @@ class NetworkAccessControl(BaseModel):
     allowed_user_ids: List[str] = []
 
 
+class AccessSummaryCache(BaseModel):
+    """Cached access summary for performance"""
+    count: int = 0
+    names: List[str] = []  # First 2-3 display names
+
+
+class NetworkAccessControlUpdate(BaseModel):
+    """Update access control settings with audit trail"""
+    visibility_mode: NetworkVisibilityMode = NetworkVisibilityMode.BRAND_BASED
+    allowed_user_ids: List[str] = []
+
+
+class NetworkAccessControlResponse(BaseModel):
+    """Response model for network access control"""
+    visibility_mode: str
+    allowed_user_ids: List[str] = []
+    allowed_users: List[Dict[str, Any]] = []  # Enriched user info
+    access_summary_cache: Optional[AccessSummaryCache] = None
+    access_updated_at: Optional[str] = None
+    access_updated_by: Optional[Dict[str, Any]] = None
+
+
+class NetworkAccessAuditLog(BaseModel):
+    """Audit log entry for network access changes"""
+    network_id: str
+    network_name: str
+    previous_mode: str
+    new_mode: str
+    added_user_ids: List[str] = []
+    removed_user_ids: List[str] = []
+    added_user_names: List[str] = []
+    removed_user_names: List[str] = []
+    changed_by: Dict[str, Any]  # user_id, email, name
+    changed_at: str
+
+
 # ==================== ASSET DOMAIN MODELS ====================
 
 class AssetDomainBase(BaseModel):
