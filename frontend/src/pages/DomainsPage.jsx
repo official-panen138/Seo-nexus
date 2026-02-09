@@ -730,6 +730,9 @@ export default function DomainsPage() {
                                         {useV3 ? (
                                             <>
                                                 <TableCell>
+                                                    <SeoNetworksBadges networks={item.seo_networks || []} />
+                                                </TableCell>
+                                                <TableCell>
                                                     <span className={`text-xs px-2 py-1 rounded-full ${
                                                         item.monitoring_enabled 
                                                             ? 'bg-emerald-500/10 text-emerald-400' 
