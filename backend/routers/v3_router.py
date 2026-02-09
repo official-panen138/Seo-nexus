@@ -3660,20 +3660,28 @@ async def test_telegram_seo_alert(
     current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Send a test message to SEO Telegram channel"""
-    message = f"""🔔 <b>SEO-NOC TEST</b>
+    # Use the new service if available
+    if seo_telegram_service:
+        success = await seo_telegram_service.send_test_notification(current_user['email'])
+    else:
+        # Fallback to inline message
+        message = f"""🔔 <b>PESAN TEST - TIDAK ADA PERUBAHAN SEO</b>
 
-This is a test message from the SEO Change Alert channel.
+Ini adalah pesan test dari sistem notifikasi SEO.
 
-<b>Channel:</b> SEO Strategy Alerts
-<b>Sent by:</b> {current_user['email']}
-<b>Time:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
+📌 <b>Detail Test</b>
+• Dikirim Oleh     : {current_user['email'].split('@')[0].title()} ({current_user['email']})
+• Waktu            : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}
+• Channel          : SEO Change Notifications
 
-If you see this, your SEO Telegram alerts are working!"""
+✅ Jika Anda melihat pesan ini, konfigurasi Telegram untuk notifikasi SEO sudah benar!
 
-    success = await send_seo_telegram_alert(message)
+<i>TEST MESSAGE - NO SEO CHANGE APPLIED</i>"""
+        
+        success = await send_seo_telegram_alert(message)
     
     if success:
-        return {"message": "Test message sent successfully"}
+        return {"message": "Test message sent successfully / Pesan test berhasil dikirim"}
     else:
         raise HTTPException(status_code=500, detail="Failed to send test message. Check Telegram configuration.")
 
