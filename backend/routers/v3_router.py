@@ -1227,10 +1227,10 @@ async def create_structure_entry(
 @router.put("/structure/{entry_id}", response_model=SeoStructureEntryResponse)
 async def update_structure_entry(
     entry_id: str,
-    data: SeoStructureEntryUpdate,
+    data: SeoStructureEntryUpdateWithNote,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Update an SEO structure entry (node-based)"""
+    """Update an SEO structure entry (node-based) with mandatory change note"""
     existing = await db.seo_structure_entries.find_one({"id": entry_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Structure entry not found")
