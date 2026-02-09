@@ -1685,6 +1685,8 @@ async def create_network_optimization(
     Create a new SEO optimization activity for a network.
     This does NOT modify the SEO structure (graph).
     Sends Telegram notification on creation.
+    
+    REQUIRED: reason_note (min 20 characters) - explains why this optimization is being done.
     """
     # Verify network exists and user has access
     network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
@@ -1699,7 +1701,31 @@ async def create_network_optimization(
     if not data.description or not data.description.strip():
         raise HTTPException(status_code=400, detail="Description is required")
     
+    # MANDATORY: reason_note must be at least 20 characters
+    if not data.reason_note or len(data.reason_note.strip()) < 20:
+        raise HTTPException(
+            status_code=400, 
+            detail="Reason note is required (minimum 20 characters). Please explain why this optimization is being done."
+        )
+    
+    # Resolve activity type
+    activity_type_str = data.activity_type or "other"
+    activity_type_name = None
+    if data.activity_type_id:
+        activity_type_doc = await db.seo_optimization_activity_types.find_one({"id": data.activity_type_id}, {"_id": 0})
+        if activity_type_doc:
+            activity_type_str = activity_type_doc.get("name", "other").lower().replace(" ", "_")
+            activity_type_name = activity_type_doc.get("name")
+    
     now = datetime.now(timezone.utc).isoformat()
+    
+    # Convert report_urls to serializable format
+    report_urls_data = []
+    for url_entry in data.report_urls:
+        if isinstance(url_entry, str):
+            report_urls_data.append({"url": url_entry, "start_date": now[:10]})
+        else:
+            report_urls_data.append(url_entry.model_dump() if hasattr(url_entry, 'model_dump') else url_entry)
     
     optimization = {
         "id": str(uuid.uuid4()),
@@ -1712,15 +1738,22 @@ async def create_network_optimization(
         },
         "created_at": now,
         "updated_at": now,
-        "activity_type": data.activity_type.value,
+        "activity_type_id": data.activity_type_id,
+        "activity_type": activity_type_str,
+        "activity_type_name": activity_type_name,
         "title": data.title.strip(),
         "description": data.description.strip(),
+        "reason_note": data.reason_note.strip(),
         "affected_scope": data.affected_scope.value,
-        "affected_targets": data.affected_targets,
+        "target_domains": data.target_domains,
         "keywords": data.keywords,
-        "report_urls": data.report_urls,
+        "report_urls": report_urls_data,
         "expected_impact": [i.value for i in data.expected_impact],
+        "observed_impact": None,
         "status": data.status.value,
+        "complaint_status": "none",
+        "complaint_note": None,
+        "complaints_count": 0,
         "telegram_notified_at": None
     }
     
@@ -1745,7 +1778,7 @@ async def create_network_optimization(
             action_type=ActionType.CREATE,
             entity_type=EntityType.SEO_OPTIMIZATION,
             entity_id=optimization["id"],
-            after_value={"title": optimization["title"], "activity_type": optimization["activity_type"]}
+            after_value={"title": optimization["title"], "activity_type": optimization["activity_type"], "reason_note": optimization["reason_note"]}
         )
     
     # Enrich response
