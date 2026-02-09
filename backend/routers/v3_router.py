@@ -22,6 +22,7 @@ import sys
 sys.path.insert(0, '/app/backend')
 from models_v3 import (
     AssetDomainCreate, AssetDomainUpdate, AssetDomainResponse, NetworkUsageInfo,
+    PaginationMeta, PaginatedResponse,
     SeoNetworkCreate, SeoNetworkUpdate, SeoNetworkResponse, SeoNetworkDetail,
     SeoNetworkCreateLegacy, MainNodeConfig,
     SeoStructureEntryCreate, SeoStructureEntryUpdate, SeoStructureEntryResponse,
