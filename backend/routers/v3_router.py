@@ -1868,12 +1868,21 @@ async def delete_optimization(
     optimization_id: str,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Delete an SEO optimization activity"""
+    """
+    Delete an SEO optimization activity.
+    CRITICAL: Only Super Admin can delete optimizations.
+    Optimizations are audit records - deletion by regular users breaks accountability.
+    """
+    # CRITICAL: Only Super Admin can delete optimizations
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(
+            status_code=403, 
+            detail="Only Super Admin can delete optimization records. Optimizations are audit records that must be preserved."
+        )
+    
     optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
     if not optimization:
         raise HTTPException(status_code=404, detail="Optimization not found")
-    
-    require_brand_access(optimization["brand_id"], current_user)
     
     await db.seo_optimizations.delete_one({"id": optimization_id})
     
@@ -1884,10 +1893,203 @@ async def delete_optimization(
             action_type=ActionType.DELETE,
             entity_type=EntityType.SEO_OPTIMIZATION,
             entity_id=optimization_id,
-            before_value={"title": optimization.get("title")}
+            before_value={"title": optimization.get("title"), "deleted_by": "super_admin"}
         )
     
     return {"message": "Optimization deleted"}
+
+
+# ==================== OPTIMIZATION COMPLAINTS ====================
+
+@router.post("/optimizations/{optimization_id}/complaints", response_model=OptimizationComplaintResponse)
+async def create_optimization_complaint(
+    optimization_id: str,
+    data: OptimizationComplaintCreate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Create a complaint on an SEO optimization.
+    Only Super Admin can create complaints.
+    Tagged users will be notified via Telegram.
+    """
+    # Only Super Admin can create complaints
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can create complaints")
+    
+    optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
+    if not optimization:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    # Validate required field
+    if not data.reason or not data.reason.strip():
+        raise HTTPException(status_code=400, detail="Complaint reason is required")
+    
+    # Get responsible users info for notification
+    responsible_users = []
+    if data.responsible_user_ids:
+        users = await db.users.find(
+            {"id": {"$in": data.responsible_user_ids}},
+            {"_id": 0, "id": 1, "email": 1, "name": 1, "telegram_username": 1}
+        ).to_list(100)
+        responsible_users = users
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    complaint = {
+        "id": str(uuid.uuid4()),
+        "optimization_id": optimization_id,
+        "network_id": optimization["network_id"],
+        "brand_id": optimization["brand_id"],
+        "created_by": {
+            "user_id": current_user["id"],
+            "display_name": current_user.get("name", current_user["email"].split("@")[0].title()),
+            "email": current_user["email"]
+        },
+        "created_at": now,
+        "reason": data.reason.strip(),
+        "responsible_user_ids": data.responsible_user_ids,
+        "priority": data.priority.value if data.priority else "medium",
+        "report_urls": data.report_urls,
+        "status": "open",
+        "telegram_notified_at": None
+    }
+    
+    await db.optimization_complaints.insert_one(complaint)
+    
+    # Update optimization complaints count
+    await db.seo_optimizations.update_one(
+        {"id": optimization_id},
+        {"$inc": {"complaints_count": 1}}
+    )
+    
+    # Get network and brand for notification
+    network = await db.seo_networks.find_one({"id": optimization["network_id"]}, {"_id": 0})
+    brand = await db.brands.find_one({"id": optimization["brand_id"]}, {"_id": 0})
+    
+    # Send Telegram notification with user tagging
+    try:
+        telegram_service = SeoOptimizationTelegramService(db)
+        await telegram_service.send_complaint_notification(
+            complaint, optimization, network or {}, brand or {}, responsible_users
+        )
+    except Exception as e:
+        logger.warning(f"Failed to send complaint notification: {e}")
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.CREATE,
+            entity_type=EntityType.SEO_OPTIMIZATION,
+            entity_id=optimization_id,
+            after_value={"action": "complaint_created", "complaint_id": complaint["id"], "priority": complaint["priority"]}
+        )
+    
+    complaint["responsible_users"] = responsible_users
+    return OptimizationComplaintResponse(**complaint)
+
+
+@router.get("/optimizations/{optimization_id}/complaints")
+async def get_optimization_complaints(
+    optimization_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get all complaints for an optimization"""
+    optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
+    if not optimization:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    require_brand_access(optimization["brand_id"], current_user)
+    
+    complaints = await db.optimization_complaints.find(
+        {"optimization_id": optimization_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    # Enrich with responsible users
+    for complaint in complaints:
+        if complaint.get("responsible_user_ids"):
+            users = await db.users.find(
+                {"id": {"$in": complaint["responsible_user_ids"]}},
+                {"_id": 0, "id": 1, "email": 1, "name": 1, "telegram_username": 1}
+            ).to_list(100)
+            complaint["responsible_users"] = users
+        else:
+            complaint["responsible_users"] = []
+    
+    return complaints
+
+
+# ==================== NETWORK ACCESS CONTROL ====================
+
+@router.put("/networks/{network_id}/access-control")
+async def update_network_access_control(
+    network_id: str,
+    data: NetworkAccessControl,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Update access control settings for an SEO network.
+    Only Super Admin can set visibility to 'public'.
+    """
+    # Only Super Admin can set public visibility
+    if data.visibility_mode == NetworkVisibilityMode.PUBLIC and current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can set public visibility")
+    
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    require_brand_access(network["brand_id"], current_user)
+    
+    await db.seo_networks.update_one(
+        {"id": network_id},
+        {"$set": {
+            "visibility_mode": data.visibility_mode.value,
+            "allowed_user_ids": data.allowed_user_ids,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.SEO_NETWORK,
+            entity_id=network_id,
+            after_value={"action": "access_control_updated", "visibility_mode": data.visibility_mode.value}
+        )
+    
+    return {"message": "Access control updated"}
+
+
+@router.get("/networks/{network_id}/access-control")
+async def get_network_access_control(
+    network_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get access control settings for an SEO network"""
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    require_brand_access(network["brand_id"], current_user)
+    
+    # Get allowed users info
+    allowed_users = []
+    if network.get("allowed_user_ids"):
+        users = await db.users.find(
+            {"id": {"$in": network["allowed_user_ids"]}},
+            {"_id": 0, "id": 1, "email": 1, "name": 1, "role": 1}
+        ).to_list(100)
+        allowed_users = users
+    
+    return {
+        "visibility_mode": network.get("visibility_mode", "brand_based"),
+        "allowed_user_ids": network.get("allowed_user_ids", []),
+        "allowed_users": allowed_users
+    }
 
 
 # ==================== SWITCH MAIN TARGET ENDPOINT ====================
