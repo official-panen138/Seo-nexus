@@ -12,7 +12,8 @@ import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { toast } from 'sonner';
-import { Trash2, Loader2, Users, Shield, Building2, Edit, UserPlus, Clock, CheckCircle, XCircle, Copy } from 'lucide-react';
+import { Trash2, Loader2, Users, Shield, Building2, Edit, UserPlus, Clock, CheckCircle, XCircle, Copy, UserX, UserCheck, MoreHorizontal, AlertTriangle } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { formatDate } from '../lib/utils';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -26,7 +27,9 @@ const ROLE_LABELS = {
 const STATUS_COLORS = {
     'active': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
     'pending': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-    'rejected': 'bg-red-500/20 text-red-400 border-red-500/30'
+    'rejected': 'bg-red-500/20 text-red-400 border-red-500/30',
+    'inactive': 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
+    'suspended': 'bg-orange-500/20 text-orange-400 border-orange-500/30'
 };
 
 export default function UsersPage() {
