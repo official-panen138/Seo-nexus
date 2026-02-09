@@ -2105,20 +2105,54 @@ export default function GroupDetailPage() {
                                 </p>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label>Role</Label>
-                                <Select 
-                                    value={addNodeForm.domain_role} 
-                                    onValueChange={(v) => setAddNodeForm({...addNodeForm, domain_role: v})}
-                                >
-                                    <SelectTrigger className="bg-black border-border">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="supporting">Supporting</SelectItem>
-                                        <SelectItem value="main">Main</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Role</Label>
+                                    <Select 
+                                        value={addNodeForm.domain_role} 
+                                        onValueChange={(v) => setAddNodeForm({
+                                            ...addNodeForm, 
+                                            domain_role: v,
+                                            // Auto-set status based on role
+                                            domain_status: v === 'main' ? 'primary' : 'canonical',
+                                            // Clear target if switching to main
+                                            target_entry_id: v === 'main' ? '' : addNodeForm.target_entry_id
+                                        })}
+                                    >
+                                        <SelectTrigger className="bg-black border-border">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="supporting">Supporting</SelectItem>
+                                            <SelectItem value="main">Main (LP/Money Site)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Status</Label>
+                                    <Select 
+                                        value={addNodeForm.domain_status} 
+                                        onValueChange={(v) => setAddNodeForm({...addNodeForm, domain_status: v})}
+                                        disabled={addNodeForm.domain_role === 'main'}
+                                    >
+                                        <SelectTrigger className="bg-black border-border">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {addNodeForm.domain_role === 'main' ? (
+                                                <SelectItem value="primary">Primary Target</SelectItem>
+                                            ) : (
+                                                <>
+                                                    <SelectItem value="canonical">Canonical</SelectItem>
+                                                    <SelectItem value="301_redirect">301 Redirect</SelectItem>
+                                                    <SelectItem value="302_redirect">302 Redirect</SelectItem>
+                                                    <SelectItem value="restore">Restore</SelectItem>
+                                                </>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
 
                             <div className="space-y-2">
@@ -2140,23 +2174,22 @@ export default function GroupDetailPage() {
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {addNodeForm.domain_role === 'main' && (
+                                    <p className="text-xs text-amber-400">
+                                        Main nodes are the primary target - they don't point to other nodes.
+                                    </p>
+                                )}
                             </div>
 
-                            {/* Change Note (Required) */}
-                            <div className="space-y-2 p-4 bg-amber-500/10 border border-amber-400/30 rounded-lg">
-                                <Label className="text-amber-400 flex items-center gap-2">
-                                    <span>Change Note</span>
-                                    <span className="text-xs text-amber-400/70">(Required)</span>
-                                </Label>
-                                <Textarea
-                                    value={addNodeForm.change_note}
-                                    onChange={(e) => setAddNodeForm({...addNodeForm, change_note: e.target.value})}
-                                    placeholder="Why are you adding this node? e.g., 'New supporting page for promo campaign'"
-                                    className="bg-black border-amber-400/30 resize-none"
-                                    rows={2}
-                                    data-testid="add-node-change-note"
-                                />
-                            </div>
+                            {/* Change Note (Required) - Enhanced UX */}
+                            <ChangeNoteInput
+                                value={addNodeForm.change_note}
+                                onChange={(value) => setAddNodeForm({...addNodeForm, change_note: value})}
+                                label="Change Note"
+                                placeholder="Why are you adding this node? Include: strategic purpose, target keywords, expected impact..."
+                                required={true}
+                                variant="add"
+                            />
                         </div>
 
                         <DialogFooter>
