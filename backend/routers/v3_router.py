@@ -3236,6 +3236,84 @@ async def get_optimization_reminders(
     return {"reminders": reminders, "total": len(reminders)}
 
 
+@router.get("/scheduler/reminder-status")
+async def get_reminder_scheduler_status(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get reminder scheduler status (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    
+    from services.reminder_scheduler import get_reminder_scheduler
+    scheduler = get_reminder_scheduler()
+    
+    if scheduler is None:
+        return {
+            "status": "not_initialized",
+            "message": "Reminder scheduler is not initialized"
+        }
+    
+    status = scheduler.get_status()
+    
+    # Get last execution log
+    last_execution = await db.scheduler_execution_logs.find_one(
+        {"job_id": "optimization_reminder_job"},
+        {"_id": 0},
+        sort=[("executed_at", -1)]
+    )
+    
+    return {
+        "scheduler": status,
+        "last_execution": last_execution
+    }
+
+
+@router.post("/scheduler/trigger-reminders")
+async def trigger_reminder_job(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Manually trigger the reminder job (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    
+    from services.reminder_scheduler import get_reminder_scheduler
+    scheduler = get_reminder_scheduler()
+    
+    if scheduler is None:
+        raise HTTPException(status_code=500, detail="Reminder scheduler is not initialized")
+    
+    result = await scheduler.trigger_now()
+    
+    return {
+        "message": "Reminder job triggered successfully",
+        "result": result,
+        "triggered_by": current_user["email"],
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+@router.get("/scheduler/execution-logs")
+async def get_scheduler_execution_logs(
+    job_id: Optional[str] = None,
+    limit: int = Query(default=20, le=100),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get scheduler execution logs (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    
+    query = {}
+    if job_id:
+        query["job_id"] = job_id
+    
+    logs = await db.scheduler_execution_logs.find(
+        query,
+        {"_id": 0}
+    ).sort("executed_at", -1).limit(limit).to_list(limit)
+    
+    return {"logs": logs, "total": len(logs)}
+
+
 # ==================== ACTIVITY TYPE MANAGEMENT ====================
 
 @router.get("/optimization-activity-types")
