@@ -1210,6 +1210,122 @@ async def delete_user(user_id: str, current_user: dict = Depends(require_roles([
     await log_audit(current_user["id"], current_user["email"], "delete", "user", user_id, {})
     return {"message": "User deleted"}
 
+
+@api_router.patch("/users/{user_id}/deactivate")
+async def deactivate_user(
+    user_id: str,
+    current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))
+):
+    """
+    Deactivate a user - Super Admin only.
+    User loses access immediately but all history is preserved.
+    """
+    # Prevent self-deactivation
+    if user_id == current_user["id"]:
+        raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if user is already inactive
+    if user.get("status") == "inactive":
+        raise HTTPException(status_code=400, detail="User is already inactive")
+    
+    # Prevent deactivating the last Super Admin
+    if user.get("role") == UserRole.SUPER_ADMIN.value:
+        active_super_admins = await db.users.count_documents({
+            "role": UserRole.SUPER_ADMIN.value,
+            "status": "active"
+        })
+        if active_super_admins <= 1:
+            raise HTTPException(
+                status_code=400, 
+                detail="At least one active Super Admin is required. Cannot deactivate the last Super Admin."
+            )
+    
+    now = datetime.now(timezone.utc).isoformat()
+    before_status = user.get("status", "active")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {
+            "status": UserStatus.INACTIVE.value,
+            "deactivated_by": current_user["id"],
+            "deactivated_at": now,
+            "updated_at": now
+        }}
+    )
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.USER,
+            entity_id=user_id,
+            before_value={"status": before_status},
+            after_value={"action": "user_deactivated", "status": "inactive"}
+        )
+    
+    return {
+        "message": "User deactivated successfully",
+        "user_id": user_id,
+        "status": "inactive"
+    }
+
+
+@api_router.patch("/users/{user_id}/activate")
+async def activate_user(
+    user_id: str,
+    current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))
+):
+    """
+    Reactivate a deactivated user - Super Admin only.
+    User regains access based on their role and brand scope.
+    """
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    current_status = user.get("status", "active")
+    
+    # Only allow activating inactive or suspended users
+    if current_status not in ["inactive", "suspended"]:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot activate user with status '{current_status}'. Only inactive or suspended users can be activated."
+        )
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {
+            "status": UserStatus.ACTIVE.value,
+            "reactivated_by": current_user["id"],
+            "reactivated_at": now,
+            "updated_at": now
+        }}
+    )
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.USER,
+            entity_id=user_id,
+            before_value={"status": current_status},
+            after_value={"action": "user_activated", "status": "active"}
+        )
+    
+    return {
+        "message": "User activated successfully",
+        "user_id": user_id,
+        "status": "active"
+    }
+
 # ==================== CATEGORY ENDPOINTS ====================
 
 @api_router.get("/categories", response_model=List[CategoryResponse])
