@@ -22,6 +22,17 @@ export default function SettingsPage() {
     });
     const [newToken, setNewToken] = useState('');
     const [newChatId, setNewChatId] = useState('');
+    
+    // SEO Telegram state
+    const [seoTelegramConfig, setSeoTelegramConfig] = useState({
+        bot_token: '',
+        chat_id: '',
+        enabled: true
+    });
+    const [newSeoToken, setNewSeoToken] = useState('');
+    const [newSeoChatId, setNewSeoChatId] = useState('');
+    const [savingSeo, setSavingSeo] = useState(false);
+    const [testingSeo, setTestingSeo] = useState(false);
 
     useEffect(() => {
         loadSettings();
@@ -29,8 +40,12 @@ export default function SettingsPage() {
 
     const loadSettings = async () => {
         try {
-            const res = await settingsAPI.getTelegram();
-            setTelegramConfig(res.data);
+            const [mainRes, seoRes] = await Promise.all([
+                settingsAPI.getTelegram(),
+                settingsAPI.getSeoTelegram()
+            ]);
+            setTelegramConfig(mainRes.data);
+            setSeoTelegramConfig(seoRes.data);
         } catch (err) {
             console.error('Failed to load settings:', err);
         } finally {
