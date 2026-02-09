@@ -618,7 +618,28 @@ export default function DomainsPage() {
         }
     };
 
-    if (loading) {
+    // Loading skeleton for table rows
+    const TableSkeleton = () => (
+        <>
+            {[...Array(pageSize > 10 ? 10 : pageSize)].map((_, i) => (
+                <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                </TableRow>
+            ))}
+        </>
+    );
+
+    // Initial loading (reference data not loaded yet)
+    const isInitialLoading = loading && brands.length === 0;
+
+    if (isInitialLoading) {
         return (
             <Layout>
                 <div className="flex items-center justify-center h-96">
@@ -644,7 +665,9 @@ export default function DomainsPage() {
                             </Badge>
                         </div>
                         <p className="page-subtitle">
-                            {filteredData.length} of {useV3 ? assets.length : domains.length} domains
+                            {useV3 
+                                ? `${totalItems.toLocaleString()} domains total` 
+                                : `${filteredData.length} of ${domains.length} domains`}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
