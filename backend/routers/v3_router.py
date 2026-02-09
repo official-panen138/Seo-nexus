@@ -38,7 +38,7 @@ from models_v3 import (
     OptimizationActivityType, OptimizationStatus, ComplaintStatus, ObservedImpact,
     OptimizationComplaintCreate, OptimizationComplaintResponse, ComplaintPriority,
     TeamResponseCreate, TeamResponseEntry, ComplaintResolveRequest, OptimizationCloseRequest,
-    NetworkAccessControl, NetworkVisibilityMode, UserTelegramSettings,
+    NetworkAccessControl, NetworkVisibilityMode, UserTelegramSettings, NetworkManagersUpdate,
     OptimizationActivityTypeCreate, OptimizationActivityTypeResponse,
     UserSeoScore, TeamEvaluationSummary
 )
