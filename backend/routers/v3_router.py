@@ -1932,7 +1932,9 @@ async def create_network_optimization(
     This does NOT modify the SEO structure (graph).
     Sends Telegram notification on creation.
     
-    REQUIRED: reason_note (min 20 characters) - explains why this optimization is being done.
+    REQUIRED: 
+    - reason_note (min 20 characters) - explains why this optimization is being done.
+    - User must be a Manager for this network OR Super Admin.
     """
     # Verify network exists and user has access
     network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
@@ -1940,6 +1942,9 @@ async def create_network_optimization(
         raise HTTPException(status_code=404, detail="Network not found")
     
     require_brand_access(network["brand_id"], current_user)
+    
+    # Check manager permission - only managers or super admin can create optimizations
+    await require_manager_permission(network, current_user)
     
     # Validate required fields
     if not data.title or not data.title.strip():
