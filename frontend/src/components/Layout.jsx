@@ -34,6 +34,7 @@ const navItems = [
     { path: '/groups', label: 'SEO Networks', icon: Network, roles: ['super_admin', 'admin', 'viewer'] },
     { path: '/alerts', label: 'Alert Center', icon: Bell, roles: ['super_admin', 'admin', 'viewer'] },
     { path: '/reports', label: 'Reports', icon: FileText, roles: ['super_admin', 'admin', 'viewer'] },
+    { path: '/reports/team-evaluation', label: 'Team Evaluation', icon: Users, roles: ['super_admin', 'admin'] },
     { type: 'divider', roles: ['super_admin'] },
     { path: '/brands', label: 'Brands', icon: Tag, roles: ['super_admin'] },
     { path: '/categories', label: 'Categories', icon: Folder, roles: ['super_admin'] },
