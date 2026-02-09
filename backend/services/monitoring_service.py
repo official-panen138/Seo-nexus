@@ -274,6 +274,11 @@ class ExpirationMonitoringService:
         
         auto_renew_status = "✅ Yes" if domain.get("auto_renew") else "❌ No"
         
+        # Use configured timezone for display
+        tz_str = domain.get('_timezone_str', 'Asia/Jakarta')
+        tz_label = domain.get('_timezone_label', 'GMT+7')
+        local_time = format_now_local(tz_str, tz_label)
+        
         return f"""{status_emoji} <b>DOMAIN EXPIRATION ALERT</b>
 
 <b>Domain:</b> <code>{domain.get('domain_name', 'Unknown')}</code>
@@ -285,7 +290,7 @@ class ExpirationMonitoringService:
 <b>Auto-Renew:</b> {auto_renew_status}
 
 <b>Severity:</b> <b>{severity}</b>
-<b>Checked:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"""
+<b>Checked:</b> {local_time}"""
     
     async def _create_alert_record(self, domain: Dict[str, Any], days_remaining: int):
         """Create alert record in database"""
