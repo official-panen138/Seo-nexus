@@ -325,6 +325,12 @@ export default function GroupDetailPage() {
     const handleSaveEntry = async () => {
         if (!selectedEntry?.id) return;
         
+        // Validate change_note
+        if (!editForm.change_note || editForm.change_note.trim().length < 3) {
+            toast.error('Change note is required (min 3 characters)');
+            return;
+        }
+        
         setSaving(true);
         try {
             const payload = {
@@ -337,7 +343,8 @@ export default function GroupDetailPage() {
                 ranking_url: editForm.ranking_url || null,
                 primary_keyword: editForm.primary_keyword || null,
                 ranking_position: editForm.ranking_position ? parseInt(editForm.ranking_position) : null,
-                notes: editForm.notes || null
+                notes: editForm.notes || null,
+                change_note: editForm.change_note.trim()  // Required for SEO logging
             };
             
             await structureAPI.update(selectedEntry.id, payload);
