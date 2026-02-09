@@ -6,7 +6,8 @@ Sends comprehensive SEO change notifications to a dedicated Telegram channel.
 Features:
 - Full Bahasa Indonesia messages
 - Human-readable user context
-- Complete SEO structure snapshot
+- Complete SEO structure snapshot with full authority chains
+- Status labels on every node
 - Rate limiting and deduplication
 - Fallback to main Telegram channel
 """
@@ -24,16 +25,16 @@ logger = logging.getLogger(__name__)
 
 # Action type labels in Bahasa Indonesia
 ACTION_LABELS = {
-    "create_node": "Membuat Node",
+    "create_node": "Membuat Node Baru",
     "update_node": "Mengubah Node",
     "delete_node": "Menghapus Node",
     "relink_node": "Mengubah Target Node",
     "change_role": "Mengubah Role Node",
     "change_path": "Mengubah Path Node",
-    "create_network": "Membuat SEO Network",
+    "create_network": "Membuat SEO Network Baru",
 }
 
-# Status labels in Bahasa Indonesia
+# Status labels - Human readable
 STATUS_LABELS = {
     "primary": "Primary",
     "canonical": "Canonical",
@@ -42,9 +43,9 @@ STATUS_LABELS = {
     "restore": "Restore",
 }
 
-# Role labels in Bahasa Indonesia
+# Role labels
 ROLE_LABELS = {
-    "main": "Main (Target Utama)",
+    "main": "Main (LP)",
     "supporting": "Supporting",
 }
 
@@ -53,6 +54,24 @@ INDEX_LABELS = {
     "index": "Index",
     "noindex": "NoIndex",
 }
+
+
+def format_node_with_status(domain: str, path: str = "", status: str = "", role: str = "") -> str:
+    """
+    Format a node with its status for display.
+    Format: {domain}{path} [{status}]
+    """
+    node_label = f"{domain}{path}" if path and path != "/" else domain
+    
+    # Determine display status
+    if role == "main":
+        display_status = "Primary"
+    else:
+        display_status = STATUS_LABELS.get(status, status.replace("_", " ").title() if status else "")
+    
+    if display_status:
+        return f"{node_label} [{display_status}]"
+    return node_label
 
 
 class SeoTelegramService:
@@ -139,10 +158,72 @@ class SeoTelegramService:
         # Fallback to email prefix
         return email.split("@")[0].title() if email else "Unknown"
     
-    async def _get_network_structure(self, network_id: str) -> Dict[str, List[Dict[str, Any]]]:
+    async def _resolve_entry_to_label(self, entry_id: str, domain_lookup: Dict[str, str], entry_lookup: Dict[str, Any]) -> str:
         """
-        Get the current SEO structure for a network, grouped by tier.
-        Returns dict with tier labels as keys and list of entries as values.
+        Resolve an entry ID to a human-readable label with status.
+        Returns: "domain.com/path [Status]"
+        """
+        if not entry_id:
+            return None
+            
+        entry = entry_lookup.get(entry_id)
+        if not entry:
+            # Try to fetch from DB if not in lookup
+            entry = await self.db.seo_structure_entries.find_one({"id": entry_id}, {"_id": 0})
+            if not entry:
+                return None
+        
+        domain_name = domain_lookup.get(entry.get("asset_domain_id"), "unknown")
+        path = entry.get("optimized_path", "")
+        status = entry.get("domain_status", "")
+        role = entry.get("domain_role", "")
+        
+        return format_node_with_status(domain_name, path, status, role)
+    
+    async def _build_full_authority_chain(
+        self, 
+        entry: Dict[str, Any], 
+        domain_lookup: Dict[str, str],
+        entry_lookup: Dict[str, Any],
+        visited: set = None
+    ) -> str:
+        """
+        Build the complete authority chain from a node to its final destination (main node).
+        Returns: "node1 [Status] → node2 [Status] → main [Primary]"
+        """
+        if visited is None:
+            visited = set()
+        
+        # Prevent infinite loops
+        if entry["id"] in visited:
+            return "⚠️ Circular Reference"
+        visited.add(entry["id"])
+        
+        # Format current node
+        domain_name = domain_lookup.get(entry.get("asset_domain_id"), "unknown")
+        path = entry.get("optimized_path", "")
+        status = entry.get("domain_status", "")
+        role = entry.get("domain_role", "")
+        
+        current_label = format_node_with_status(domain_name, path, status, role)
+        
+        # If this is the main node (final destination), stop here
+        if role == "main" or not entry.get("target_entry_id"):
+            return current_label
+        
+        # Get target and build chain recursively
+        target_entry = entry_lookup.get(entry.get("target_entry_id"))
+        if not target_entry:
+            return current_label
+        
+        target_chain = await self._build_full_authority_chain(target_entry, domain_lookup, entry_lookup, visited)
+        
+        return f"{current_label} → {target_chain}"
+    
+    async def _get_network_structure_with_chains(self, network_id: str) -> Dict[str, List[str]]:
+        """
+        Get the current SEO structure for a network with FULL authority chains.
+        Returns dict with tier labels as keys and list of full chain strings as values.
         """
         entries = await self.db.seo_structure_entries.find(
             {"network_id": network_id},
@@ -160,17 +241,14 @@ class SeoTelegramService:
         ).to_list(1000)
         domain_lookup = {d["id"]: d["domain_name"] for d in domains}
         
-        # Build entry lookup for target resolution
+        # Build entry lookup
         entry_lookup = {e["id"]: e for e in entries}
         
-        # Calculate tiers using BFS
-        # Find main node(s)
+        # Calculate tiers using BFS from main nodes
         main_entries = [e for e in entries if e.get("domain_role") == "main"]
-        
-        # Calculate tier for each entry
         tiers = {}
+        
         if main_entries:
-            # BFS from main nodes
             queue = [(e["id"], 0) for e in main_entries]
             visited = set()
             
@@ -181,7 +259,7 @@ class SeoTelegramService:
                 visited.add(entry_id)
                 tiers[entry_id] = tier
                 
-                # Find entries pointing to this one
+                # Find entries pointing to this one (reverse direction for tier calc)
                 for e in entries:
                     if e.get("target_entry_id") == entry_id and e["id"] not in visited:
                         queue.append((e["id"], tier + 1))
@@ -191,31 +269,22 @@ class SeoTelegramService:
             if e["id"] not in tiers:
                 tiers[e["id"]] = -1
         
-        # Group by tier
+        # Build full chains grouped by tier
         tier_groups = defaultdict(list)
+        
         for entry in entries:
             tier = tiers.get(entry["id"], -1)
-            domain_name = domain_lookup.get(entry.get("asset_domain_id"), "unknown")
-            path = entry.get("optimized_path", "")
-            node_label = f"{domain_name}{path}" if path and path != "/" else domain_name
             
-            # Get target label
-            target_label = None
-            if entry.get("target_entry_id"):
-                target_entry = entry_lookup.get(entry["target_entry_id"])
-                if target_entry:
-                    target_domain = domain_lookup.get(target_entry.get("asset_domain_id"), "unknown")
-                    target_path = target_entry.get("optimized_path", "")
-                    target_label = f"{target_domain}{target_path}" if target_path and target_path != "/" else target_domain
+            # Build the full authority chain for this entry
+            full_chain = await self._build_full_authority_chain(entry, domain_lookup, entry_lookup)
             
             tier_groups[tier].append({
-                "node_label": node_label,
-                "role": entry.get("domain_role"),
-                "target_label": target_label
+                "chain": full_chain,
+                "domain_name": domain_lookup.get(entry.get("asset_domain_id"), ""),
+                "role": entry.get("domain_role")
             })
         
-        # Convert to labeled groups
-        result = {}
+        # Convert to labeled groups and sort
         tier_labels = {
             0: "LP / Money Site",
             1: "Tier 1",
@@ -226,32 +295,179 @@ class SeoTelegramService:
             -1: "Orphan (Tidak Terhubung)"
         }
         
-        for tier, entries_list in sorted(tier_groups.items()):
+        result = {}
+        for tier in sorted(tier_groups.keys()):
             label = tier_labels.get(tier, f"Tier {tier}")
-            # Sort: main first, then alphabetically
-            entries_list.sort(key=lambda x: (0 if x["role"] == "main" else 1, x["node_label"]))
-            result[label] = entries_list
+            entries_list = tier_groups[tier]
+            
+            # Sort: main first, then alphabetically by domain
+            entries_list.sort(key=lambda x: (0 if x["role"] == "main" else 1, x["domain_name"]))
+            
+            result[label] = [e["chain"] for e in entries_list]
         
         return result
     
-    def _format_structure_snapshot(self, structure: Dict[str, List[Dict[str, Any]]]) -> str:
-        """Format the structure snapshot for Telegram message"""
+    def _format_structure_snapshot(self, structure: Dict[str, List[str]]) -> str:
+        """Format the structure snapshot with full authority chains for Telegram message"""
         if not structure:
             return "Tidak ada node dalam network ini."
         
         lines = []
-        for tier_label, entries in structure.items():
+        for tier_label, chains in structure.items():
             lines.append(f"<b>{tier_label}:</b>")
-            for entry in entries:
-                node = entry["node_label"]
-                target = entry.get("target_label")
-                if target:
-                    lines.append(f"  • {node} → {target}")
-                else:
-                    lines.append(f"  • {node}")
+            for chain in chains:
+                lines.append(f"  • {chain}")
             lines.append("")  # Empty line between tiers
         
         return "\n".join(lines).strip()
+    
+    async def _resolve_target_for_display(
+        self, 
+        target_entry_id: str,
+        domain_lookup: Dict[str, str] = None,
+        entry_lookup: Dict[str, Any] = None
+    ) -> str:
+        """
+        Resolve a target entry ID to human-readable format: domain/path [Status]
+        NO ObjectIds should ever appear in output.
+        """
+        if not target_entry_id:
+            return None
+        
+        # Get the target entry
+        target_entry = None
+        if entry_lookup:
+            target_entry = entry_lookup.get(target_entry_id)
+        
+        if not target_entry:
+            target_entry = await self.db.seo_structure_entries.find_one(
+                {"id": target_entry_id}, 
+                {"_id": 0}
+            )
+        
+        if not target_entry:
+            return None
+        
+        # Get domain name
+        domain_name = None
+        if domain_lookup:
+            domain_name = domain_lookup.get(target_entry.get("asset_domain_id"))
+        
+        if not domain_name:
+            domain = await self.db.asset_domains.find_one(
+                {"id": target_entry.get("asset_domain_id")},
+                {"_id": 0, "domain_name": 1}
+            )
+            domain_name = domain["domain_name"] if domain else "unknown"
+        
+        path = target_entry.get("optimized_path", "")
+        status = target_entry.get("domain_status", "")
+        role = target_entry.get("domain_role", "")
+        
+        return format_node_with_status(domain_name, path, status, role)
+    
+    def _format_change_details(
+        self,
+        action_type: str,
+        affected_node: str,
+        before: Optional[Dict[str, Any]],
+        after: Optional[Dict[str, Any]],
+        before_target_label: str = None,
+        after_target_label: str = None
+    ) -> str:
+        """Format the change details section with full human-readable labels"""
+        lines = ["🔄 <b>Detail Perubahan:</b>"]
+        lines.append(f"• Node: {affected_node}")
+        
+        if action_type == "create_node":
+            # New node created
+            if after:
+                role = ROLE_LABELS.get(after.get("domain_role"), after.get("domain_role", "-"))
+                status = STATUS_LABELS.get(after.get("domain_status"), after.get("domain_status", "-"))
+                index = INDEX_LABELS.get(after.get("index_status"), after.get("index_status", "-"))
+                target = after_target_label or "-"
+                
+                lines.append(f"• Role: {role}")
+                lines.append(f"• Status: {status}")
+                lines.append(f"• Index: {index}")
+                if target and target != "-":
+                    lines.append(f"• Target: {target}")
+        
+        elif action_type == "delete_node":
+            # Node deleted
+            if before:
+                role = ROLE_LABELS.get(before.get("domain_role"), before.get("domain_role", "-"))
+                status = STATUS_LABELS.get(before.get("domain_status"), before.get("domain_status", "-"))
+                lines.append(f"• Role (sebelum dihapus): {role}")
+                lines.append(f"• Status (sebelum dihapus): {status}")
+            lines.append(f"• Status Sekarang: <b>DIHAPUS</b>")
+        
+        elif action_type == "relink_node":
+            # Target changed
+            role = ROLE_LABELS.get(
+                (after or before or {}).get("domain_role"),
+                (after or before or {}).get("domain_role", "-")
+            )
+            status = STATUS_LABELS.get(
+                (after or before or {}).get("domain_status"),
+                (after or before or {}).get("domain_status", "-")
+            )
+            
+            lines.append(f"• Role: {role}")
+            lines.append(f"• Status: {status}")
+            lines.append(f"• Target Sebelumnya: {before_target_label or '-'}")
+            lines.append(f"• Target Baru: {after_target_label or '-'}")
+        
+        elif action_type == "change_role":
+            # Role changed
+            before_role = ROLE_LABELS.get(before.get("domain_role"), before.get("domain_role", "-")) if before else "-"
+            after_role = ROLE_LABELS.get(after.get("domain_role"), after.get("domain_role", "-")) if after else "-"
+            after_status = STATUS_LABELS.get(after.get("domain_status"), after.get("domain_status", "-")) if after else "-"
+            
+            lines.append(f"• Role Sebelumnya: {before_role}")
+            lines.append(f"• Role Baru: {after_role}")
+            lines.append(f"• Status: {after_status}")
+        
+        elif action_type == "change_path":
+            # Path changed
+            before_path = before.get("optimized_path", "/") if before else "/"
+            after_path = after.get("optimized_path", "/") if after else "/"
+            lines.append(f"• Path Sebelumnya: {before_path or '/'}")
+            lines.append(f"• Path Baru: {after_path or '/'}")
+        
+        else:
+            # Generic update - show before/after comparison
+            if before and after:
+                lines.append("")
+                lines.append("<b>Sebelum:</b>")
+                before_role = ROLE_LABELS.get(before.get("domain_role"), before.get("domain_role", "-"))
+                before_status = STATUS_LABELS.get(before.get("domain_status"), before.get("domain_status", "-"))
+                before_index = INDEX_LABELS.get(before.get("index_status"), before.get("index_status", "-"))
+                lines.append(f"  • Role: {before_role}")
+                lines.append(f"  • Status: {before_status}")
+                lines.append(f"  • Index: {before_index}")
+                if before_target_label:
+                    lines.append(f"  • Target: {before_target_label}")
+                
+                lines.append("")
+                lines.append("<b>Sesudah:</b>")
+                after_role = ROLE_LABELS.get(after.get("domain_role"), after.get("domain_role", "-"))
+                after_status = STATUS_LABELS.get(after.get("domain_status"), after.get("domain_status", "-"))
+                after_index = INDEX_LABELS.get(after.get("index_status"), after.get("index_status", "-"))
+                lines.append(f"  • Role: {after_role}")
+                lines.append(f"  • Status: {after_status}")
+                lines.append(f"  • Index: {after_index}")
+                if after_target_label:
+                    lines.append(f"  • Target: {after_target_label}")
+            elif after:
+                role = ROLE_LABELS.get(after.get("domain_role"), after.get("domain_role", "-"))
+                status = STATUS_LABELS.get(after.get("domain_status"), after.get("domain_status", "-"))
+                index = INDEX_LABELS.get(after.get("index_status"), after.get("index_status", "-"))
+                lines.append(f"• Role: {role}")
+                lines.append(f"• Status: {status}")
+                lines.append(f"• Index: {index}")
+        
+        return "\n".join(lines)
     
     async def send_seo_change_notification(
         self,
@@ -268,7 +484,8 @@ class SeoTelegramService:
         skip_rate_limit: bool = False
     ) -> bool:
         """
-        Send SEO change notification to Telegram.
+        Send SEO change notification to Telegram with full human-readable details.
+        NO ObjectIds or internal IDs in the output.
         
         Returns True if sent, False if rate limited or failed.
         """
@@ -288,8 +505,18 @@ class SeoTelegramService:
             # Get user display name
             user_display_name = await self._get_user_display_name(actor_user_id, actor_email)
             
-            # Get current structure
-            structure = await self._get_network_structure(network_id)
+            # Resolve target labels for before/after (NO ObjectIds!)
+            before_target_label = None
+            after_target_label = None
+            
+            if before_snapshot and before_snapshot.get("target_entry_id"):
+                before_target_label = await self._resolve_target_for_display(before_snapshot.get("target_entry_id"))
+            
+            if after_snapshot and after_snapshot.get("target_entry_id"):
+                after_target_label = await self._resolve_target_for_display(after_snapshot.get("target_entry_id"))
+            
+            # Get current structure with full authority chains
+            structure = await self._get_network_structure_with_chains(network_id)
             structure_text = self._format_structure_snapshot(structure)
             
             # Format action label
@@ -298,25 +525,39 @@ class SeoTelegramService:
             # Format timestamp
             timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
             
-            # Build change details
-            change_details = self._format_change_details(action_type, affected_node, before_snapshot, after_snapshot)
+            # Build change details with resolved targets
+            change_details = self._format_change_details(
+                action_type, 
+                affected_node, 
+                before_snapshot, 
+                after_snapshot,
+                before_target_label,
+                after_target_label
+            )
             
             # Build message
-            message = f"""👤 <b>PEMBARUAN OPTIMASI SEO</b>
+            message = f"""👤 <b>PEMBARUAN OPTIMASI BAGAN SEO</b>
 
 {user_display_name} telah melakukan perubahan optimasi bagan SEO pada network '<b>{network_name}</b>' untuk brand '<b>{brand_name}</b>', dengan detail sebagai berikut:
 
-📌 <b>Ringkasan Aksi</b>
-• Aksi            : {action_label}
-• Dilakukan Oleh  : {user_display_name} ({actor_email})
-• Waktu           : {timestamp}
+━━━━━━━━━━━━━━━━━━━━━━
+📌 <b>RINGKASAN AKSI</b>
+━━━━━━━━━━━━━━━━━━━━━━
+• Aksi: {action_label}
+• Dilakukan Oleh: {user_display_name} ({actor_email})
+• Waktu: {timestamp}
 
-📝 <b>Alasan Perubahan:</b>
+━━━━━━━━━━━━━━━━━━━━━━
+📝 <b>ALASAN PERUBAHAN</b>
+━━━━━━━━━━━━━━━━━━━━━━
 "{change_note}"
 
+━━━━━━━━━━━━━━━━━━━━━━
 {change_details}
 
-🧭 <b>STRUKTUR SEO TERKINI:</b>
+━━━━━━━━━━━━━━━━━━━━━━
+🧭 <b>STRUKTUR SEO TERKINI</b>
+━━━━━━━━━━━━━━━━━━━━━━
 {structure_text}"""
 
             # Send message
@@ -344,86 +585,6 @@ class SeoTelegramService:
             logger.error(f"Failed to send SEO change notification: {e}")
             return False
     
-    def _format_change_details(
-        self,
-        action_type: str,
-        affected_node: str,
-        before: Optional[Dict[str, Any]],
-        after: Optional[Dict[str, Any]]
-    ) -> str:
-        """Format the change details section"""
-        lines = ["🔄 <b>Perubahan yang Dilakukan:</b>"]
-        lines.append(f"• Node             : {affected_node}")
-        
-        if action_type == "create_node":
-            # New node created
-            if after:
-                role = ROLE_LABELS.get(after.get("domain_role"), after.get("domain_role", "-"))
-                status = STATUS_LABELS.get(after.get("domain_status"), after.get("domain_status", "-"))
-                index = INDEX_LABELS.get(after.get("index_status"), after.get("index_status", "-"))
-                lines.append(f"• Role             : {role}")
-                lines.append(f"• Status           : {status}")
-                lines.append(f"• Index            : {index}")
-        
-        elif action_type == "delete_node":
-            # Node deleted
-            if before:
-                role = ROLE_LABELS.get(before.get("domain_role"), before.get("domain_role", "-"))
-                lines.append(f"• Role (sebelum)   : {role}")
-            lines.append(f"• Status           : <b>DIHAPUS</b>")
-        
-        elif action_type == "relink_node":
-            # Target changed
-            before_target = before.get("target_node_label") if before else None
-            after_target = after.get("target_node_label") if after else None
-            if not before_target and before and before.get("target_entry_id"):
-                before_target = before.get("target_entry_id")[:8] + "..."
-            if not after_target and after and after.get("target_entry_id"):
-                after_target = after.get("target_entry_id")[:8] + "..."
-            
-            role = ROLE_LABELS.get(
-                (after or before or {}).get("domain_role"),
-                (after or before or {}).get("domain_role", "-")
-            )
-            status = STATUS_LABELS.get(
-                (after or before or {}).get("domain_status"),
-                (after or before or {}).get("domain_status", "-")
-            )
-            
-            lines.append(f"• Role             : {role}")
-            lines.append(f"• Status           : {status}")
-            lines.append(f"• Target Sebelumnya: {before_target or '-'}")
-            lines.append(f"• Target Baru      : {after_target or '-'}")
-        
-        elif action_type == "change_role":
-            # Role changed
-            before_role = ROLE_LABELS.get(before.get("domain_role"), before.get("domain_role", "-")) if before else "-"
-            after_role = ROLE_LABELS.get(after.get("domain_role"), after.get("domain_role", "-")) if after else "-"
-            after_status = STATUS_LABELS.get(after.get("domain_status"), after.get("domain_status", "-")) if after else "-"
-            
-            lines.append(f"• Role Sebelumnya  : {before_role}")
-            lines.append(f"• Role Baru        : {after_role}")
-            lines.append(f"• Status           : {after_status}")
-        
-        elif action_type == "change_path":
-            # Path changed
-            before_path = before.get("optimized_path", "/") if before else "/"
-            after_path = after.get("optimized_path", "/") if after else "/"
-            lines.append(f"• Path Sebelumnya  : {before_path or '/'}")
-            lines.append(f"• Path Baru        : {after_path or '/'}")
-        
-        else:
-            # Generic update
-            if after:
-                role = ROLE_LABELS.get(after.get("domain_role"), after.get("domain_role", "-"))
-                status = STATUS_LABELS.get(after.get("domain_status"), after.get("domain_status", "-"))
-                index = INDEX_LABELS.get(after.get("index_status"), after.get("index_status", "-"))
-                lines.append(f"• Role             : {role}")
-                lines.append(f"• Status           : {status}")
-                lines.append(f"• Index            : {index}")
-        
-        return "\n".join(lines)
-    
     async def send_network_creation_notification(
         self,
         network_id: str,
@@ -449,7 +610,7 @@ class SeoTelegramService:
             timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
             
             # Get initial structure (may be empty or have 1 main node)
-            structure = await self._get_network_structure(network_id)
+            structure = await self._get_network_structure_with_chains(network_id)
             structure_text = self._format_structure_snapshot(structure) if structure else "Belum ada node dalam network ini."
             
             # Build message
@@ -457,14 +618,18 @@ class SeoTelegramService:
 
 {user_display_name} telah membuat SEO Network baru '<b>{network_name}</b>' untuk brand '<b>{brand_name}</b>'.
 
-📌 <b>Detail Network Baru</b>
-• Nama Network     : {network_name}
-• Brand            : {brand_name}
-• Dibuat Oleh      : {user_display_name} ({actor_email})
-• Waktu            : {timestamp}
-{f'• Target Utama     : {main_node_label}' if main_node_label else ''}
+━━━━━━━━━━━━━━━━━━━━━━
+📌 <b>DETAIL NETWORK BARU</b>
+━━━━━━━━━━━━━━━━━━━━━━
+• Nama Network: {network_name}
+• Brand: {brand_name}
+• Dibuat Oleh: {user_display_name} ({actor_email})
+• Waktu: {timestamp}
+{f'• Target Utama: {main_node_label}' if main_node_label else ''}
 
-🧭 <b>STRUKTUR SEO AWAL:</b>
+━━━━━━━━━━━━━━━━━━━━━━
+🧭 <b>STRUKTUR SEO AWAL</b>
+━━━━━━━━━━━━━━━━━━━━━━
 {structure_text}"""
 
             # Send message
@@ -492,10 +657,12 @@ class SeoTelegramService:
 
 Ini adalah pesan test dari sistem notifikasi SEO.
 
-📌 <b>Detail Test</b>
-• Dikirim Oleh     : {user_display_name} ({actor_email})
-• Waktu            : {timestamp}
-• Channel          : SEO Change Notifications
+━━━━━━━━━━━━━━━━━━━━━━
+📌 <b>DETAIL TEST</b>
+━━━━━━━━━━━━━━━━━━━━━━
+• Dikirim Oleh: {user_display_name} ({actor_email})
+• Waktu: {timestamp}
+• Channel: SEO Change Notifications
 
 ✅ Jika Anda melihat pesan ini, konfigurasi Telegram untuk notifikasi SEO sudah benar!
 
