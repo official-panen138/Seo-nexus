@@ -547,7 +547,8 @@ export default function GroupsPage() {
                                     </CardContent>
                                 </Card>
                             </Link>
-                        ))}
+                        );
+                        })}
                     </div>
                 )}
 
