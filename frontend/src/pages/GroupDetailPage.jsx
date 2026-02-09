@@ -81,6 +81,34 @@ const ROLE_OPTIONS = [
     { value: 'supporting', label: 'Supporting' }
 ];
 
+// SEO Change Action Types - human readable labels
+const ACTION_TYPE_LABELS = {
+    'create_node': 'Created',
+    'update_node': 'Updated',
+    'delete_node': 'Deleted',
+    'relink_node': 'Relinked',
+    'change_role': 'Role Changed',
+    'change_path': 'Path Changed'
+};
+
+const ACTION_TYPE_COLORS = {
+    'create_node': 'bg-emerald-500/20 text-emerald-400',
+    'update_node': 'bg-blue-500/20 text-blue-400',
+    'delete_node': 'bg-red-500/20 text-red-400',
+    'relink_node': 'bg-purple-500/20 text-purple-400',
+    'change_role': 'bg-orange-500/20 text-orange-400',
+    'change_path': 'bg-cyan-500/20 text-cyan-400'
+};
+
+const NOTIFICATION_TYPE_LABELS = {
+    'main_domain_change': 'Main Domain Changed',
+    'node_deleted': 'Node Deleted',
+    'target_relinked': 'Target Relinked',
+    'orphan_detected': 'Orphan Detected',
+    'seo_conflict': 'SEO Conflict',
+    'high_tier_noindex': 'High Tier NoIndex'
+};
+
 export default function GroupDetailPage() {
     const { groupId } = useParams();
     const navigate = useNavigate();
@@ -90,6 +118,21 @@ export default function GroupDetailPage() {
     const [selectedEntry, setSelectedEntry] = useState(null);
     const [sheetOpen, setSheetOpen] = useState(false);
     const [useV3, setUseV3] = useState(true);
+    
+    // Change History state
+    const [changeHistory, setChangeHistory] = useState([]);
+    const [changeHistoryLoading, setChangeHistoryLoading] = useState(false);
+    const [selectedChangeLog, setSelectedChangeLog] = useState(null);
+    const [changeDetailOpen, setChangeDetailOpen] = useState(false);
+    const [highlightedNodeId, setHighlightedNodeId] = useState(null);  // For D3 highlighting
+    
+    // Network Notifications state
+    const [notifications, setNotifications] = useState([]);
+    const [notificationsLoading, setNotificationsLoading] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+    
+    // Active tab state (for coordinating between alerts and change history)
+    const [activeTab, setActiveTab] = useState('graph');
     
     // Edit dialog state
     const [editDialogOpen, setEditDialogOpen] = useState(false);
