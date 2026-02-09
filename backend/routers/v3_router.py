@@ -3074,3 +3074,256 @@ async def get_down_domains(
         "total": len(result)
     }
 
+
+
+# ==================== SEO CHANGE LOG ENDPOINTS ====================
+
+@router.get("/networks/{network_id}/change-history", response_model=List[SeoChangeLogResponse])
+async def get_network_change_history(
+    network_id: str,
+    include_archived: bool = False,
+    skip: int = 0,
+    limit: int = Query(default=50, le=200),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get SEO change history for a network.
+    
+    This shows human-readable SEO decision logs, NOT system logs.
+    Each entry includes who changed what, when, and WHY (change_note).
+    """
+    # Validate network exists and user has access
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    # Check brand access
+    brand_id = network.get("brand_id")
+    if brand_id:
+        require_brand_access(brand_id, current_user)
+    
+    if not seo_change_log_service:
+        return []
+    
+    logs = await seo_change_log_service.get_network_change_history(
+        network_id=network_id,
+        include_archived=include_archived,
+        skip=skip,
+        limit=limit
+    )
+    
+    # Enrich with names
+    enriched = []
+    for log in logs:
+        log["network_name"] = network.get("name")
+        
+        # Get brand name
+        if log.get("brand_id"):
+            brand = await db.brands.find_one({"id": log["brand_id"]}, {"_id": 0, "name": 1})
+            log["brand_name"] = brand["name"] if brand else None
+        
+        enriched.append(SeoChangeLogResponse(**log))
+    
+    return enriched
+
+
+@router.get("/networks/{network_id}/notifications", response_model=List[SeoNetworkNotification])
+async def get_network_notifications(
+    network_id: str,
+    unread_only: bool = False,
+    skip: int = 0,
+    limit: int = Query(default=20, le=100),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get notifications for a network (important SEO events)"""
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    # Check brand access
+    brand_id = network.get("brand_id")
+    if brand_id:
+        require_brand_access(brand_id, current_user)
+    
+    if not seo_change_log_service:
+        return []
+    
+    notifications = await seo_change_log_service.get_network_notifications(
+        network_id=network_id,
+        unread_only=unread_only,
+        skip=skip,
+        limit=limit
+    )
+    
+    # Enrich with network name
+    for notif in notifications:
+        notif["network_name"] = network.get("name")
+    
+    return [SeoNetworkNotification(**n) for n in notifications]
+
+
+@router.post("/networks/{network_id}/notifications/{notification_id}/read")
+async def mark_notification_read(
+    network_id: str,
+    notification_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Mark a notification as read"""
+    if not seo_change_log_service:
+        raise HTTPException(status_code=500, detail="SEO change log service not initialized")
+    
+    success = await seo_change_log_service.mark_notification_read(notification_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    return {"message": "Notification marked as read"}
+
+
+@router.post("/networks/{network_id}/notifications/read-all")
+async def mark_all_notifications_read(
+    network_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Mark all notifications in a network as read"""
+    if not seo_change_log_service:
+        raise HTTPException(status_code=500, detail="SEO change log service not initialized")
+    
+    count = await seo_change_log_service.mark_all_notifications_read(network_id)
+    return {"message": f"Marked {count} notifications as read", "count": count}
+
+
+@router.get("/change-logs/stats")
+async def get_change_log_stats(
+    days: int = Query(default=30, ge=1, le=365),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get team evaluation metrics for SEO changes.
+    
+    Returns:
+    - Changes per user
+    - Changes per network
+    - Most modified domains
+    - Activity periods
+    """
+    if not seo_change_log_service:
+        return {"error": "SEO change log service not initialized"}
+    
+    # Get user's brand scope for filtering
+    brand_scope = get_user_brand_scope(current_user)
+    
+    stats = await seo_change_log_service.get_team_stats(
+        brand_ids=brand_scope,
+        days=days
+    )
+    
+    # Enrich with network names
+    if stats.get("changes_by_network"):
+        network_ids = [c["_id"] for c in stats["changes_by_network"]]
+        networks = await db.seo_networks.find(
+            {"id": {"$in": network_ids}},
+            {"_id": 0, "id": 1, "name": 1}
+        ).to_list(1000)
+        network_lookup = {n["id"]: n["name"] for n in networks}
+        
+        for item in stats["changes_by_network"]:
+            item["network_name"] = network_lookup.get(item["_id"], "Unknown")
+    
+    return stats
+
+
+# ==================== SEO TELEGRAM ALERTS (SEPARATE CHANNEL) ====================
+
+async def send_seo_telegram_alert(message: str) -> bool:
+    """
+    Send SEO change alert to SEPARATE Telegram channel.
+    
+    This is for SEO strategy decisions, NOT monitoring alerts.
+    """
+    settings = await db.settings.find_one({"key": "telegram_seo"}, {"_id": 0})
+    
+    # Fallback to main telegram if SEO channel not configured
+    if not settings or not settings.get("bot_token") or not settings.get("chat_id"):
+        logger.info("SEO Telegram channel not configured, using main channel")
+        settings = await db.settings.find_one({"key": "telegram"}, {"_id": 0})
+        if not settings or not settings.get("bot_token") or not settings.get("chat_id"):
+            logger.warning("Telegram not configured, skipping SEO alert")
+            return False
+    
+    try:
+        url = f"https://api.telegram.org/bot{settings['bot_token']}/sendMessage"
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json={
+                "chat_id": settings["chat_id"],
+                "text": message,
+                "parse_mode": "HTML"
+            }, timeout=10)
+            return response.status_code == 200
+    except Exception as e:
+        logger.error(f"Failed to send SEO Telegram alert: {e}")
+        return False
+
+
+@router.post("/settings/telegram-seo")
+async def update_telegram_seo_settings(
+    settings: dict,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Update SEO Telegram channel settings (separate from monitoring)"""
+    # Require super_admin for settings
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only super admin can update Telegram settings")
+    
+    await db.settings.update_one(
+        {"key": "telegram_seo"},
+        {"$set": {
+            "key": "telegram_seo",
+            "bot_token": settings.get("bot_token"),
+            "chat_id": settings.get("chat_id"),
+            "enabled": settings.get("enabled", True),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    
+    return {"message": "SEO Telegram settings updated"}
+
+
+@router.get("/settings/telegram-seo")
+async def get_telegram_seo_settings(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get SEO Telegram channel settings"""
+    settings = await db.settings.find_one({"key": "telegram_seo"}, {"_id": 0})
+    if not settings:
+        return {"configured": False}
+    
+    return {
+        "configured": bool(settings.get("bot_token") and settings.get("chat_id")),
+        "enabled": settings.get("enabled", True),
+        "chat_id": settings.get("chat_id")
+    }
+
+
+@router.post("/settings/telegram-seo/test")
+async def test_telegram_seo_alert(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Send a test message to SEO Telegram channel"""
+    message = f"""🔔 <b>SEO-NOC TEST</b>
+
+This is a test message from the SEO Change Alert channel.
+
+<b>Channel:</b> SEO Strategy Alerts
+<b>Sent by:</b> {current_user['email']}
+<b>Time:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}
+
+If you see this, your SEO Telegram alerts are working!"""
+
+    success = await send_seo_telegram_alert(message)
+    
+    if success:
+        return {"message": "Test message sent successfully"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send test message. Check Telegram configuration.")
+
