@@ -1171,7 +1171,7 @@ async def create_structure_entry(
         if existing_main:
             raise HTTPException(
                 status_code=400,
-                detail=f"Network already has a main node. Use 'Switch Main Target' to change it."
+                detail="Network already has a main node. Use 'Switch Main Target' to change it."
             )
     
     # Normalize the optimized_path
