@@ -1026,18 +1026,26 @@ async def create_user_manually(
     if user_data.role == UserRole.SUPER_ADMIN:
         raise HTTPException(status_code=400, detail="Cannot create Super Admin user")
     
-    # Generate random password
+    # Use provided password or generate random one
     import secrets
     import string
-    password_chars = string.ascii_letters + string.digits + "!@#$%"
-    generated_password = ''.join(secrets.choice(password_chars) for _ in range(12))
+    
+    if user_data.password and len(user_data.password) >= 6:
+        # Use manually provided password
+        final_password = user_data.password
+        password_was_generated = False
+    else:
+        # Generate random password
+        password_chars = string.ascii_letters + string.digits + "!@#$%"
+        final_password = ''.join(secrets.choice(password_chars) for _ in range(12))
+        password_was_generated = True
     
     now = datetime.now(timezone.utc).isoformat()
     user = {
         "id": str(uuid.uuid4()),
         "email": user_data.email,
         "name": user_data.name,
-        "password": hash_password(generated_password),
+        "password": hash_password(final_password),
         "role": user_data.role.value,
         "status": UserStatus.ACTIVE.value,  # Active immediately
         "brand_scope_ids": user_data.brand_scope_ids,
@@ -1058,7 +1066,7 @@ async def create_user_manually(
             after_value={"action": "user_created_by_admin", "role": user_data.role.value, "brand_scope_ids": user_data.brand_scope_ids}
         )
     
-    return {
+    response = {
         "message": "User created successfully",
         "user": {
             "id": user["id"],
@@ -1068,8 +1076,14 @@ async def create_user_manually(
             "brand_scope_ids": user["brand_scope_ids"],
             "status": user["status"]
         },
-        "generated_password": generated_password  # Show once, user should change it
+        "password_was_generated": password_was_generated
     }
+    
+    # Only return password if it was auto-generated (for security)
+    if password_was_generated:
+        response["generated_password"] = final_password
+    
+    return response
 
 
 @api_router.get("/users/{user_id}", response_model=UserResponse)
