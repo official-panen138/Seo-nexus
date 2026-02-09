@@ -176,7 +176,9 @@ export const registrarsAPI = {
 
 // V3 Asset Domains API
 export const assetDomainsAPI = {
-    getAll: (params) => apiV3.get('/asset-domains', { params }),
+    // Paginated list with filters
+    getAll: (params = {}) => apiV3.get('/asset-domains', { params }),
+    // Get single domain
     getOne: (assetId) => apiV3.get(`/asset-domains/${assetId}`),
     create: (data) => apiV3.post('/asset-domains', data),
     update: (assetId, data) => apiV3.put(`/asset-domains/${assetId}`, data),
