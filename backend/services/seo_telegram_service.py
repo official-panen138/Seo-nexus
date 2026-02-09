@@ -321,15 +321,16 @@ class SeoTelegramService:
         
         return "\n".join(lines).strip()
     
-    async def _resolve_target_for_display(
+    async def _resolve_target_simple(
         self, 
         target_entry_id: str,
         domain_lookup: Dict[str, str] = None,
         entry_lookup: Dict[str, Any] = None
     ) -> str:
         """
-        Resolve a target entry ID to human-readable format: domain/path [Status]
-        NO ObjectIds should ever appear in output.
+        Resolve a target entry ID to SIMPLE format: domain/path (NO STATUS).
+        Used for BEFORE/AFTER sections where we only show the target location.
+        Status annotations belong ONLY in STRUKTUR SEO TERKINI section.
         """
         if not target_entry_id:
             return None
@@ -361,10 +362,11 @@ class SeoTelegramService:
             domain_name = domain["domain_name"] if domain else "unknown"
         
         path = target_entry.get("optimized_path", "")
-        status = target_entry.get("domain_status", "")
-        role = target_entry.get("domain_role", "")
         
-        return format_node_with_status(domain_name, path, status, role)
+        # Return ONLY domain + path (NO STATUS)
+        if path and path != "/":
+            return f"{domain_name}{path}"
+        return domain_name
     
     def _format_change_details(
         self,
