@@ -374,6 +374,7 @@ class OptimizationComplaintResponse(BaseModel):
     created_by: OptimizationCreatedBy
     created_at: str
     resolved_at: Optional[str] = None
+    resolved_by: Optional[OptimizationCreatedBy] = None
     reason: str
     responsible_user_ids: List[str] = []
     responsible_users: List[Dict[str, Any]] = []  # Enriched user info
@@ -382,6 +383,81 @@ class OptimizationComplaintResponse(BaseModel):
     telegram_notified_at: Optional[str] = None
     status: str = "open"  # open, under_review, resolved, dismissed
     resolution_note: Optional[str] = None
+    time_to_resolution_hours: Optional[float] = None  # For metrics
+
+
+class TeamResponseCreate(BaseModel):
+    """Create a team response to a complaint"""
+    note: str  # Required, min 20 chars, max 2000 chars
+    report_urls: List[str] = []  # Additional evidence URLs
+
+
+class TeamResponseEntry(BaseModel):
+    """Team response entry in optimization"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: str
+    created_by: OptimizationCreatedBy
+    created_at: str
+    note: str
+    report_urls: List[str] = []
+    complaint_id: Optional[str] = None  # Links to specific complaint
+
+
+class ComplaintResolveRequest(BaseModel):
+    """Request to resolve a complaint (Super Admin only)"""
+    resolution_note: str  # Required, min 10 chars
+    mark_optimization_complete: bool = False  # Optionally mark complete
+
+
+class OptimizationCloseRequest(BaseModel):
+    """Request to close/complete an optimization (Super Admin only)"""
+    final_note: Optional[str] = None
+
+
+class SeoOptimizationDetailResponse(BaseModel):
+    """Full optimization detail with complaints and responses"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: str
+    network_id: str
+    brand_id: str
+    created_by: OptimizationCreatedBy
+    created_at: str
+    updated_at: Optional[str] = None
+    closed_at: Optional[str] = None
+    closed_by: Optional[OptimizationCreatedBy] = None
+    activity_type_id: Optional[str] = None
+    activity_type: str
+    activity_type_name: Optional[str] = None
+    title: str
+    description: str
+    reason_note: Optional[str] = None
+    affected_scope: str
+    target_domains: List[str] = []
+    keywords: List[str] = []
+    report_urls: List[Any] = []
+    expected_impact: List[str] = []
+    observed_impact: Optional[str] = None
+    status: str
+    complaint_status: str = "none"
+    
+    # Enriched fields
+    network_name: Optional[str] = None
+    brand_name: Optional[str] = None
+    
+    # Complaint thread
+    complaints: List[OptimizationComplaintResponse] = []
+    active_complaint: Optional[OptimizationComplaintResponse] = None
+    
+    # Team responses
+    responses: List[TeamResponseEntry] = []
+    
+    # Metrics
+    complaints_count: int = 0
+    has_repeated_issue: bool = False
+    is_blocked: bool = False  # True if has unresolved complaint
+    blocked_reason: Optional[str] = None
 
 
 class UserTelegramSettings(BaseModel):
