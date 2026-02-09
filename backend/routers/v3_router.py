@@ -3026,35 +3026,35 @@ async def update_network_managers(
     )
     
     # Create audit log entry
-    added_user_names = []
-    removed_user_names = []
+    added_manager_names = []
+    removed_manager_names = []
     
-    if added_user_ids:
-        added_users = await db.users.find(
-            {"id": {"$in": added_user_ids}},
+    if added_manager_ids:
+        added_managers = await db.users.find(
+            {"id": {"$in": added_manager_ids}},
             {"_id": 0, "name": 1, "email": 1}
         ).to_list(100)
-        added_user_names = [u.get("name") or u["email"].split("@")[0] for u in added_users]
+        added_manager_names = [u.get("name") or u["email"].split("@")[0] for u in added_managers]
     
-    if removed_user_ids:
-        removed_users = await db.users.find(
-            {"id": {"$in": removed_user_ids}},
+    if removed_manager_ids:
+        removed_managers = await db.users.find(
+            {"id": {"$in": removed_manager_ids}},
             {"_id": 0, "name": 1, "email": 1}
         ).to_list(100)
-        removed_user_names = [u.get("name") or u["email"].split("@")[0] for u in removed_users]
+        removed_manager_names = [u.get("name") or u["email"].split("@")[0] for u in removed_managers]
     
     audit_entry = {
         "id": str(uuid.uuid4()),
-        "event_type": "NETWORK_ACCESS_CHANGED",
+        "event_type": "NETWORK_MANAGERS_CHANGED",
         "network_id": network_id,
         "network_name": network["name"],
         "brand_id": network["brand_id"],
         "previous_mode": previous_mode,
         "new_mode": data.visibility_mode.value,
-        "added_user_ids": added_user_ids,
-        "removed_user_ids": removed_user_ids,
-        "added_user_names": added_user_names,
-        "removed_user_names": removed_user_names,
+        "added_manager_ids": added_manager_ids,
+        "removed_manager_ids": removed_manager_ids,
+        "added_manager_names": added_manager_names,
+        "removed_manager_names": removed_manager_names,
         "changed_by": {
             "user_id": current_user["id"],
             "email": current_user["email"],
@@ -3063,8 +3063,8 @@ async def update_network_managers(
         "changed_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.network_access_audit_logs.insert_one(audit_entry)
-    logger.info(f"[ACCESS_AUDIT] Network {network['name']}: {previous_mode} → {data.visibility_mode.value}, +{len(added_user_ids)} -{len(removed_user_ids)} users")
+    await db.network_managers_audit_logs.insert_one(audit_entry)
+    logger.info(f"[MANAGERS_AUDIT] Network {network['name']}: {previous_mode} → {data.visibility_mode.value}, +{len(added_manager_ids)} -{len(removed_manager_ids)} managers")
     
     # Log activity
     if activity_log_service:
@@ -3073,21 +3073,72 @@ async def update_network_managers(
             action_type=ActionType.UPDATE,
             entity_type=EntityType.SEO_NETWORK,
             entity_id=network_id,
-            before_value={"visibility_mode": previous_mode, "allowed_user_ids": list(previous_user_ids)},
-            after_value={"visibility_mode": data.visibility_mode.value, "allowed_user_ids": data.allowed_user_ids}
+            before_value={"visibility_mode": previous_mode, "manager_ids": list(previous_manager_ids)},
+            after_value={"visibility_mode": data.visibility_mode.value, "manager_ids": data.manager_ids}
         )
     
-    return {"message": "Access control updated", "access_summary_cache": access_summary_cache}
+    return {"message": "SEO Network managers updated", "manager_summary_cache": manager_summary_cache}
 
 
-@router.get("/networks/{network_id}/access-control")
-async def get_network_access_control(
+@router.get("/networks/{network_id}/managers")
+async def get_network_managers(
     network_id: str,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Get access control settings for an SEO network with full details"""
+    """
+    Get SEO Network managers and visibility settings.
+    Returns the list of managers who are responsible for this network.
+    """
     network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
     if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    require_brand_access(network["brand_id"], current_user)
+    
+    # Get managers info
+    managers = []
+    if network.get("manager_ids"):
+        users = await db.users.find(
+            {"id": {"$in": network["manager_ids"]}},
+            {"_id": 0, "id": 1, "email": 1, "name": 1, "role": 1, "telegram_username": 1}
+        ).to_list(100)
+        managers = users
+    
+    # Get managers_updated_by info if available
+    managers_updated_by = network.get("managers_updated_by")
+    
+    # Check if current user is a manager
+    is_current_user_manager = is_network_manager(network, current_user)
+    
+    return {
+        "visibility_mode": network.get("visibility_mode", "brand_based"),
+        "manager_ids": network.get("manager_ids", []),
+        "managers": managers,
+        "manager_summary_cache": network.get("manager_summary_cache", {"count": 0, "names": []}),
+        "managers_updated_at": network.get("managers_updated_at"),
+        "managers_updated_by": managers_updated_by,
+        "is_current_user_manager": is_current_user_manager
+    }
+
+
+# Keep legacy endpoint for backward compatibility (temporary)
+@router.get("/networks/{network_id}/access-control")
+async def get_network_access_control_legacy(
+    network_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Legacy endpoint - redirects to managers endpoint"""
+    return await get_network_managers(network_id, current_user)
+
+
+@router.put("/networks/{network_id}/access-control")
+async def update_network_access_control_legacy(
+    network_id: str,
+    data: NetworkManagersUpdate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Legacy endpoint - redirects to managers endpoint"""
+    return await update_network_managers(network_id, data, current_user)
         raise HTTPException(status_code=404, detail="Network not found")
     
     require_brand_access(network["brand_id"], current_user)
