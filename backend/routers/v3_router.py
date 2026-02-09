@@ -2315,7 +2315,7 @@ async def resolve_complaint(
         created = datetime.fromisoformat(complaint["created_at"].replace("Z", "+00:00"))
         resolved = datetime.now(timezone.utc)
         time_to_resolution_hours = (resolved - created).total_seconds() / 3600
-    except:
+    except Exception:
         pass
     
     # Update complaint
