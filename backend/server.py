@@ -880,10 +880,28 @@ async def login(credentials: UserLogin):
     if not user or not verify_password(credentials.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # Check user status
+    user_status = user.get("status", "active")  # Default to active for existing users
+    
+    if user_status == "pending":
+        raise HTTPException(
+            status_code=403, 
+            detail="Your account is awaiting Super Admin approval. Please wait for approval to access the system."
+        )
+    
+    if user_status == "rejected":
+        raise HTTPException(
+            status_code=403, 
+            detail="Your account registration has been rejected. Please contact the administrator."
+        )
+    
     token = create_token(user["id"], user["email"], user["role"])
     user_response = UserResponse(
         id=user["id"], email=user["email"], name=user["name"],
         role=user["role"], brand_scope_ids=user.get("brand_scope_ids"),
+        status=user.get("status", "active"),
+        approved_by=user.get("approved_by"),
+        approved_at=user.get("approved_at"),
         created_at=user["created_at"], updated_at=user["updated_at"]
     )
     return TokenResponse(access_token=token, user=user_response)
