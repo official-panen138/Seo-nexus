@@ -44,7 +44,7 @@ export default function UsersPage() {
     const [approveDialogOpen, setApproveDialogOpen] = useState(false);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
-    const [editForm, setEditForm] = useState({ role: '', brand_scope_ids: [] });
+    const [editForm, setEditForm] = useState({ role: '', brand_scope_ids: [], telegram_username: '' });
     const [approveForm, setApproveForm] = useState({ role: 'viewer', brand_scope_ids: [] });
     const [createForm, setCreateForm] = useState({ email: '', name: '', role: 'viewer', brand_scope_ids: [], password: '', useManualPassword: false });
     const [generatedPassword, setGeneratedPassword] = useState('');
