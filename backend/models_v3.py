@@ -279,20 +279,82 @@ class SeoOptimizationResponse(BaseModel):
     description: str
     reason_note: Optional[str] = None
     affected_scope: str
-    affected_targets: List[str] = []
+    target_domains: List[str] = []
     keywords: List[str] = []
-    report_urls: List[str] = []
+    report_urls: List[Any] = []  # List of ReportUrlEntry or strings
     expected_impact: List[str] = []
+    observed_impact: Optional[str] = None  # Set after 14-30 days
     status: str
+    complaint_status: str = "none"  # none, complained, under_review, resolved
+    complaint_note: Optional[str] = None
     telegram_notified_at: Optional[str] = None
     
     # Enriched fields
     network_name: Optional[str] = None
     brand_name: Optional[str] = None
     
-    # Optional outcome evaluation
-    outcome: Optional[str] = None
+    # Derived metrics
     complaints_count: int = 0
+    has_repeated_issue: bool = False  # Badge for >2 complaints in 30 days
+
+
+# ==================== ACTIVITY TYPE MODELS ====================
+
+class OptimizationActivityTypeCreate(BaseModel):
+    """Create activity type"""
+    name: str
+    description: Optional[str] = None
+    icon: Optional[str] = None  # Icon identifier
+    color: Optional[str] = None  # Badge color
+
+
+class OptimizationActivityTypeResponse(BaseModel):
+    """Activity type response"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: str
+    name: str
+    description: Optional[str] = None
+    icon: Optional[str] = None
+    color: Optional[str] = None
+    is_default: bool = False
+    usage_count: int = 0
+    created_at: str
+
+
+# ==================== TEAM EVALUATION MODELS ====================
+
+class UserSeoScore(BaseModel):
+    """Derived SEO performance score for a user"""
+    user_id: str
+    user_name: str
+    user_email: str
+    total_optimizations: int = 0
+    completed_optimizations: int = 0
+    reverted_optimizations: int = 0
+    complaint_count: int = 0
+    resolved_complaints: int = 0
+    avg_resolution_time_hours: Optional[float] = None  # Average time to resolve complaints
+    positive_impact_count: int = 0
+    negative_impact_count: int = 0
+    has_repeated_issues: bool = False
+    score: float = 0.0  # Derived score 0-5
+    score_breakdown: Dict[str, float] = {}
+
+
+class TeamEvaluationSummary(BaseModel):
+    """Summary for team evaluation dashboard"""
+    period_start: str
+    period_end: str
+    total_optimizations: int = 0
+    by_status: Dict[str, int] = {}
+    by_activity_type: Dict[str, int] = {}
+    by_observed_impact: Dict[str, int] = {}
+    total_complaints: int = 0
+    avg_resolution_time_hours: Optional[float] = None
+    top_contributors: List[UserSeoScore] = []
+    most_complained_users: List[UserSeoScore] = []
+    repeated_issue_users: List[str] = []
 
 
 class OptimizationComplaintCreate(BaseModel):
@@ -311,13 +373,15 @@ class OptimizationComplaintResponse(BaseModel):
     optimization_id: str
     created_by: OptimizationCreatedBy
     created_at: str
+    resolved_at: Optional[str] = None
     reason: str
     responsible_user_ids: List[str] = []
     responsible_users: List[Dict[str, Any]] = []  # Enriched user info
     priority: str
     report_urls: List[str] = []
     telegram_notified_at: Optional[str] = None
-    status: str = "open"  # open, resolved, dismissed
+    status: str = "open"  # open, under_review, resolved, dismissed
+    resolution_note: Optional[str] = None
 
 
 class UserTelegramSettings(BaseModel):
