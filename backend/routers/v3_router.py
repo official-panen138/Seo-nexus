@@ -1744,6 +1744,112 @@ async def get_network_optimizations(
     }
 
 
+@router.get("/networks/{network_id}/optimizations/export")
+async def export_network_optimizations_csv(
+    network_id: str,
+    status: Optional[str] = None,
+    activity_type: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Export all optimizations for a network as CSV.
+    Only Admin/Super Admin can export.
+    """
+    import csv
+    import io
+    from fastapi.responses import StreamingResponse
+    
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    require_brand_access(network["brand_id"], current_user)
+    
+    # Build query
+    query = {"network_id": network_id}
+    if status:
+        query["status"] = status
+    if activity_type:
+        query["activity_type"] = activity_type
+    
+    optimizations = await db.seo_optimizations.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Get complaint counts
+    complaint_counts = {}
+    for opt in optimizations:
+        count = await db.optimization_complaints.count_documents({"optimization_id": opt["id"]})
+        complaint_counts[opt["id"]] = count
+    
+    # Create CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow([
+        'ID',
+        'Title',
+        'Activity Type',
+        'Status',
+        'Complaint Status',
+        'Created By',
+        'Created At',
+        'Updated At',
+        'Closed At',
+        'Closed By',
+        'Description',
+        'Reason Note',
+        'Affected Scope',
+        'Target Domains',
+        'Keywords',
+        'Expected Impact',
+        'Observed Impact',
+        'Complaints Count',
+        'Report URLs'
+    ])
+    
+    # Data rows
+    for opt in optimizations:
+        writer.writerow([
+            opt["id"],
+            opt["title"],
+            opt.get("activity_type", ""),
+            opt["status"],
+            opt.get("complaint_status", "none"),
+            opt.get("created_by", {}).get("display_name", ""),
+            opt.get("created_at", ""),
+            opt.get("updated_at", ""),
+            opt.get("closed_at", ""),
+            opt.get("closed_by", {}).get("display_name", "") if opt.get("closed_by") else "",
+            opt.get("description", ""),
+            opt.get("reason_note", ""),
+            opt.get("affected_scope", ""),
+            "|".join(opt.get("target_domains", [])),
+            "|".join(opt.get("keywords", [])),
+            "|".join(opt.get("expected_impact", [])),
+            opt.get("observed_impact", ""),
+            complaint_counts.get(opt["id"], 0),
+            "|".join([r.get("url", r) if isinstance(r, dict) else r for r in opt.get("report_urls", [])])
+        ])
+    
+    output.seek(0)
+    
+    # Filename
+    network_name = network.get("name", "network").replace(" ", "_")
+    filename = f"optimizations_{network_name}_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
+    )
+
+
 @router.post("/networks/{network_id}/optimizations", response_model=SeoOptimizationResponse)
 async def create_network_optimization(
     network_id: str,
