@@ -76,10 +76,21 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(monitoring_scheduler.start())
     logger.info("V3 Monitoring Scheduler started (Expiration + Availability engines)")
     
-    logger.info("V3 services initialized: ActivityLog, TierCalculation, Monitoring")
+    # Start Reminder Scheduler for In-Progress optimizations
+    from services.seo_optimization_telegram_service import seo_optimization_telegram_service
+    reminder_scheduler = init_reminder_scheduler(db, telegram_service=seo_optimization_telegram_service)
+    reminder_scheduler.start()
+    logger.info("Optimization Reminder Scheduler started")
+    
+    logger.info("V3 services initialized: ActivityLog, TierCalculation, Monitoring, Reminders")
     yield
     # Shutdown
     logger.info("Shutting down SEO-NOC application...")
+    
+    # Stop reminder scheduler gracefully
+    if get_reminder_scheduler():
+        get_reminder_scheduler().stop()
+    
     client.close()
 
 
