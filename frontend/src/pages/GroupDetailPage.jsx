@@ -263,6 +263,14 @@ export default function GroupDetailPage() {
         loadNetwork();
     }, [groupId]);
 
+    // Auto-switch to Optimizations tab if optimization_id is in URL
+    useEffect(() => {
+        const optimizationId = searchParams.get('optimization_id');
+        if (optimizationId) {
+            setActiveTab('optimizations');
+        }
+    }, [searchParams]);
+
     // Load available target entries (nodes) for the network
     const loadAvailableTargets = async (networkId, currentEntryId) => {
         try {
