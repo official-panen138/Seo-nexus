@@ -94,7 +94,8 @@ export default function GroupDetailPage() {
         ranking_url: '',
         primary_keyword: '',
         ranking_position: '',
-        notes: ''
+        notes: '',
+        change_note: ''  // Required for SEO change logging
     });
     const [saving, setSaving] = useState(false);
     const [availableTargets, setAvailableTargets] = useState([]);
@@ -103,6 +104,7 @@ export default function GroupDetailPage() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [entryToDelete, setEntryToDelete] = useState(null);
     const [deleting, setDeleting] = useState(false);
+    const [deleteChangeNote, setDeleteChangeNote] = useState('');  // Required for delete
     
     // Add node state
     const [addNodeDialogOpen, setAddNodeDialogOpen] = useState(false);
@@ -111,7 +113,8 @@ export default function GroupDetailPage() {
         asset_domain_id: '',
         optimized_path: '',
         domain_role: 'supporting',
-        target_entry_id: ''
+        target_entry_id: '',
+        change_note: ''  // Required for SEO change logging
     });
     
     // Import dialog state
