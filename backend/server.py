@@ -2203,17 +2203,152 @@ async def update_telegram_settings(config: TelegramConfig, current_user: dict = 
 @api_router.post("/settings/telegram/test")
 async def test_telegram(current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))):
     """Send a test message to verify Telegram configuration"""
+    tz_str, tz_label = await get_system_timezone()
+    local_time = format_to_local_time(datetime.now(timezone.utc).isoformat(), tz_str)
+    
     message = f"""✅ <b>SEO-NOC Test Alert</b>
 
 This is a test message from SEO-NOC.
 Sent by: {current_user['email']}
-Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"""
+Time: {local_time}"""
     
     success = await send_telegram_alert(message)
     if success:
         return {"message": "Test message sent successfully"}
     else:
         raise HTTPException(status_code=500, detail="Failed to send test message. Check your Telegram configuration.")
+
+
+# ==================== APP BRANDING SETTINGS ====================
+
+@api_router.get("/settings/branding")
+async def get_branding_settings(current_user: dict = Depends(get_current_user)):
+    """Get app branding settings (title, description, logo)"""
+    settings = await db.settings.find_one({"key": "branding"}, {"_id": 0})
+    return settings or {
+        "site_title": "SEO//NOC",
+        "site_description": "SEO Network Operations Center - Manage your domain networks efficiently",
+        "logo_url": ""
+    }
+
+
+@api_router.put("/settings/branding")
+async def update_branding_settings(
+    config: AppBrandingSettings,
+    current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))
+):
+    """Update app branding settings - Super Admin only"""
+    update_data = {"key": "branding", "updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if config.site_title is not None:
+        update_data["site_title"] = config.site_title
+    if config.site_description is not None:
+        update_data["site_description"] = config.site_description
+    if config.logo_url is not None:
+        update_data["logo_url"] = config.logo_url
+    
+    await db.settings.update_one(
+        {"key": "branding"},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.SETTINGS,
+            entity_id="branding",
+            after_value={"action": "branding_updated", **update_data}
+        )
+    
+    return {"message": "Branding settings updated"}
+
+
+@api_router.post("/settings/branding/upload-logo")
+async def upload_logo(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))
+):
+    """Upload a logo image - Super Admin only"""
+    import base64
+    
+    # Validate file type
+    allowed_types = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail=f"File type not allowed. Use: PNG, JPEG, SVG, or WebP")
+    
+    # Validate file size (max 2MB)
+    contents = await file.read()
+    if len(contents) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 2MB")
+    
+    # Store as base64 data URL
+    b64_content = base64.b64encode(contents).decode('utf-8')
+    data_url = f"data:{file.content_type};base64,{b64_content}"
+    
+    # Update branding settings with logo
+    await db.settings.update_one(
+        {"key": "branding"},
+        {"$set": {
+            "logo_url": data_url,
+            "logo_filename": file.filename,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    
+    return {"message": "Logo uploaded successfully", "logo_url": data_url}
+
+
+# ==================== TIMEZONE SETTINGS ====================
+
+@api_router.get("/settings/timezone")
+async def get_timezone_settings(current_user: dict = Depends(get_current_user)):
+    """Get timezone settings for monitoring display"""
+    settings = await db.settings.find_one({"key": "timezone"}, {"_id": 0})
+    return settings or {
+        "default_timezone": "Asia/Jakarta",
+        "timezone_label": "GMT+7"
+    }
+
+
+@api_router.put("/settings/timezone")
+async def update_timezone_settings(
+    config: TimezoneSettings,
+    current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))
+):
+    """Update timezone settings - Super Admin only"""
+    # Validate timezone
+    try:
+        from zoneinfo import ZoneInfo
+        ZoneInfo(config.default_timezone)
+    except Exception:
+        raise HTTPException(status_code=400, detail=f"Invalid timezone: {config.default_timezone}")
+    
+    update_data = {
+        "key": "timezone",
+        "default_timezone": config.default_timezone,
+        "timezone_label": config.timezone_label,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.settings.update_one(
+        {"key": "timezone"},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.SETTINGS,
+            entity_id="timezone",
+            after_value={"action": "timezone_updated", **update_data}
+        )
+    
+    return {"message": "Timezone settings updated"}
 
 # ==================== AUDIT LOGS ====================
 
