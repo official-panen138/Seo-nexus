@@ -210,7 +210,19 @@ export const changeLogsAPI = {
     getNetworkNotifications: (networkId, params) => apiV3.get(`/networks/${networkId}/notifications`, { params }),
     markNotificationRead: (networkId, notificationId) => apiV3.post(`/networks/${networkId}/notifications/${notificationId}/read`),
     markAllNotificationsRead: (networkId) => apiV3.post(`/networks/${networkId}/notifications/read-all`),
-    getStats: (params) => apiV3.get('/change-logs/stats', { params })
+    getStats: (params) => apiV3.get('/change-logs/stats', { params }),
+    // Filter helpers
+    filterHistory: (networkId, filters) => apiV3.get(`/networks/${networkId}/change-history`, { 
+        params: {
+            actor_email: filters.actor || undefined,
+            action_type: filters.action || undefined,
+            affected_node: filters.node || undefined,
+            date_from: filters.dateFrom || undefined,
+            date_to: filters.dateTo || undefined,
+            skip: filters.skip || 0,
+            limit: filters.limit || 50
+        }
+    })
 };
 
 // V3 SEO Telegram Settings API
