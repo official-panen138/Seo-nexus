@@ -87,6 +87,31 @@ Build a full-stack SEO Network Operations Center combining:
 
 **Tests:** 100% pass rate (14/14 backend, 100% frontend)
 
+### P0 SEO Change History & Alerts UI (Feb 9, 2026) - COMPLETE
+**Feature 1: Change History Tab**
+- ✅ Added "Change History" tab to Network Detail page
+- ✅ Table view: Date | User | Domain/Path | Action | Note | Details
+- ✅ Relative timestamps (Just now, Xm ago, Xh ago, Xd ago)
+- ✅ Action type badges with color coding:
+  - Created (emerald), Updated (blue), Deleted (red), Relinked (purple), Role Changed (orange), Path Changed (cyan)
+- ✅ Click row → Opens detail drawer
+- ✅ Detail drawer shows:
+  - Affected node, changed by, date
+  - Change note (amber highlight)
+  - Before/After snapshot comparison
+  - "View Node in Graph" button → highlights node in D3 and switches tab
+
+**Feature 2: Network Alerts Panel**
+- ✅ Added "Alerts" tab with unread count badge
+- ✅ Shows SEO-related notifications only:
+  - Main Domain Changed, Node Deleted, Target Relinked, Orphan Detected, SEO Conflict, High Tier NoIndex
+- ✅ Read/unread visual state
+- ✅ "Mark all read" button
+- ✅ Click notification → Opens related change history entry (via change_log_id link)
+- ✅ Shows: notification type, message, affected node, timestamp, actor, change note
+
+**Tests:** 100% pass rate (14/14 backend, 100% frontend)
+
 ### P0 SEO Change Intelligence Layer (Feb 9, 2026) - COMPLETE
 **Feature Overview:** Separates system logs from SEO decision logs. Forces human-readable explanations for all SEO structure changes.
 
