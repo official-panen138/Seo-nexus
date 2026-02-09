@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { networksAPI, brandsAPI, assetDomainsAPI } from '../lib/api';
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { toast } from 'sonner';
 import { 
     Plus, 
@@ -25,9 +26,12 @@ import {
     ArrowRight,
     ArrowLeft,
     Target,
-    CheckCircle
+    CheckCircle,
+    Search,
+    X,
+    ExternalLink
 } from 'lucide-react';
-import { formatDate } from '../lib/utils';
+import { formatDate, debounce } from '../lib/utils';
 
 export default function GroupsPage() {
     const { canEdit } = useAuth();
@@ -40,6 +44,14 @@ export default function GroupsPage() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedNetwork, setSelectedNetwork] = useState(null);
+    
+    // Search state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [highlightedNetworkIds, setHighlightedNetworkIds] = useState([]);
+    const searchInputRef = useRef(null);
     
     // Multi-step form state
     const [createStep, setCreateStep] = useState(1);
