@@ -560,6 +560,11 @@ class AvailabilityMonitoringService:
   Tier: {domain.get('tier_label', 'N/A')}
 """
         
+        # Use configured timezone for display
+        tz_str = domain.get('_timezone_str', 'Asia/Jakarta')
+        tz_label = domain.get('_timezone_label', 'GMT+7')
+        local_time = format_now_local(tz_str, tz_label)
+        
         return f"""{severity_emoji} <b>DOMAIN DOWN ALERT</b>
 
 <b>Domain:</b> <code>{domain.get('domain_name', 'Unknown')}</code>
@@ -571,7 +576,7 @@ class AvailabilityMonitoringService:
 <b>HTTP Code:</b> {domain.get('last_http_code', 'N/A')}
 {seo_context}
 <b>Severity:</b> <b>{severity}</b>
-<b>Checked:</b> {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"""
+<b>Checked:</b> {local_time}"""
     
     def _format_recovery_alert(self, domain: Dict[str, Any]) -> str:
         """Format recovery alert for Telegram"""
