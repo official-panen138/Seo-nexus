@@ -1749,9 +1749,8 @@ async def delete_structure_entry(
     if not existing:
         raise HTTPException(status_code=404, detail="Structure entry not found")
     
-    # Validate change_note
-    if not data.change_note or len(data.change_note.strip()) < 10:
-        raise HTTPException(status_code=400, detail="Change note is required (minimum 10 characters)")
+    # CRITICAL: Validate change_note BEFORE any operation
+    validate_change_note(data.change_note)
     
     # Check if this is the main node
     if existing.get("domain_role") == DomainRole.MAIN.value:
@@ -1790,36 +1789,22 @@ async def delete_structure_entry(
     
     await db.seo_structure_entries.delete_one({"id": entry_id})
     
-    # Log SEO change with mandatory note
-    change_log_id = None
-    if seo_change_log_service:
-        change_log_id = await seo_change_log_service.log_change(
-            network_id=existing["network_id"],
-            brand_id=brand_id,
-            actor_user_id=current_user.get("id", ""),
-            actor_email=current_user["email"],
-            action_type=SeoChangeActionType.DELETE_NODE,
-            affected_node=node_label,
-            change_note=data.change_note,
-            before_snapshot=existing,
-            after_snapshot=None,
-            entry_id=entry_id
-        )
-    
-    # Send SEO Telegram notification
-    if seo_telegram_service:
-        await seo_telegram_service.send_seo_change_notification(
-            network_id=existing["network_id"],
-            brand_id=brand_id,
-            actor_user_id=current_user.get("id", ""),
-            actor_email=current_user["email"],
-            action_type="delete_node",
-            affected_node=node_label,
-            change_note=data.change_note,
-            before_snapshot=existing,
-            after_snapshot=None,
-            change_log_id=change_log_id
-        )
+    # ATOMIC: Log + Telegram notification
+    notification_success, change_log_id, error_msg = await atomic_seo_change_with_notification(
+        db=db,
+        seo_change_log_service=seo_change_log_service,
+        seo_telegram_service=seo_telegram_service,
+        network_id=existing["network_id"],
+        brand_id=brand_id,
+        actor_user_id=current_user.get("id", ""),
+        actor_email=current_user["email"],
+        action_type=SeoChangeActionType.DELETE_NODE,
+        affected_node=node_label,
+        change_note=data.change_note,
+        before_snapshot=existing,
+        after_snapshot=None,
+        entry_id=entry_id
+    )
     
     # Log system activity
     if activity_log_service:
@@ -1835,6 +1820,7 @@ async def delete_structure_entry(
     return {
         "message": "Structure entry deleted",
         "orphaned_entries": orphan_count,
+        "notification_sent": notification_success,
         "warning": f"{orphan_count} entries now have no target (orphaned)" if orphan_count > 0 else None
     }
 
