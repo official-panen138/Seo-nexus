@@ -973,19 +973,66 @@ Full optimization detail view with complaint thread, team response system, and c
 
 **Tests:** All API endpoints verified via curl ✅
 
+### SEO Network Access Control - User Search/Add Enhancement (Feb 9, 2026) - COMPLETE
+**Bug Fix + Enhancement:** SEO Network Access Control – Allowed Users Search/Add Not Working
+
+**Issues Fixed:**
+1. ✅ "Failed to load access settings" error - Fixed double `/api` prefix in frontend API calls
+2. ✅ User search always showing "No users found" - Implemented proper `/api/v3/users/search` endpoint
+3. ✅ Duplicate function definitions in backend causing overwriting issues
+
+**New Features Implemented:**
+
+**1. User Search API (`GET /api/v3/users/search`):**
+- ✅ Search by email OR name (case-insensitive partial match)
+- ✅ Minimum 2 characters required
+- ✅ Maximum 10 results returned for performance
+- ✅ Excludes inactive/disabled users (unless super_admin)
+- ✅ Brand scoping support via `network_id` parameter
+- ✅ Returns: id, email, name, role, status
+
+**2. Frontend Access Control UI:**
+- ✅ Complete rewrite of `NetworkAccessSettings.jsx`
+- ✅ Fixed API client to use correct `/api/v3` base URL
+- ✅ Debounced search input (300ms)
+- ✅ Dropdown with search results showing: avatar, name, email, role badge, "+" button
+- ✅ Selected users list with: avatar, name, email, role badge, "X" remove button
+- ✅ Warning message when no users selected in Restricted mode
+- ✅ Info box explaining visibility modes
+- ✅ Proper data-testids for all interactive elements
+
+**3. Backend Access Enforcement:**
+- ✅ `require_network_access()` - Raises 403 for unauthorized users
+- ✅ Enforced on: `GET /networks/{id}`, `GET /networks/{id}/optimizations`, CSV export
+- ✅ Network list endpoint filters out restricted networks from non-allowed users
+- ✅ Super Admin always has access
+
+**4. Acceptance Criteria Verified:**
+- ✅ Typing user email/name shows user in suggestions
+- ✅ Clicking suggestion adds user to Allowed Users list
+- ✅ Saving persists allowed_user_ids in DB
+- ✅ Reload page: settings still shown
+- ✅ Restricted mode prevents unlisted users from accessing network (403)
+- ✅ Super admin can always access
+
+**Key Files:**
+- `frontend/src/components/NetworkAccessSettings.jsx` - Complete rewrite with local apiV3 instance
+- `backend/routers/v3_router.py` - Lines 2797-2862 (users/search), Lines 2920-2990 (access-control)
+
+**Tests:** 100% pass rate (15/15 backend, 100% frontend) ✅
+
 ## Prioritized Backlog
 
 ### P0 - Critical
-- None (Team Evaluation core features complete)
+- None (All critical features complete)
 
 ### P1 - High Priority
-1. **Activity Type Management UI** - Settings page for managing `seo_optimization_activity_types`
-2. **Project-Level User Visibility** - Extend SEO Network with `allowed_user_ids` and `visibility_mode` enforcement
-3. **Telegram Account Linking UI** - User settings to link Telegram for notification tagging
+1. **Complaint Timeline UI** - Chronological, threaded view for complaint history within Optimization Detail View
+2. **Time-to-Resolution Metric** - Backend logic to calculate time between complaint creation and resolution
 
 ### P2 - Medium Priority
-1. Correlate optimization timeline with ranking history
-2. Automatic optimization impact score calculation
-3. Export optimization logs to CSV
-4. Weekly SEO optimization digest (Telegram/Email)
-5. AI-generated optimization summaries
+1. **Access Summary on Network Card** - Display "Restricted – 3 users" on network cards
+2. **Deep-link Drawer Auto-Open** - Auto-open optimization detail drawer when URL has `?optimization_id=...`
+3. **Frontend UI for AI Summary** - Button to trigger AI summary generation and display result
+4. Correlate optimization timeline with ranking history
+5. Automatic optimization impact score calculation
