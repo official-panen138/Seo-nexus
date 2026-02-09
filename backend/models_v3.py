@@ -11,9 +11,28 @@ IMPORTANT: Tiers are DERIVED, not stored.
 """
 
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Generic, TypeVar
 from enum import Enum
 from datetime import datetime
+
+
+# ==================== PAGINATION MODELS ====================
+
+T = TypeVar('T')
+
+
+class PaginationMeta(BaseModel):
+    """Pagination metadata"""
+    page: int
+    limit: int
+    total: int
+    total_pages: int
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Generic paginated response wrapper"""
+    data: List[T]
+    meta: PaginationMeta
 
 
 # ==================== ENUMS ====================
