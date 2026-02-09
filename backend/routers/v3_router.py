@@ -1148,9 +1148,13 @@ async def get_network(
     current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Get a single SEO network with structure entries and calculated tiers - BRAND SCOPED"""
+    logger.info(f"[GET_NETWORK] Fetching network: {network_id}")
     network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
     if not network:
+        logger.warning(f"[GET_NETWORK] Network not found: {network_id}")
         raise HTTPException(status_code=404, detail="Network not found")
+    
+    logger.info(f"[GET_NETWORK] Found network: {network.get('name')}, visibility: {network.get('visibility_mode', 'brand_based')}")
     
     # Validate brand access first
     require_brand_access(network.get("brand_id", ""), current_user)
