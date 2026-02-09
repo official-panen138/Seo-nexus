@@ -49,6 +49,8 @@ export default function UsersPage() {
     const [createForm, setCreateForm] = useState({ email: '', name: '', role: 'viewer', brand_scope_ids: [], password: '', useManualPassword: false });
     const [generatedPassword, setGeneratedPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+    const [activateDialogOpen, setActivateDialogOpen] = useState(false);
 
     const isSuperAdmin = hasRole('super_admin');
 
