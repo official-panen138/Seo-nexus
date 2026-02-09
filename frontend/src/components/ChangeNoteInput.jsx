@@ -53,11 +53,12 @@ const CHANGE_NOTE_TEMPLATES = [
 export function ChangeNoteInput({ 
     value, 
     onChange, 
-    placeholder = "Explain the reason for this change...",
+    placeholder = "Jelaskan alasan perubahan ini... (contoh: Support halaman promo utama)",
     minHeight = "140px",
-    recommendedChars = 150,
+    recommendedChars = 50,
+    minChars = 10,
     maxChars = 2000,
-    label = "Change Note",
+    label = "Catatan Perubahan",
     required = true,
     variant = "default" // default, delete, or add
 }) {
