@@ -568,8 +568,8 @@ export default function GroupsPage() {
                             const isHighlighted = highlightedNetworkIds.includes(network.id);
                             const rankingBadge = getRankingStatusBadge(network.ranking_status);
                             const RankingIcon = rankingBadge.icon;
-                            const accessBadge = getAccessBadge(network);
-                            const AccessIcon = accessBadge.icon;
+                            const managerBadge = getManagerBadge(network);
+                            const ManagerIcon = managerBadge.icon;
                             return (
                             <Link 
                                 key={network.id} 
