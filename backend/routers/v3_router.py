@@ -1235,7 +1235,9 @@ async def update_structure_entry(
     if not existing:
         raise HTTPException(status_code=404, detail="Structure entry not found")
     
-    update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
+    # Extract and remove change_note from update_dict
+    change_note = data.change_note
+    update_dict = {k: v for k, v in data.model_dump(exclude={"change_note"}).items() if v is not None}
     
     # Normalize optimized_path if provided
     if "optimized_path" in update_dict:
