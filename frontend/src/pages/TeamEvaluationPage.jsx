@@ -140,6 +140,48 @@ export default function TeamEvaluationPage() {
         loadSummary();
     };
 
+    const [exporting, setExporting] = useState(false);
+    
+    const handleExportCSV = async () => {
+        setExporting(true);
+        try {
+            const params = {};
+            if (selectedBrand !== 'all') params.brand_id = selectedBrand;
+            if (selectedNetwork !== 'all') params.network_id = selectedNetwork;
+            
+            // Calculate date range
+            const endDate = new Date().toISOString();
+            const startDate = new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString();
+            params.start_date = startDate;
+            params.end_date = endDate;
+            
+            const response = await teamEvaluationAPI.exportCSV(params);
+            
+            // Create download link
+            const blob = new Blob([response.data], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            
+            // Generate filename
+            const startShort = startDate.slice(0, 10);
+            const endShort = endDate.slice(0, 10);
+            link.download = `seo_team_evaluation_${startShort}_to_${endShort}.csv`;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            toast.success('CSV exported successfully');
+        } catch (err) {
+            console.error('Failed to export CSV:', err);
+            toast.error('Failed to export CSV');
+        } finally {
+            setExporting(false);
+        }
+    };
+
     // Prepare chart data
     const statusChartData = summary ? Object.entries(summary.by_status || {}).map(([status, count]) => ({
         name: status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' '),
