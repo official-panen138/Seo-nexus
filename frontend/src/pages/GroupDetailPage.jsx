@@ -314,7 +314,8 @@ export default function GroupDetailPage() {
             ranking_url: entry.ranking_url || '',
             primary_keyword: entry.primary_keyword || '',
             ranking_position: entry.ranking_position || '',
-            notes: entry.notes || ''
+            notes: entry.notes || '',
+            change_note: ''  // Reset for each edit
         });
         loadAvailableTargets(network?.id, entry.id);
         setEditDialogOpen(true);
