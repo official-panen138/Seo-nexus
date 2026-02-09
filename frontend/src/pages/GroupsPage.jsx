@@ -626,6 +626,30 @@ export default function GroupsPage() {
                                                 <span>View</span>
                                             </div>
                                         </div>
+                                        
+                                        {/* Ranking Mini Metrics */}
+                                        {(network.ranking_nodes_count > 0 || network.tracked_urls_count > 0) && (
+                                            <div className="mt-3 pt-3 border-t border-border flex items-center gap-4 text-xs">
+                                                {network.ranking_nodes_count > 0 && (
+                                                    <div className="flex items-center gap-1 text-emerald-400" title="Nodes with ranking position">
+                                                        <TrendingUp className="h-3 w-3" />
+                                                        <span>{network.ranking_nodes_count} ranking</span>
+                                                    </div>
+                                                )}
+                                                {network.best_ranking_position && (
+                                                    <div className="flex items-center gap-1 text-amber-400" title="Best ranking position">
+                                                        <span className="font-semibold">#{network.best_ranking_position}</span>
+                                                    </div>
+                                                )}
+                                                {network.tracked_urls_count > 0 && (
+                                                    <div className="flex items-center gap-1 text-zinc-400" title="Tracked URLs">
+                                                        <Activity className="h-3 w-3" />
+                                                        <span>{network.tracked_urls_count} tracked</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        
                                         <div className="mt-3 pt-3 border-t border-border">
                                             <span className="text-xs text-zinc-600">
                                                 Created {formatDate(network.created_at)}
