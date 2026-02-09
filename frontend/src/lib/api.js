@@ -115,7 +115,11 @@ export const reportsAPI = {
 export const settingsAPI = {
     getTelegram: () => api.get('/settings/telegram'),
     updateTelegram: (data) => api.put('/settings/telegram', data),
-    testTelegram: () => api.post('/settings/telegram/test')
+    testTelegram: () => api.post('/settings/telegram/test'),
+    // SEO Telegram (V3)
+    getSeoTelegram: () => api.get('/v3/settings/telegram-seo'),
+    updateSeoTelegram: (data) => api.put('/v3/settings/telegram-seo', data),
+    testSeoTelegram: () => api.post('/v3/settings/telegram-seo/test')
 };
 
 // Audit logs API
