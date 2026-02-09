@@ -200,7 +200,23 @@ export const structureAPI = {
     getOne: (entryId) => apiV3.get(`/structure/${entryId}`),
     create: (data) => apiV3.post('/structure', data),
     update: (entryId, data) => apiV3.put(`/structure/${entryId}`, data),
-    delete: (entryId) => apiV3.delete(`/structure/${entryId}`)
+    delete: (entryId, data) => apiV3.delete(`/structure/${entryId}`, { data })  // Delete with body for change_note
+};
+
+// V3 Change Logs API (SEO Decision Logs)
+export const changeLogsAPI = {
+    getNetworkHistory: (networkId, params) => apiV3.get(`/networks/${networkId}/change-history`, { params }),
+    getNetworkNotifications: (networkId, params) => apiV3.get(`/networks/${networkId}/notifications`, { params }),
+    markNotificationRead: (networkId, notificationId) => apiV3.post(`/networks/${networkId}/notifications/${notificationId}/read`),
+    markAllNotificationsRead: (networkId) => apiV3.post(`/networks/${networkId}/notifications/read-all`),
+    getStats: (params) => apiV3.get('/change-logs/stats', { params })
+};
+
+// V3 SEO Telegram Settings API
+export const seoTelegramAPI = {
+    getSettings: () => apiV3.get('/settings/telegram-seo'),
+    updateSettings: (data) => apiV3.post('/settings/telegram-seo', data),
+    testAlert: () => apiV3.post('/settings/telegram-seo/test')
 };
 
 // V3 Activity Logs API
