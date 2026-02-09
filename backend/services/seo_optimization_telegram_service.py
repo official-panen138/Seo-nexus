@@ -287,3 +287,106 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
         except Exception as e:
             logger.error(f"Failed to send status change notification: {e}")
             return False
+    
+    async def send_complaint_notification(
+        self,
+        complaint: Dict[str, Any],
+        optimization: Dict[str, Any],
+        network: Dict[str, Any],
+        brand: Dict[str, Any],
+        responsible_users: List[Dict[str, Any]]
+    ) -> bool:
+        """
+        Send notification when Super Admin creates a complaint on an optimization.
+        Tags responsible users via @telegram_username.
+        """
+        try:
+            # Get timezone settings
+            tz_str, tz_label = await get_system_timezone(self.db)
+            local_time = format_to_local_time(
+                complaint.get("created_at", datetime.now(timezone.utc).isoformat()),
+                tz_str, tz_label
+            )
+            
+            # Get creator info
+            created_by = complaint.get("created_by", {})
+            creator_name = created_by.get("display_name", "Unknown")
+            
+            # Format tagged users
+            tagged_users_text = ""
+            if responsible_users:
+                tags = []
+                for user in responsible_users:
+                    if user.get("telegram_username"):
+                        tags.append(f"@{user['telegram_username']}")
+                    else:
+                        # Fallback to email if no Telegram username
+                        tags.append(f"{user.get('name', user.get('email', 'Unknown'))} (no Telegram)")
+                tagged_users_text = "\n".join([f"  • {tag}" for tag in tags])
+            else:
+                tagged_users_text = "  (Tidak ada pengguna yang ditag)"
+            
+            # Format activity type
+            activity_type = optimization.get("activity_type", "other")
+            activity_label = ACTIVITY_TYPE_LABELS.get(activity_type, activity_type.replace("_", " ").title())
+            
+            # Format status
+            status = optimization.get("status", "unknown")
+            status_label = STATUS_LABELS.get(status, status.replace("_", " ").title())
+            
+            # Format scope
+            scope = optimization.get("affected_scope", "domain")
+            scope_label = SCOPE_LABELS.get(scope, scope.replace("_", " ").title())
+            
+            # Format priority
+            priority = complaint.get("priority", "medium")
+            priority_emoji = {"low": "🔵", "medium": "🟡", "high": "🔴"}.get(priority, "🟡")
+            priority_label = {"low": "Rendah", "medium": "Sedang", "high": "Tinggi"}.get(priority, "Sedang")
+            
+            # Format report URLs
+            report_urls = complaint.get("report_urls", [])
+            reports_text = "\n".join([f"  • {url}" for url in report_urls]) if report_urls else "  (Tidak ada)"
+            
+            message = f"""🚨 <b>SEO OPTIMIZATION COMPLAINT</b>
+
+<b>{creator_name}</b> telah mengajukan komplain
+pada SEO Network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.get('name', 'Unknown')}</b>'.
+
+━━━━━━━━━━━━━━━━━━━━━━
+👥 <b>Tagged Users:</b>
+{tagged_users_text}
+
+📌 <b>Optimization:</b>
+  • Judul: {optimization.get('title', '(Tanpa judul)')}
+  • Jenis: {activity_label}
+  • Status: {status_label}
+  • Scope: {scope_label}
+
+{priority_emoji} <b>Prioritas:</b> {priority_label}
+
+📝 <b>Alasan Komplain:</b>
+"{complaint.get('reason', '(Tidak ada alasan)')}"
+
+📎 <b>Related Reports:</b>
+{reports_text}
+
+🕐 <b>Waktu:</b> {local_time}
+
+━━━━━━━━━━━━━━━━━━━━━━
+⚠️ <b>Action Required:</b>
+<i>Please review and respond to this complaint.</i>"""
+            
+            success = await self._send_telegram_message(message)
+            
+            if success:
+                # Update complaint with notification timestamp
+                await self.db.optimization_complaints.update_one(
+                    {"id": complaint["id"]},
+                    {"$set": {"telegram_notified_at": datetime.now(timezone.utc).isoformat()}}
+                )
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Failed to send complaint notification: {e}")
+            return False
