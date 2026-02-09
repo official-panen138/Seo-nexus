@@ -1318,13 +1318,21 @@ async def update_structure_entry(
     return SeoStructureEntryResponse(**updated)
 
 
+from pydantic import BaseModel as PydanticBaseModel
+
+class DeleteStructureEntryRequest(PydanticBaseModel):
+    """Request model for deleting structure entry with mandatory change note"""
+    change_note: str
+
+
 @router.delete("/structure/{entry_id}")
 async def delete_structure_entry(
     entry_id: str,
+    data: DeleteStructureEntryRequest,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
     """
-    Delete an SEO structure entry (node).
+    Delete an SEO structure entry (node) with mandatory change note.
     
     If other entries target this node, they become orphans.
     A warning is included in the response but deletion proceeds.
@@ -1332,6 +1340,10 @@ async def delete_structure_entry(
     existing = await db.seo_structure_entries.find_one({"id": entry_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Structure entry not found")
+    
+    # Validate change_note
+    if not data.change_note or len(data.change_note.strip()) < 3:
+        raise HTTPException(status_code=400, detail="Change note is required (min 3 characters)")
     
     # Check if this is the main node
     if existing.get("domain_role") == DomainRole.MAIN.value:
@@ -1364,9 +1376,28 @@ async def delete_structure_entry(
     domain_name = domain["domain_name"] if domain else "unknown"
     node_label = f"{domain_name}{existing.get('optimized_path', '') or ''}"
     
+    # Get network for brand_id
+    network = await db.seo_networks.find_one({"id": existing["network_id"]}, {"_id": 0, "brand_id": 1})
+    brand_id = network.get("brand_id", "") if network else ""
+    
     await db.seo_structure_entries.delete_one({"id": entry_id})
     
-    # Log activity
+    # Log SEO change with mandatory note
+    if seo_change_log_service:
+        await seo_change_log_service.log_change(
+            network_id=existing["network_id"],
+            brand_id=brand_id,
+            actor_user_id=current_user.get("id", ""),
+            actor_email=current_user["email"],
+            action_type=SeoChangeActionType.DELETE_NODE,
+            affected_node=node_label,
+            change_note=data.change_note,
+            before_snapshot=existing,
+            after_snapshot=None,
+            entry_id=entry_id
+        )
+    
+    # Log system activity
     if activity_log_service:
         await activity_log_service.log(
             actor=current_user["email"],
@@ -1374,7 +1405,7 @@ async def delete_structure_entry(
             entity_type=EntityType.SEO_STRUCTURE_ENTRY,
             entity_id=entry_id,
             before_value=existing,
-            metadata={"node_label": node_label, "orphaned_entries": orphan_count}
+            metadata={"node_label": node_label, "orphaned_entries": orphan_count, "change_note": data.change_note}
         )
     
     return {
