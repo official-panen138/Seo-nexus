@@ -143,7 +143,9 @@ class TestPhase3ReminderConfig:
         )
         verify_data = verify_response.json()
         
-        assert verify_data.get("has_override") == True, "Override should be set"
+        # Check for override - API returns network_override object
+        has_override = bool(verify_data.get("network_override")) if "network_override" in verify_data else verify_data.get("has_override", False)
+        assert has_override == True, f"Override should be set, got: {verify_data}"
         assert verify_data.get("effective_interval_days") == 5, "Effective interval should be 5"
         print(f"Network override set: {verify_data}")
     
