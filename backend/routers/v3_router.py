@@ -1523,8 +1523,6 @@ async def switch_main_target(
     }
 
 
-from pydantic import BaseModel as PydanticBaseModel
-
 class DeleteStructureEntryRequest(PydanticBaseModel):
     """Request model for deleting structure entry with mandatory change note"""
     change_note: str
