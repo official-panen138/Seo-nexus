@@ -2106,7 +2106,7 @@ async def get_optimization_detail(
                 created = datetime.fromisoformat(complaint["created_at"].replace("Z", "+00:00"))
                 resolved = datetime.fromisoformat(complaint["resolved_at"].replace("Z", "+00:00"))
                 complaint["time_to_resolution_hours"] = (resolved - created).total_seconds() / 3600
-            except:
+            except Exception:
                 pass
     
     # Get team responses
