@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { groupsAPI, networksAPI, structureAPI, assetDomainsAPI, exportAPI, importAPI } from '../lib/api';
+import { groupsAPI, networksAPI, structureAPI, assetDomainsAPI, exportAPI, importAPI, changeLogsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { NetworkGraph } from '../components/NetworkGraph';
 import { Button } from '../components/ui/button';
@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../components/ui/textarea';
 import { Switch } from '../components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
+import { ScrollArea } from '../components/ui/scroll-area';
 import { toast } from 'sonner';
 import { 
     ArrowLeft, 
@@ -33,7 +34,15 @@ import {
     Upload,
     FileSpreadsheet,
     Plus,
-    Trash2
+    Trash2,
+    History,
+    Bell,
+    User,
+    Clock,
+    ChevronRight,
+    Eye,
+    Check,
+    X
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
