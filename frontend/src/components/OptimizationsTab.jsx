@@ -357,21 +357,24 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
     };
 
     const addReportUrl = () => {
-        if (reportUrlInput.trim()) {
+        if (reportUrlInput.trim() && reportUrlDate) {
             const urlExists = form.report_urls.some(r => 
                 (typeof r === 'string' ? r : r.url) === reportUrlInput.trim()
             );
             if (!urlExists) {
-                // Add with current date as start_date
                 setForm(prev => ({ 
                     ...prev, 
                     report_urls: [...prev.report_urls, { 
                         url: reportUrlInput.trim(), 
-                        start_date: new Date().toISOString().split('T')[0] 
+                        start_date: reportUrlDate
                     }] 
                 }));
                 setReportUrlInput('');
+                // Reset date to today for next entry
+                setReportUrlDate(new Date().toISOString().split('T')[0]);
             }
+        } else if (!reportUrlDate) {
+            toast.error('Please select a report date');
         }
     };
 
