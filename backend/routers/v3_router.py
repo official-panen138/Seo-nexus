@@ -1992,10 +1992,16 @@ async def create_optimization_complaint(
     
     await db.optimization_complaints.insert_one(complaint)
     
-    # Update optimization complaints count
+    # Update optimization complaints count AND complaint_status
     await db.seo_optimizations.update_one(
         {"id": optimization_id},
-        {"$inc": {"complaints_count": 1}}
+        {
+            "$inc": {"complaints_count": 1},
+            "$set": {
+                "complaint_status": "complained",
+                "updated_at": now
+            }
+        }
     )
     
     # Get network and brand for notification
