@@ -1894,13 +1894,27 @@ async def create_network_optimization(
     
     now = datetime.now(timezone.utc).isoformat()
     
-    # Convert report_urls to serializable format
+    # Convert and validate report_urls
     report_urls_data = []
     for url_entry in data.report_urls:
         if isinstance(url_entry, str):
+            # Plain string URL - add today's date
             report_urls_data.append({"url": url_entry, "start_date": now[:10]})
+        elif isinstance(url_entry, dict):
+            # Dict entry - validate required fields
+            if not url_entry.get("url"):
+                raise HTTPException(status_code=400, detail="Report URL is required for each entry")
+            if not url_entry.get("start_date"):
+                raise HTTPException(status_code=400, detail="Report start date is required for each entry")
+            report_urls_data.append(url_entry)
         else:
-            report_urls_data.append(url_entry.model_dump() if hasattr(url_entry, 'model_dump') else url_entry)
+            # Pydantic model
+            entry_dict = url_entry.model_dump() if hasattr(url_entry, 'model_dump') else dict(url_entry)
+            if not entry_dict.get("url"):
+                raise HTTPException(status_code=400, detail="Report URL is required for each entry")
+            if not entry_dict.get("start_date"):
+                raise HTTPException(status_code=400, detail="Report start date is required for each entry")
+            report_urls_data.append(entry_dict)
     
     optimization = {
         "id": str(uuid.uuid4()),
