@@ -812,7 +812,10 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
                     
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleSave} disabled={saving || !form.title.trim() || !form.description.trim()}>
+                        <Button 
+                            onClick={handleSave} 
+                            disabled={saving || !form.title.trim() || !form.description.trim() || (!selectedOptimization && form.reason_note.trim().length < 20)}
+                        >
                             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                             {selectedOptimization ? 'Update' : 'Create & Notify'}
                         </Button>
