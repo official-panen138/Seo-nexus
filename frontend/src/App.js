@@ -99,6 +99,16 @@ function AppRoutes() {
                     <GroupDetailPage />
                 </ProtectedRoute>
             } />
+            <Route path="/networks/:groupId" element={
+                <ProtectedRoute>
+                    <GroupDetailPage />
+                </ProtectedRoute>
+            } />
+            <Route path="/networks" element={
+                <ProtectedRoute>
+                    <GroupsPage />
+                </ProtectedRoute>
+            } />
             <Route path="/optimizations/:optimizationId" element={
                 <ProtectedRoute>
                     <OptimizationDetailPage />
