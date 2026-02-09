@@ -161,9 +161,20 @@ class SeoOptimizationTelegramService:
             keywords = optimization.get("keywords", [])
             keywords_text = ", ".join(keywords) if keywords else "(Tidak ada)"
             
-            # Format report URLs
+            # Format report URLs with dates
             report_urls = optimization.get("report_urls", [])
-            reports_text = "\n".join([f"  • {url}" for url in report_urls]) if report_urls else "  (Tidak ada)"
+            reports_text_lines = []
+            for r in report_urls:
+                if isinstance(r, dict):
+                    url = r.get("url", "")
+                    start_date = r.get("start_date", "")
+                    if start_date:
+                        reports_text_lines.append(f"  • {url}\n    📅 Tanggal: {start_date}")
+                    else:
+                        reports_text_lines.append(f"  • {url}")
+                else:
+                    reports_text_lines.append(f"  • {r}")
+            reports_text = "\n".join(reports_text_lines) if reports_text_lines else "  (Tidak ada)"
             
             # Format expected impact
             impacts = optimization.get("expected_impact", [])
