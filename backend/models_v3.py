@@ -93,6 +93,26 @@ class RegistrarStatus(str, Enum):
     INACTIVE = "inactive"
 
 
+class SeoChangeActionType(str, Enum):
+    """Types of SEO structure change actions (human-readable)"""
+    CREATE_NODE = "create_node"
+    UPDATE_NODE = "update_node"
+    DELETE_NODE = "delete_node"
+    RELINK_NODE = "relink_node"  # Change target_entry_id
+    CHANGE_ROLE = "change_role"  # Main <-> Supporting
+    CHANGE_PATH = "change_path"  # optimized_path change
+
+
+class SeoNotificationType(str, Enum):
+    """Types of SEO Network notifications"""
+    MAIN_DOMAIN_CHANGE = "main_domain_change"
+    NODE_DELETED = "node_deleted"
+    TARGET_RELINKED = "target_relinked"
+    ORPHAN_DETECTED = "orphan_detected"
+    SEO_CONFLICT = "seo_conflict"
+    HIGH_TIER_NOINDEX = "high_tier_noindex"
+
+
 # ==================== ASSET DOMAIN MODELS ====================
 
 class AssetDomainBase(BaseModel):
