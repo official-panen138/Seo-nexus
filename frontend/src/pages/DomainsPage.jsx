@@ -843,14 +843,16 @@ export default function DomainsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredData.length === 0 ? (
+                            {loading ? (
+                                <TableSkeleton />
+                            ) : filteredData.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={useV3 ? 8 : 8} className="h-32 text-center">
                                         <div className="empty-state py-8">
                                             <Globe className="empty-state-icon mx-auto" />
                                             <p className="empty-state-title">No domains found</p>
                                             <p className="empty-state-description">
-                                                {(useV3 ? assets : domains).length === 0 
+                                                {totalItems === 0 
                                                     ? 'Add your first domain to get started'
                                                     : 'Try adjusting your filters'}
                                             </p>
