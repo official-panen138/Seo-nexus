@@ -3139,45 +3139,41 @@ async def update_network_access_control_legacy(
 ):
     """Legacy endpoint - redirects to managers endpoint"""
     return await update_network_managers(network_id, data, current_user)
-        raise HTTPException(status_code=404, detail="Network not found")
-    
-    require_brand_access(network["brand_id"], current_user)
-    
-    # Get allowed users info
-    allowed_users = []
-    if network.get("allowed_user_ids"):
-        users = await db.users.find(
-            {"id": {"$in": network["allowed_user_ids"]}},
-            {"_id": 0, "id": 1, "email": 1, "name": 1, "role": 1, "telegram_username": 1}
-        ).to_list(100)
-        allowed_users = users
-    
-    # Get access_updated_by info if available
-    access_updated_by = network.get("access_updated_by")
-    
-    return {
-        "visibility_mode": network.get("visibility_mode", "brand_based"),
-        "allowed_user_ids": network.get("allowed_user_ids", []),
-        "allowed_users": allowed_users,
-        "access_summary_cache": network.get("access_summary_cache", {"count": 0, "names": []}),
-        "access_updated_at": network.get("access_updated_at"),
-        "access_updated_by": access_updated_by
-    }
 
 
-@router.get("/networks/{network_id}/access-audit-logs")
-async def get_network_access_audit_logs(
+@router.get("/networks/{network_id}/managers-audit-logs")
+async def get_network_managers_audit_logs(
     network_id: str,
     limit: int = Query(default=20, le=100),
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Get audit logs for network access changes (Admin/Super Admin only)"""
-    if current_user.get("role") not in ["admin", "super_admin"]:
-        raise HTTPException(status_code=403, detail="Admin access required")
+    """Get audit logs for network manager changes (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
     
     network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0, "brand_id": 1})
     if not network:
         raise HTTPException(status_code=404, detail="Network not found")
+    
+    require_brand_access(network["brand_id"], current_user)
+    
+    logs = await db.network_managers_audit_logs.find(
+        {"network_id": network_id},
+        {"_id": 0}
+    ).sort("changed_at", -1).limit(limit).to_list(limit)
+    
+    return {"logs": logs, "total": len(logs)}
+
+
+# Legacy endpoint for backward compatibility
+@router.get("/networks/{network_id}/access-audit-logs")
+async def get_network_access_audit_logs_legacy(
+    network_id: str,
+    limit: int = Query(default=20, le=100),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Legacy endpoint - redirects to managers audit logs"""
+    return await get_network_managers_audit_logs(network_id, limit, current_user)
     
     require_brand_access(network["brand_id"], current_user)
     
