@@ -197,6 +197,13 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
     const handleDelete = async () => {
         if (!selectedOptimization) return;
         
+        // Double-check Super Admin permission
+        if (!isSuperAdmin()) {
+            toast.error('Only Super Admin can delete optimization records');
+            setDeleteDialogOpen(false);
+            return;
+        }
+        
         setSaving(true);
         try {
             await optimizationsAPI.delete(selectedOptimization.id);
@@ -205,10 +212,70 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
             setSelectedOptimization(null);
             loadOptimizations();
         } catch (err) {
-            toast.error('Failed to delete optimization');
+            toast.error(err.response?.data?.detail || 'Failed to delete optimization');
         } finally {
             setSaving(false);
         }
+    };
+
+    const openComplaintDialog = (opt) => {
+        setSelectedOptimization(opt);
+        setComplaintForm({ reason: '', priority: 'medium', report_urls: [] });
+        setComplaintUrlInput('');
+        setComplaintDialogOpen(true);
+    };
+
+    const handleCreateComplaint = async () => {
+        if (!selectedOptimization) return;
+        if (!complaintForm.reason.trim()) {
+            toast.error('Complaint reason is required');
+            return;
+        }
+        
+        setSaving(true);
+        try {
+            const API_URL = process.env.REACT_APP_BACKEND_URL;
+            const token = localStorage.getItem('seo_nexus_token');
+            
+            const response = await fetch(`${API_URL}/api/v3/optimizations/${selectedOptimization.id}/complaints`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    reason: complaintForm.reason.trim(),
+                    priority: complaintForm.priority,
+                    report_urls: complaintForm.report_urls,
+                    responsible_user_ids: []  // TODO: Add user selection
+                })
+            });
+            
+            if (response.ok) {
+                toast.success('Complaint submitted and notification sent');
+                setComplaintDialogOpen(false);
+                setSelectedOptimization(null);
+                loadOptimizations();
+            } else {
+                const error = await response.json();
+                toast.error(error.detail || 'Failed to create complaint');
+            }
+        } catch (err) {
+            toast.error('Failed to create complaint');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const addComplaintUrl = () => {
+        if (complaintUrlInput.trim() && !complaintForm.report_urls.includes(complaintUrlInput.trim())) {
+            setComplaintForm(prev => ({ ...prev, report_urls: [...prev.report_urls, complaintUrlInput.trim()] }));
+            setComplaintUrlInput('');
+        }
+    };
+
+    const removeComplaintUrl = (url) => {
+        setComplaintForm(prev => ({ ...prev, report_urls: prev.report_urls.filter(u => u !== url) }));
     };
 
     // Tag input handlers
