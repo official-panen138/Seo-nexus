@@ -402,6 +402,65 @@ pada SEO Network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{bran
             logger.error(f"Failed to send complaint notification: {e}")
             return False
     
+    async def send_in_progress_reminder(
+        self,
+        optimization: Dict[str, Any],
+        network: Dict[str, Any],
+        brand: Dict[str, Any],
+        users: List[Dict[str, Any]],
+        days_in_progress: int
+    ) -> bool:
+        """
+        Send reminder notification for optimizations that have been in_progress for too long.
+        Tags all assigned users + creator via Telegram.
+        """
+        try:
+            # Get timezone settings
+            tz_str, tz_label = await get_system_timezone(self.db)
+            local_time = format_to_local_time(
+                datetime.now(timezone.utc).isoformat(),
+                tz_str, tz_label
+            )
+            
+            # Build user tags
+            tags = []
+            for user in users:
+                if user.get("telegram_username"):
+                    tags.append(f"@{user['telegram_username']}")
+                else:
+                    tags.append(f"{user.get('name', user.get('email', 'Unknown'))} (no Telegram)")
+            
+            tags_text = "\n".join([f"  • {tag}" for tag in tags]) if tags else "  (Tidak ada pengguna yang ditag)"
+            
+            message = f"""⏰ <b>SEO OPTIMIZATION REMINDER</b>
+
+<b>Aktivitas optimasi masih berstatus IN PROGRESS</b>
+selama <b>{days_in_progress} hari</b>.
+
+━━━━━━━━━━━━━━━━━━━━━━
+📌 <b>DETAIL</b>
+━━━━━━━━━━━━━━━━━━━━━━
+• <b>Network:</b> {network.get('name', 'Unknown')}
+• <b>Brand:</b> {brand.get('name', 'Unknown')}
+• <b>Judul:</b> {optimization.get('title', '(Tanpa judul)')}
+• <b>Status:</b> In Progress (Sedang Berjalan)
+
+👥 <b>Pengguna yang Bertanggung Jawab:</b>
+{tags_text}
+
+🕐 <b>Waktu Reminder:</b> {local_time}
+
+━━━━━━━━━━━━━━━━━━━━━━
+<i>⚠️ Mohon segera update status optimasi ini.</i>
+<i>Reminder akan terus dikirim sampai status diubah.</i>"""
+            
+            success = await self._send_telegram_message(message)
+            return success
+            
+        except Exception as e:
+            logger.error(f"Failed to send in-progress reminder notification: {e}")
+            return False
+    
     async def send_message(self, message: str) -> bool:
         """
         Public method to send a custom Telegram message.
