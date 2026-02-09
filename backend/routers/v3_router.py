@@ -1371,6 +1371,9 @@ async def create_structure_entry(
     # Extract change_note before creating entry
     change_note = data.change_note
     
+    # CRITICAL: Validate change_note BEFORE any save operation
+    validate_change_note(change_note)
+    
     now = datetime.now(timezone.utc).isoformat()
     entry_data = data.model_dump(exclude={"change_note"})  # Exclude change_note from entry data
     entry_data["optimized_path"] = normalized_path  # Use normalized path
@@ -1393,36 +1396,22 @@ async def create_structure_entry(
     # Build node label for logging
     node_label = f"{asset['domain_name']}{normalized_path or ''}"
     
-    # Log SEO change with mandatory note
-    change_log_id = None
-    if seo_change_log_service:
-        change_log_id = await seo_change_log_service.log_change(
-            network_id=data.network_id,
-            brand_id=network.get("brand_id", ""),
-            actor_user_id=current_user.get("id", ""),
-            actor_email=current_user["email"],
-            action_type=SeoChangeActionType.CREATE_NODE,
-            affected_node=node_label,
-            change_note=change_note,
-            before_snapshot=None,
-            after_snapshot=entry,
-            entry_id=entry["id"]
-        )
-    
-    # Send SEO Telegram notification
-    if seo_telegram_service:
-        await seo_telegram_service.send_seo_change_notification(
-            network_id=data.network_id,
-            brand_id=network.get("brand_id", ""),
-            actor_user_id=current_user.get("id", ""),
-            actor_email=current_user["email"],
-            action_type="create_node",
-            affected_node=node_label,
-            change_note=change_note,
-            before_snapshot=None,
-            after_snapshot=entry,
-            change_log_id=change_log_id
-        )
+    # ATOMIC: Log + Telegram notification (both must succeed conceptually)
+    notification_success, change_log_id, error_msg = await atomic_seo_change_with_notification(
+        db=db,
+        seo_change_log_service=seo_change_log_service,
+        seo_telegram_service=seo_telegram_service,
+        network_id=data.network_id,
+        brand_id=network.get("brand_id", ""),
+        actor_user_id=current_user.get("id", ""),
+        actor_email=current_user["email"],
+        action_type=SeoChangeActionType.CREATE_NODE,
+        affected_node=node_label,
+        change_note=change_note,
+        before_snapshot=None,
+        after_snapshot=entry,
+        entry_id=entry["id"]
+    )
     
     # Log system activity (separate from SEO change log)
     if activity_log_service:
