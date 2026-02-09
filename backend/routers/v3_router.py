@@ -1600,8 +1600,8 @@ async def delete_structure_entry(
         raise HTTPException(status_code=404, detail="Structure entry not found")
     
     # Validate change_note
-    if not data.change_note or len(data.change_note.strip()) < 3:
-        raise HTTPException(status_code=400, detail="Change note is required (min 3 characters)")
+    if not data.change_note or len(data.change_note.strip()) < 10:
+        raise HTTPException(status_code=400, detail="Change note is required (minimum 10 characters)")
     
     # Check if this is the main node
     if existing.get("domain_role") == DomainRole.MAIN.value:
