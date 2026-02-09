@@ -1009,11 +1009,11 @@ async def get_networks(
             # Super Admin sees everything
             filtered_networks.append(network)
         elif visibility == "restricted":
-            # Only allowed users can see restricted networks
-            if user_id in network.get("allowed_user_ids", []):
+            # Only managers can see restricted networks
+            if user_id in network.get("manager_ids", []):
                 filtered_networks.append(network)
         else:
-            # brand_based or public - brand access is enough
+            # brand_based or public - brand access is enough to VIEW
             filtered_networks.append(network)
     
     networks = filtered_networks
