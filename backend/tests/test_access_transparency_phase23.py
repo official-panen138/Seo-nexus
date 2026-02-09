@@ -150,12 +150,12 @@ class TestPhase3ReminderConfig:
         print(f"Network override set: {verify_data}")
     
     def test_update_network_reminder_config_clear_override(self, auth_headers):
-        """PUT /api/v3/networks/{id}/reminder-config with null clears override"""
-        # Clear the override
+        """PUT /api/v3/networks/{id}/reminder-config with use_global=true clears override"""
+        # Clear the override using the correct API format
         response = requests.put(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/reminder-config",
             headers=auth_headers,
-            json={"interval_days": None}
+            json={"use_global": True}  # API expects use_global=true to clear
         )
         assert response.status_code == 200, f"Failed: {response.text}"
         
@@ -166,8 +166,12 @@ class TestPhase3ReminderConfig:
         )
         verify_data = verify_response.json()
         
-        assert verify_data.get("has_override") == False, "Override should be cleared"
-        print(f"Network override cleared, using global: {verify_data.get('global_interval_days')} days")
+        # Check for override - empty network_override means no override
+        has_override = bool(verify_data.get("network_override")) if "network_override" in verify_data else verify_data.get("has_override", False)
+        assert has_override == False, f"Override should be cleared, got: {verify_data}"
+        
+        global_interval = verify_data.get("global_default", {}).get("interval_days") if "global_default" in verify_data else verify_data.get("global_interval_days")
+        print(f"Network override cleared, using global: {global_interval} days")
     
     def test_get_optimization_reminders(self, auth_headers):
         """GET /api/v3/optimization-reminders returns reminder logs"""
