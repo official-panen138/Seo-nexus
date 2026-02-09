@@ -42,7 +42,7 @@ export default function SettingsPage() {
         try {
             const [mainRes, seoRes] = await Promise.all([
                 settingsAPI.getTelegram(),
-                settingsAPI.getSeoTelegram()
+                settingsAPI.getSeoTelegram().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } }))
             ]);
             setTelegramConfig(mainRes.data);
             setSeoTelegramConfig(seoRes.data);
@@ -122,7 +122,6 @@ export default function SettingsPage() {
             await settingsAPI.updateSeoTelegram({ enabled });
             toast.success(enabled ? 'Notifikasi SEO diaktifkan' : 'Notifikasi SEO dinonaktifkan');
         } catch (err) {
-            // Revert on error
             setSeoTelegramConfig(prev => ({ ...prev, enabled: !enabled }));
             toast.error('Gagal mengubah pengaturan');
         }
@@ -157,158 +156,202 @@ export default function SettingsPage() {
                         <Settings className="h-7 w-7 text-zinc-400" />
                         <div>
                             <h1 className="page-title">Settings</h1>
-                            <p className="page-subtitle">
-                                Configure system settings and integrations
-                            </p>
+                            <p className="page-subtitle">Configure system settings and integrations</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="max-w-2xl space-y-6">
-                    {/* Telegram Configuration */}
-                    <Card className="bg-card border-border">
-                        <CardHeader>
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-blue-500/10">
-                                    <MessageCircle className="h-5 w-5 text-blue-500" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-lg">Telegram Alerts</CardTitle>
-                                    <CardDescription>
-                                        Configure Telegram bot for real-time alerts
-                                    </CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Current Status */}
-                            <div className="p-3 rounded-lg bg-black/50 border border-border">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-zinc-400">Current Status</span>
-                                    {telegramConfig.bot_token && telegramConfig.chat_id ? (
-                                        <span className="flex items-center gap-1 text-xs text-emerald-500">
-                                            <CheckCircle className="h-3 w-3" />
-                                            Configured
-                                        </span>
-                                    ) : (
-                                        <span className="flex items-center gap-1 text-xs text-amber-500">
-                                            <AlertCircle className="h-3 w-3" />
-                                            Not configured
-                                        </span>
-                                    )}
-                                </div>
-                                {telegramConfig.bot_token && (
-                                    <div className="text-xs text-zinc-500">
-                                        Token: <code className="text-zinc-400">{telegramConfig.bot_token}</code>
+                <div className="max-w-3xl">
+                    <Tabs defaultValue="monitoring" className="w-full">
+                        <TabsList className="mb-6">
+                            <TabsTrigger value="monitoring" className="flex items-center gap-2">
+                                <Bell className="h-4 w-4" />
+                                Monitoring Alerts
+                            </TabsTrigger>
+                            <TabsTrigger value="seo" className="flex items-center gap-2" data-testid="seo-notifications-tab">
+                                <Network className="h-4 w-4" />
+                                SEO Notifications
+                            </TabsTrigger>
+                        </TabsList>
+                        
+                        {/* Monitoring Alerts Tab */}
+                        <TabsContent value="monitoring" className="space-y-6">
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-blue-500/10">
+                                            <MessageCircle className="h-5 w-5 text-blue-500" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-lg">Telegram Alerts (Monitoring)</CardTitle>
+                                            <CardDescription>Configure Telegram for domain monitoring (ping/expiration)</CardDescription>
+                                        </div>
                                     </div>
-                                )}
-                                {telegramConfig.chat_id && (
-                                    <div className="text-xs text-zinc-500">
-                                        Chat ID: <code className="text-zinc-400">{telegramConfig.chat_id}</code>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="p-3 rounded-lg bg-black/50 border border-border">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm text-zinc-400">Current Status</span>
+                                            {telegramConfig.bot_token && telegramConfig.chat_id ? (
+                                                <span className="flex items-center gap-1 text-xs text-emerald-500">
+                                                    <CheckCircle className="h-3 w-3" />Configured
+                                                </span>
+                                            ) : (
+                                                <span className="flex items-center gap-1 text-xs text-amber-500">
+                                                    <AlertCircle className="h-3 w-3" />Not configured
+                                                </span>
+                                            )}
+                                        </div>
+                                        {telegramConfig.bot_token && <div className="text-xs text-zinc-500">Token: <code className="text-zinc-400">{telegramConfig.bot_token}</code></div>}
+                                        {telegramConfig.chat_id && <div className="text-xs text-zinc-500">Chat ID: <code className="text-zinc-400">{telegramConfig.chat_id}</code></div>}
                                     </div>
-                                )}
-                            </div>
 
-                            {/* Update Token */}
-                            <div className="space-y-2">
-                                <Label className="text-zinc-400">Bot Token</Label>
-                                <Input
-                                    value={newToken}
-                                    onChange={(e) => setNewToken(e.target.value)}
-                                    placeholder="Enter new bot token to update"
-                                    className="bg-black border-border font-mono text-sm"
-                                    data-testid="telegram-token-input"
-                                />
-                                <p className="text-xs text-zinc-600">
-                                    Get a bot token from @BotFather on Telegram
-                                </p>
-                            </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-zinc-400">Bot Token</Label>
+                                        <Input value={newToken} onChange={(e) => setNewToken(e.target.value)} placeholder="Enter new bot token to update" className="bg-black border-border font-mono text-sm" data-testid="telegram-token-input" />
+                                        <p className="text-xs text-zinc-600">Get a bot token from @BotFather on Telegram</p>
+                                    </div>
 
-                            {/* Update Chat ID */}
-                            <div className="space-y-2">
-                                <Label className="text-zinc-400">Chat ID</Label>
-                                <Input
-                                    value={newChatId}
-                                    onChange={(e) => setNewChatId(e.target.value)}
-                                    placeholder="Enter chat ID or group ID"
-                                    className="bg-black border-border font-mono text-sm"
-                                    data-testid="telegram-chatid-input"
-                                />
-                                <p className="text-xs text-zinc-600">
-                                    Use @userinfobot to get your chat ID, or add -100 prefix for group chats
-                                </p>
-                            </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-zinc-400">Chat ID</Label>
+                                        <Input value={newChatId} onChange={(e) => setNewChatId(e.target.value)} placeholder="Enter chat ID or group ID" className="bg-black border-border font-mono text-sm" data-testid="telegram-chatid-input" />
+                                        <p className="text-xs text-zinc-600">Use @userinfobot to get your chat ID</p>
+                                    </div>
 
-                            {/* Actions */}
-                            <div className="flex items-center gap-3 pt-2">
-                                <Button
-                                    onClick={handleSave}
-                                    disabled={saving || (!newToken && !newChatId)}
-                                    className="bg-white text-black hover:bg-zinc-200"
-                                    data-testid="save-telegram-btn"
-                                >
-                                    {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                    Save Changes
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={handleTest}
-                                    disabled={testing || !telegramConfig.bot_token || !telegramConfig.chat_id}
-                                    data-testid="test-telegram-btn"
-                                >
-                                    {testing ? (
-                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    ) : (
-                                        <Send className="h-4 w-4 mr-2" />
-                                    )}
-                                    Send Test
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                    <div className="flex items-center gap-3 pt-2">
+                                        <Button onClick={handleSave} disabled={saving || (!newToken && !newChatId)} className="bg-white text-black hover:bg-zinc-200" data-testid="save-telegram-btn">
+                                            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Save Changes
+                                        </Button>
+                                        <Button variant="outline" onClick={handleTest} disabled={testing || !telegramConfig.bot_token || !telegramConfig.chat_id} data-testid="test-telegram-btn">
+                                            {testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}Send Test
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                        
+                        {/* SEO Notifications Tab */}
+                        <TabsContent value="seo" className="space-y-6">
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-amber-500/10">
+                                            <Network className="h-5 w-5 text-amber-500" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-lg">Notifikasi Perubahan SEO</CardTitle>
+                                            <CardDescription>Channel Telegram khusus untuk notifikasi perubahan SEO Network</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex items-center justify-between p-3 rounded-lg bg-black/50 border border-border">
+                                        <div>
+                                            <Label className="text-zinc-300">Aktifkan Notifikasi SEO</Label>
+                                            <p className="text-xs text-zinc-500 mt-1">Kirim notifikasi ke Telegram setiap ada perubahan SEO</p>
+                                        </div>
+                                        <Switch checked={seoTelegramConfig.enabled} onCheckedChange={handleToggleSeoEnabled} data-testid="seo-notifications-toggle" />
+                                    </div>
+                                    
+                                    <div className="p-3 rounded-lg bg-black/50 border border-border">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm text-zinc-400">Status Konfigurasi</span>
+                                            {seoTelegramConfig.bot_token && seoTelegramConfig.chat_id ? (
+                                                <span className="flex items-center gap-1 text-xs text-emerald-500"><CheckCircle className="h-3 w-3" />Terkonfigurasi</span>
+                                            ) : (
+                                                <span className="flex items-center gap-1 text-xs text-amber-500"><AlertCircle className="h-3 w-3" />Fallback ke monitoring</span>
+                                            )}
+                                        </div>
+                                        {seoTelegramConfig.bot_token && <div className="text-xs text-zinc-500">Token: <code className="text-zinc-400">{seoTelegramConfig.bot_token}</code></div>}
+                                        {seoTelegramConfig.chat_id && <div className="text-xs text-zinc-500">Chat ID: <code className="text-zinc-400">{seoTelegramConfig.chat_id}</code></div>}
+                                    </div>
 
-                    {/* Alert Format Reference */}
-                    <Card className="bg-card border-border">
-                        <CardHeader>
-                            <CardTitle className="text-base">Alert Format Reference</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-3">
-                                <div>
-                                    <h4 className="text-sm font-medium text-zinc-300 mb-1">Monitoring Alert</h4>
-                                    <pre className="text-xs bg-black/50 p-3 rounded-lg overflow-x-auto text-zinc-400">
-{`⚠️ DOMAIN ALERT
+                                    <div className="space-y-2">
+                                        <Label className="text-zinc-400">Bot Token (Opsional)</Label>
+                                        <Input value={newSeoToken} onChange={(e) => setNewSeoToken(e.target.value)} placeholder="Kosongkan untuk menggunakan token monitoring" className="bg-black border-border font-mono text-sm" data-testid="seo-telegram-token-input" />
+                                        <p className="text-xs text-zinc-600">Jika tidak diisi, akan menggunakan bot token dari channel monitoring</p>
+                                    </div>
 
-Domain        : example.com
-Brand         : BrandName
-Category      : Money Site
-SEO Structure : Tier 1 (canonical → moneysite.com)
+                                    <div className="space-y-2">
+                                        <Label className="text-zinc-400">Chat ID (Wajib untuk channel terpisah)</Label>
+                                        <Input value={newSeoChatId} onChange={(e) => setNewSeoChatId(e.target.value)} placeholder="ID grup/channel untuk notifikasi SEO" className="bg-black border-border font-mono text-sm" data-testid="seo-telegram-chatid-input" />
+                                        <p className="text-xs text-zinc-600">Disarankan membuat grup/channel terpisah untuk tim SEO</p>
+                                    </div>
 
-Issue         : HTTP 5xx
-Last Status   : up → DOWN
-Checked At    : 2024-01-15 10:30 UTC
-Severity      : CRITICAL`}
-                                    </pre>
-                                </div>
-                                
-                                <div>
-                                    <h4 className="text-sm font-medium text-zinc-300 mb-1">Expiration Alert</h4>
-                                    <pre className="text-xs bg-black/50 p-3 rounded-lg overflow-x-auto text-zinc-400">
-{`⏰ DOMAIN EXPIRATION ALERT
+                                    <div className="flex items-center gap-3 pt-2">
+                                        <Button onClick={handleSaveSeo} disabled={savingSeo || (!newSeoToken && !newSeoChatId)} className="bg-amber-500 text-black hover:bg-amber-400" data-testid="save-seo-telegram-btn">
+                                            {savingSeo && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Simpan Pengaturan
+                                        </Button>
+                                        <Button variant="outline" onClick={handleTestSeo} disabled={testingSeo} data-testid="test-seo-telegram-btn">
+                                            {testingSeo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}Kirim Test
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-Domain     : example.com
-Brand      : BrandName
-Category   : Money Site
-Registrar  : Namecheap
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <CardTitle className="text-base">Contoh Format Notifikasi SEO</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <pre className="text-xs bg-black/50 p-4 rounded-lg overflow-x-auto text-zinc-400 whitespace-pre-wrap">{`👤 PEMBARUAN OPTIMASI SEO
 
-Expires In : 7 days
-Expire On  : 2024-01-22
-Severity   : WARNING`}
-                                    </pre>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+Antoni telah melakukan perubahan optimasi bagan SEO
+pada network 'Main SEO Network' untuk brand 'Panen138',
+dengan detail sebagai berikut:
+
+📌 Ringkasan Aksi
+• Aksi            : Mengubah Target Node
+• Dilakukan Oleh  : Antoni (admin@seonoc.com)
+• Waktu           : 2026-02-09 18:21 UTC
+
+📝 Alasan Perubahan:
+"Domain diarahkan langsung ke domain utama karena
+ memiliki power besar"
+
+🔄 Perubahan yang Dilakukan:
+• Node             : domaina.com/example
+• Role             : Supporting
+• Status           : Canonical
+• Target Sebelumnya: tier1-site1.com
+• Target Baru      : moneysite.com
+
+🧭 STRUKTUR SEO TERKINI:
+LP / Money Site:
+  • moneysite.com
+
+Tier 1:
+  • domaina.com → moneysite.com
+  • domaina.com/example → moneysite.com
+  • tier1-site1.com → moneysite.com
+
+Tier 2:
+  • tier1-site2.com → domaina.com/example`}</pre>
+                                </CardContent>
+                            </Card>
+                            
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <CardTitle className="text-base">Kapan Notifikasi Dikirim?</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-2 text-sm text-zinc-400">
+                                        <p>Notifikasi dikirim untuk setiap perubahan SEO berikut:</p>
+                                        <ul className="list-disc list-inside space-y-1 ml-2">
+                                            <li>Membuat SEO Network baru</li>
+                                            <li>Menambah/Mengubah/Menghapus node</li>
+                                            <li>Mengubah target node (relink)</li>
+                                            <li>Mengubah role (main ↔ supporting)</li>
+                                            <li>Mengubah status domain (canonical/301/302)</li>
+                                            <li>Mengubah status index</li>
+                                            <li>Mengubah path yang dioptimasi</li>
+                                        </ul>
+                                        <p className="text-xs text-zinc-500 mt-3">Rate limit: 1 pesan per network per menit untuk mencegah spam</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
                 </div>
             </div>
         </Layout>
