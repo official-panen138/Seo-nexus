@@ -480,16 +480,57 @@ async def get_asset_domains(
     
     assets = await db.asset_domains.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
     
-    # Batch enrich
+    # Batch enrich - brands, categories, registrars
     brands = {b["id"]: b["name"] for b in await db.brands.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)}
     categories = {c["id"]: c["name"] for c in await db.categories.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)}
     registrars = {r["id"]: r["name"] for r in await db.registrars.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)}
+    
+    # Batch fetch SEO network usage for all domains (efficient aggregation)
+    asset_ids = [a["id"] for a in assets]
+    
+    # Aggregate: group structure entries by asset_domain_id, include network info
+    network_usage_pipeline = [
+        {"$match": {"asset_domain_id": {"$in": asset_ids}}},
+        {"$lookup": {
+            "from": "seo_networks",
+            "localField": "network_id",
+            "foreignField": "id",
+            "as": "network"
+        }},
+        {"$unwind": {"path": "$network", "preserveNullAndEmptyArrays": True}},
+        {"$group": {
+            "_id": "$asset_domain_id",
+            "networks": {
+                "$push": {
+                    "network_id": "$network_id",
+                    "network_name": "$network.name",
+                    "role": "$domain_role",
+                    "optimized_path": "$optimized_path"
+                }
+            }
+        }}
+    ]
+    
+    network_usage_result = await db.seo_structure_entries.aggregate(network_usage_pipeline).to_list(10000)
+    network_usage_map = {item["_id"]: item["networks"] for item in network_usage_result}
     
     for asset in assets:
         asset["brand_name"] = brands.get(asset.get("brand_id"))
         asset["category_name"] = categories.get(asset.get("category_id"))
         # Use registrar_id lookup, fallback to legacy field
         asset["registrar_name"] = registrars.get(asset.get("registrar_id")) or asset.get("registrar")
+        
+        # Add SEO network usage
+        raw_networks = network_usage_map.get(asset["id"], [])
+        asset["seo_networks"] = [
+            NetworkUsageInfo(
+                network_id=n.get("network_id", ""),
+                network_name=n.get("network_name", "Unknown"),
+                role=n.get("role", "supporting"),
+                optimized_path=n.get("optimized_path")
+            )
+            for n in raw_networks if n.get("network_id")
+        ]
     
     return [AssetDomainResponse(**a) for a in assets]
 
