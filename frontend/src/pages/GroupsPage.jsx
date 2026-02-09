@@ -105,6 +105,64 @@ export default function GroupsPage() {
         }
     };
 
+    // Debounced search function
+    const performSearch = useCallback(
+        debounce(async (query) => {
+            if (!query || query.length < 1) {
+                setSearchResults([]);
+                setSearchLoading(false);
+                return;
+            }
+            
+            setSearchLoading(true);
+            try {
+                const response = await networksAPI.search(query);
+                setSearchResults(response.data.results || []);
+            } catch (err) {
+                console.error('Search failed:', err);
+                setSearchResults([]);
+            } finally {
+                setSearchLoading(false);
+            }
+        }, 350),
+        []
+    );
+    
+    // Handle search input change
+    const handleSearchChange = (value) => {
+        setSearchQuery(value);
+        if (value.length >= 1) {
+            setSearchOpen(true);
+            performSearch(value);
+        } else {
+            setSearchResults([]);
+            setSearchOpen(false);
+            setHighlightedNetworkIds([]);
+        }
+    };
+    
+    // Handle selecting a search result
+    const handleSelectSearchResult = (result, entry, action = 'filter') => {
+        if (action === 'navigate') {
+            // Navigate directly to network detail page
+            navigate(`/groups/${entry.network_id}`);
+        } else {
+            // Filter/highlight networks in the list
+            const networkIds = result.entries.map(e => e.network_id);
+            setHighlightedNetworkIds(networkIds);
+            setSearchOpen(false);
+            toast.success(`Highlighting ${networkIds.length} network(s) containing "${result.domain_name}"`);
+        }
+    };
+    
+    // Clear search and highlights
+    const clearSearch = () => {
+        setSearchQuery('');
+        setSearchResults([]);
+        setSearchOpen(false);
+        setHighlightedNetworkIds([]);
+    };
+
     const openCreateDialog = () => {
         setSelectedNetwork(null);
         setCreateStep(1);
