@@ -428,7 +428,9 @@ Build a full-stack SEO Network Operations Center combining:
 ## Key Files Reference
 - V2 Backend: `/app/backend/server.py`
 - V3 Models: `/app/backend/models_v3.py`
+- V3 Router: `/app/backend/routers/v3_router.py`
 - V3 Services: `/app/backend/services/`
 - Migration Scripts: `/app/backend/migrations/`
 - Migration Plan: `/app/docs/migration/V3_MIGRATION_PLAN.md`
 - Database Backup: `/app/backups/v2_backup_20260208_085617/`
+- Technical Docs: `/app/docs/` (README, API, INSTALL, DEPLOYMENT, etc.)
