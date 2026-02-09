@@ -45,11 +45,13 @@ monitoring_tasks = {}
 from services.activity_log_service import init_activity_log_service
 from services.tier_service import init_tier_service
 from services.seo_change_log_service import SeoChangeLogService
+from services.seo_telegram_service import SeoTelegramService
 from routers.v3_router import router as v3_router, init_v3_router
 
 # Initialize V3 services
 activity_log_service = init_activity_log_service(db)
 seo_change_log_service = SeoChangeLogService(db)
+seo_telegram_service = SeoTelegramService(db)
 tier_service = init_tier_service(db)
 
 # Create the main app with lifespan
