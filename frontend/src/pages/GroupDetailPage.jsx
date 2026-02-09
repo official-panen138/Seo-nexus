@@ -661,7 +661,8 @@ export default function GroupDetailPage() {
                 asset_domain_id: addNodeForm.asset_domain_id,
                 optimized_path: addNodeForm.optimized_path || null,
                 domain_role: addNodeForm.domain_role,
-                target_entry_id: addNodeForm.target_entry_id || null,
+                domain_status: addNodeForm.domain_status || (addNodeForm.domain_role === 'main' ? 'primary' : 'canonical'),
+                target_entry_id: addNodeForm.domain_role === 'main' ? null : (addNodeForm.target_entry_id || null),
                 change_note: addNodeForm.change_note.trim()  // Required for SEO logging
             });
             
@@ -672,6 +673,7 @@ export default function GroupDetailPage() {
                 asset_domain_id: '',
                 optimized_path: '',
                 domain_role: 'supporting',
+                domain_status: 'canonical',
                 target_entry_id: '',
                 change_note: ''
             });
