@@ -917,7 +917,155 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 @api_router.get("/users", response_model=List[UserResponse])
 async def get_users(current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))):
     users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
+    return [UserResponse(**{**u, "status": u.get("status", "active")}) for u in users]
+
+
+@api_router.get("/users/pending", response_model=List[UserResponse])
+async def get_pending_users(current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))):
+    """Get all users with pending status - Super Admin only"""
+    users = await db.users.find({"status": "pending"}, {"_id": 0, "password": 0}).to_list(1000)
     return [UserResponse(**u) for u in users]
+
+
+@api_router.post("/users/{user_id}/approve", response_model=UserResponse)
+async def approve_user(
+    user_id: str, 
+    approval: UserApprovalRequest,
+    current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))
+):
+    """Approve a pending user - Super Admin only"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.get("status") != "pending":
+        raise HTTPException(status_code=400, detail="User is not in pending status")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Validate role - cannot approve as Super Admin
+    if approval.role == UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=400, detail="Cannot approve user as Super Admin")
+    
+    update_data = {
+        "status": UserStatus.ACTIVE.value,
+        "role": approval.role.value,
+        "brand_scope_ids": approval.brand_scope_ids,
+        "approved_by": current_user["id"],
+        "approved_at": now,
+        "updated_at": now
+    }
+    
+    await db.users.update_one({"id": user_id}, {"$set": update_data})
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.USER,
+            entity_id=user_id,
+            after_value={"action": "user_approved", "role": approval.role.value, "brand_scope_ids": approval.brand_scope_ids}
+        )
+    
+    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    return UserResponse(**updated_user)
+
+
+@api_router.post("/users/{user_id}/reject")
+async def reject_user(
+    user_id: str,
+    current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))
+):
+    """Reject a pending user - Super Admin only"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.get("status") != "pending":
+        raise HTTPException(status_code=400, detail="User is not in pending status")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    await db.users.update_one(
+        {"id": user_id}, 
+        {"$set": {
+            "status": UserStatus.REJECTED.value,
+            "updated_at": now
+        }}
+    )
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.USER,
+            entity_id=user_id,
+            after_value={"action": "user_rejected"}
+        )
+    
+    return {"message": "User rejected successfully"}
+
+
+@api_router.post("/users/create", response_model=dict)
+async def create_user_manually(
+    user_data: UserManualCreate,
+    current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))
+):
+    """Manually create a user - Super Admin only. User is active immediately."""
+    existing = await db.users.find_one({"email": user_data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Validate role - cannot create Super Admin
+    if user_data.role == UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=400, detail="Cannot create Super Admin user")
+    
+    # Generate random password
+    import secrets
+    import string
+    password_chars = string.ascii_letters + string.digits + "!@#$%"
+    generated_password = ''.join(secrets.choice(password_chars) for _ in range(12))
+    
+    now = datetime.now(timezone.utc).isoformat()
+    user = {
+        "id": str(uuid.uuid4()),
+        "email": user_data.email,
+        "name": user_data.name,
+        "password": hash_password(generated_password),
+        "role": user_data.role.value,
+        "status": UserStatus.ACTIVE.value,  # Active immediately
+        "brand_scope_ids": user_data.brand_scope_ids,
+        "approved_by": current_user["id"],
+        "approved_at": now,
+        "created_at": now,
+        "updated_at": now
+    }
+    await db.users.insert_one(user)
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.CREATE,
+            entity_type=EntityType.USER,
+            entity_id=user["id"],
+            after_value={"action": "user_created_by_admin", "role": user_data.role.value, "brand_scope_ids": user_data.brand_scope_ids}
+        )
+    
+    return {
+        "message": "User created successfully",
+        "user": {
+            "id": user["id"],
+            "email": user["email"],
+            "name": user["name"],
+            "role": user["role"],
+            "brand_scope_ids": user["brand_scope_ids"],
+            "status": user["status"]
+        },
+        "generated_password": generated_password  # Show once, user should change it
+    }
 
 
 @api_router.get("/users/{user_id}", response_model=UserResponse)
@@ -925,7 +1073,7 @@ async def get_user(user_id: str, current_user: dict = Depends(require_roles([Use
     user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return UserResponse(**user)
+    return UserResponse(**{**user, "status": user.get("status", "active")})
 
 
 @api_router.put("/users/{user_id}", response_model=UserResponse)
