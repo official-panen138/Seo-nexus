@@ -299,10 +299,23 @@ export default function GroupsPage() {
         setDeleteDialogOpen(true);
     };
 
-    // Filter networks by brand
+    // Filter networks by brand and ranking status
     const filteredNetworks = networks.filter(n => {
         if (filterBrand !== 'all' && n.brand_id !== filterBrand) return false;
+        if (filterRankingStatus !== 'all' && n.ranking_status !== filterRankingStatus) return false;
         return true;
+    }).sort((a, b) => {
+        // Apply sorting
+        if (sortBy === 'best_position') {
+            // Sort by best position (ascending), null values at end
+            const posA = a.best_ranking_position ?? 999;
+            const posB = b.best_ranking_position ?? 999;
+            return posA - posB;
+        } else if (sortBy === 'ranking_nodes') {
+            // Sort by ranking nodes count (descending)
+            return (b.ranking_nodes_count || 0) - (a.ranking_nodes_count || 0);
+        }
+        return 0; // Default: no sorting
     });
 
     if (loading) {
