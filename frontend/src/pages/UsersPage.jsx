@@ -82,7 +82,11 @@ export default function UsersPage() {
 
     const openEditDialog = (user) => {
         setSelectedUser(user);
-        setEditForm({ role: user.role, brand_scope_ids: user.brand_scope_ids || [] });
+        setEditForm({ 
+            role: user.role, 
+            brand_scope_ids: user.brand_scope_ids || [],
+            telegram_username: user.telegram_username || ''
+        });
         setEditDialogOpen(true);
     };
 
