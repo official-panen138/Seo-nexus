@@ -2193,7 +2193,7 @@ async def add_team_response(
     
     # Create response entry
     response_entry = {
-        "id": str(uuid4()),
+        "id": str(uuid.uuid4()),
         "created_by": {
             "user_id": current_user["id"],
             "display_name": current_user.get("name", current_user["email"].split("@")[0]),
