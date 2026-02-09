@@ -17,6 +17,8 @@ export default function RegisterPage() {
     const navigate = useNavigate();
     const { register } = useAuth();
 
+    const [pendingApproval, setPendingApproval] = useState(false);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -37,8 +39,17 @@ export default function RegisterPage() {
 
         setLoading(true);
         try {
-            const user = await register({ name, email, password, role: 'viewer' });
-            if (user.role === 'super_admin') {
+            const result = await register({ name, email, password, role: 'viewer' });
+            
+            // Check if user is pending approval
+            if (result?.pending) {
+                setPendingApproval(true);
+                toast.success('Registration successful!');
+                return;
+            }
+            
+            // User is active (first user = Super Admin)
+            if (result.role === 'super_admin') {
                 toast.success('Account created! You are the first user, so you have Super Admin privileges.');
             } else {
                 toast.success('Account created successfully!');
@@ -50,6 +61,36 @@ export default function RegisterPage() {
             setLoading(false);
         }
     };
+
+    // Show pending approval message
+    if (pendingApproval) {
+        return (
+            <div className="login-page" data-testid="pending-approval-page">
+                <div className="login-card animate-fade-in">
+                    <div className="login-logo">
+                        SEO<span className="text-blue-500">//</span>NEXUS
+                    </div>
+                    <div className="text-center py-8">
+                        <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-xl font-semibold text-white mb-2">Awaiting Approval</h2>
+                        <p className="text-zinc-400 mb-6">
+                            Your account has been registered and is pending Super Admin approval.
+                            You will be able to log in once your account is approved.
+                        </p>
+                        <Link to="/login">
+                            <Button variant="outline" className="w-full">
+                                Back to Login
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="login-page" data-testid="register-page">
