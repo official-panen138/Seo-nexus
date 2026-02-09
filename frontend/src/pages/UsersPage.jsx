@@ -504,7 +504,7 @@ export default function UsersPage() {
                     <DialogContent className="bg-card border-border max-w-lg">
                         <DialogHeader>
                             <DialogTitle>Create New User</DialogTitle>
-                            <DialogDescription>Create a user directly. They will be active immediately with an auto-generated password.</DialogDescription>
+                            <DialogDescription>Create a user directly. They will be active immediately.</DialogDescription>
                         </DialogHeader>
                         
                         {generatedPassword ? (
@@ -540,11 +540,58 @@ export default function UsersPage() {
                                             </SelectContent>
                                         </Select>
                                     </div>
+                                    
+                                    {/* Password Option */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id="manual-password" 
+                                                checked={createForm.useManualPassword} 
+                                                onCheckedChange={(checked) => setCreateForm(prev => ({ ...prev, useManualPassword: checked, password: '' }))}
+                                                data-testid="manual-password-checkbox"
+                                            />
+                                            <label htmlFor="manual-password" className="text-sm cursor-pointer">Set password manually</label>
+                                        </div>
+                                        
+                                        {createForm.useManualPassword ? (
+                                            <div className="space-y-2">
+                                                <Label>Password</Label>
+                                                <div className="relative">
+                                                    <Input 
+                                                        type={showPassword ? "text" : "password"} 
+                                                        value={createForm.password} 
+                                                        onChange={(e) => setCreateForm(prev => ({ ...prev, password: e.target.value }))} 
+                                                        placeholder="Enter password (min 6 characters)"
+                                                        data-testid="create-user-password"
+                                                    />
+                                                    <Button 
+                                                        type="button" 
+                                                        variant="ghost" 
+                                                        size="sm" 
+                                                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                    >
+                                                        {showPassword ? "Hide" : "Show"}
+                                                    </Button>
+                                                </div>
+                                                {createForm.password && createForm.password.length < 6 && (
+                                                    <p className="text-xs text-red-400">Password must be at least 6 characters</p>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-zinc-500">Password will be auto-generated and shown after creation</p>
+                                        )}
+                                    </div>
+                                    
                                     <BrandSelector value={createForm.brand_scope_ids} onChange={(v) => setCreateForm(prev => ({ ...prev, brand_scope_ids: v }))} formSetter={setCreateForm} />
                                 </div>
                                 <DialogFooter>
                                     <Button variant="outline" onClick={closeCreateDialog}>Cancel</Button>
-                                    <Button onClick={handleCreateUser} disabled={saving || !createForm.email || !createForm.name || createForm.brand_scope_ids.length === 0} data-testid="confirm-create-btn">
+                                    <Button 
+                                        onClick={handleCreateUser} 
+                                        disabled={saving || !createForm.email || !createForm.name || createForm.brand_scope_ids.length === 0 || (createForm.useManualPassword && (!createForm.password || createForm.password.length < 6))} 
+                                        data-testid="confirm-create-btn"
+                                    >
                                         {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Create User
                                     </Button>
                                 </DialogFooter>
