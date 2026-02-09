@@ -463,9 +463,10 @@ export default function DomainsPage() {
         setFilterBrand('all');
         setFilterStatus('all');
         setFilterMonitoring('all');
+        setCurrentPage(1); // Reset to first page when clearing filters
     };
 
-    const hasActiveFilters = filterBrand !== 'all' || filterStatus !== 'all' || filterMonitoring !== 'all';
+    const hasActiveFilters = filterBrand !== 'all' || filterStatus !== 'all' || filterMonitoring !== 'all' || searchQuery !== '';
 
     // Export handlers
     const handleExport = async (format) => {
