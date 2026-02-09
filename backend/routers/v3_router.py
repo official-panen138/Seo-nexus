@@ -50,6 +50,7 @@ require_roles = None
 activity_log_service = None
 tier_service = None
 seo_change_log_service = None
+seo_telegram_service = None
 
 
 def init_v3_router(
@@ -58,16 +59,18 @@ def init_v3_router(
     roles_dep,
     activity_service,
     tier_svc,
-    seo_change_svc=None
+    seo_change_svc=None,
+    seo_telegram_svc=None
 ):
     """Initialize V3 router with dependencies"""
-    global db, _get_current_user_dep, require_roles, activity_log_service, tier_service, seo_change_log_service
+    global db, _get_current_user_dep, require_roles, activity_log_service, tier_service, seo_change_log_service, seo_telegram_service
     db = database
     _get_current_user_dep = current_user_dep
     require_roles = roles_dep
     activity_log_service = activity_service
     tier_service = tier_svc
     seo_change_log_service = seo_change_svc
+    seo_telegram_service = seo_telegram_svc
 
 
 # Store the dependency reference
