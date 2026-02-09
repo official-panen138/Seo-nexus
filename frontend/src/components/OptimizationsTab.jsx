@@ -540,6 +540,24 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
                                         
                                         {/* Actions */}
                                         <div className="flex items-center gap-1 lg:ml-4">
+                                            {/* View button - Opens detail drawer */}
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon"
+                                                            onClick={() => openDetailDrawer(opt)}
+                                                            className="h-8 w-8 hover:bg-emerald-500/10 hover:text-emerald-400"
+                                                            data-testid={`view-opt-${opt.id}`}
+                                                        >
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>View Details</TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                            
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
