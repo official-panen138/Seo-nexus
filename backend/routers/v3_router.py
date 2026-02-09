@@ -944,6 +944,114 @@ async def delete_network(
     return {"message": f"Network deleted with {deleted.deleted_count} structure entries"}
 
 
+# ==================== NETWORK SEARCH ENDPOINT ====================
+
+@router.get("/networks/search")
+async def search_networks(
+    query: str = Query(min_length=1, max_length=100, description="Search query for domain name or optimized path"),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Search across SEO Networks by domain name or optimized path.
+    
+    Returns matching nodes grouped by domain, with network info.
+    Brand-scoped - users only see results from brands they have access to.
+    Max 10 results for debounce-friendly performance.
+    """
+    if not query or len(query.strip()) < 1:
+        return {"results": [], "total": 0}
+    
+    search_term = query.strip()
+    
+    # Get user's brand scope
+    brand_scope = get_user_brand_scope(current_user)
+    
+    # Build the aggregation pipeline to search structure entries
+    # First, we need to match domains that match the search query
+    # Then join with networks and filter by brand scope
+    
+    pipeline = [
+        # Join with asset_domains to get domain_name and brand_id
+        {"$lookup": {
+            "from": "asset_domains",
+            "localField": "asset_domain_id",
+            "foreignField": "id",
+            "as": "domain"
+        }},
+        {"$unwind": "$domain"},
+        
+        # Search filter: match domain_name OR optimized_path
+        {"$match": {
+            "$or": [
+                {"domain.domain_name": {"$regex": search_term, "$options": "i"}},
+                {"optimized_path": {"$regex": search_term, "$options": "i"}}
+            ]
+        }},
+        
+        # Join with seo_networks to get network name and brand_id
+        {"$lookup": {
+            "from": "seo_networks",
+            "localField": "network_id",
+            "foreignField": "id",
+            "as": "network"
+        }},
+        {"$unwind": "$network"},
+    ]
+    
+    # Apply brand scoping if user is not super admin
+    if brand_scope is not None:
+        if not brand_scope:
+            return {"results": [], "total": 0}  # No brand access
+        pipeline.append({"$match": {"network.brand_id": {"$in": brand_scope}}})
+    
+    # Project the fields we need
+    pipeline.extend([
+        {"$project": {
+            "_id": 0,
+            "entry_id": "$id",
+            "network_id": "$network_id",
+            "network_name": "$network.name",
+            "asset_domain_id": "$asset_domain_id",
+            "domain_name": "$domain.domain_name",
+            "optimized_path": "$optimized_path",
+            "domain_role": "$domain_role",
+            "brand_id": "$network.brand_id"
+        }},
+        
+        # Sort for consistent results
+        {"$sort": {"domain_name": 1, "optimized_path": 1}},
+        
+        # Limit results for performance
+        {"$limit": 10}
+    ])
+    
+    results = await db.seo_structure_entries.aggregate(pipeline).to_list(10)
+    
+    # Group results by domain for better UI display
+    grouped = {}
+    for r in results:
+        domain_name = r["domain_name"]
+        if domain_name not in grouped:
+            grouped[domain_name] = {
+                "domain_name": domain_name,
+                "asset_domain_id": r["asset_domain_id"],
+                "entries": []
+            }
+        grouped[domain_name]["entries"].append({
+            "entry_id": r["entry_id"],
+            "network_id": r["network_id"],
+            "network_name": r["network_name"],
+            "optimized_path": r.get("optimized_path") or "/",
+            "role": r["domain_role"]
+        })
+    
+    return {
+        "results": list(grouped.values()),
+        "total": len(results),
+        "query": search_term
+    }
+
+
 # ==================== SEO STRUCTURE ENDPOINTS ====================
 
 @router.get("/structure", response_model=List[SeoStructureEntryResponse])
