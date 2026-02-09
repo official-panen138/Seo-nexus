@@ -177,14 +177,32 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
             toast.error('Description is required');
             return;
         }
+        // MANDATORY: reason_note must be at least 20 characters
+        if (!selectedOptimization && (!form.reason_note || form.reason_note.trim().length < 20)) {
+            toast.error('Reason note is required (minimum 20 characters). Please explain why this optimization is being done.');
+            return;
+        }
 
         setSaving(true);
         try {
+            // Prepare data for API - map target_domains to the right field
+            const submitData = {
+                ...form,
+                target_domains: form.target_domains || [],
+                // Convert report_urls to proper format if they're plain strings
+                report_urls: (form.report_urls || []).map(r => {
+                    if (typeof r === 'string') {
+                        return { url: r, start_date: new Date().toISOString().split('T')[0] };
+                    }
+                    return r;
+                })
+            };
+            
             if (selectedOptimization) {
-                await optimizationsAPI.update(selectedOptimization.id, form);
+                await optimizationsAPI.update(selectedOptimization.id, submitData);
                 toast.success('Optimization updated');
             } else {
-                await optimizationsAPI.create(networkId, form);
+                await optimizationsAPI.create(networkId, submitData);
                 toast.success('Optimization created and notification sent');
             }
             setDialogOpen(false);
