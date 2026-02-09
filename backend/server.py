@@ -166,11 +166,19 @@ DEFAULT_CATEGORIES = [
 
 # ==================== MODELS ====================
 
+class UserStatus(str, Enum):
+    """User account status for approval workflow"""
+    PENDING = "pending"
+    ACTIVE = "active"
+    REJECTED = "rejected"
+
+
 class UserBase(BaseModel):
     email: EmailStr
     name: str
     role: UserRole = UserRole.VIEWER
     brand_scope_ids: Optional[List[str]] = None  # NULL = Super Admin (all brands), array = restricted to specific brands
+    status: UserStatus = UserStatus.PENDING  # Default to pending for new registrations
 
 
 class UserCreate(UserBase):
@@ -182,6 +190,7 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     role: Optional[UserRole] = None
     brand_scope_ids: Optional[List[str]] = None
+    status: Optional[UserStatus] = None
 
 
 class UserResponse(UserBase):
@@ -189,6 +198,22 @@ class UserResponse(UserBase):
     id: str
     created_at: str
     updated_at: str
+    approved_by: Optional[str] = None
+    approved_at: Optional[str] = None
+
+
+class UserApprovalRequest(BaseModel):
+    """Request model for approving a user"""
+    role: UserRole
+    brand_scope_ids: List[str] = []
+
+
+class UserManualCreate(BaseModel):
+    """Model for Super Admin to manually create a user"""
+    email: EmailStr
+    name: str
+    role: UserRole = UserRole.VIEWER
+    brand_scope_ids: List[str] = []
 
 
 class UserLogin(BaseModel):
