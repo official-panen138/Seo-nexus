@@ -163,6 +163,62 @@ export default function SettingsPage() {
             toast.error('Gagal mengubah pengaturan');
         }
     };
+    
+    // Branding handlers
+    const handleSaveBranding = async () => {
+        setSavingBranding(true);
+        try {
+            await settingsAPI.updateBranding(brandingConfig);
+            toast.success('Branding settings saved');
+            loadSettings();
+        } catch (err) {
+            toast.error('Failed to save branding settings');
+        } finally {
+            setSavingBranding(false);
+        }
+    };
+    
+    const handleLogoUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        
+        setUploadingLogo(true);
+        try {
+            const res = await settingsAPI.uploadLogo(file);
+            setBrandingConfig(prev => ({ ...prev, logo_url: res.data.logo_url }));
+            toast.success('Logo uploaded successfully');
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to upload logo');
+        } finally {
+            setUploadingLogo(false);
+        }
+    };
+    
+    // Timezone handlers
+    const handleTimezoneChange = (value) => {
+        const selected = TIMEZONE_OPTIONS.find(opt => opt.value === value);
+        if (selected) {
+            // Extract label (e.g., "GMT+7" from "GMT+7 (Asia/Jakarta)")
+            const label = selected.label.split(' ')[0];
+            setTimezoneConfig({
+                default_timezone: value,
+                timezone_label: label
+            });
+        }
+    };
+    
+    const handleSaveTimezone = async () => {
+        setSavingTimezone(true);
+        try {
+            await settingsAPI.updateTimezone(timezoneConfig);
+            toast.success('Timezone settings saved');
+            loadSettings();
+        } catch (err) {
+            toast.error('Failed to save timezone settings');
+        } finally {
+            setSavingTimezone(false);
+        }
+    };
 
     if (!isSuperAdmin()) {
         return (
