@@ -3717,6 +3717,7 @@ async def get_team_evaluation_summary(
         by_activity_type=by_activity_type,
         by_observed_impact=by_impact,
         total_complaints=total_complaints,
+        avg_resolution_time_hours=round(avg_resolution_time_hours, 1) if avg_resolution_time_hours else None,
         top_contributors=top_users[:5],
         most_complained_users=sorted(top_users, key=lambda x: x.complaint_count, reverse=True)[:5],
         repeated_issue_users=repeated_issue_users
