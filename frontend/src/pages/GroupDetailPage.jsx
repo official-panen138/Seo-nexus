@@ -191,6 +191,62 @@ export default function GroupDetailPage() {
     const [importing, setImporting] = useState(false);
     const [createMissingDomains, setCreateMissingDomains] = useState(false);
     const fileInputRef = useRef(null);
+    
+    // Timeline filters state
+    const [timelineFilters, setTimelineFilters] = useState({
+        actor: '',
+        action: '',
+        node: '',
+        dateFrom: '',
+        dateTo: ''
+    });
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    
+    // Domain List view mode: 'grouped' or 'flat'
+    const [domainListView, setDomainListView] = useState('grouped');
+    
+    // Tier groups for grouped view
+    const tierGroups = useMemo(() => {
+        if (!network?.entries) return {};
+        
+        const groups = {
+            0: { label: 'LP / Money Site', entries: [], expanded: true },
+            1: { label: 'Tier 1', entries: [], expanded: true },
+            2: { label: 'Tier 2', entries: [], expanded: false },
+            3: { label: 'Tier 3', entries: [], expanded: false },
+            4: { label: 'Tier 4+', entries: [], expanded: false }
+        };
+        
+        network.entries.forEach(entry => {
+            const tier = entry.calculated_tier || 0;
+            const groupKey = tier >= 4 ? 4 : tier;
+            if (groups[groupKey]) {
+                groups[groupKey].entries.push(entry);
+            }
+        });
+        
+        // Sort entries within each tier: main first, then alphabetical by node_label
+        Object.values(groups).forEach(group => {
+            group.entries.sort((a, b) => {
+                // Main nodes first
+                if (a.domain_role === 'main' && b.domain_role !== 'main') return -1;
+                if (a.domain_role !== 'main' && b.domain_role === 'main') return 1;
+                // Then alphabetical by node_label
+                const labelA = a.node_label || a.domain_name || '';
+                const labelB = b.node_label || b.domain_name || '';
+                return labelA.localeCompare(labelB);
+            });
+        });
+        
+        return groups;
+    }, [network?.entries]);
+    
+    // Collapsed state for tier groups
+    const [collapsedTiers, setCollapsedTiers] = useState({ 2: true, 3: true, 4: true });
+    
+    const toggleTierCollapse = (tier) => {
+        setCollapsedTiers(prev => ({ ...prev, [tier]: !prev[tier] }));
+    };
 
     useEffect(() => {
         loadNetwork();
