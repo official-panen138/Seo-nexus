@@ -976,6 +976,15 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            
+            {/* Optimization Detail Drawer */}
+            <OptimizationDetailDrawer
+                optimizationId={selectedOptimizationId}
+                isOpen={detailDrawerOpen}
+                onClose={closeDetailDrawer}
+                onUpdate={loadOptimizations}
+                networkId={networkId}
+            />
         </div>
     );
 }
