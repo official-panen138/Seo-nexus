@@ -25,7 +25,8 @@ import {
     Zap,
     History,
     Building,
-    Radio
+    Radio,
+    Clock
 } from 'lucide-react';
 
 const navItems = [
