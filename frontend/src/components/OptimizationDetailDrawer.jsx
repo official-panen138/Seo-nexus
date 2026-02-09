@@ -696,7 +696,7 @@ export default function OptimizationDetailDrawer({
                             </CardContent>
                         </Card>
 
-                        {/* Section G: Final Closure (Super Admin only) */}
+                        {/* Section H: Final Closure (Super Admin only) */}
                         {isSuperAdmin && detail.status !== 'completed' && (
                             <Card className={`border ${detail.is_blocked ? 'bg-red-950/20 border-red-900/30' : 'bg-emerald-950/20 border-emerald-900/30'}`}>
                                 <CardHeader className="pb-2">
