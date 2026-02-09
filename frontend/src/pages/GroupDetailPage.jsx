@@ -41,12 +41,18 @@ import {
     User,
     Clock,
     ChevronRight,
+    ChevronDown,
+    ChevronUp,
     Eye,
     Check,
     X,
     Crown,
     MoreVertical,
-    ArrowRightLeft
+    ArrowRightLeft,
+    Filter,
+    Calendar,
+    Layers,
+    List
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
