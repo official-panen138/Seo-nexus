@@ -33,8 +33,10 @@ import {
     AlertCircle,
     Tag,
     TrendingUp,
-    Globe
+    Globe,
+    Flag
 } from 'lucide-react';
+import ComplaintTimeline from './ComplaintTimeline';
 
 const STATUS_CONFIG = {
     planned: { label: 'Planned', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
