@@ -935,6 +935,27 @@ async def get_networks(
     
     networks = await db.seo_networks.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
     
+    # Filter by network visibility
+    user_id = current_user.get("id")
+    is_super_admin = current_user.get("role") == "super_admin"
+    
+    filtered_networks = []
+    for network in networks:
+        visibility = network.get("visibility_mode", "brand_based")
+        
+        if is_super_admin:
+            # Super Admin sees everything
+            filtered_networks.append(network)
+        elif visibility == "restricted":
+            # Only allowed users can see restricted networks
+            if user_id in network.get("allowed_user_ids", []):
+                filtered_networks.append(network)
+        else:
+            # brand_based or public - brand access is enough
+            filtered_networks.append(network)
+    
+    networks = filtered_networks
+    
     # Get brand names
     brands = {b["id"]: b["name"] for b in await db.brands.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)}
     
