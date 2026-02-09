@@ -56,7 +56,10 @@ import {
     Layers,
     List,
     FileText,
-    Settings
+    Settings,
+    Shield,
+    Lock,
+    Users
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
