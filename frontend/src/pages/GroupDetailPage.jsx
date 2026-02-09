@@ -1420,6 +1420,22 @@ export default function GroupDetailPage() {
                             If other nodes are targeting this node, they will become orphans.
                         </p>
 
+                        {/* Change Note (Required for Delete) */}
+                        <div className="space-y-2 p-4 bg-red-500/10 border border-red-400/30 rounded-lg">
+                            <Label className="text-red-400 flex items-center gap-2">
+                                <span>Reason for Deletion</span>
+                                <span className="text-xs text-red-400/70">(Required)</span>
+                            </Label>
+                            <Textarea
+                                value={deleteChangeNote}
+                                onChange={(e) => setDeleteChangeNote(e.target.value)}
+                                placeholder="Why are you deleting this node? e.g., 'Domain expired' or 'Restructuring network'"
+                                className="bg-black border-red-400/30 resize-none"
+                                rows={2}
+                                data-testid="delete-change-note"
+                            />
+                        </div>
+
                         <DialogFooter>
                             <Button
                                 variant="outline"
@@ -1429,7 +1445,7 @@ export default function GroupDetailPage() {
                             </Button>
                             <Button
                                 onClick={handleDeleteNode}
-                                disabled={deleting}
+                                disabled={deleting || !deleteChangeNote || deleteChangeNote.trim().length < 3}
                                 className="bg-red-600 hover:bg-red-700"
                             >
                                 {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
