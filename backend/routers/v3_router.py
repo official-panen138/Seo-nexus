@@ -4945,6 +4945,56 @@ async def preview_optimization_digest(
     }
 
 
+@router.get("/optimizations/ai-summary")
+async def get_ai_optimization_summary(
+    network_id: Optional[str] = None,
+    brand_id: Optional[str] = None,
+    days: int = Query(default=7, ge=1, le=30),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Generate an AI-powered summary of SEO optimization activities.
+    Uses GPT-4o to analyze and summarize activities.
+    """
+    if current_user.get("role") not in ["super_admin", "admin"]:
+        raise HTTPException(status_code=403, detail="Admin role required")
+    
+    from services.ai_summary_service import AiSummaryService
+    ai_service = AiSummaryService(db)
+    
+    result = await ai_service.generate_optimization_summary(network_id, brand_id, days)
+    
+    if result.get("error"):
+        raise HTTPException(status_code=500, detail=result["error"])
+    
+    return result
+
+
+@router.get("/optimizations/{optimization_id}/ai-summary")
+async def get_single_optimization_ai_summary(
+    optimization_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Generate an AI summary for a single optimization.
+    """
+    optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
+    if not optimization:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    require_brand_access(optimization["brand_id"], current_user)
+    
+    from services.ai_summary_service import AiSummaryService
+    ai_service = AiSummaryService(db)
+    
+    result = await ai_service.generate_single_optimization_summary(optimization_id)
+    
+    if result.get("error"):
+        raise HTTPException(status_code=500, detail=result["error"])
+    
+    return result
+
+
 @router.post("/monitoring/check-availability")
 async def trigger_availability_check(
     background_tasks: BackgroundTasks,
