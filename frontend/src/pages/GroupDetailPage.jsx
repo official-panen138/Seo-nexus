@@ -885,11 +885,6 @@ export default function GroupDetailPage() {
                                                 <span className="text-sm text-red-400">· Super Admin only</span>
                                             )}
                                         </>
-                                    ) : network.visibility_mode === 'public' ? (
-                                        <>
-                                            <Globe className="h-4 w-4 text-blue-400" />
-                                            <span className="text-sm text-blue-400">Visibility: Public</span>
-                                        </>
                                     ) : (
                                         <>
                                             <Users className="h-4 w-4 text-zinc-500" />
