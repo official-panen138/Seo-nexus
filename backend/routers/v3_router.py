@@ -1499,7 +1499,7 @@ async def switch_main_target(
     
     # Step 3: Recalculate tiers
     if tier_service:
-        await tier_service.calculate_tiers(network_id)
+        await tier_service.calculate_network_tiers(network_id)
     
     # Create notification for main domain change
     if seo_change_log_service:
