@@ -53,7 +53,8 @@ import {
     Filter,
     Calendar,
     Layers,
-    List
+    List,
+    FileText
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
