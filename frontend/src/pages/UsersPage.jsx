@@ -284,8 +284,9 @@ export default function UsersPage() {
 
     const closeCreateDialog = () => {
         setCreateDialogOpen(false);
-        setCreateForm({ email: '', name: '', role: 'viewer', brand_scope_ids: [] });
+        setCreateForm({ email: '', name: '', role: 'viewer', brand_scope_ids: [], password: '', useManualPassword: false });
         setGeneratedPassword('');
+        setShowPassword(false);
     };
 
     const getRoleBadgeClass = (role) => {
