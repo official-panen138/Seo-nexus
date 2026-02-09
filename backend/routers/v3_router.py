@@ -1270,7 +1270,39 @@ async def update_structure_entry(
     
     await db.seo_structure_entries.update_one({"id": entry_id}, {"$set": update_dict})
     
-    # Log activity
+    # Get domain info for node label
+    domain = await db.asset_domains.find_one({"id": existing["asset_domain_id"]}, {"_id": 0, "domain_name": 1})
+    domain_name = domain["domain_name"] if domain else "unknown"
+    node_label = f"{domain_name}{existing.get('optimized_path', '') or ''}"
+    
+    # Get network for brand_id
+    network = await db.seo_networks.find_one({"id": existing["network_id"]}, {"_id": 0, "brand_id": 1})
+    brand_id = network.get("brand_id", "") if network else ""
+    
+    # Determine action type based on what changed
+    after_snapshot = {**existing, **update_dict}
+    if seo_change_log_service:
+        action_type = seo_change_log_service.determine_action_type(
+            is_create=False,
+            is_delete=False,
+            before=existing,
+            after=after_snapshot
+        )
+        
+        await seo_change_log_service.log_change(
+            network_id=existing["network_id"],
+            brand_id=brand_id,
+            actor_user_id=current_user.get("id", ""),
+            actor_email=current_user["email"],
+            action_type=action_type,
+            affected_node=node_label,
+            change_note=change_note,
+            before_snapshot=existing,
+            after_snapshot=after_snapshot,
+            entry_id=entry_id
+        )
+    
+    # Log system activity (separate from SEO change log)
     if activity_log_service:
         await activity_log_service.log(
             actor=current_user["email"],
@@ -1278,7 +1310,7 @@ async def update_structure_entry(
             entity_type=EntityType.SEO_STRUCTURE_ENTRY,
             entity_id=entry_id,
             before_value=existing,
-            after_value={**existing, **update_dict}
+            after_value=after_snapshot
         )
     
     updated = await db.seo_structure_entries.find_one({"id": entry_id}, {"_id": 0})
