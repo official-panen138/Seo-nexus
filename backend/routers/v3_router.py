@@ -1424,7 +1424,7 @@ from pydantic import BaseModel as PydanticBaseModel, Field as PydanticField
 class SwitchMainTargetRequest(PydanticBaseModel):
     """Request model for switching the main target node"""
     new_main_entry_id: str
-    change_note: str = PydanticField(..., min_length=3, max_length=2000)
+    change_note: str = PydanticField(..., min_length=10, max_length=2000, description="Penjelasan perubahan main target (wajib, minimal 10 karakter)")
 
 
 @router.post("/networks/{network_id}/switch-main-target")
