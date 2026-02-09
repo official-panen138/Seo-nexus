@@ -1170,8 +1170,11 @@ async def create_structure_entry(
         path_info = f" with path '{normalized_path}'" if normalized_path else ""
         raise HTTPException(status_code=400, detail=f"Node{path_info} already exists in this network")
     
+    # Extract change_note before creating entry
+    change_note = data.change_note
+    
     now = datetime.now(timezone.utc).isoformat()
-    entry_data = data.model_dump()
+    entry_data = data.model_dump(exclude={"change_note"})  # Exclude change_note from entry data
     entry_data["optimized_path"] = normalized_path  # Use normalized path
     
     entry = {
@@ -1189,7 +1192,25 @@ async def create_structure_entry(
     
     await db.seo_structure_entries.insert_one(entry)
     
-    # Log activity
+    # Build node label for logging
+    node_label = f"{asset['domain_name']}{normalized_path or ''}"
+    
+    # Log SEO change with mandatory note
+    if seo_change_log_service:
+        await seo_change_log_service.log_change(
+            network_id=data.network_id,
+            brand_id=network.get("brand_id", ""),
+            actor_user_id=current_user.get("id", ""),
+            actor_email=current_user["email"],
+            action_type=SeoChangeActionType.CREATE_NODE,
+            affected_node=node_label,
+            change_note=change_note,
+            before_snapshot=None,
+            after_snapshot=entry,
+            entry_id=entry["id"]
+        )
+    
+    # Log system activity (separate from SEO change log)
     if activity_log_service:
         await activity_log_service.log(
             actor=current_user["email"],
