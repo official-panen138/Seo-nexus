@@ -205,6 +205,131 @@ export default function GroupDetailPage() {
         }
     };
 
+    // Load change history for the network
+    const loadChangeHistory = useCallback(async () => {
+        if (!groupId) return;
+        
+        setChangeHistoryLoading(true);
+        try {
+            const { data } = await changeLogsAPI.getNetworkHistory(groupId, { limit: 100 });
+            setChangeHistory(data || []);
+        } catch (err) {
+            console.error('Failed to load change history:', err);
+            setChangeHistory([]);
+        } finally {
+            setChangeHistoryLoading(false);
+        }
+    }, [groupId]);
+
+    // Load notifications for the network
+    const loadNotifications = useCallback(async () => {
+        if (!groupId) return;
+        
+        setNotificationsLoading(true);
+        try {
+            const { data } = await changeLogsAPI.getNetworkNotifications(groupId, { limit: 50 });
+            setNotifications(data || []);
+            setUnreadCount((data || []).filter(n => !n.read).length);
+        } catch (err) {
+            console.error('Failed to load notifications:', err);
+            setNotifications([]);
+        } finally {
+            setNotificationsLoading(false);
+        }
+    }, [groupId]);
+
+    // Mark notification as read
+    const handleMarkNotificationRead = async (notificationId) => {
+        try {
+            await changeLogsAPI.markNotificationRead(groupId, notificationId);
+            setNotifications(prev => prev.map(n => 
+                n.id === notificationId ? { ...n, read: true } : n
+            ));
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        } catch (err) {
+            console.error('Failed to mark notification as read:', err);
+        }
+    };
+
+    // Mark all notifications as read
+    const handleMarkAllNotificationsRead = async () => {
+        try {
+            await changeLogsAPI.markAllNotificationsRead(groupId);
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            setUnreadCount(0);
+            toast.success('All notifications marked as read');
+        } catch (err) {
+            toast.error('Failed to mark notifications as read');
+        }
+    };
+
+    // Open change detail drawer and highlight node in graph
+    const handleViewChangeDetail = (log) => {
+        setSelectedChangeLog(log);
+        setChangeDetailOpen(true);
+        
+        // Find the related entry and highlight it in the graph
+        if (log.entry_id && network?.entries) {
+            const entry = network.entries.find(e => e.id === log.entry_id);
+            if (entry) {
+                setHighlightedNodeId(entry.asset_domain_id);
+            }
+        }
+    };
+
+    // Handle notification click - open related change history entry
+    const handleNotificationClick = (notification) => {
+        // Mark as read
+        if (!notification.read) {
+            handleMarkNotificationRead(notification.id);
+        }
+        
+        // If there's a related change_log_id, find and open it
+        if (notification.change_log_id) {
+            const relatedLog = changeHistory.find(log => log.id === notification.change_log_id);
+            if (relatedLog) {
+                handleViewChangeDetail(relatedLog);
+            } else {
+                // Log might not be loaded yet, switch to Change History tab
+                setActiveTab('history');
+                loadChangeHistory();
+                toast.info('Switched to Change History tab');
+            }
+        }
+    };
+
+    // Load change history and notifications when tab changes
+    useEffect(() => {
+        if (activeTab === 'history' && changeHistory.length === 0) {
+            loadChangeHistory();
+        }
+        if (activeTab === 'alerts' && notifications.length === 0) {
+            loadNotifications();
+        }
+    }, [activeTab, loadChangeHistory, loadNotifications]);
+
+    // Format date for display
+    const formatChangeDate = (dateStr) => {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
     // Export network structure
     const handleExport = async (format) => {
         if (!network?.id) return;
