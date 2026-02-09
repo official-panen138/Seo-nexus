@@ -87,6 +87,36 @@ Build a full-stack SEO Network Operations Center combining:
 
 **Tests:** 100% pass rate (14/14 backend, 100% frontend)
 
+### P0 Asset Domain ↔ SEO Network Visibility (Feb 9, 2026) - COMPLETE
+**Feature 1: Show SEO Network Usage in Asset Domains Table**
+- ✅ Enhanced `GET /api/v3/asset-domains` to include `seo_networks` array
+- ✅ Each network entry contains: `network_id`, `network_name`, `role`, `optimized_path`
+- ✅ Data derived from `seo_structure_entries` via MongoDB aggregation (efficient, no N+1)
+- ✅ Frontend `SeoNetworksBadges` component added to `DomainsPage.jsx`
+  - Shows first 2 network badges with colors (green=main, purple=supporting)
+  - "+N more" tooltip for domains with >2 networks
+  - "—" indicator for unused domains
+  - Badges are clickable → navigate to network detail page
+  - Tooltip shows: network name, role, path
+
+**Feature 2: Domain Search + Auto-Suggest in SEO Networks**
+- ✅ New endpoint `GET /api/v3/networks/search?query=` 
+  - Searches `seo_structure_entries` by domain_name OR optimized_path
+  - Brand-scoped (users only see results from their brands)
+  - Max 10 results for performance
+  - Returns results grouped by domain
+  - Each result: `entry_id`, `network_id`, `network_name`, `domain_name`, `optimized_path`, `role`
+- ✅ Frontend search UI in `GroupsPage.jsx`:
+  - Debounced search input (350ms delay)
+  - Auto-suggest dropdown with grouped results
+  - Shows: domain → path → role → network name
+  - Two click actions:
+    1. Click row → Highlight matching networks in list (dimming others)
+    2. "Open" button → Navigate directly to network detail
+  - "N highlighted" badge with "Clear filter" link
+
+**Tests:** 100% pass rate (9/9 backend, 100% frontend)
+
 ### P0 Domain Monitoring Fix (Feb 8, 2026) - COMPLETE
 **Issue:** Monitoring was not properly split into independent engines
 
