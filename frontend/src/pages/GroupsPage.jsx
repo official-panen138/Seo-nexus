@@ -89,6 +89,39 @@ export default function GroupsPage() {
         }
     };
 
+    // Access summary badge helper
+    const getAccessBadge = (network) => {
+        const mode = network.visibility_mode || 'brand_based';
+        const cache = network.access_summary_cache || { count: 0, names: [] };
+        
+        switch (mode) {
+            case 'restricted':
+                return {
+                    icon: Lock,
+                    label: `Restricted`,
+                    userCount: cache.count,
+                    userNames: cache.names,
+                    className: 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                };
+            case 'public':
+                return {
+                    icon: Globe2,
+                    label: 'Public',
+                    userCount: null,
+                    userNames: [],
+                    className: 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                };
+            default:
+                return {
+                    icon: Users,
+                    label: 'Brand Based',
+                    userCount: null,
+                    userNames: [],
+                    className: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+                };
+        }
+    };
+
     useEffect(() => {
         loadData();
     }, []);
