@@ -298,16 +298,16 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
         setComplaintForm(prev => ({ ...prev, report_urls: prev.report_urls.filter(u => u !== url) }));
     };
 
-    // Tag input handlers
+    // Tag input handlers - updated to use target_domains
     const addTarget = () => {
-        if (targetInput.trim() && !form.affected_targets.includes(targetInput.trim())) {
-            setForm(prev => ({ ...prev, affected_targets: [...prev.affected_targets, targetInput.trim()] }));
+        if (targetInput.trim() && !form.target_domains.includes(targetInput.trim())) {
+            setForm(prev => ({ ...prev, target_domains: [...prev.target_domains, targetInput.trim()] }));
             setTargetInput('');
         }
     };
 
     const removeTarget = (target) => {
-        setForm(prev => ({ ...prev, affected_targets: prev.affected_targets.filter(t => t !== target) }));
+        setForm(prev => ({ ...prev, target_domains: prev.target_domains.filter(t => t !== target) }));
     };
 
     const addKeyword = () => {
@@ -322,14 +322,31 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
     };
 
     const addReportUrl = () => {
-        if (reportUrlInput.trim() && !form.report_urls.includes(reportUrlInput.trim())) {
-            setForm(prev => ({ ...prev, report_urls: [...prev.report_urls, reportUrlInput.trim()] }));
-            setReportUrlInput('');
+        if (reportUrlInput.trim()) {
+            const urlExists = form.report_urls.some(r => 
+                (typeof r === 'string' ? r : r.url) === reportUrlInput.trim()
+            );
+            if (!urlExists) {
+                // Add with current date as start_date
+                setForm(prev => ({ 
+                    ...prev, 
+                    report_urls: [...prev.report_urls, { 
+                        url: reportUrlInput.trim(), 
+                        start_date: new Date().toISOString().split('T')[0] 
+                    }] 
+                }));
+                setReportUrlInput('');
+            }
         }
     };
 
-    const removeReportUrl = (url) => {
-        setForm(prev => ({ ...prev, report_urls: prev.report_urls.filter(u => u !== url) }));
+    const removeReportUrl = (urlToRemove) => {
+        setForm(prev => ({ 
+            ...prev, 
+            report_urls: prev.report_urls.filter(r => 
+                (typeof r === 'string' ? r : r.url) !== (typeof urlToRemove === 'string' ? urlToRemove : urlToRemove.url)
+            ) 
+        }));
     };
 
     const toggleImpact = (impact) => {
