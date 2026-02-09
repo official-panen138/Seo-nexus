@@ -238,7 +238,11 @@ export const activityTypesAPI = {
 // V3 Team Evaluation API
 export const teamEvaluationAPI = {
     getSummary: (params = {}) => apiV3.get('/team-evaluation/summary', { params }),
-    getUsers: (params = {}) => apiV3.get('/team-evaluation/users', { params })
+    getUsers: (params = {}) => apiV3.get('/team-evaluation/users', { params }),
+    exportCSV: (params = {}) => apiV3.get('/team-evaluation/export', { 
+        params,
+        responseType: 'blob'
+    })
 };
 
 // V3 Structure Entries API
