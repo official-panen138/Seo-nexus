@@ -131,6 +131,7 @@ const NOTIFICATION_TYPE_LABELS = {
 export default function GroupDetailPage() {
     const { groupId } = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [network, setNetwork] = useState(null);
     const [tierData, setTierData] = useState(null);
     const [loading, setLoading] = useState(true);
