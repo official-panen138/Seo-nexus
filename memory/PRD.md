@@ -1056,6 +1056,55 @@ Full optimization detail view with complaint thread, team response system, and c
 
 ---
 
+### SEO Network Managers - Project Ownership System (Feb 9, 2026) - COMPLETE
+**Feature:** Redefine Access Control to SEO Network Managers for clear project ownership and accountability.
+
+**Conceptual Change:**
+- FROM: "Access Control" (access restriction)
+- TO: "SEO Network Managers" (project ownership/responsibility)
+
+**What was implemented:**
+
+**1. Database Migration:**
+- ✅ `allowed_user_ids` → `manager_ids`
+- ✅ `access_summary_cache` → `manager_summary_cache`
+- ✅ `access_updated_at/by` → `managers_updated_at/by`
+- ✅ Legacy field backward compatibility
+
+**2. Role Behavior:**
+- ✅ **Super Admin:** Full access to everything, no need to be listed as manager
+- ✅ **Managers:** Can create/update optimizations, respond to complaints, receive notifications
+- ✅ **Non-Managers:** View only - see data but cannot execute
+
+**3. API Changes:**
+- ✅ `GET/PUT /networks/{id}/managers` - New primary endpoints
+- ✅ `GET /networks/{id}/managers` returns `is_current_user_manager` flag
+- ✅ Legacy `/access-control` endpoints redirect to `/managers`
+- ✅ `require_manager_permission()` helper for execution checks
+
+**4. Permission Enforcement:**
+- ✅ `POST /networks/{id}/optimizations` - Managers only
+- ✅ `PUT /optimizations/{id}` - Managers only  
+- ✅ `POST /optimizations/{id}/responses` - Managers only
+- ✅ 403 error: "You are not assigned as a manager for this SEO Network"
+
+**5. UI Updates:**
+- ✅ "Access Control" → "SEO Network Management"
+- ✅ "Access" tab → "Managers" tab
+- ✅ "Allowed Users" → "SEO Network Managers"
+- ✅ "Visible To:" → "Managed By:" in header
+- ✅ Non-managers see "View Only" status with disabled actions
+
+**6. Visibility Mode (Separate from Managers):**
+- ✅ **Brand Based:** All brand users can VIEW
+- ✅ **Restricted:** Only managers can VIEW
+- ✅ **Public:** All platform users can VIEW (Super Admin only)
+- ✅ Visibility ≠ Execution (execution controlled by manager_ids)
+
+**Tests:** 100% pass rate (15/15 backend, 8/8 frontend) ✅
+
+---
+
 ## Prioritized Backlog
 
 ### P0 - Critical
