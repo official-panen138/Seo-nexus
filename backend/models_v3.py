@@ -140,6 +140,103 @@ class SeoNotificationType(str, Enum):
     HIGH_TIER_NOINDEX = "high_tier_noindex"
 
 
+# ==================== SEO OPTIMIZATION MODELS ====================
+
+class OptimizationActivityType(str, Enum):
+    """Types of SEO optimization activities"""
+    BACKLINK = "backlink"
+    ONPAGE = "onpage"
+    CONTENT = "content"
+    TECHNICAL = "technical"
+    SCHEMA = "schema"
+    INTERNAL_LINK = "internal-link"
+    EXPERIMENT = "experiment"
+    OTHER = "other"
+
+
+class OptimizationAffectedScope(str, Enum):
+    """Scope of SEO optimization"""
+    MONEY_SITE = "money_site"
+    DOMAIN = "domain"
+    PATH = "path"
+    WHOLE_NETWORK = "whole_network"
+
+
+class OptimizationExpectedImpact(str, Enum):
+    """Expected impact of optimization"""
+    RANKING = "ranking"
+    AUTHORITY = "authority"
+    CRAWL = "crawl"
+    CONVERSION = "conversion"
+
+
+class OptimizationStatus(str, Enum):
+    """Status of optimization activity"""
+    PLANNED = "planned"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    REVERTED = "reverted"
+
+
+class OptimizationCreatedBy(BaseModel):
+    """User who created the optimization"""
+    user_id: str
+    display_name: str
+    email: str
+
+
+class SeoOptimizationCreate(BaseModel):
+    """Create SEO optimization activity"""
+    activity_type: OptimizationActivityType
+    title: str
+    description: str
+    affected_scope: OptimizationAffectedScope = OptimizationAffectedScope.DOMAIN
+    affected_targets: List[str] = []  # domains or paths
+    keywords: List[str] = []
+    report_urls: List[str] = []
+    expected_impact: List[OptimizationExpectedImpact] = []
+    status: OptimizationStatus = OptimizationStatus.COMPLETED
+
+
+class SeoOptimizationUpdate(BaseModel):
+    """Update SEO optimization activity"""
+    activity_type: Optional[OptimizationActivityType] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    affected_scope: Optional[OptimizationAffectedScope] = None
+    affected_targets: Optional[List[str]] = None
+    keywords: Optional[List[str]] = None
+    report_urls: Optional[List[str]] = None
+    expected_impact: Optional[List[OptimizationExpectedImpact]] = None
+    status: Optional[OptimizationStatus] = None
+
+
+class SeoOptimizationResponse(BaseModel):
+    """SEO optimization response model"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: str
+    network_id: str
+    brand_id: str
+    created_by: OptimizationCreatedBy
+    created_at: str
+    updated_at: Optional[str] = None
+    activity_type: str
+    title: str
+    description: str
+    affected_scope: str
+    affected_targets: List[str] = []
+    keywords: List[str] = []
+    report_urls: List[str] = []
+    expected_impact: List[str] = []
+    status: str
+    telegram_notified_at: Optional[str] = None
+    
+    # Enriched fields
+    network_name: Optional[str] = None
+    brand_name: Optional[str] = None
+
+
 # ==================== ASSET DOMAIN MODELS ====================
 
 class AssetDomainBase(BaseModel):
