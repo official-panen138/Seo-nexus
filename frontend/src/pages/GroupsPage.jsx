@@ -646,18 +646,18 @@ export default function GroupsPage() {
                                             </p>
                                         )}
                                         
-                                        {/* Access Summary Badge */}
-                                        <div className={`flex items-center gap-2 p-2 rounded-md mb-3 ${accessBadge.className}`} data-testid={`access-badge-${network.id}`}>
-                                            <AccessIcon className="h-4 w-4 flex-shrink-0" />
+                                        {/* Manager Summary Badge */}
+                                        <div className={`flex items-center gap-2 p-2 rounded-md mb-3 ${managerBadge.className}`} data-testid={`manager-badge-${network.id}`}>
+                                            <ManagerIcon className="h-4 w-4 flex-shrink-0" />
                                             <div className="flex-1 min-w-0">
-                                                <span className="text-xs font-medium">{accessBadge.label}</span>
-                                                {accessBadge.userCount !== null && accessBadge.userCount > 0 && (
-                                                    <span className="text-xs ml-1">· {accessBadge.userCount} user{accessBadge.userCount !== 1 ? 's' : ''}</span>
+                                                <span className="text-xs font-medium">{managerBadge.label}</span>
+                                                {managerBadge.userCount !== null && managerBadge.userCount > 0 && (
+                                                    <span className="text-xs ml-1">· {managerBadge.userCount} manager{managerBadge.userCount !== 1 ? 's' : ''}</span>
                                                 )}
-                                                {accessBadge.userNames && accessBadge.userNames.length > 0 && (
+                                                {managerBadge.userNames && managerBadge.userNames.length > 0 && (
                                                     <div className="text-[10px] opacity-80 truncate">
-                                                        {accessBadge.userNames.slice(0, 2).join(', ')}
-                                                        {accessBadge.userCount > 2 && ` +${accessBadge.userCount - 2}`}
+                                                        {managerBadge.userNames.slice(0, 2).join(', ')}
+                                                        {managerBadge.userCount > 2 && ` +${managerBadge.userCount - 2}`}
                                                     </div>
                                                 )}
                                             </div>
