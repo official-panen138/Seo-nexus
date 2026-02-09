@@ -192,7 +192,7 @@ export function NetworkAccessSettings({ networkId, brandId }) {
 
         setSaving(true);
         try {
-            await api.put(`/api/v3/networks/${networkId}/access-control`, {
+            await apiV3.put(`/networks/${networkId}/access-control`, {
                 visibility_mode: visibilityMode,
                 allowed_user_ids: visibilityMode === 'restricted' ? selectedUserIds : []
             });
