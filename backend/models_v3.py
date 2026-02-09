@@ -107,6 +107,7 @@ class EntityType(str, Enum):
     ASSET_DOMAIN = "asset_domain"
     SEO_NETWORK = "seo_network"
     SEO_STRUCTURE_ENTRY = "seo_structure_entry"
+    SEO_OPTIMIZATION = "seo_optimization"
     BRAND = "brand"
     CATEGORY = "category"
     USER = "user"
