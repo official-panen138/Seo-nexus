@@ -81,6 +81,8 @@ export function NetworkAccessSettings({ networkId, brandId }) {
     const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [selectedUsers, setSelectedUsers] = useState([]);
     const [visibilityMode, setVisibilityMode] = useState('brand_based');
+    const [accessUpdatedAt, setAccessUpdatedAt] = useState(null);
+    const [accessUpdatedBy, setAccessUpdatedBy] = useState(null);
     
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
@@ -118,6 +120,8 @@ export function NetworkAccessSettings({ networkId, brandId }) {
             setVisibilityMode(res.data.visibility_mode || 'brand_based');
             setSelectedUserIds(res.data.allowed_user_ids || []);
             setSelectedUsers(res.data.allowed_users || []);
+            setAccessUpdatedAt(res.data.access_updated_at);
+            setAccessUpdatedBy(res.data.access_updated_by);
         } catch (err) {
             console.error('Failed to load access settings:', err);
             toast.error('Failed to load access settings');
