@@ -112,7 +112,7 @@ export function NetworkAccessSettings({ networkId, brandId }) {
     const loadAccessSettings = async () => {
         setLoading(true);
         try {
-            const res = await api.get(`/api/v3/networks/${networkId}/access-control`);
+            const res = await apiV3.get(`/networks/${networkId}/access-control`);
             setVisibilityMode(res.data.visibility_mode || 'brand_based');
             setSelectedUserIds(res.data.allowed_user_ids || []);
             setSelectedUsers(res.data.allowed_users || []);
