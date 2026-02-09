@@ -1014,9 +1014,9 @@ export default function GroupDetailPage() {
                                 </span>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger value="settings" data-testid="settings-tab" className="flex items-center gap-2">
-                            <Settings className="h-4 w-4" />
-                            Settings
+                        <TabsTrigger value="access" data-testid="access-tab" className="flex items-center gap-2">
+                            <Shield className="h-4 w-4" />
+                            Access
                         </TabsTrigger>
                     </TabsList>
 
