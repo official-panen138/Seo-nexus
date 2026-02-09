@@ -896,6 +896,41 @@ Full optimization detail view with complaint thread, team response system, and c
 
 **Tests:** 82% backend (9/11), 95% frontend ✅
 
+### P1 Features (Feb 11, 2026) - COMPLETE
+
+**1. Full Page Optimization View (`/optimizations/{id}`):**
+- ✅ Dedicated full-screen page for deep audits
+- ✅ All sections from drawer in expanded layout
+- ✅ Back button, Copy Link, Print button
+- ✅ Two-column layout: Main content + Sidebar
+- ✅ "Optimization Completed" success badge
+- ✅ Print-friendly CSS (@media print)
+
+**2. Activity Type Management UI (`/settings/activity-types`):**
+- ✅ CRUD interface for Super Admin
+- ✅ Table with Name, Description, Usage Count, Default status
+- ✅ Add Activity Type dialog
+- ✅ Delete with usage protection (cannot delete if in use)
+- ✅ Default types are protected (cannot be deleted)
+- ✅ Info card explaining functionality
+
+**3. Project-Level User Visibility:**
+- ✅ Backend: `check_network_visibility_access()` helper function
+- ✅ Backend: Filter networks in GET /networks by visibility mode
+- ✅ Frontend: `NetworkAccessSettings.jsx` component
+- ✅ Settings tab in Network Detail page
+- ✅ Visibility modes: brand_based, restricted, public
+- ✅ User selection for restricted mode
+- ✅ Save access settings API
+
+**Key Files:**
+- `frontend/src/pages/OptimizationDetailPage.jsx` - Full page view
+- `frontend/src/pages/ActivityTypesPage.jsx` - Activity types CRUD
+- `frontend/src/components/NetworkAccessSettings.jsx` - Access control UI
+- `backend/routers/v3_router.py` - Access control filtering
+
+**Tests:** All features manually verified ✅
+
 ## Prioritized Backlog
 
 ### P0 - Critical
