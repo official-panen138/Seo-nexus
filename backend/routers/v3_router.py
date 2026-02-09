@@ -2988,17 +2988,15 @@ async def update_network_managers(
     and receiving notifications. They do NOT control who can VIEW the network -
     that's determined by visibility_mode.
     
-    Only Super Admin can:
-    - Set visibility to 'public'
-    - Change managers list
+    Visibility modes:
+    - brand_based: All brand users can VIEW (default)
+    - restricted: Only managers and Super Admins can VIEW
+    
+    Only Super Admin can modify managers list.
     """
     # Only Super Admin can change managers
     if current_user.get("role") != "super_admin":
         raise HTTPException(status_code=403, detail="Only Super Admin can modify SEO Network managers")
-    
-    # Only Super Admin can set public visibility
-    if data.visibility_mode == NetworkVisibilityMode.PUBLIC and current_user.get("role") != "super_admin":
-        raise HTTPException(status_code=403, detail="Only Super Admin can set public visibility")
     
     network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
     if not network:
