@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { groupsAPI, networksAPI, structureAPI, assetDomainsAPI, exportAPI, importAPI, changeLogsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { NetworkGraph } from '../components/NetworkGraph';
+import { ChangeNoteInput } from '../components/ChangeNoteInput';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -15,7 +16,7 @@ import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { Switch } from '../components/ui/switch';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '../components/ui/dropdown-menu';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { toast } from 'sonner';
 import { 
@@ -42,7 +43,10 @@ import {
     ChevronRight,
     Eye,
     Check,
-    X
+    X,
+    Crown,
+    MoreVertical,
+    ArrowRightLeft
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
