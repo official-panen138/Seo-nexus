@@ -13,7 +13,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://seo-node-graph.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://seo-noc-preview.preview.emergentagent.com')
 
 # Test credentials
 SUPER_ADMIN_EMAIL = "admin@v3test.com"

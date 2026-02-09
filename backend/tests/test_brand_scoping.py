@@ -13,7 +13,7 @@ import requests
 import os
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://seo-node-graph.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://seo-noc-preview.preview.emergentagent.com')
 
 class TestBrandScoping:
     """Brand Scoping API Tests"""
