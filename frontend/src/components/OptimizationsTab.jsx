@@ -83,13 +83,17 @@ const INITIAL_FORM = {
 };
 
 export function OptimizationsTab({ networkId, networkName, brandName }) {
+    const { hasRole, isSuperAdmin } = useAuth();
     const [optimizations, setOptimizations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [complaintDialogOpen, setComplaintDialogOpen] = useState(false);
     const [selectedOptimization, setSelectedOptimization] = useState(null);
     const [form, setForm] = useState(INITIAL_FORM);
+    const [complaintForm, setComplaintForm] = useState({ reason: '', priority: 'medium', report_urls: [] });
+    const [complaintUrlInput, setComplaintUrlInput] = useState('');
     
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
