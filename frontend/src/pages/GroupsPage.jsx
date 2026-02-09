@@ -456,18 +456,28 @@ export default function GroupsPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="networks-grid">
-                        {filteredNetworks.map((network, index) => (
+                        {filteredNetworks.map((network, index) => {
+                            const isHighlighted = highlightedNetworkIds.includes(network.id);
+                            return (
                             <Link 
                                 key={network.id} 
                                 to={`/groups/${network.id}`}
                                 className={`animate-fade-in stagger-${(index % 5) + 1}`}
                                 data-testid={`network-card-${network.id}`}
                             >
-                                <Card className="bg-card border-border card-hover h-full">
+                                <Card className={`bg-card border-border card-hover h-full transition-all ${
+                                    isHighlighted 
+                                        ? 'ring-2 ring-amber-400 border-amber-400/50' 
+                                        : highlightedNetworkIds.length > 0 
+                                            ? 'opacity-40' 
+                                            : ''
+                                }`}>
                                     <CardHeader className="pb-3">
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-md bg-purple-500/10">
+                                                <div className={`p-2 rounded-md ${
+                                                    isHighlighted ? 'bg-amber-500/20' : 'bg-purple-500/10'
+                                                }`}>
                                                     <Network className="h-5 w-5 text-purple-500" />
                                                 </div>
                                                 <div>
