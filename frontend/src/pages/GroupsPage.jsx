@@ -72,7 +72,7 @@ export default function GroupsPage() {
     // Filter state
     const [filterBrand, setFilterBrand] = useState('all');
     const [filterRankingStatus, setFilterRankingStatus] = useState('all');
-    const [sortBy, setSortBy] = useState('');
+    const [sortBy, setSortBy] = useState('default');
 
     // Ranking status badge helper
     const getRankingStatusBadge = (status) => {
