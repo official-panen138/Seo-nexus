@@ -512,6 +512,13 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
   - Rate limiting (1 msg per network per minute)
   - Fallback to main Telegram if SEO channel not configured
   - Real-time SEO structure snapshot in notifications
+- ✅ **User Registration Approval & Super Admin User Management** (Feb 9, 2026)
+  - New users register with status=pending, cannot login until approved
+  - Super Admin can view pending users in Users → Pending Approvals tab
+  - Super Admin can approve (assign role + brand scope) or reject users
+  - Super Admin can manually create users (active immediately, auto-generated password)
+  - Login shows specific messages for pending/rejected users
+  - All actions logged for audit trail
 - 🟡 **Conflict Detection UI** - Backend API exists, frontend needed:
   - Alert Center integration
   - Node highlighting in D3 graph
