@@ -361,6 +361,7 @@ export default function GroupDetailPage() {
     // Open delete confirmation dialog
     const openDeleteDialog = (entry) => {
         setEntryToDelete(entry);
+        setDeleteChangeNote('');  // Reset change note
         setDeleteDialogOpen(true);
     };
 
@@ -368,9 +369,17 @@ export default function GroupDetailPage() {
     const handleDeleteNode = async () => {
         if (!entryToDelete?.id) return;
         
+        // Validate change_note
+        if (!deleteChangeNote || deleteChangeNote.trim().length < 3) {
+            toast.error('Change note is required (min 3 characters)');
+            return;
+        }
+        
         setDeleting(true);
         try {
-            const response = await structureAPI.delete(entryToDelete.id);
+            const response = await structureAPI.delete(entryToDelete.id, {
+                change_note: deleteChangeNote.trim()
+            });
             
             if (response.data.orphaned_entries > 0) {
                 toast.warning(`Node deleted. ${response.data.orphaned_entries} entries are now orphaned.`);
