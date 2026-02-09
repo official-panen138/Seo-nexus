@@ -1071,8 +1071,14 @@ Full optimization detail view with complaint thread, team response system, and c
 3. **Time-to-Resolution Metric** - Backend logic to calculate time between complaint creation and resolution
 
 ### P2 - Medium Priority
-1. **Deep-link Drawer Auto-Open** - Auto-open optimization detail drawer when URL has `?optimization_id=...`
-2. **Frontend UI for AI Summary** - Button to trigger AI summary generation and display result
+1. ✅ **Scheduler Dashboard UI** - COMPLETE (Feb 9, 2026)
+   - Page at `/settings/scheduler` with full dashboard
+   - Scheduler status, next run time, last execution results
+   - Manual trigger button with confirmation
+   - Global reminder settings (enable/disable, interval days)
+   - Execution history with detailed stats
+2. **Deep-link Drawer Auto-Open** - Auto-open optimization detail drawer when URL has `?optimization_id=...`
+3. **Frontend UI for AI Summary** - Button to trigger AI summary generation and display result
 3. **Reminder Settings UI** - Frontend page to configure global and per-network reminder intervals
 4. **Scheduler Dashboard UI** - View scheduler status, execution logs, and manual trigger button
 5. Correlate optimization timeline with ranking history
