@@ -2299,16 +2299,16 @@ async def create_optimization_complaint(
     if not data.reason or not data.reason.strip():
         raise HTTPException(status_code=400, detail="Complaint reason is required")
     
-    # Get network to access assigned users from Access Summary
+    # Get network to access managers from SEO Network Management
     network = await db.seo_networks.find_one({"id": optimization["network_id"]}, {"_id": 0})
     
-    # Build responsible user list: combine explicit selection + network assigned users
+    # Build responsible user list: combine explicit selection + network managers
     all_responsible_user_ids = set(data.responsible_user_ids or [])
     
-    # Auto-add users from network Access Summary (if Restricted mode)
-    if network and network.get("visibility_mode") == "restricted" and network.get("allowed_user_ids"):
-        all_responsible_user_ids.update(network["allowed_user_ids"])
-        logger.info(f"[COMPLAINT] Auto-added {len(network['allowed_user_ids'])} users from network Access Summary")
+    # Auto-add managers from network (they are responsible for execution)
+    if network and network.get("manager_ids"):
+        all_responsible_user_ids.update(network["manager_ids"])
+        logger.info(f"[COMPLAINT] Auto-added {len(network['manager_ids'])} managers from SEO Network Management")
     
     # Get responsible users info for notification
     responsible_users = []
