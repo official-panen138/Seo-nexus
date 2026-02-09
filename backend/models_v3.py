@@ -581,7 +581,7 @@ class SeoNetworkNotification(BaseModel):
 
 class SeoChangeNoteRequest(BaseModel):
     """Request model for structure changes requiring change note"""
-    change_note: str = Field(..., min_length=3, max_length=500, description="Explanation for this SEO change (required)")
+    change_note: str = Field(..., min_length=3, max_length=2000, description="Explanation for this SEO change (required). Recommended ≥150 chars for detailed reasoning.")
 
 
 class SeoStructureEntryCreateWithNote(BaseModel):
@@ -599,8 +599,8 @@ class SeoStructureEntryCreateWithNote(BaseModel):
     ranking_position: Optional[int] = None
     last_rank_check: Optional[str] = None
     notes: Optional[str] = ""
-    # Mandatory change note
-    change_note: str = Field(..., min_length=3, max_length=500, description="Explanation for this SEO change (required)")
+    # Mandatory change note - increased to 2000 chars for detailed SEO reasoning
+    change_note: str = Field(..., min_length=3, max_length=2000, description="Explanation for this SEO change (required). Recommended ≥150 chars for detailed reasoning.")
 
 
 class SeoStructureEntryUpdateWithNote(BaseModel):
@@ -616,5 +616,5 @@ class SeoStructureEntryUpdateWithNote(BaseModel):
     ranking_position: Optional[int] = None
     last_rank_check: Optional[str] = None
     notes: Optional[str] = None
-    # Mandatory change note
-    change_note: str = Field(..., min_length=3, max_length=500, description="Explanation for this SEO change (required)")
+    # Mandatory change note - increased to 2000 chars for detailed SEO reasoning
+    change_note: str = Field(..., min_length=3, max_length=2000, description="Explanation for this SEO change (required). Recommended ≥150 chars for detailed reasoning.")
