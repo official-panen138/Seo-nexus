@@ -49,6 +49,7 @@ get_current_user = None
 require_roles = None
 activity_log_service = None
 tier_service = None
+seo_change_log_service = None
 
 
 def init_v3_router(
@@ -56,15 +57,17 @@ def init_v3_router(
     current_user_dep,
     roles_dep,
     activity_service,
-    tier_svc
+    tier_svc,
+    seo_change_svc=None
 ):
     """Initialize V3 router with dependencies"""
-    global db, _get_current_user_dep, require_roles, activity_log_service, tier_service
+    global db, _get_current_user_dep, require_roles, activity_log_service, tier_service, seo_change_log_service
     db = database
     _get_current_user_dep = current_user_dep
     require_roles = roles_dep
     activity_log_service = activity_service
     tier_service = tier_svc
+    seo_change_log_service = seo_change_svc
 
 
 # Store the dependency reference
