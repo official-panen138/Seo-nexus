@@ -73,12 +73,16 @@ export default function SettingsPage() {
 
     const loadSettings = async () => {
         try {
-            const [mainRes, seoRes] = await Promise.all([
+            const [mainRes, seoRes, brandingRes, timezoneRes] = await Promise.all([
                 settingsAPI.getTelegram(),
-                settingsAPI.getSeoTelegram().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } }))
+                settingsAPI.getSeoTelegram().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } })),
+                settingsAPI.getBranding().catch(() => ({ data: { site_title: 'SEO//NOC', site_description: '', logo_url: '' } })),
+                settingsAPI.getTimezone().catch(() => ({ data: { default_timezone: 'Asia/Jakarta', timezone_label: 'GMT+7' } }))
             ]);
             setTelegramConfig(mainRes.data);
             setSeoTelegramConfig(seoRes.data);
+            setBrandingConfig(brandingRes.data);
+            setTimezoneConfig(timezoneRes.data);
         } catch (err) {
             console.error('Failed to load settings:', err);
         } finally {
