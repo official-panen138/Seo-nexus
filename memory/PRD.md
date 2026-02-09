@@ -537,9 +537,9 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
    - Alert Center panel for conflicts
    - Node highlighting in D3 diagram
    - Conflict details in node detail panel
-2. **P1: SEO Telegram Settings UI** - Add configuration page for SEO alerts channel
-3. **P1: Root vs. Path Main Node Visualization** - Solid vs dashed border in D3 graph
-4. **P1: Milestone Tag on Change Notes** - Optional milestone field
+2. **P1: Root vs. Path Main Node Visualization** - Solid vs dashed border in D3 graph
+3. **P1: Milestone Tag on Change Notes** - Optional milestone field
+4. **P1: Network Creation Telegram Notification** - Trigger notification when new SEO network is created
 5. Email notification integration (Resend/SendGrid)
 6. Scheduled conflict alerts (cron)
 7. Domain health check improvements
