@@ -1059,9 +1059,9 @@ export default function GroupDetailPage() {
                                 </span>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger value="access" data-testid="access-tab" className="flex items-center gap-2">
+                        <TabsTrigger value="access" data-testid="managers-tab" className="flex items-center gap-2">
                             <Shield className="h-4 w-4" />
-                            Access
+                            Managers
                         </TabsTrigger>
                     </TabsList>
 
