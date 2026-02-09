@@ -487,6 +487,22 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
                                                 <Badge variant="outline" className={`${statusConfig.color} ml-2`}>
                                                     {statusConfig.label}
                                                 </Badge>
+                                                {/* Complaint Status Badge */}
+                                                {opt.complaint_status && opt.complaint_status !== 'none' && (
+                                                    <Badge 
+                                                        variant="outline" 
+                                                        className={`ml-2 ${
+                                                            opt.complaint_status === 'complained' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                                                            opt.complaint_status === 'under_review' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                                                            'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                                        }`}
+                                                    >
+                                                        {opt.complaint_status === 'complained' && <AlertCircle className="h-3 w-3 mr-1" />}
+                                                        {opt.complaint_status === 'under_review' && '🟡 '}
+                                                        {opt.complaint_status === 'resolved' && '✓ '}
+                                                        {opt.complaint_status.replace('_', ' ')}
+                                                    </Badge>
+                                                )}
                                             </div>
                                         </div>
                                         
