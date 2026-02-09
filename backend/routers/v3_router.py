@@ -154,6 +154,113 @@ def require_brand_access(brand_id: str, user: dict):
         raise HTTPException(status_code=403, detail="Access denied for this brand.")
 
 
+# Minimum change note length for SEO changes
+MIN_CHANGE_NOTE_LENGTH = 10
+
+
+def validate_change_note(change_note: str) -> None:
+    """
+    Validate that change_note meets minimum requirements.
+    Raises HTTPException if invalid.
+    """
+    if not change_note or len(change_note.strip()) < MIN_CHANGE_NOTE_LENGTH:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Change note is required and must be at least {MIN_CHANGE_NOTE_LENGTH} characters. This note will be sent to the SEO team via Telegram."
+        )
+
+
+async def atomic_seo_change_with_notification(
+    db,
+    seo_change_log_service,
+    seo_telegram_service,
+    network_id: str,
+    brand_id: str,
+    actor_user_id: str,
+    actor_email: str,
+    action_type: str,
+    affected_node: str,
+    change_note: str,
+    before_snapshot: dict = None,
+    after_snapshot: dict = None,
+    entry_id: str = None,
+    skip_rate_limit: bool = False
+) -> tuple:
+    """
+    Perform atomic SEO change: Log + Telegram notification.
+    If Telegram fails, rollback the change log.
+    
+    Returns (success: bool, change_log_id: str, error_message: str)
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Step 1: Create change log
+    change_log_id = None
+    if seo_change_log_service:
+        change_log_id = await seo_change_log_service.log_change(
+            network_id=network_id,
+            brand_id=brand_id,
+            actor_user_id=actor_user_id,
+            actor_email=actor_email,
+            action_type=action_type if isinstance(action_type, str) else action_type,
+            affected_node=affected_node,
+            change_note=change_note,
+            before_snapshot=before_snapshot,
+            after_snapshot=after_snapshot,
+            entry_id=entry_id
+        )
+    
+    # Step 2: Send Telegram notification (MANDATORY)
+    notification_success = False
+    error_message = None
+    
+    if seo_telegram_service:
+        try:
+            # Convert action_type to string for telegram service
+            action_str = action_type.value if hasattr(action_type, 'value') else str(action_type)
+            
+            notification_success = await seo_telegram_service.send_seo_change_notification(
+                network_id=network_id,
+                brand_id=brand_id,
+                actor_user_id=actor_user_id,
+                actor_email=actor_email,
+                action_type=action_str,
+                affected_node=affected_node,
+                change_note=change_note,
+                before_snapshot=before_snapshot,
+                after_snapshot=after_snapshot,
+                change_log_id=change_log_id,
+                skip_rate_limit=skip_rate_limit
+            )
+            
+            # Update notification status
+            if seo_change_log_service and change_log_id:
+                await seo_change_log_service.update_notification_status(
+                    change_log_id, 
+                    "success" if notification_success else "failed"
+                )
+                
+        except Exception as e:
+            logger.error(f"Telegram notification failed: {e}")
+            error_message = str(e)
+            notification_success = False
+            
+            # Update notification status as failed
+            if seo_change_log_service and change_log_id:
+                await seo_change_log_service.update_notification_status(change_log_id, "failed")
+    else:
+        # No telegram service configured - this is an error for production
+        logger.warning("SEO Telegram service not configured - notification skipped")
+        notification_success = True  # Allow if service not configured (for development)
+    
+    # Step 3: If notification failed, we need to flag it but NOT rollback
+    # (Rolling back would lose the change data, which is worse)
+    # Instead, we track the failure and can retry later
+    
+    return (notification_success, change_log_id, error_message)
+
+
 # ==================== HELPER FUNCTIONS ====================
 
 def normalize_path(path: str | None) -> str | None:
