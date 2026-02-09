@@ -129,7 +129,7 @@ export function ChangeNoteInput({
     };
     
     const isRecommendedMet = charCount >= recommendedChars;
-    const isMinMet = charCount >= 3;
+    const isMinMet = charCount >= minChars;
     
     return (
         <div className={`space-y-3 p-4 ${getBackgroundClass()} border ${getBorderClass().split(' ')[0]} rounded-lg`}>
@@ -138,7 +138,7 @@ export function ChangeNoteInput({
                 <Label className={`${getLabelColor()} flex items-center gap-2`}>
                     <FileText className="h-4 w-4" />
                     <span>{label}</span>
-                    {required && <span className="text-xs opacity-70">(Required)</span>}
+                    {required && <span className="text-xs opacity-70">(Wajib)</span>}
                 </Label>
                 
                 {/* Quick Templates Dropdown */}
@@ -146,7 +146,7 @@ export function ChangeNoteInput({
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-7 text-xs text-zinc-400 hover:text-white">
                             <Lightbulb className="h-3 w-3 mr-1" />
-                            Templates
+                            Template
                             <ChevronDown className="h-3 w-3 ml-1" />
                         </Button>
                     </DropdownMenuTrigger>
@@ -191,17 +191,17 @@ export function ChangeNoteInput({
                 <div className="flex items-center gap-2">
                     {!isMinMet && (
                         <Badge variant="outline" className="text-red-400 border-red-400/30">
-                            Min 3 characters required
+                            Minimal {minChars} karakter
                         </Badge>
                     )}
                     {isMinMet && !isRecommendedMet && (
                         <Badge variant="outline" className="text-amber-400 border-amber-400/30">
-                            Recommended: {recommendedChars}+ chars for detailed reasoning
+                            Disarankan: {recommendedChars}+ karakter
                         </Badge>
                     )}
                     {isRecommendedMet && (
                         <Badge variant="outline" className="text-emerald-400 border-emerald-400/30">
-                            Good detail level
+                            Detail yang baik
                         </Badge>
                     )}
                 </div>
@@ -212,7 +212,7 @@ export function ChangeNoteInput({
             
             {/* Guidance text */}
             <p className="text-xs text-zinc-500">
-                Detailed notes help your team understand SEO decisions. Include: what changed, why, and expected impact.
+                Catatan detail membantu tim memahami keputusan SEO. Sertakan: apa yang berubah, mengapa, dan dampak yang diharapkan.
             </p>
         </div>
     );
