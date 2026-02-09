@@ -2199,7 +2199,7 @@ export default function GroupDetailPage() {
                                 </Button>
                                 <Button
                                     onClick={handleSaveEntry}
-                                    disabled={saving || !editForm.change_note || editForm.change_note.trim().length < 3}
+                                    disabled={saving || !editForm.change_note || editForm.change_note.trim().length < 10}
                                     className="bg-white text-black hover:bg-zinc-200"
                                 >
                                     {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -2359,7 +2359,7 @@ export default function GroupDetailPage() {
                             </Button>
                             <Button
                                 onClick={handleDeleteNode}
-                                disabled={deleting || !deleteChangeNote || deleteChangeNote.trim().length < 3}
+                                disabled={deleting || !deleteChangeNote || deleteChangeNote.trim().length < 10}
                                 className="bg-red-600 hover:bg-red-700"
                             >
                                 {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -2427,7 +2427,7 @@ export default function GroupDetailPage() {
                             </Button>
                             <Button
                                 onClick={handleSwitchMainTarget}
-                                disabled={switching || !switchMainChangeNote || switchMainChangeNote.trim().length < 3}
+                                disabled={switching || !switchMainChangeNote || switchMainChangeNote.trim().length < 10}
                                 className="bg-amber-600 hover:bg-amber-700"
                             >
                                 {switching && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -2588,7 +2588,7 @@ export default function GroupDetailPage() {
                             </Button>
                             <Button
                                 onClick={handleAddNode}
-                                disabled={saving || !addNodeForm.asset_domain_id || !addNodeForm.change_note || addNodeForm.change_note.trim().length < 3}
+                                disabled={saving || !addNodeForm.asset_domain_id || !addNodeForm.change_note || addNodeForm.change_note.trim().length < 10}
                                 className="bg-white text-black hover:bg-zinc-200"
                             >
                                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
