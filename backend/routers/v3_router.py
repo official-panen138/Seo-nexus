@@ -2055,6 +2055,449 @@ async def get_optimization_complaints(
     return complaints
 
 
+# ==================== OPTIMIZATION DETAIL & RESPONSE ENDPOINTS ====================
+
+@router.get("/optimizations/{optimization_id}/detail", response_model=SeoOptimizationDetailResponse)
+async def get_optimization_detail(
+    optimization_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get full optimization detail including complaints and responses.
+    Used for the Optimization Detail drawer/page.
+    """
+    optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
+    if not optimization:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    require_brand_access(optimization["brand_id"], current_user)
+    
+    # Get network and brand names
+    network = await db.seo_networks.find_one({"id": optimization["network_id"]}, {"_id": 0, "name": 1})
+    brand = await db.brands.find_one({"id": optimization["brand_id"]}, {"_id": 0, "name": 1})
+    
+    # Get all complaints sorted by date (newest first)
+    complaints = await db.optimization_complaints.find(
+        {"optimization_id": optimization_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    # Enrich complaints with user info
+    for complaint in complaints:
+        if complaint.get("responsible_user_ids"):
+            users = await db.users.find(
+                {"id": {"$in": complaint["responsible_user_ids"]}},
+                {"_id": 0, "id": 1, "email": 1, "name": 1, "telegram_username": 1}
+            ).to_list(100)
+            complaint["responsible_users"] = users
+        else:
+            complaint["responsible_users"] = []
+        
+        # Calculate time to resolution if resolved
+        if complaint.get("resolved_at") and complaint.get("created_at"):
+            try:
+                created = datetime.fromisoformat(complaint["created_at"].replace("Z", "+00:00"))
+                resolved = datetime.fromisoformat(complaint["resolved_at"].replace("Z", "+00:00"))
+                complaint["time_to_resolution_hours"] = (resolved - created).total_seconds() / 3600
+            except:
+                pass
+    
+    # Get team responses
+    responses = optimization.get("responses", [])
+    
+    # Determine active complaint (latest unresolved)
+    active_complaint = None
+    for c in complaints:
+        if c.get("status") in ["open", "under_review"]:
+            active_complaint = c
+            break
+    
+    # Check if blocked
+    is_blocked = active_complaint is not None
+    blocked_reason = None
+    if is_blocked:
+        blocked_reason = f"⚠ Blocked by Complaint #{len([c for c in complaints if c.get('status') != 'resolved'])} – resolve before closing"
+    
+    return SeoOptimizationDetailResponse(
+        id=optimization["id"],
+        network_id=optimization["network_id"],
+        brand_id=optimization["brand_id"],
+        created_by=optimization["created_by"],
+        created_at=optimization["created_at"],
+        updated_at=optimization.get("updated_at"),
+        closed_at=optimization.get("closed_at"),
+        closed_by=optimization.get("closed_by"),
+        activity_type_id=optimization.get("activity_type_id"),
+        activity_type=optimization.get("activity_type", "other"),
+        activity_type_name=optimization.get("activity_type_name"),
+        title=optimization["title"],
+        description=optimization["description"],
+        reason_note=optimization.get("reason_note"),
+        affected_scope=optimization.get("affected_scope", "specific_domain"),
+        target_domains=optimization.get("target_domains", []),
+        keywords=optimization.get("keywords", []),
+        report_urls=optimization.get("report_urls", []),
+        expected_impact=optimization.get("expected_impact", []),
+        observed_impact=optimization.get("observed_impact"),
+        status=optimization["status"],
+        complaint_status=optimization.get("complaint_status", "none"),
+        network_name=network.get("name") if network else None,
+        brand_name=brand.get("name") if brand else None,
+        complaints=complaints,
+        active_complaint=active_complaint,
+        responses=responses,
+        complaints_count=len(complaints),
+        has_repeated_issue=len(complaints) >= 2,
+        is_blocked=is_blocked,
+        blocked_reason=blocked_reason
+    )
+
+
+@router.post("/optimizations/{optimization_id}/responses")
+async def add_team_response(
+    optimization_id: str,
+    data: TeamResponseCreate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Add a team response to an optimization.
+    Used to respond to complaints or add corrective action notes.
+    
+    Rules:
+    - Min 20 chars, max 2000 chars for note
+    - Admin or Super Admin only
+    - Changes complaint_status to 'under_review' if currently 'complained'
+    """
+    # Validate response note length
+    if len(data.note.strip()) < 20:
+        raise HTTPException(status_code=400, detail="Response note must be at least 20 characters")
+    if len(data.note.strip()) > 2000:
+        raise HTTPException(status_code=400, detail="Response note cannot exceed 2000 characters")
+    
+    # Check permissions
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Admin access required to respond")
+    
+    optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
+    if not optimization:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    require_brand_access(optimization["brand_id"], current_user)
+    
+    # Create response entry
+    response_entry = {
+        "id": str(uuid4()),
+        "created_by": {
+            "user_id": current_user["id"],
+            "display_name": current_user.get("name", current_user["email"].split("@")[0]),
+            "email": current_user["email"]
+        },
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "note": data.note.strip(),
+        "report_urls": data.report_urls
+    }
+    
+    # Find active complaint to link
+    active_complaint = await db.optimization_complaints.find_one(
+        {"optimization_id": optimization_id, "status": {"$in": ["open", "under_review"]}},
+        {"_id": 0, "id": 1}
+    )
+    if active_complaint:
+        response_entry["complaint_id"] = active_complaint["id"]
+    
+    # Update optimization
+    update_data = {
+        "$push": {"responses": response_entry},
+        "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+    }
+    
+    # If complaint status is 'complained', move to 'under_review'
+    if optimization.get("complaint_status") == "complained":
+        update_data["$set"]["complaint_status"] = "under_review"
+        
+        # Also update the complaint record
+        if active_complaint:
+            await db.optimization_complaints.update_one(
+                {"id": active_complaint["id"]},
+                {"$set": {"status": "under_review"}}
+            )
+    
+    await db.seo_optimizations.update_one({"id": optimization_id}, update_data)
+    
+    # Send Telegram notification
+    try:
+        from services.seo_optimization_telegram_service import seo_optimization_telegram_service
+        if seo_optimization_telegram_service:
+            network = await db.seo_networks.find_one({"id": optimization["network_id"]}, {"_id": 0, "name": 1})
+            brand = await db.brands.find_one({"id": optimization["brand_id"]}, {"_id": 0, "name": 1})
+            
+            message = f"""📝 *TEAM RESPONSE ADDED*
+
+📋 *Optimization:* {optimization['title']}
+🌐 *Network:* {network.get('name') if network else 'Unknown'}
+🏷️ *Brand:* {brand.get('name') if brand else 'Unknown'}
+
+👤 *Responded by:* {current_user.get('name', current_user['email'])}
+📅 *Time:* {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC
+
+💬 *Response:*
+{data.note[:500]}{'...' if len(data.note) > 500 else ''}
+
+Status: {'🟡 Under Review' if optimization.get('complaint_status') == 'complained' else '📝 Response Added'}"""
+            
+            await seo_optimization_telegram_service.send_message(message)
+    except Exception as e:
+        print(f"Failed to send Telegram notification: {e}")
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.SEO_OPTIMIZATION,
+            entity_id=optimization_id,
+            after_value={"action": "team_response_added", "response_id": response_entry["id"]}
+        )
+    
+    return {
+        "message": "Response added successfully",
+        "response": response_entry,
+        "complaint_status": optimization.get("complaint_status", "none")
+    }
+
+
+@router.patch("/optimizations/{optimization_id}/complaints/{complaint_id}/resolve")
+async def resolve_complaint(
+    optimization_id: str,
+    complaint_id: str,
+    data: ComplaintResolveRequest,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Resolve a complaint on an optimization.
+    SUPER ADMIN ONLY.
+    
+    Rules:
+    - Only Super Admin can resolve complaints
+    - Resolution note is required (min 10 chars)
+    - Optionally marks optimization as completed
+    """
+    # Super Admin only
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can resolve complaints")
+    
+    if len(data.resolution_note.strip()) < 10:
+        raise HTTPException(status_code=400, detail="Resolution note must be at least 10 characters")
+    
+    optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
+    if not optimization:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    complaint = await db.optimization_complaints.find_one({"id": complaint_id}, {"_id": 0})
+    if not complaint or complaint["optimization_id"] != optimization_id:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    
+    if complaint.get("status") == "resolved":
+        raise HTTPException(status_code=400, detail="Complaint is already resolved")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Calculate time to resolution
+    time_to_resolution_hours = None
+    try:
+        created = datetime.fromisoformat(complaint["created_at"].replace("Z", "+00:00"))
+        resolved = datetime.now(timezone.utc)
+        time_to_resolution_hours = (resolved - created).total_seconds() / 3600
+    except:
+        pass
+    
+    # Update complaint
+    await db.optimization_complaints.update_one(
+        {"id": complaint_id},
+        {"$set": {
+            "status": "resolved",
+            "resolved_at": now,
+            "resolved_by": {
+                "user_id": current_user["id"],
+                "display_name": current_user.get("name", current_user["email"].split("@")[0]),
+                "email": current_user["email"]
+            },
+            "resolution_note": data.resolution_note.strip(),
+            "time_to_resolution_hours": time_to_resolution_hours
+        }}
+    )
+    
+    # Check if there are other unresolved complaints
+    other_complaints = await db.optimization_complaints.count_documents({
+        "optimization_id": optimization_id,
+        "id": {"$ne": complaint_id},
+        "status": {"$in": ["open", "under_review"]}
+    })
+    
+    # Update optimization status
+    opt_update = {
+        "updated_at": now,
+        "complaint_status": "none" if other_complaints == 0 else "complained"
+    }
+    
+    if data.mark_optimization_complete and other_complaints == 0:
+        opt_update["status"] = "completed"
+        opt_update["closed_at"] = now
+        opt_update["closed_by"] = {
+            "user_id": current_user["id"],
+            "display_name": current_user.get("name", current_user["email"].split("@")[0]),
+            "email": current_user["email"]
+        }
+    
+    await db.seo_optimizations.update_one({"id": optimization_id}, {"$set": opt_update})
+    
+    # Send Telegram notification
+    try:
+        from services.seo_optimization_telegram_service import seo_optimization_telegram_service
+        if seo_optimization_telegram_service:
+            network = await db.seo_networks.find_one({"id": optimization["network_id"]}, {"_id": 0, "name": 1})
+            brand = await db.brands.find_one({"id": optimization["brand_id"]}, {"_id": 0, "name": 1})
+            
+            status_text = "✅ RESOLVED & COMPLETED" if data.mark_optimization_complete else "✅ RESOLVED"
+            
+            message = f"""✅ *COMPLAINT {status_text}*
+
+📋 *Optimization:* {optimization['title']}
+🌐 *Network:* {network.get('name') if network else 'Unknown'}
+🏷️ *Brand:* {brand.get('name') if brand else 'Unknown'}
+
+👤 *Resolved by:* {current_user.get('name', current_user['email'])}
+⏱️ *Resolution Time:* {time_to_resolution_hours:.1f} hours
+
+📝 *Resolution Note:*
+{data.resolution_note[:300]}{'...' if len(data.resolution_note) > 300 else ''}
+
+Status: {'🟢 Completed' if data.mark_optimization_complete else '✅ Complaint Resolved'}"""
+            
+            await seo_optimization_telegram_service.send_message(message)
+    except Exception as e:
+        print(f"Failed to send Telegram notification: {e}")
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.SEO_OPTIMIZATION,
+            entity_id=optimization_id,
+            after_value={
+                "action": "complaint_resolved",
+                "complaint_id": complaint_id,
+                "time_to_resolution_hours": time_to_resolution_hours,
+                "marked_complete": data.mark_optimization_complete
+            }
+        )
+    
+    return {
+        "message": "Complaint resolved successfully",
+        "time_to_resolution_hours": time_to_resolution_hours,
+        "optimization_status": "completed" if data.mark_optimization_complete else optimization["status"],
+        "remaining_complaints": other_complaints
+    }
+
+
+@router.patch("/optimizations/{optimization_id}/close")
+async def close_optimization(
+    optimization_id: str,
+    data: OptimizationCloseRequest,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Close/complete an optimization.
+    SUPER ADMIN ONLY.
+    
+    Rules:
+    - Only Super Admin can close optimizations
+    - Cannot close if there are unresolved complaints (BLOCKED)
+    - Sets status to 'completed' and records closer info
+    """
+    # Super Admin only
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can close optimizations")
+    
+    optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
+    if not optimization:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    # Check for unresolved complaints
+    unresolved_count = await db.optimization_complaints.count_documents({
+        "optimization_id": optimization_id,
+        "status": {"$in": ["open", "under_review"]}
+    })
+    
+    if unresolved_count > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"⚠ Cannot close optimization: {unresolved_count} unresolved complaint(s). Resolve all complaints first."
+        )
+    
+    if optimization.get("status") == "completed" and optimization.get("closed_at"):
+        raise HTTPException(status_code=400, detail="Optimization is already closed")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    await db.seo_optimizations.update_one(
+        {"id": optimization_id},
+        {"$set": {
+            "status": "completed",
+            "complaint_status": "resolved" if optimization.get("complaint_status") != "none" else "none",
+            "closed_at": now,
+            "closed_by": {
+                "user_id": current_user["id"],
+                "display_name": current_user.get("name", current_user["email"].split("@")[0]),
+                "email": current_user["email"]
+            },
+            "final_note": data.final_note,
+            "updated_at": now
+        }}
+    )
+    
+    # Send Telegram notification
+    try:
+        from services.seo_optimization_telegram_service import seo_optimization_telegram_service
+        if seo_optimization_telegram_service:
+            network = await db.seo_networks.find_one({"id": optimization["network_id"]}, {"_id": 0, "name": 1})
+            brand = await db.brands.find_one({"id": optimization["brand_id"]}, {"_id": 0, "name": 1})
+            
+            message = f"""🟢 *OPTIMIZATION COMPLETED*
+
+📋 *{optimization['title']}*
+🌐 *Network:* {network.get('name') if network else 'Unknown'}
+🏷️ *Brand:* {brand.get('name') if brand else 'Unknown'}
+
+👤 *Closed by:* {current_user.get('name', current_user['email'])}
+📅 *Closed at:* {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC
+
+{f"📝 Final Note: {data.final_note}" if data.final_note else ""}
+
+Status: 🟢 COMPLETED ✓"""
+            
+            await seo_optimization_telegram_service.send_message(message)
+    except Exception as e:
+        print(f"Failed to send Telegram notification: {e}")
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.SEO_OPTIMIZATION,
+            entity_id=optimization_id,
+            after_value={"action": "optimization_closed", "final_note": data.final_note}
+        )
+    
+    return {
+        "message": "Optimization closed successfully",
+        "status": "completed",
+        "closed_at": now
+    }
+
+
 # ==================== NETWORK ACCESS CONTROL ====================
 
 @router.put("/networks/{network_id}/access-control")
