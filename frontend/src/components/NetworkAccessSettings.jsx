@@ -466,6 +466,9 @@ export function NetworkAccessSettings({ networkId, brandId }) {
                                             <div>
                                                 <p className="text-white font-medium">{u.name || u.email?.split('@')[0]}</p>
                                                 <p className="text-xs text-zinc-500">{u.email}</p>
+                                                {u.telegram_username && (
+                                                    <p className="text-xs text-blue-400">@{u.telegram_username}</p>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
