@@ -89,10 +89,10 @@ export default function GroupsPage() {
         }
     };
 
-    // Access summary badge helper
-    const getAccessBadge = (network) => {
+    // Manager summary badge helper
+    const getManagerBadge = (network) => {
         const mode = network.visibility_mode || 'brand_based';
-        const cache = network.access_summary_cache || { count: 0, names: [] };
+        const cache = network.manager_summary_cache || { count: 0, names: [] };
         
         switch (mode) {
             case 'restricted':
@@ -115,8 +115,8 @@ export default function GroupsPage() {
                 return {
                     icon: Users,
                     label: 'Brand Based',
-                    userCount: null,
-                    userNames: [],
+                    userCount: cache.count > 0 ? cache.count : null,
+                    userNames: cache.names,
                     className: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
                 };
         }
