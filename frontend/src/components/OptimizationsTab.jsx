@@ -89,6 +89,7 @@ const INITIAL_FORM = {
 
 export function OptimizationsTab({ networkId, networkName, brandName }) {
     const { hasRole, isSuperAdmin } = useAuth();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [optimizations, setOptimizations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -99,6 +100,10 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
     const [form, setForm] = useState(INITIAL_FORM);
     const [complaintForm, setComplaintForm] = useState({ reason: '', priority: 'medium', report_urls: [] });
     const [complaintUrlInput, setComplaintUrlInput] = useState('');
+    
+    // Detail drawer state
+    const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
+    const [selectedOptimizationId, setSelectedOptimizationId] = useState(null);
     
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -114,6 +119,15 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
     const [targetInput, setTargetInput] = useState('');
     const [keywordInput, setKeywordInput] = useState('');
     const [reportUrlInput, setReportUrlInput] = useState('');
+
+    // Check for deep-link on mount
+    useEffect(() => {
+        const optimizationId = searchParams.get('optimization_id');
+        if (optimizationId) {
+            setSelectedOptimizationId(optimizationId);
+            setDetailDrawerOpen(true);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         loadOptimizations();
