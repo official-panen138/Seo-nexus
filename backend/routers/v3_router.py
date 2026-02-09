@@ -169,10 +169,13 @@ async def check_network_visibility_access(network: dict, user: dict) -> bool:
     
     Visibility modes:
     - brand_based: User must have brand access (default)
-    - restricted: User must be in allowed_user_ids OR be Super Admin
+    - restricted: User must be in manager_ids OR be Super Admin
     - public: Everyone with brand access can see (Super Admin only setting)
     
-    Returns True if user has access.
+    Note: Visibility ≠ Execution permission. 
+    Execution is controlled by manager_ids separately.
+    
+    Returns True if user has VIEW access.
     """
     # Super Admin always has access
     if user.get("role") == "super_admin":
@@ -188,10 +191,11 @@ async def check_network_visibility_access(network: dict, user: dict) -> bool:
         return True  # Anyone with brand access
     
     if visibility_mode == "restricted":
-        allowed_user_ids = network.get("allowed_user_ids", [])
-        return user.get("id") in allowed_user_ids
+        # In restricted mode, only managers can view
+        manager_ids = network.get("manager_ids", [])
+        return user.get("id") in manager_ids
     
-    # brand_based (default) - brand access is enough
+    # brand_based (default) - brand access is enough to VIEW
     return True
 
 
