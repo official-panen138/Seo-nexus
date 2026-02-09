@@ -656,9 +656,9 @@ class SeoNetworkResponse(SeoNetworkBase):
     best_ranking_position: Optional[int] = None  # Lowest position (best rank)
     tracked_urls_count: int = 0  # Nodes with ranking_url or primary_keyword
     
-    # Access Control fields
+    # SEO Network Management fields
     visibility_mode: Optional[str] = "brand_based"  # brand_based, restricted, public
-    access_summary_cache: Optional[Dict[str, Any]] = None  # {count: int, names: [str]}
+    manager_summary_cache: Optional[Dict[str, Any]] = None  # {count: int, names: [str]}
     
     created_at: str
     updated_at: str
