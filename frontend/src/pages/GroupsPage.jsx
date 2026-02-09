@@ -354,6 +354,48 @@ export default function GroupsPage() {
                             </SelectContent>
                         </Select>
                         
+                        {/* Ranking Status Filter */}
+                        <Select value={filterRankingStatus} onValueChange={setFilterRankingStatus}>
+                            <SelectTrigger className="w-[160px] bg-black border-border" data-testid="ranking-filter">
+                                <TrendingUp className="h-4 w-4 mr-2 opacity-50" />
+                                <SelectValue placeholder="All Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Status</SelectItem>
+                                <SelectItem value="ranking">
+                                    <span className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                        Ranking
+                                    </span>
+                                </SelectItem>
+                                <SelectItem value="tracking">
+                                    <span className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                        Tracking
+                                    </span>
+                                </SelectItem>
+                                <SelectItem value="none">
+                                    <span className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-zinc-500"></span>
+                                        No Ranking
+                                    </span>
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        
+                        {/* Sort By */}
+                        <Select value={sortBy} onValueChange={setSortBy}>
+                            <SelectTrigger className="w-[180px] bg-black border-border" data-testid="sort-select">
+                                <BarChart3 className="h-4 w-4 mr-2 opacity-50" />
+                                <SelectValue placeholder="Sort by..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">Default</SelectItem>
+                                <SelectItem value="best_position">Best Position</SelectItem>
+                                <SelectItem value="ranking_nodes">Most Ranking Nodes</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        
                         {canEdit() && (
                             <Button 
                                 onClick={openCreateDialog}
