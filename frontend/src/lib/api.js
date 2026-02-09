@@ -188,6 +188,7 @@ export const networksAPI = {
     getAvailableTargets: (networkId, excludeEntryId) => apiV3.get(`/networks/${networkId}/available-targets`, {
         params: excludeEntryId ? { exclude_entry_id: excludeEntryId } : {}
     }),
+    search: (query) => apiV3.get('/networks/search', { params: { query } }),
     create: (data) => apiV3.post('/networks', data),
     update: (networkId, data) => apiV3.put(`/networks/${networkId}`, data),
     delete: (networkId) => apiV3.delete(`/networks/${networkId}`)
