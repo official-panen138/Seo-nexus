@@ -516,9 +516,15 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
   - New users register with status=pending, cannot login until approved
   - Super Admin can view pending users in Users → Pending Approvals tab
   - Super Admin can approve (assign role + brand scope) or reject users
-  - Super Admin can manually create users (active immediately, auto-generated password)
+  - Super Admin can manually create users (active immediately, manual or auto-generated password)
   - Login shows specific messages for pending/rejected users
   - All actions logged for audit trail
+- ✅ **SEO Network Ranking Visibility & Status Indicator** (Feb 9, 2026)
+  - Each network shows ranking_status: ranking (green), tracking (amber), none (gray)
+  - Visual priority: Ranking networks have green border highlight
+  - Mini metrics: ranking nodes count, best position (#X), tracked URLs count
+  - Filters: ranking status filter (Ranking/Tracking/No Ranking)
+  - Sorting: by best position (ASC) or most ranking nodes (DESC)
 - 🟡 **Conflict Detection UI** - Backend API exists, frontend needed:
   - Alert Center integration
   - Node highlighting in D3 graph
