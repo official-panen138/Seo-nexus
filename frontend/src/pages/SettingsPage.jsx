@@ -83,6 +83,50 @@ export default function SettingsPage() {
             setTesting(false);
         }
     };
+    
+    // SEO Telegram handlers
+    const handleSaveSeo = async () => {
+        setSavingSeo(true);
+        try {
+            const data = { enabled: seoTelegramConfig.enabled };
+            if (newSeoToken) data.bot_token = newSeoToken;
+            if (newSeoChatId) data.chat_id = newSeoChatId;
+            
+            await settingsAPI.updateSeoTelegram(data);
+            toast.success('Pengaturan Telegram SEO berhasil disimpan');
+            setNewSeoToken('');
+            setNewSeoChatId('');
+            loadSettings();
+        } catch (err) {
+            toast.error('Gagal menyimpan pengaturan');
+        } finally {
+            setSavingSeo(false);
+        }
+    };
+    
+    const handleTestSeo = async () => {
+        setTestingSeo(true);
+        try {
+            await settingsAPI.testSeoTelegram();
+            toast.success('Pesan test berhasil dikirim! Cek Telegram Anda.');
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Gagal mengirim pesan test');
+        } finally {
+            setTestingSeo(false);
+        }
+    };
+    
+    const handleToggleSeoEnabled = async (enabled) => {
+        setSeoTelegramConfig(prev => ({ ...prev, enabled }));
+        try {
+            await settingsAPI.updateSeoTelegram({ enabled });
+            toast.success(enabled ? 'Notifikasi SEO diaktifkan' : 'Notifikasi SEO dinonaktifkan');
+        } catch (err) {
+            // Revert on error
+            setSeoTelegramConfig(prev => ({ ...prev, enabled: !enabled }));
+            toast.error('Gagal mengubah pengaturan');
+        }
+    };
 
     if (!isSuperAdmin()) {
         return (
