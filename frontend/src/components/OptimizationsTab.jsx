@@ -392,6 +392,35 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
         }));
     };
 
+    // Export to CSV
+    const [exporting, setExporting] = useState(false);
+    const handleExportCSV = async () => {
+        setExporting(true);
+        try {
+            const params = {};
+            if (filterType !== 'all') params.activity_type = filterType;
+            if (filterStatus !== 'all') params.status = filterStatus;
+            
+            const response = await optimizationsAPI.exportCSV(networkId, params);
+            
+            const blob = new Blob([response.data], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `optimizations_${networkId.slice(0, 8)}_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            toast.success('Optimizations exported successfully');
+        } catch (err) {
+            toast.error('Failed to export optimizations');
+        } finally {
+            setExporting(false);
+        }
+    };
+
     // Loading skeleton
     if (loading && optimizations.length === 0) {
         return (
