@@ -1380,6 +1380,147 @@ async def update_structure_entry(
     return SeoStructureEntryResponse(**updated)
 
 
+# ==================== SWITCH MAIN TARGET ENDPOINT ====================
+
+class SwitchMainTargetRequest(PydanticBaseModel):
+    """Request model for switching the main target node"""
+    new_main_entry_id: str
+    change_note: str = Field(..., min_length=3, max_length=2000)
+
+
+@router.post("/networks/{network_id}/switch-main-target")
+async def switch_main_target(
+    network_id: str,
+    data: SwitchMainTargetRequest,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Switch the main target node in a network.
+    
+    This is a SAFE operation that:
+    1. Demotes the current main node to supporting (targeting the new main)
+    2. Promotes the new node to main (with PRIMARY status, no target)
+    3. Recalculates all tiers via BFS from the new main
+    4. Preserves all existing nodes and relationships
+    
+    Requires change_note for audit trail.
+    """
+    # Validate network exists
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    # Check brand access
+    if network.get("brand_id"):
+        require_brand_access(network["brand_id"], current_user)
+    
+    # Get the new main entry
+    new_main = await db.seo_structure_entries.find_one({"id": data.new_main_entry_id}, {"_id": 0})
+    if not new_main:
+        raise HTTPException(status_code=404, detail="New main entry not found")
+    
+    if new_main.get("network_id") != network_id:
+        raise HTTPException(status_code=400, detail="Entry must be in the same network")
+    
+    if new_main.get("domain_role") == "main":
+        raise HTTPException(status_code=400, detail="This entry is already the main node")
+    
+    # Find current main node
+    current_main = await db.seo_structure_entries.find_one({
+        "network_id": network_id,
+        "domain_role": "main"
+    }, {"_id": 0})
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Step 1: Demote old main to supporting, pointing to new main
+    if current_main:
+        old_main_update = {
+            "domain_role": "supporting",
+            "domain_status": "canonical",  # Now it canonicalizes to new main
+            "target_entry_id": data.new_main_entry_id,
+            "updated_at": now
+        }
+        await db.seo_structure_entries.update_one(
+            {"id": current_main["id"]},
+            {"$set": old_main_update}
+        )
+        
+        # Log the demotion
+        if seo_change_log_service:
+            old_domain = await db.asset_domains.find_one({"id": current_main["asset_domain_id"]}, {"domain_name": 1, "_id": 0})
+            old_node_label = f"{old_domain['domain_name'] if old_domain else 'unknown'}{current_main.get('optimized_path', '') or ''}"
+            
+            await seo_change_log_service.log_change(
+                network_id=network_id,
+                brand_id=network.get("brand_id", ""),
+                actor_user_id=current_user.get("id", ""),
+                actor_email=current_user["email"],
+                action_type=SeoChangeActionType.CHANGE_ROLE,
+                affected_node=old_node_label,
+                change_note=f"[Main Switch] Demoted to supporting. {data.change_note}",
+                before_snapshot=current_main,
+                after_snapshot={**current_main, **old_main_update},
+                entry_id=current_main["id"]
+            )
+    
+    # Step 2: Promote new main
+    new_main_update = {
+        "domain_role": "main",
+        "domain_status": "primary",  # Main nodes have PRIMARY status
+        "target_entry_id": None,  # Main nodes don't have targets
+        "target_asset_domain_id": None,
+        "updated_at": now
+    }
+    await db.seo_structure_entries.update_one(
+        {"id": data.new_main_entry_id},
+        {"$set": new_main_update}
+    )
+    
+    # Log the promotion
+    if seo_change_log_service:
+        new_domain = await db.asset_domains.find_one({"id": new_main["asset_domain_id"]}, {"domain_name": 1, "_id": 0})
+        new_node_label = f"{new_domain['domain_name'] if new_domain else 'unknown'}{new_main.get('optimized_path', '') or ''}"
+        
+        await seo_change_log_service.log_change(
+            network_id=network_id,
+            brand_id=network.get("brand_id", ""),
+            actor_user_id=current_user.get("id", ""),
+            actor_email=current_user["email"],
+            action_type=SeoChangeActionType.CHANGE_ROLE,
+            affected_node=new_node_label,
+            change_note=f"[Main Switch] Promoted to main target. {data.change_note}",
+            before_snapshot=new_main,
+            after_snapshot={**new_main, **new_main_update},
+            entry_id=data.new_main_entry_id
+        )
+    
+    # Step 3: Recalculate tiers
+    if tier_service:
+        await tier_service.calculate_tiers(network_id)
+    
+    # Create notification for main domain change
+    if seo_change_log_service:
+        new_domain = await db.asset_domains.find_one({"id": new_main["asset_domain_id"]}, {"domain_name": 1, "_id": 0})
+        await seo_change_log_service.create_notification(
+            network_id=network_id,
+            brand_id=network.get("brand_id", ""),
+            notification_type=SeoNotificationType.MAIN_DOMAIN_CHANGE,
+            title="Main Target Switched",
+            message=f"Main target changed to '{new_domain['domain_name'] if new_domain else 'unknown'}{new_main.get('optimized_path', '') or ''}'",
+            affected_node=new_node_label,
+            actor_email=current_user["email"],
+            change_note=data.change_note
+        )
+    
+    return {
+        "message": "Main target switched successfully",
+        "new_main_entry_id": data.new_main_entry_id,
+        "previous_main_entry_id": current_main["id"] if current_main else None,
+        "tiers_recalculated": True
+    }
+
+
 from pydantic import BaseModel as PydanticBaseModel
 
 class DeleteStructureEntryRequest(PydanticBaseModel):
