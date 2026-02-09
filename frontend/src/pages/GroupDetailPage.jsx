@@ -1782,16 +1782,23 @@ export default function GroupDetailPage() {
                                                 <Select 
                                                     value={editForm.domain_status} 
                                                     onValueChange={(v) => setEditForm({...editForm, domain_status: v})}
+                                                    disabled={editForm.domain_role === 'main'}
                                                 >
                                                     <SelectTrigger className="bg-black border-border">
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {SEO_STATUS_OPTIONS.map(opt => (
+                                                        {(editForm.domain_role === 'main' 
+                                                            ? SEO_STATUS_OPTIONS_MAIN 
+                                                            : SEO_STATUS_OPTIONS_SUPPORTING
+                                                        ).map(opt => (
                                                             <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
+                                                {editForm.domain_role === 'main' && (
+                                                    <p className="text-xs text-amber-400">Main nodes have Primary status (no redirect)</p>
+                                                )}
                                             </div>
 
                                             <div className="space-y-2">
