@@ -1466,6 +1466,144 @@ export default function GroupDetailPage() {
                     </SheetContent>
                 </Sheet>
 
+                {/* Change Detail Sheet */}
+                <Sheet open={changeDetailOpen} onOpenChange={(open) => {
+                    setChangeDetailOpen(open);
+                    if (!open) {
+                        setHighlightedNodeId(null);  // Clear highlight when closing
+                    }
+                }}>
+                    <SheetContent className="bg-card border-border w-full sm:max-w-lg">
+                        <SheetHeader>
+                            <SheetTitle className="font-mono text-lg flex items-center gap-2">
+                                <History className="h-5 w-5" />
+                                Change Details
+                            </SheetTitle>
+                        </SheetHeader>
+                        
+                        {selectedChangeLog && (
+                            <div className="mt-6 space-y-6">
+                                {/* Action Badge */}
+                                <Badge className={`text-sm ${ACTION_TYPE_COLORS[selectedChangeLog.action_type] || 'bg-zinc-500/20 text-zinc-400'}`}>
+                                    {ACTION_TYPE_LABELS[selectedChangeLog.action_type] || selectedChangeLog.action_type}
+                                </Badge>
+
+                                {/* Quick Info */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-zinc-500">Affected Node</span>
+                                        <span className="font-mono text-sm text-white">
+                                            {selectedChangeLog.affected_node}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-zinc-500">Changed by</span>
+                                        <span className="text-sm text-zinc-300">
+                                            {selectedChangeLog.actor_email}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-zinc-500">Date</span>
+                                        <span className="text-sm text-zinc-300">
+                                            {new Date(selectedChangeLog.created_at).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Change Note */}
+                                <div className="space-y-2">
+                                    <Label className="text-amber-400">Change Note</Label>
+                                    <div className="p-3 bg-amber-500/10 border border-amber-400/30 rounded-lg">
+                                        <p className="text-sm text-zinc-300">{selectedChangeLog.change_note}</p>
+                                    </div>
+                                </div>
+
+                                {/* Before/After Snapshot */}
+                                {(selectedChangeLog.before_snapshot || selectedChangeLog.after_snapshot) && (
+                                    <div className="space-y-4">
+                                        <Label className="text-zinc-400">Before / After</Label>
+                                        
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {/* Before */}
+                                            <div className="space-y-2">
+                                                <div className="text-xs text-red-400 uppercase font-medium">Before</div>
+                                                <div className="p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
+                                                    {selectedChangeLog.before_snapshot ? (
+                                                        <div className="space-y-1 text-xs">
+                                                            {selectedChangeLog.before_snapshot.domain_role && (
+                                                                <div><span className="text-zinc-500">Role:</span> {selectedChangeLog.before_snapshot.domain_role}</div>
+                                                            )}
+                                                            {selectedChangeLog.before_snapshot.optimized_path && (
+                                                                <div><span className="text-zinc-500">Path:</span> {selectedChangeLog.before_snapshot.optimized_path}</div>
+                                                            )}
+                                                            {selectedChangeLog.before_snapshot.index_status && (
+                                                                <div><span className="text-zinc-500">Index:</span> {selectedChangeLog.before_snapshot.index_status}</div>
+                                                            )}
+                                                            {selectedChangeLog.before_snapshot.target_entry_id && (
+                                                                <div><span className="text-zinc-500">Target:</span> {selectedChangeLog.before_snapshot.target_entry_id.slice(0, 8)}...</div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-zinc-500 text-xs">N/A (New)</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            
+                                            {/* After */}
+                                            <div className="space-y-2">
+                                                <div className="text-xs text-emerald-400 uppercase font-medium">After</div>
+                                                <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                                                    {selectedChangeLog.after_snapshot ? (
+                                                        <div className="space-y-1 text-xs">
+                                                            {selectedChangeLog.after_snapshot.domain_role && (
+                                                                <div><span className="text-zinc-500">Role:</span> {selectedChangeLog.after_snapshot.domain_role}</div>
+                                                            )}
+                                                            {selectedChangeLog.after_snapshot.optimized_path && (
+                                                                <div><span className="text-zinc-500">Path:</span> {selectedChangeLog.after_snapshot.optimized_path}</div>
+                                                            )}
+                                                            {selectedChangeLog.after_snapshot.index_status && (
+                                                                <div><span className="text-zinc-500">Index:</span> {selectedChangeLog.after_snapshot.index_status}</div>
+                                                            )}
+                                                            {selectedChangeLog.after_snapshot.target_entry_id && (
+                                                                <div><span className="text-zinc-500">Target:</span> {selectedChangeLog.after_snapshot.target_entry_id.slice(0, 8)}...</div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-zinc-500 text-xs">N/A (Deleted)</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Action Button - View in Graph */}
+                                {selectedChangeLog.entry_id && (
+                                    <Button
+                                        variant="outline"
+                                        className="w-full"
+                                        onClick={() => {
+                                            // Find the entry and highlight it in the graph
+                                            const entry = network?.entries?.find(e => e.id === selectedChangeLog.entry_id);
+                                            if (entry) {
+                                                setHighlightedNodeId(entry.asset_domain_id);
+                                                setActiveTab('graph');
+                                                setChangeDetailOpen(false);
+                                                toast.success('Node highlighted in graph');
+                                            } else {
+                                                toast.info('Node no longer exists in this network');
+                                            }
+                                        }}
+                                    >
+                                        <Eye className="h-4 w-4 mr-2" />
+                                        View Node in Graph
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+                    </SheetContent>
+                </Sheet>
+
                 {/* Edit Structure Entry Dialog */}
                 {useV3 && (
                     <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
