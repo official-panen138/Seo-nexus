@@ -822,18 +822,22 @@ async def initialize_default_categories():
 
 # ==================== AUTH ENDPOINTS ====================
 
-@api_router.post("/auth/register", response_model=TokenResponse)
+@api_router.post("/auth/register")
 async def register(user_data: UserCreate):
     existing = await db.users.find_one({"email": user_data.email})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     
     user_count = await db.users.count_documents({})
-    role = UserRole.SUPER_ADMIN if user_count == 0 else user_data.role
+    
+    # First user becomes Super Admin with active status
+    is_first_user = user_count == 0
+    role = UserRole.SUPER_ADMIN if is_first_user else UserRole.VIEWER
+    status = UserStatus.ACTIVE if is_first_user else UserStatus.PENDING
     
     # Super Admin has NULL brand_scope_ids (full access)
-    # Other roles need brand_scope_ids assigned later
-    brand_scope_ids = None if role == UserRole.SUPER_ADMIN else user_data.brand_scope_ids
+    # Other roles start with empty brand_scope_ids (no access until approved)
+    brand_scope_ids = None if role == UserRole.SUPER_ADMIN else []
     
     now = datetime.now(timezone.utc).isoformat()
     user = {
@@ -842,16 +846,29 @@ async def register(user_data: UserCreate):
         "name": user_data.name,
         "password": hash_password(user_data.password),
         "role": role.value if isinstance(role, UserRole) else role,
+        "status": status.value if isinstance(status, UserStatus) else status,
         "brand_scope_ids": brand_scope_ids,
+        "approved_by": None,
+        "approved_at": None,
         "created_at": now,
         "updated_at": now
     }
     await db.users.insert_one(user)
     
+    # If pending, return message instead of token
+    if status == UserStatus.PENDING:
+        return {
+            "message": "Registration successful. Your account is pending Super Admin approval.",
+            "status": "pending",
+            "email": user["email"]
+        }
+    
+    # First user (Super Admin) gets token immediately
     token = create_token(user["id"], user["email"], user["role"])
     user_response = UserResponse(
         id=user["id"], email=user["email"], name=user["name"],
         role=user["role"], brand_scope_ids=user["brand_scope_ids"],
+        status=user["status"],
         created_at=user["created_at"], updated_at=user["updated_at"]
     )
     return TokenResponse(access_token=token, user=user_response)
