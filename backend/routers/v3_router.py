@@ -2127,6 +2127,291 @@ async def get_network_access_control(
     }
 
 
+# ==================== ACTIVITY TYPE MANAGEMENT ====================
+
+@router.get("/optimization-activity-types")
+async def get_optimization_activity_types(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get all optimization activity types (master data)"""
+    types = await db.seo_optimization_activity_types.find({}, {"_id": 0}).sort("name", 1).to_list(100)
+    
+    if not types:
+        # Return default types if none exist
+        return [
+            {"id": "default_backlink", "name": "Backlink Campaign", "is_default": True, "usage_count": 0},
+            {"id": "default_onpage", "name": "On-Page Optimization", "is_default": True, "usage_count": 0},
+            {"id": "default_content", "name": "Content Update", "is_default": True, "usage_count": 0},
+            {"id": "default_technical", "name": "Technical SEO", "is_default": True, "usage_count": 0},
+            {"id": "default_schema", "name": "Schema Markup", "is_default": True, "usage_count": 0},
+            {"id": "default_internal", "name": "Internal Linking", "is_default": True, "usage_count": 0},
+            {"id": "default_experiment", "name": "SEO Experiment", "is_default": True, "usage_count": 0},
+            {"id": "default_other", "name": "Other", "is_default": True, "usage_count": 0}
+        ]
+    
+    # Get usage counts
+    for t in types:
+        count = await db.seo_optimizations.count_documents({"activity_type_id": t["id"]})
+        t["usage_count"] = count
+    
+    return types
+
+
+@router.post("/optimization-activity-types")
+async def create_optimization_activity_type(
+    data: OptimizationActivityTypeCreate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Create a new optimization activity type - Admin/Super Admin only"""
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    if not data.name or not data.name.strip():
+        raise HTTPException(status_code=400, detail="Name is required")
+    
+    # Check for duplicate
+    existing = await db.seo_optimization_activity_types.find_one(
+        {"name": {"$regex": f"^{data.name.strip()}$", "$options": "i"}}
+    )
+    if existing:
+        raise HTTPException(status_code=400, detail="Activity type with this name already exists")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    activity_type = {
+        "id": str(uuid.uuid4()),
+        "name": data.name.strip(),
+        "description": data.description,
+        "icon": data.icon,
+        "color": data.color,
+        "is_default": False,
+        "created_at": now
+    }
+    
+    await db.seo_optimization_activity_types.insert_one(activity_type)
+    
+    return activity_type
+
+
+@router.delete("/optimization-activity-types/{type_id}")
+async def delete_optimization_activity_type(
+    type_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Delete an activity type - only if unused"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    
+    # Check if in use
+    usage_count = await db.seo_optimizations.count_documents({"activity_type_id": type_id})
+    if usage_count > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete: activity type is used by {usage_count} optimization(s)")
+    
+    await db.seo_optimization_activity_types.delete_one({"id": type_id})
+    
+    return {"message": "Activity type deleted"}
+
+
+# ==================== OBSERVED IMPACT UPDATE ====================
+
+@router.patch("/optimizations/{optimization_id}/observed-impact")
+async def update_observed_impact(
+    optimization_id: str,
+    observed_impact: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Update observed impact for an optimization (after 14-30 days).
+    Only Admin/Super Admin can update.
+    """
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Admin access required to evaluate impact")
+    
+    if observed_impact not in ["positive", "neutral", "no_impact", "negative"]:
+        raise HTTPException(status_code=400, detail="Invalid observed_impact value")
+    
+    optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
+    if not optimization:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    require_brand_access(optimization["brand_id"], current_user)
+    
+    await db.seo_optimizations.update_one(
+        {"id": optimization_id},
+        {"$set": {
+            "observed_impact": observed_impact,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Observed impact updated", "observed_impact": observed_impact}
+
+
+# ==================== TEAM EVALUATION ENDPOINTS ====================
+
+@router.get("/team-evaluation/users")
+async def get_team_evaluation_users(
+    brand_id: Optional[str] = None,
+    network_id: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get SEO team performance scores (derived from data).
+    Only Admin/Super Admin can view.
+    """
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Build query for optimizations
+    query = {}
+    if brand_id:
+        query["brand_id"] = brand_id
+    if network_id:
+        query["network_id"] = network_id
+    if start_date:
+        query["created_at"] = {"$gte": start_date}
+    if end_date:
+        query.setdefault("created_at", {})["$lte"] = end_date
+    
+    # Aggregate by user
+    pipeline = [
+        {"$match": query},
+        {"$group": {
+            "_id": "$created_by.user_id",
+            "user_name": {"$first": "$created_by.display_name"},
+            "user_email": {"$first": "$created_by.email"},
+            "total_optimizations": {"$sum": 1},
+            "completed_count": {"$sum": {"$cond": [{"$eq": ["$status", "completed"]}, 1, 0]}},
+            "reverted_count": {"$sum": {"$cond": [{"$eq": ["$status", "reverted"]}, 1, 0]}},
+            "complaint_count": {"$sum": {"$cond": [{"$ne": ["$complaint_status", "none"]}, 1, 0]}},
+            "positive_impact": {"$sum": {"$cond": [{"$eq": ["$observed_impact", "positive"]}, 1, 0]}},
+            "negative_impact": {"$sum": {"$cond": [{"$eq": ["$observed_impact", "negative"]}, 1, 0]}}
+        }},
+        {"$sort": {"total_optimizations": -1}}
+    ]
+    
+    results = await db.seo_optimizations.aggregate(pipeline).to_list(100)
+    
+    # Calculate scores
+    user_scores = []
+    for r in results:
+        # Simple scoring: base 5, deduct for reverts and complaints, add for positive impact
+        score = 5.0
+        if r["total_optimizations"] > 0:
+            revert_rate = r["reverted_count"] / r["total_optimizations"]
+            complaint_rate = r["complaint_count"] / r["total_optimizations"]
+            score -= (revert_rate * 2)  # -2 max for high revert rate
+            score -= (complaint_rate * 1.5)  # -1.5 max for high complaint rate
+            if r["positive_impact"] > 0:
+                score += min(r["positive_impact"] / r["total_optimizations"], 0.5)  # +0.5 max bonus
+        
+        score = max(0, min(5, score))  # Clamp to 0-5
+        
+        user_scores.append(UserSeoScore(
+            user_id=r["_id"],
+            user_name=r["user_name"],
+            user_email=r["user_email"],
+            total_optimizations=r["total_optimizations"],
+            completed_optimizations=r["completed_count"],
+            reverted_optimizations=r["reverted_count"],
+            complaint_count=r["complaint_count"],
+            positive_impact_count=r["positive_impact"],
+            negative_impact_count=r["negative_impact"],
+            score=round(score, 1),
+            score_breakdown={
+                "base": 5.0,
+                "revert_penalty": -round(r["reverted_count"] / max(r["total_optimizations"], 1) * 2, 2),
+                "complaint_penalty": -round(r["complaint_count"] / max(r["total_optimizations"], 1) * 1.5, 2)
+            }
+        ))
+    
+    return user_scores
+
+
+@router.get("/team-evaluation/summary")
+async def get_team_evaluation_summary(
+    brand_id: Optional[str] = None,
+    network_id: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get team evaluation summary with dashboard metrics.
+    Only Admin/Super Admin can view.
+    """
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Default to last 30 days if no dates provided
+    if not end_date:
+        end_date = datetime.now(timezone.utc).isoformat()
+    if not start_date:
+        start_date = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    
+    # Build query
+    query = {"created_at": {"$gte": start_date, "$lte": end_date}}
+    if brand_id:
+        query["brand_id"] = brand_id
+    if network_id:
+        query["network_id"] = network_id
+    
+    # Get total optimizations
+    total = await db.seo_optimizations.count_documents(query)
+    
+    # By status
+    by_status = {}
+    for status in ["planned", "in_progress", "completed", "reverted"]:
+        count = await db.seo_optimizations.count_documents({**query, "status": status})
+        by_status[status] = count
+    
+    # By observed impact
+    by_impact = {}
+    for impact in ["positive", "neutral", "no_impact", "negative"]:
+        count = await db.seo_optimizations.count_documents({**query, "observed_impact": impact})
+        by_impact[impact] = count
+    
+    # By activity type
+    type_pipeline = [
+        {"$match": query},
+        {"$group": {"_id": "$activity_type", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    type_results = await db.seo_optimizations.aggregate(type_pipeline).to_list(20)
+    by_activity_type = {r["_id"]: r["count"] for r in type_results}
+    
+    # Total complaints
+    total_complaints = await db.optimization_complaints.count_documents({
+        "created_at": {"$gte": start_date, "$lte": end_date}
+    })
+    
+    # Get top contributors
+    top_users = await get_team_evaluation_users(brand_id, network_id, start_date, end_date, current_user)
+    
+    # Check for repeated issues (>2 complaints in 30 days per user)
+    repeated_issue_pipeline = [
+        {"$match": {**query, "complaint_status": {"$ne": "none"}}},
+        {"$group": {"_id": "$created_by.user_id", "complaint_count": {"$sum": 1}}},
+        {"$match": {"complaint_count": {"$gt": 2}}}
+    ]
+    repeated_results = await db.seo_optimizations.aggregate(repeated_issue_pipeline).to_list(100)
+    repeated_issue_users = [r["_id"] for r in repeated_results]
+    
+    return TeamEvaluationSummary(
+        period_start=start_date,
+        period_end=end_date,
+        total_optimizations=total,
+        by_status=by_status,
+        by_activity_type=by_activity_type,
+        by_observed_impact=by_impact,
+        total_complaints=total_complaints,
+        top_contributors=top_users[:5],
+        most_complained_users=sorted(top_users, key=lambda x: x.complaint_count, reverse=True)[:5],
+        repeated_issue_users=repeated_issue_users
+    )
+
+
 # ==================== SWITCH MAIN TARGET ENDPOINT ====================
 
 from pydantic import BaseModel as PydanticBaseModel, Field as PydanticField
