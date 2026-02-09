@@ -17,6 +17,9 @@ import httpx
 import asyncio
 from contextlib import asynccontextmanager
 
+# Import action/entity types for activity logging
+from models_v3 import ActionType, EntityType
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
