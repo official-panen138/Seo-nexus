@@ -43,6 +43,7 @@ const navItems = [
     { path: '/audit-logs', label: 'Audit Logs', icon: Activity, roles: ['super_admin'] },
     { path: '/activity-logs', label: 'V3 Activity', icon: History, roles: ['super_admin', 'admin'] },
     { path: '/settings/monitoring', label: 'Monitoring', icon: Radio, roles: ['super_admin', 'admin'] },
+    { path: '/settings/activity-types', label: 'Activity Types', icon: Zap, roles: ['super_admin'] },
     { path: '/settings', label: 'Settings', icon: Settings, roles: ['super_admin'] },
 ];
 
