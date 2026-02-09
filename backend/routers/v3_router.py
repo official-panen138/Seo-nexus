@@ -25,6 +25,8 @@ from models_v3 import (
     SeoNetworkCreate, SeoNetworkUpdate, SeoNetworkResponse, SeoNetworkDetail,
     SeoNetworkCreateLegacy, MainNodeConfig,
     SeoStructureEntryCreate, SeoStructureEntryUpdate, SeoStructureEntryResponse,
+    SeoStructureEntryCreateWithNote, SeoStructureEntryUpdateWithNote,
+    SeoChangeLogResponse, SeoNetworkNotification, SeoChangeActionType, SeoNotificationType,
     ActivityLogResponse,
     RegistrarCreate, RegistrarUpdate, RegistrarResponse, RegistrarStatus,
     SeoConflict, ConflictType, ConflictSeverity,
