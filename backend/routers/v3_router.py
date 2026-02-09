@@ -1440,6 +1440,10 @@ async def update_structure_entry(
     
     # Extract and remove change_note from update_dict
     change_note = data.change_note
+    
+    # CRITICAL: Validate change_note BEFORE any save operation
+    validate_change_note(change_note)
+    
     update_dict = {k: v for k, v in data.model_dump(exclude={"change_note"}).items() if v is not None}
     
     # Normalize optimized_path if provided
