@@ -1015,11 +1015,46 @@ Full optimization detail view with complaint thread, team response system, and c
 - ✅ Restricted mode prevents unlisted users from accessing network (403)
 - ✅ Super admin can always access
 
-**Key Files:**
-- `frontend/src/components/NetworkAccessSettings.jsx` - Complete rewrite with local apiV3 instance
-- `backend/routers/v3_router.py` - Lines 2797-2862 (users/search), Lines 2920-2990 (access-control)
-
 **Tests:** 100% pass rate (15/15 backend, 100% frontend) ✅
+
+---
+
+### SEO Network Access Transparency & Visibility Management (Feb 9, 2026) - COMPLETE
+**Feature:** Full accountability system for SEO Network access with clear ownership and visibility.
+
+**Phase 1: Access Summary & Visibility (COMPLETE)**
+- ✅ Data model updated: `access_summary_cache`, `access_updated_at`, `access_updated_by` fields
+- ✅ Network cards show access badges (🔒 Restricted · 3 users, 👥 Brand Based, 🌐 Public)
+- ✅ Network detail header shows "Visible To:" section with click navigation to Access tab
+- ✅ Settings tab renamed to "Access" tab with Shield icon
+- ✅ "Last Updated" info showing timestamp and user who made changes
+- ✅ Audit logging for all `NETWORK_ACCESS_CHANGED` events in `network_access_audit_logs` collection
+
+**Phase 2: Telegram Auto-Tagging (COMPLETE)**
+- ✅ When Super Admin creates complaint, auto-includes assigned users from network Access Summary
+- ✅ Users with `telegram_username` are tagged with @mention
+- ✅ Fallback to name/email for users without Telegram linked
+- ✅ Complaint model stores `auto_assigned_from_network` flag
+
+**Phase 3: Auto-Reminder System (COMPLETE)**
+- ✅ Reminder service for "In Progress" optimizations (`/app/backend/services/optimization_reminder_service.py`)
+- ✅ Global reminder config (`GET/PUT /api/v3/settings/reminder-config`)
+- ✅ Per-network reminder override (`GET/PUT /api/v3/networks/{id}/reminder-config`)
+- ✅ Reminder logs for accountability (`GET /api/v3/optimization-reminders`)
+- ✅ `send_in_progress_reminder()` method in Telegram service
+- ⏳ Scheduler integration pending (APScheduler or similar)
+
+**Key Files:**
+- `frontend/src/pages/GroupsPage.jsx` - Access badges on network cards
+- `frontend/src/pages/GroupDetailPage.jsx` - Header visibility info, Access tab
+- `frontend/src/components/NetworkAccessSettings.jsx` - Last Updated section
+- `backend/routers/v3_router.py` - Reminder config endpoints, audit logging
+- `backend/services/optimization_reminder_service.py` - Reminder service
+- `backend/services/seo_optimization_telegram_service.py` - Telegram notifications
+
+**Tests:** 100% pass rate (11/11 backend, 100% frontend) ✅
+
+---
 
 ## Prioritized Backlog
 
@@ -1027,12 +1062,13 @@ Full optimization detail view with complaint thread, team response system, and c
 - None (All critical features complete)
 
 ### P1 - High Priority
-1. **Complaint Timeline UI** - Chronological, threaded view for complaint history within Optimization Detail View
-2. **Time-to-Resolution Metric** - Backend logic to calculate time between complaint creation and resolution
+1. **Scheduler Integration for Reminders** - Integrate APScheduler to run OptimizationReminderService.process_all_reminders() periodically
+2. **Complaint Timeline UI** - Chronological, threaded view for complaint history within Optimization Detail View
+3. **Time-to-Resolution Metric** - Backend logic to calculate time between complaint creation and resolution
 
 ### P2 - Medium Priority
-1. **Access Summary on Network Card** - Display "Restricted – 3 users" on network cards
-2. **Deep-link Drawer Auto-Open** - Auto-open optimization detail drawer when URL has `?optimization_id=...`
-3. **Frontend UI for AI Summary** - Button to trigger AI summary generation and display result
+1. **Deep-link Drawer Auto-Open** - Auto-open optimization detail drawer when URL has `?optimization_id=...`
+2. **Frontend UI for AI Summary** - Button to trigger AI summary generation and display result
+3. **Reminder Settings UI** - Frontend page to configure global and per-network reminder intervals
 4. Correlate optimization timeline with ranking history
 5. Automatic optimization impact score calculation
