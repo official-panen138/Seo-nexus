@@ -103,14 +103,6 @@ export default function GroupsPage() {
                     userNames: cache.names,
                     className: 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                 };
-            case 'public':
-                return {
-                    icon: Globe2,
-                    label: 'Public',
-                    userCount: null,
-                    userNames: [],
-                    className: 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                };
             default:
                 return {
                     icon: Users,
