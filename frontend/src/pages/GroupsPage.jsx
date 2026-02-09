@@ -390,7 +390,7 @@ export default function GroupsPage() {
                                 <SelectValue placeholder="Sort by..." />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">Default</SelectItem>
+                                <SelectItem value="default">Default</SelectItem>
                                 <SelectItem value="best_position">Best Position</SelectItem>
                                 <SelectItem value="ranking_nodes">Most Ranking Nodes</SelectItem>
                             </SelectContent>
