@@ -467,43 +467,43 @@ class UserTelegramSettings(BaseModel):
 
 
 class NetworkAccessControl(BaseModel):
-    """Access control settings for SEO network"""
+    """SEO Network Management settings - defines managers responsible for execution"""
     visibility_mode: NetworkVisibilityMode = NetworkVisibilityMode.BRAND_BASED
-    allowed_user_ids: List[str] = []
+    manager_ids: List[str] = []  # Users who can execute optimizations
 
 
-class AccessSummaryCache(BaseModel):
-    """Cached access summary for performance"""
+class ManagerSummaryCache(BaseModel):
+    """Cached manager summary for performance"""
     count: int = 0
     names: List[str] = []  # First 2-3 display names
 
 
-class NetworkAccessControlUpdate(BaseModel):
-    """Update access control settings with audit trail"""
+class NetworkManagersUpdate(BaseModel):
+    """Update SEO Network Managers with audit trail"""
     visibility_mode: NetworkVisibilityMode = NetworkVisibilityMode.BRAND_BASED
-    allowed_user_ids: List[str] = []
+    manager_ids: List[str] = []  # Users responsible for this network
 
 
-class NetworkAccessControlResponse(BaseModel):
-    """Response model for network access control"""
+class NetworkManagersResponse(BaseModel):
+    """Response model for SEO Network Management settings"""
     visibility_mode: str
-    allowed_user_ids: List[str] = []
-    allowed_users: List[Dict[str, Any]] = []  # Enriched user info
-    access_summary_cache: Optional[AccessSummaryCache] = None
-    access_updated_at: Optional[str] = None
-    access_updated_by: Optional[Dict[str, Any]] = None
+    manager_ids: List[str] = []
+    managers: List[Dict[str, Any]] = []  # Enriched user info
+    manager_summary_cache: Optional[ManagerSummaryCache] = None
+    managers_updated_at: Optional[str] = None
+    managers_updated_by: Optional[Dict[str, Any]] = None
 
 
-class NetworkAccessAuditLog(BaseModel):
-    """Audit log entry for network access changes"""
+class NetworkManagersAuditLog(BaseModel):
+    """Audit log entry for network manager changes"""
     network_id: str
     network_name: str
     previous_mode: str
     new_mode: str
-    added_user_ids: List[str] = []
-    removed_user_ids: List[str] = []
-    added_user_names: List[str] = []
-    removed_user_names: List[str] = []
+    added_manager_ids: List[str] = []
+    removed_manager_ids: List[str] = []
+    added_manager_names: List[str] = []
+    removed_manager_names: List[str] = []
     changed_by: Dict[str, Any]  # user_id, email, name
     changed_at: str
 
