@@ -158,8 +158,8 @@ class OptimizationActivityType(str, Enum):
 class OptimizationAffectedScope(str, Enum):
     """Scope of SEO optimization"""
     MONEY_SITE = "money_site"
-    DOMAIN = "domain"
-    PATH = "path"
+    SPECIFIC_DOMAIN = "specific_domain"
+    SPECIFIC_PATH = "specific_path"
     WHOLE_NETWORK = "whole_network"
 
 
@@ -171,12 +171,28 @@ class OptimizationExpectedImpact(str, Enum):
     CONVERSION = "conversion"
 
 
+class ObservedImpact(str, Enum):
+    """Observed impact after optimization (filled 14-30 days later)"""
+    POSITIVE = "positive"
+    NEUTRAL = "neutral"
+    NO_IMPACT = "no_impact"
+    NEGATIVE = "negative"
+
+
 class OptimizationStatus(str, Enum):
     """Status of optimization activity"""
     PLANNED = "planned"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     REVERTED = "reverted"
+
+
+class ComplaintStatus(str, Enum):
+    """Complaint status for optimizations"""
+    NONE = "none"
+    COMPLAINED = "complained"
+    UNDER_REVIEW = "under_review"
+    RESOLVED = "resolved"
 
 
 class NetworkVisibilityMode(str, Enum):
