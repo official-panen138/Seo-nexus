@@ -1111,10 +1111,10 @@ async def get_structure_entry(
 
 @router.post("/structure", response_model=SeoStructureEntryResponse)
 async def create_structure_entry(
-    data: SeoStructureEntryCreate,
+    data: SeoStructureEntryCreateWithNote,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Create a new SEO structure entry (node-based)"""
+    """Create a new SEO structure entry (node-based) with mandatory change note"""
     # Validate asset domain exists
     asset = await db.asset_domains.find_one({"id": data.asset_domain_id})
     if not asset:
