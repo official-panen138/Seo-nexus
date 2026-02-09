@@ -23,6 +23,14 @@ class SeoChangeLogService:
         self.change_logs = db.seo_change_logs
         self.notifications = db.seo_network_notifications
     
+    def _clean_snapshot(self, snapshot: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """Remove MongoDB _id from snapshot to prevent serialization errors"""
+        if snapshot is None:
+            return None
+        # Create a copy to avoid modifying the original
+        cleaned = {k: v for k, v in snapshot.items() if k != "_id"}
+        return cleaned
+    
     async def log_change(
         self,
         network_id: str,
