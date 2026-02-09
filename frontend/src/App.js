@@ -159,6 +159,11 @@ function AppRoutes() {
                     <MonitoringSettingsPage />
                 </ProtectedRoute>
             } />
+            <Route path="/settings/activity-types" element={
+                <ProtectedRoute>
+                    <ActivityTypesPage />
+                </ProtectedRoute>
+            } />
             
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
