@@ -336,9 +336,10 @@ export default function DomainsPage() {
         });
     }, [assets, domains, searchQuery, filterBrand, filterStatus, useV3]);
 
-    const handleSearchChange = debounce((value) => {
+    const handleSearchChange = (value) => {
         setSearchQuery(value);
-    }, 300);
+        // Debouncing is handled by useEffect
+    };
 
     const openCreateDialog = () => {
         setSelectedAsset(null);
