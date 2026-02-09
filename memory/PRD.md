@@ -504,6 +504,14 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
   - Filters: User, Action type, Node, Date range
   - Human-readable diffs (Role, Status, Target as domain names not IDs)
   - "View Node in Graph" button for highlighting
+- ✅ **SEO Change Notifications via Telegram** (Feb 9, 2026)
+  - Dedicated Telegram channel for SEO changes (separate from monitoring)
+  - Full Bahasa Indonesia message format
+  - Settings UI at Settings → SEO Notifications tab
+  - Change note enforcement (minimum 10 characters)
+  - Rate limiting (1 msg per network per minute)
+  - Fallback to main Telegram if SEO channel not configured
+  - Real-time SEO structure snapshot in notifications
 - 🟡 **Conflict Detection UI** - Backend API exists, frontend needed:
   - Alert Center integration
   - Node highlighting in D3 graph
