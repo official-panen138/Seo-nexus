@@ -1009,7 +1009,7 @@ async def get_networks(
             if user_id in network.get("manager_ids", []):
                 filtered_networks.append(network)
         else:
-            # brand_based or public - brand access is enough to VIEW
+            # brand_based - brand access is enough to VIEW
             filtered_networks.append(network)
     
     networks = filtered_networks
