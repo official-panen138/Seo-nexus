@@ -962,6 +962,77 @@ export default function DomainsPage() {
                     </Table>
                 </div>
 
+                {/* PAGINATION CONTROLS (V3 only) */}
+                {useV3 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 border-t border-border mt-4" data-testid="pagination-controls">
+                        {/* Left: Showing X of Y */}
+                        <div className="text-sm text-zinc-400">
+                            {loading ? (
+                                <Skeleton className="h-4 w-40" />
+                            ) : (
+                                <>
+                                    Showing {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, totalItems)} of{' '}
+                                    <span className="font-medium text-zinc-200">{totalItems.toLocaleString()}</span> domains
+                                </>
+                            )}
+                        </div>
+                        
+                        {/* Center: Page navigation */}
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1 || loading}
+                                className="h-8"
+                                data-testid="prev-page-btn"
+                            >
+                                <ChevronLeft className="h-4 w-4 mr-1" />
+                                Prev
+                            </Button>
+                            
+                            <div className="flex items-center gap-1 px-2">
+                                <span className="text-sm text-zinc-400">Page</span>
+                                <span className="text-sm font-medium text-zinc-200 px-2 py-1 bg-zinc-800 rounded">
+                                    {currentPage}
+                                </span>
+                                <span className="text-sm text-zinc-400">of {totalPages}</span>
+                            </div>
+                            
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage >= totalPages || loading}
+                                className="h-8"
+                                data-testid="next-page-btn"
+                            >
+                                Next
+                                <ChevronRight className="h-4 w-4 ml-1" />
+                            </Button>
+                        </div>
+                        
+                        {/* Right: Page size selector */}
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-zinc-400">Show</span>
+                            <Select
+                                value={pageSize.toString()}
+                                onValueChange={(v) => setPageSize(parseInt(v))}
+                            >
+                                <SelectTrigger className="w-20 h-8 bg-black border-border" data-testid="page-size-select">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="25">25</SelectItem>
+                                    <SelectItem value="50">50</SelectItem>
+                                    <SelectItem value="100">100</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <span className="text-sm text-zinc-400">per page</span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Domain Detail Panel (V2 only) */}
                 {!useV3 && (
                     <DomainDetailPanel
