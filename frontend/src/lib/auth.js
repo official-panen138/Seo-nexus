@@ -53,6 +53,11 @@ export const AuthProvider = ({ children }) => {
         setError(null);
         try {
             const response = await authAPI.register(data);
+            // Check if registration returned pending status (no token)
+            if (response.data.status === 'pending') {
+                return { pending: true, message: response.data.message };
+            }
+            // Normal flow - user is activated immediately (first user)
             const { access_token, user: userData } = response.data;
             localStorage.setItem('seo_nexus_token', access_token);
             localStorage.setItem('seo_nexus_user', JSON.stringify(userData));
