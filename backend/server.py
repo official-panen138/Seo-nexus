@@ -51,6 +51,7 @@ from services.activity_log_service import init_activity_log_service
 from services.tier_service import init_tier_service
 from services.seo_change_log_service import SeoChangeLogService
 from services.seo_telegram_service import SeoTelegramService
+from services.reminder_scheduler import init_reminder_scheduler, get_reminder_scheduler
 from routers.v3_router import router as v3_router, init_v3_router
 
 # Initialize V3 services
