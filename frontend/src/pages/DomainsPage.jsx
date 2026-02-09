@@ -65,6 +65,73 @@ const ASSET_STATUS_COLORS = {
     'expired': 'text-red-400 border-red-400/30'
 };
 
+// SEO Networks Badges Component
+const SeoNetworksBadges = ({ networks }) => {
+    if (!networks || networks.length === 0) {
+        return <span className="text-zinc-500 text-sm">—</span>;
+    }
+    
+    const visibleNetworks = networks.slice(0, 2);
+    const hiddenCount = networks.length - 2;
+    
+    const getRoleBadgeClass = (role) => {
+        return role === 'main' 
+            ? 'bg-green-500/10 text-green-400 border-green-400/30' 
+            : 'bg-purple-500/10 text-purple-400 border-purple-400/30';
+    };
+    
+    return (
+        <TooltipProvider>
+            <div className="flex flex-wrap items-center gap-1">
+                {visibleNetworks.map((network, idx) => (
+                    <Tooltip key={network.network_id + idx}>
+                        <TooltipTrigger asChild>
+                            <Link to={`/groups/${network.network_id}`}>
+                                <Badge 
+                                    variant="outline" 
+                                    className={`cursor-pointer hover:opacity-80 text-xs ${getRoleBadgeClass(network.role)}`}
+                                    data-testid={`network-badge-${network.network_id}`}
+                                >
+                                    <Network className="h-3 w-3 mr-1" />
+                                    {network.network_name}
+                                </Badge>
+                            </Link>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <div className="text-xs">
+                                <p className="font-medium">{network.network_name}</p>
+                                <p className="text-zinc-400">Role: {network.role === 'main' ? 'Main' : 'Supporting'}</p>
+                                {network.optimized_path && (
+                                    <p className="text-zinc-400">Path: {network.optimized_path}</p>
+                                )}
+                            </div>
+                        </TooltipContent>
+                    </Tooltip>
+                ))}
+                {hiddenCount > 0 && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Badge variant="outline" className="text-xs text-zinc-400 border-zinc-400/30 cursor-default">
+                                +{hiddenCount} more
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <div className="text-xs space-y-1">
+                                {networks.slice(2).map((network, idx) => (
+                                    <div key={network.network_id + idx}>
+                                        <span className="font-medium">{network.network_name}</span>
+                                        <span className="text-zinc-400"> ({network.role})</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </TooltipContent>
+                    </Tooltip>
+                )}
+            </div>
+        </TooltipProvider>
+    );
+};
+
 const INITIAL_FORM = {
     domain_name: '',
     brand_id: '',
