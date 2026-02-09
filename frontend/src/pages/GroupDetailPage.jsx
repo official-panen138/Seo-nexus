@@ -599,8 +599,8 @@ export default function GroupDetailPage() {
     const handleSaveEntry = async () => {
         if (!selectedEntry?.id) return;
         
-        // Validate change_note
-        if (!editForm.change_note || editForm.change_note.trim().length < 3) {
+        // Validate change_note (minimum 10 characters to match backend)
+        if (!editForm.change_note || editForm.change_note.trim().length < 10) {
             toast.error('Change note is required (min 3 characters)');
             return;
         }
@@ -644,7 +644,7 @@ export default function GroupDetailPage() {
         if (!entryToDelete?.id) return;
         
         // Validate change_note
-        if (!deleteChangeNote || deleteChangeNote.trim().length < 3) {
+        if (!deleteChangeNote || deleteChangeNote.trim().length < 10) {
             toast.error('Change note is required (min 3 characters)');
             return;
         }
@@ -696,7 +696,7 @@ export default function GroupDetailPage() {
         if (!entryToPromote?.id || !network?.id) return;
         
         // Validate change_note
-        if (!switchMainChangeNote || switchMainChangeNote.trim().length < 3) {
+        if (!switchMainChangeNote || switchMainChangeNote.trim().length < 10) {
             toast.error('Change note is required (min 3 characters)');
             return;
         }
@@ -729,8 +729,8 @@ export default function GroupDetailPage() {
             return;
         }
         
-        // Validate change_note
-        if (!addNodeForm.change_note || addNodeForm.change_note.trim().length < 3) {
+        // Validate change_note (minimum 10 characters to match backend)
+        if (!addNodeForm.change_note || addNodeForm.change_note.trim().length < 10) {
             toast.error('Change note is required (min 3 characters)');
             return;
         }
