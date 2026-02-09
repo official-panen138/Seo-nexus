@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../lib/auth';
 import api from '../lib/api';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
+import { Input } from './ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Skeleton } from './ui/skeleton';
+import { ScrollArea } from './ui/scroll-area';
 import { toast } from 'sonner';
 import { 
     Shield,
@@ -18,7 +19,10 @@ import {
     UserPlus,
     AlertTriangle,
     CheckCircle,
-    Info
+    Info,
+    Search,
+    Plus,
+    Trash2
 } from 'lucide-react';
 
 const VISIBILITY_OPTIONS = [
@@ -46,14 +50,22 @@ const VISIBILITY_OPTIONS = [
     }
 ];
 
+const ROLE_COLORS = {
+    super_admin: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    admin: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    viewer: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'
+};
+
 export function NetworkAccessSettings({ networkId, brandId }) {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [accessControl, setAccessControl] = useState(null);
-    const [brandUsers, setBrandUsers] = useState([]);
-    const [selectedUsers, setSelectedUsers] = useState([]);
+    const [allUsers, setAllUsers] = useState([]);
+    const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [visibilityMode, setVisibilityMode] = useState('brand_based');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showUserSelector, setShowUserSelector] = useState(false);
 
     const isSuperAdmin = user?.role === 'super_admin';
     const isAdmin = user?.role === 'admin' || isSuperAdmin;
@@ -71,15 +83,11 @@ export function NetworkAccessSettings({ networkId, brandId }) {
             const accessRes = await api.get(`/api/v3/networks/${networkId}/access-control`);
             setAccessControl(accessRes.data);
             setVisibilityMode(accessRes.data.visibility_mode || 'brand_based');
-            setSelectedUsers(accessRes.data.allowed_user_ids || []);
+            setSelectedUserIds(accessRes.data.allowed_user_ids || []);
             
-            // Load users who have access to this brand
+            // Load all users
             const usersRes = await api.get('/api/users');
-            const filteredUsers = usersRes.data.filter(u => 
-                u.role === 'super_admin' || 
-                (u.brand_ids && u.brand_ids.includes(brandId))
-            );
-            setBrandUsers(filteredUsers);
+            setAllUsers(usersRes.data || []);
         } catch (err) {
             console.error('Failed to load access settings:', err);
             toast.error('Failed to load access settings');
@@ -88,12 +96,62 @@ export function NetworkAccessSettings({ networkId, brandId }) {
         }
     };
 
+    // Filter users based on eligibility rules
+    const eligibleUsers = useMemo(() => {
+        if (!allUsers.length) return [];
+        
+        return allUsers.filter(u => {
+            // Super Admin can assign anyone
+            if (isSuperAdmin) return true;
+            
+            // Admin can only assign users with same brand access
+            if (user?.role === 'admin') {
+                // Must share brand access
+                const hasSharedBrand = u.brand_ids?.includes(brandId) || u.role === 'super_admin';
+                // Can only assign Viewer or Admin (not Super Admin)
+                const isAssignable = u.role !== 'super_admin';
+                return hasSharedBrand && isAssignable;
+            }
+            
+            return false;
+        });
+    }, [allUsers, isSuperAdmin, user, brandId]);
+
+    // Filter users for search
+    const filteredUsers = useMemo(() => {
+        if (!searchQuery.trim()) return eligibleUsers;
+        
+        const query = searchQuery.toLowerCase();
+        return eligibleUsers.filter(u => 
+            (u.name?.toLowerCase().includes(query)) ||
+            (u.email?.toLowerCase().includes(query))
+        );
+    }, [eligibleUsers, searchQuery]);
+
+    // Get selected user objects
+    const selectedUsers = useMemo(() => {
+        return allUsers.filter(u => selectedUserIds.includes(u.id));
+    }, [allUsers, selectedUserIds]);
+
+    // Users available to add (not already selected)
+    const availableUsers = useMemo(() => {
+        return filteredUsers.filter(u => !selectedUserIds.includes(u.id));
+    }, [filteredUsers, selectedUserIds]);
+
     const handleSave = async () => {
+        // Warn if restricted mode with no users
+        if (visibilityMode === 'restricted' && selectedUserIds.length === 0) {
+            const confirmed = window.confirm(
+                'No users selected. Only Super Admins will be able to access this network.\n\nAre you sure you want to continue?'
+            );
+            if (!confirmed) return;
+        }
+
         setSaving(true);
         try {
             await api.put(`/api/v3/networks/${networkId}/access-control`, {
                 visibility_mode: visibilityMode,
-                allowed_user_ids: visibilityMode === 'restricted' ? selectedUsers : []
+                allowed_user_ids: visibilityMode === 'restricted' ? selectedUserIds : []
             });
             toast.success('Access settings updated');
             loadData();
@@ -104,16 +162,19 @@ export function NetworkAccessSettings({ networkId, brandId }) {
         }
     };
 
-    const toggleUser = (userId) => {
-        setSelectedUsers(prev => 
-            prev.includes(userId) 
-                ? prev.filter(id => id !== userId)
-                : [...prev, userId]
-        );
+    const addUser = (userId) => {
+        if (!selectedUserIds.includes(userId)) {
+            setSelectedUserIds(prev => [...prev, userId]);
+        }
+        setSearchQuery('');
+    };
+
+    const removeUser = (userId) => {
+        setSelectedUserIds(prev => prev.filter(id => id !== userId));
     };
 
     if (!isAdmin) {
-        return null; // Don't show to non-admins
+        return null;
     }
 
     if (loading) {
@@ -161,6 +222,7 @@ export function NetworkAccessSettings({ networkId, brandId }) {
                                             ? 'border-emerald-500/50 bg-emerald-950/20' 
                                             : 'border-border hover:border-zinc-600 bg-zinc-900/30'
                                     }`}
+                                    data-testid={`visibility-${option.value}`}
                                 >
                                     <div className="flex items-start gap-3">
                                         <div className={`p-2 rounded-lg ${isSelected ? 'bg-emerald-500/20' : 'bg-zinc-800'}`}>
@@ -186,61 +248,124 @@ export function NetworkAccessSettings({ networkId, brandId }) {
                         <div className="flex items-center justify-between mb-4">
                             <Label className="text-sm font-medium flex items-center gap-2">
                                 <UserPlus className="h-4 w-4 text-zinc-500" />
-                                Allowed Users ({selectedUsers.length})
+                                Allowed Users ({selectedUserIds.length})
                             </Label>
                         </div>
-                        
-                        {brandUsers.length > 0 ? (
-                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                                {brandUsers.map((u) => {
-                                    const isSelected = selectedUsers.includes(u.id);
-                                    return (
+
+                        {/* Warning if no users selected */}
+                        {selectedUserIds.length === 0 && (
+                            <div className="mb-4 p-4 rounded-lg bg-amber-950/30 border border-amber-900/50 flex items-start gap-3">
+                                <AlertTriangle className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <p className="text-sm text-amber-300 font-medium">No users selected</p>
+                                    <p className="text-xs text-amber-300/70 mt-1">
+                                        Only Super Admins will be able to access this network. Add users below to grant access.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* User Search & Add */}
+                        <div className="mb-4">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                                <Input
+                                    value={searchQuery}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        setShowUserSelector(true);
+                                    }}
+                                    onFocus={() => setShowUserSelector(true)}
+                                    placeholder="Search users by name or email..."
+                                    className="pl-10 bg-black border-border"
+                                    data-testid="user-search-input"
+                                />
+                            </div>
+
+                            {/* User Dropdown */}
+                            {showUserSelector && (searchQuery || availableUsers.length > 0) && (
+                                <div className="mt-2 border border-border rounded-lg bg-zinc-900 max-h-[200px] overflow-hidden">
+                                    <ScrollArea className="h-full max-h-[200px]">
+                                        {availableUsers.length > 0 ? (
+                                            <div className="p-1">
+                                                {availableUsers.slice(0, 10).map(u => (
+                                                    <div
+                                                        key={u.id}
+                                                        onClick={() => addUser(u.id)}
+                                                        className="flex items-center justify-between p-2 rounded hover:bg-zinc-800 cursor-pointer"
+                                                        data-testid={`add-user-${u.id}`}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
+                                                                u.role === 'super_admin' ? 'bg-amber-600' : 
+                                                                u.role === 'admin' ? 'bg-blue-600' : 'bg-zinc-600'
+                                                            }`}>
+                                                                {u.name?.charAt(0)?.toUpperCase() || u.email?.charAt(0)?.toUpperCase()}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm text-white font-medium">{u.name || u.email.split('@')[0]}</p>
+                                                                <p className="text-xs text-zinc-500">{u.email}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant="outline" className={ROLE_COLORS[u.role] || ''}>
+                                                                {u.role?.replace('_', ' ')}
+                                                            </Badge>
+                                                            <Plus className="h-4 w-4 text-emerald-400" />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="p-4 text-center text-zinc-500 text-sm">
+                                                {searchQuery ? 'No users found matching your search' : 'All eligible users have been added'}
+                                            </div>
+                                        )}
+                                    </ScrollArea>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Selected Users List */}
+                        {selectedUsers.length > 0 && (
+                            <div className="space-y-2">
+                                <Label className="text-xs text-zinc-500 uppercase">Assigned Users</Label>
+                                <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2">
+                                    {selectedUsers.map(u => (
                                         <div
                                             key={u.id}
-                                            onClick={() => toggleUser(u.id)}
-                                            className={`p-3 rounded-lg border cursor-pointer transition-all flex items-center justify-between ${
-                                                isSelected 
-                                                    ? 'border-emerald-500/50 bg-emerald-950/20' 
-                                                    : 'border-border hover:border-zinc-600 bg-zinc-900/30'
-                                            }`}
+                                            className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/50 border border-border"
+                                            data-testid={`selected-user-${u.id}`}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
+                                                <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-medium ${
                                                     u.role === 'super_admin' ? 'bg-amber-600' : 
                                                     u.role === 'admin' ? 'bg-blue-600' : 'bg-zinc-600'
                                                 }`}>
                                                     {u.name?.charAt(0)?.toUpperCase() || u.email?.charAt(0)?.toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p className="text-white text-sm font-medium">{u.name || u.email.split('@')[0]}</p>
+                                                    <p className="text-white font-medium">{u.name || u.email.split('@')[0]}</p>
                                                     <p className="text-xs text-zinc-500">{u.email}</p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <Badge variant="outline" className="text-xs">
-                                                    {u.role}
+                                            <div className="flex items-center gap-3">
+                                                <Badge variant="outline" className={ROLE_COLORS[u.role] || ''}>
+                                                    {u.role?.replace('_', ' ')}
                                                 </Badge>
-                                                {isSelected && (
-                                                    <CheckCircle className="h-4 w-4 text-emerald-400" />
-                                                )}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => removeUser(u.id)}
+                                                    className="h-8 w-8 hover:bg-red-500/10 hover:text-red-400"
+                                                    data-testid={`remove-user-${u.id}`}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
                                             </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        ) : (
-                            <div className="text-center py-8 text-zinc-500">
-                                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                <p className="text-sm">No users available</p>
-                            </div>
-                        )}
-                        
-                        {selectedUsers.length === 0 && (
-                            <div className="mt-4 p-3 rounded-lg bg-amber-950/30 border border-amber-900/50 flex items-start gap-2">
-                                <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                                <p className="text-sm text-amber-300">
-                                    No users selected. Only Super Admins will be able to access this network.
-                                </p>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -254,7 +379,7 @@ export function NetworkAccessSettings({ networkId, brandId }) {
                         <ul className="list-disc list-inside space-y-1">
                             <li><strong>Brand Based:</strong> Default mode. Users with brand access can view.</li>
                             <li><strong>Restricted:</strong> Only selected users can view this network.</li>
-                            <li><strong>Public:</strong> All platform users can view (Super Admin only).</li>
+                            {isSuperAdmin && <li><strong>Public:</strong> All platform users can view.</li>}
                         </ul>
                     </div>
                 </div>
@@ -265,6 +390,7 @@ export function NetworkAccessSettings({ networkId, brandId }) {
                         onClick={handleSave} 
                         disabled={saving}
                         className="gap-2"
+                        data-testid="save-access-btn"
                     >
                         {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                         <Shield className="h-4 w-4" />
