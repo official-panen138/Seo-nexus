@@ -233,6 +233,7 @@ class UserUpdate(BaseModel):
     role: Optional[UserRole] = None
     brand_scope_ids: Optional[List[str]] = None
     status: Optional[UserStatus] = None
+    telegram_username: Optional[str] = None
 
 
 class UserResponse(UserBase):
