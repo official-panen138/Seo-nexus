@@ -101,6 +101,11 @@ async def create_database_indexes():
         await db.seo_networks.create_index("brand_id")
         await db.seo_networks.create_index("name")
         
+        # SEO optimizations indexes
+        await db.seo_optimizations.create_index("network_id")
+        await db.seo_optimizations.create_index("brand_id")
+        await db.seo_optimizations.create_index([("network_id", 1), ("created_at", -1)])
+        
         # Users index
         await db.users.create_index("email", unique=True)
         
