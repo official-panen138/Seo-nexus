@@ -157,6 +157,21 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
         }
     };
 
+    const openDetailDrawer = (opt) => {
+        setSelectedOptimizationId(opt.id);
+        setDetailDrawerOpen(true);
+        // Update URL with optimization_id for deep-linking
+        setSearchParams({ optimization_id: opt.id });
+    };
+
+    const closeDetailDrawer = () => {
+        setDetailDrawerOpen(false);
+        setSelectedOptimizationId(null);
+        // Remove optimization_id from URL
+        searchParams.delete('optimization_id');
+        setSearchParams(searchParams);
+    };
+
     const openCreateDialog = () => {
         setSelectedOptimization(null);
         setForm(INITIAL_FORM);
