@@ -1784,6 +1784,7 @@ async def export_network_optimizations_csv(
         raise HTTPException(status_code=404, detail="Network not found")
     
     require_brand_access(network["brand_id"], current_user)
+    await require_network_access(network, current_user)  # Enforce restricted mode
     
     # Build query
     query = {"network_id": network_id}
