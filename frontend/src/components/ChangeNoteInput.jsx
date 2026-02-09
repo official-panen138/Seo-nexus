@@ -210,9 +210,12 @@ export function ChangeNoteInput({
                 </span>
             </div>
             
-            {/* Guidance text */}
+            {/* Guidance text with Telegram warning */}
             <p className="text-xs text-zinc-500">
                 Catatan detail membantu tim memahami keputusan SEO. Sertakan: apa yang berubah, mengapa, dan dampak yang diharapkan.
+            </p>
+            <p className="text-xs text-amber-500 font-medium mt-1">
+                ⚠️ Catatan ini wajib dan akan dikirim ke tim SEO via Telegram.
             </p>
         </div>
     );
