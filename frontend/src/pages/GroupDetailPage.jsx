@@ -1554,7 +1554,7 @@ export default function GroupDetailPage() {
                                 <OptimizationsTab 
                                     networkId={network?.id}
                                     networkName={network?.name}
-                                    brandName={brands.find(b => b.id === network?.brand_id)?.name}
+                                    brandName={network?.brand_name}
                                 />
                             </CardContent>
                         </Card>
