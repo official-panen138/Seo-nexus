@@ -2886,6 +2886,24 @@ async def search_users_for_access_control(
 
 # ==================== NETWORK ACCESS CONTROL ====================
 
+async def build_access_summary_cache(user_ids: List[str]) -> dict:
+    """Build access summary cache with user count and first 3 names"""
+    if not user_ids:
+        return {"count": 0, "names": []}
+    
+    users = await db.users.find(
+        {"id": {"$in": user_ids}},
+        {"_id": 0, "id": 1, "name": 1, "email": 1}
+    ).limit(3).to_list(3)
+    
+    names = [u.get("name") or u["email"].split("@")[0] for u in users]
+    
+    return {
+        "count": len(user_ids),
+        "names": names
+    }
+
+
 @router.put("/networks/{network_id}/access-control")
 async def update_network_access_control(
     network_id: str,
@@ -2895,7 +2913,12 @@ async def update_network_access_control(
     """
     Update access control settings for an SEO network.
     Only Super Admin can set visibility to 'public'.
+    Creates audit log for accountability.
     """
+    # Only admin/super_admin can update access control
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Admin access required to modify access control")
+    
     # Only Super Admin can set public visibility
     if data.visibility_mode == NetworkVisibilityMode.PUBLIC and current_user.get("role") != "super_admin":
         raise HTTPException(status_code=403, detail="Only Super Admin can set public visibility")
@@ -2906,14 +2929,74 @@ async def update_network_access_control(
     
     require_brand_access(network["brand_id"], current_user)
     
+    # Get previous state for audit log
+    previous_mode = network.get("visibility_mode", "brand_based")
+    previous_user_ids = set(network.get("allowed_user_ids", []))
+    new_user_ids = set(data.allowed_user_ids)
+    
+    added_user_ids = list(new_user_ids - previous_user_ids)
+    removed_user_ids = list(previous_user_ids - new_user_ids)
+    
+    # Build access summary cache
+    access_summary_cache = await build_access_summary_cache(data.allowed_user_ids)
+    
+    # Update network
     await db.seo_networks.update_one(
         {"id": network_id},
         {"$set": {
             "visibility_mode": data.visibility_mode.value,
             "allowed_user_ids": data.allowed_user_ids,
+            "access_summary_cache": access_summary_cache,
+            "access_updated_at": datetime.now(timezone.utc).isoformat(),
+            "access_updated_by": {
+                "user_id": current_user["id"],
+                "email": current_user["email"],
+                "name": current_user.get("name", current_user["email"].split("@")[0])
+            },
             "updated_at": datetime.now(timezone.utc).isoformat()
         }}
     )
+    
+    # Create audit log entry
+    added_user_names = []
+    removed_user_names = []
+    
+    if added_user_ids:
+        added_users = await db.users.find(
+            {"id": {"$in": added_user_ids}},
+            {"_id": 0, "name": 1, "email": 1}
+        ).to_list(100)
+        added_user_names = [u.get("name") or u["email"].split("@")[0] for u in added_users]
+    
+    if removed_user_ids:
+        removed_users = await db.users.find(
+            {"id": {"$in": removed_user_ids}},
+            {"_id": 0, "name": 1, "email": 1}
+        ).to_list(100)
+        removed_user_names = [u.get("name") or u["email"].split("@")[0] for u in removed_users]
+    
+    audit_entry = {
+        "id": str(uuid.uuid4()),
+        "event_type": "NETWORK_ACCESS_CHANGED",
+        "network_id": network_id,
+        "network_name": network["name"],
+        "brand_id": network["brand_id"],
+        "previous_mode": previous_mode,
+        "new_mode": data.visibility_mode.value,
+        "added_user_ids": added_user_ids,
+        "removed_user_ids": removed_user_ids,
+        "added_user_names": added_user_names,
+        "removed_user_names": removed_user_names,
+        "changed_by": {
+            "user_id": current_user["id"],
+            "email": current_user["email"],
+            "name": current_user.get("name", current_user["email"].split("@")[0])
+        },
+        "changed_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.network_access_audit_logs.insert_one(audit_entry)
+    logger.info(f"[ACCESS_AUDIT] Network {network['name']}: {previous_mode} → {data.visibility_mode.value}, +{len(added_user_ids)} -{len(removed_user_ids)} users")
     
     # Log activity
     if activity_log_service:
@@ -2922,10 +3005,11 @@ async def update_network_access_control(
             action_type=ActionType.UPDATE,
             entity_type=EntityType.SEO_NETWORK,
             entity_id=network_id,
-            after_value={"action": "access_control_updated", "visibility_mode": data.visibility_mode.value}
+            before_value={"visibility_mode": previous_mode, "allowed_user_ids": list(previous_user_ids)},
+            after_value={"visibility_mode": data.visibility_mode.value, "allowed_user_ids": data.allowed_user_ids}
         )
     
-    return {"message": "Access control updated"}
+    return {"message": "Access control updated", "access_summary_cache": access_summary_cache}
 
 
 @router.get("/networks/{network_id}/access-control")
@@ -2933,7 +3017,7 @@ async def get_network_access_control(
     network_id: str,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Get access control settings for an SEO network"""
+    """Get access control settings for an SEO network with full details"""
     network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
     if not network:
         raise HTTPException(status_code=404, detail="Network not found")
@@ -2945,15 +3029,45 @@ async def get_network_access_control(
     if network.get("allowed_user_ids"):
         users = await db.users.find(
             {"id": {"$in": network["allowed_user_ids"]}},
-            {"_id": 0, "id": 1, "email": 1, "name": 1, "role": 1}
+            {"_id": 0, "id": 1, "email": 1, "name": 1, "role": 1, "telegram_username": 1}
         ).to_list(100)
         allowed_users = users
+    
+    # Get access_updated_by info if available
+    access_updated_by = network.get("access_updated_by")
     
     return {
         "visibility_mode": network.get("visibility_mode", "brand_based"),
         "allowed_user_ids": network.get("allowed_user_ids", []),
-        "allowed_users": allowed_users
+        "allowed_users": allowed_users,
+        "access_summary_cache": network.get("access_summary_cache", {"count": 0, "names": []}),
+        "access_updated_at": network.get("access_updated_at"),
+        "access_updated_by": access_updated_by
     }
+
+
+@router.get("/networks/{network_id}/access-audit-logs")
+async def get_network_access_audit_logs(
+    network_id: str,
+    limit: int = Query(default=20, le=100),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get audit logs for network access changes (Admin/Super Admin only)"""
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0, "brand_id": 1})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    require_brand_access(network["brand_id"], current_user)
+    
+    logs = await db.network_access_audit_logs.find(
+        {"network_id": network_id},
+        {"_id": 0}
+    ).sort("changed_at", -1).limit(limit).to_list(limit)
+    
+    return {"logs": logs, "total": len(logs)}
 
 
 # ==================== ACTIVITY TYPE MANAGEMENT ====================
