@@ -2946,40 +2946,46 @@ async def search_users_for_access_control(
     }
 
 
-# ==================== NETWORK ACCESS CONTROL ====================
+# ==================== SEO NETWORK MANAGEMENT (MANAGERS) ====================
 
-async def build_access_summary_cache(user_ids: List[str]) -> dict:
-    """Build access summary cache with user count and first 3 names"""
-    if not user_ids:
+async def build_manager_summary_cache(manager_ids: List[str]) -> dict:
+    """Build manager summary cache with user count and first 3 names"""
+    if not manager_ids:
         return {"count": 0, "names": []}
     
     users = await db.users.find(
-        {"id": {"$in": user_ids}},
+        {"id": {"$in": manager_ids}},
         {"_id": 0, "id": 1, "name": 1, "email": 1}
     ).limit(3).to_list(3)
     
     names = [u.get("name") or u["email"].split("@")[0] for u in users]
     
     return {
-        "count": len(user_ids),
+        "count": len(manager_ids),
         "names": names
     }
 
 
-@router.put("/networks/{network_id}/access-control")
-async def update_network_access_control(
+@router.put("/networks/{network_id}/managers")
+async def update_network_managers(
     network_id: str,
-    data: NetworkAccessControl,
+    data: NetworkManagersUpdate,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
     """
-    Update access control settings for an SEO network.
-    Only Super Admin can set visibility to 'public'.
-    Creates audit log for accountability.
+    Update SEO Network Managers and visibility settings.
+    
+    Managers are responsible for executing optimizations, responding to complaints,
+    and receiving notifications. They do NOT control who can VIEW the network -
+    that's determined by visibility_mode.
+    
+    Only Super Admin can:
+    - Set visibility to 'public'
+    - Change managers list
     """
-    # Only admin/super_admin can update access control
-    if current_user.get("role") not in ["admin", "super_admin"]:
-        raise HTTPException(status_code=403, detail="Admin access required to modify access control")
+    # Only Super Admin can change managers
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can modify SEO Network managers")
     
     # Only Super Admin can set public visibility
     if data.visibility_mode == NetworkVisibilityMode.PUBLIC and current_user.get("role") != "super_admin":
@@ -2993,24 +2999,24 @@ async def update_network_access_control(
     
     # Get previous state for audit log
     previous_mode = network.get("visibility_mode", "brand_based")
-    previous_user_ids = set(network.get("allowed_user_ids", []))
-    new_user_ids = set(data.allowed_user_ids)
+    previous_manager_ids = set(network.get("manager_ids", []))
+    new_manager_ids = set(data.manager_ids)
     
-    added_user_ids = list(new_user_ids - previous_user_ids)
-    removed_user_ids = list(previous_user_ids - new_user_ids)
+    added_manager_ids = list(new_manager_ids - previous_manager_ids)
+    removed_manager_ids = list(previous_manager_ids - new_manager_ids)
     
-    # Build access summary cache
-    access_summary_cache = await build_access_summary_cache(data.allowed_user_ids)
+    # Build manager summary cache
+    manager_summary_cache = await build_manager_summary_cache(data.manager_ids)
     
     # Update network
     await db.seo_networks.update_one(
         {"id": network_id},
         {"$set": {
             "visibility_mode": data.visibility_mode.value,
-            "allowed_user_ids": data.allowed_user_ids,
-            "access_summary_cache": access_summary_cache,
-            "access_updated_at": datetime.now(timezone.utc).isoformat(),
-            "access_updated_by": {
+            "manager_ids": data.manager_ids,
+            "manager_summary_cache": manager_summary_cache,
+            "managers_updated_at": datetime.now(timezone.utc).isoformat(),
+            "managers_updated_by": {
                 "user_id": current_user["id"],
                 "email": current_user["email"],
                 "name": current_user.get("name", current_user["email"].split("@")[0])
