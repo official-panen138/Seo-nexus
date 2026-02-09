@@ -214,6 +214,15 @@ export const networksAPI = {
     delete: (networkId) => apiV3.delete(`/networks/${networkId}`)
 };
 
+// V3 SEO Optimizations API
+export const optimizationsAPI = {
+    getAll: (networkId, params = {}) => apiV3.get(`/networks/${networkId}/optimizations`, { params }),
+    getOne: (optimizationId) => apiV3.get(`/optimizations/${optimizationId}`),
+    create: (networkId, data) => apiV3.post(`/networks/${networkId}/optimizations`, data),
+    update: (optimizationId, data) => apiV3.put(`/optimizations/${optimizationId}`, data),
+    delete: (optimizationId) => apiV3.delete(`/optimizations/${optimizationId}`)
+};
+
 // V3 Structure Entries API
 export const structureAPI = {
     getAll: (params) => apiV3.get('/structure', { params }),
