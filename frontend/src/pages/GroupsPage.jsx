@@ -315,7 +315,7 @@ export default function GroupsPage() {
             // Sort by ranking nodes count (descending)
             return (b.ranking_nodes_count || 0) - (a.ranking_nodes_count || 0);
         }
-        return 0; // Default: no sorting
+        return 0; // Default: no sorting (default value)
     });
 
     if (loading) {
