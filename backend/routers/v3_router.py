@@ -3083,6 +3083,159 @@ async def get_network_access_audit_logs(
     return {"logs": logs, "total": len(logs)}
 
 
+# ==================== REMINDER CONFIGURATION ====================
+
+@router.get("/settings/reminder-config")
+async def get_reminder_config(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get global reminder configuration (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    
+    settings = await db.settings.find_one(
+        {"key": "optimization_reminders"},
+        {"_id": 0}
+    )
+    
+    return settings or {
+        "key": "optimization_reminders",
+        "enabled": True,
+        "interval_days": 2
+    }
+
+
+@router.put("/settings/reminder-config")
+async def update_reminder_config(
+    data: dict,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Update global reminder configuration (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    
+    interval_days = data.get("interval_days", 2)
+    enabled = data.get("enabled", True)
+    
+    if interval_days < 1 or interval_days > 30:
+        raise HTTPException(status_code=400, detail="Reminder interval must be between 1 and 30 days")
+    
+    await db.settings.update_one(
+        {"key": "optimization_reminders"},
+        {"$set": {
+            "key": "optimization_reminders",
+            "enabled": enabled,
+            "interval_days": interval_days,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": {
+                "user_id": current_user["id"],
+                "email": current_user["email"]
+            }
+        }},
+        upsert=True
+    )
+    
+    return {"message": "Reminder configuration updated", "enabled": enabled, "interval_days": interval_days}
+
+
+@router.get("/networks/{network_id}/reminder-config")
+async def get_network_reminder_config(
+    network_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get per-network reminder configuration override"""
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0, "brand_id": 1, "reminder_config": 1})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    require_brand_access(network["brand_id"], current_user)
+    
+    # Get global config as fallback
+    global_config = await db.settings.find_one(
+        {"key": "optimization_reminders"},
+        {"_id": 0}
+    ) or {"enabled": True, "interval_days": 2}
+    
+    network_config = network.get("reminder_config") or {}
+    
+    return {
+        "global_default": global_config,
+        "network_override": network_config,
+        "effective_interval_days": network_config.get("interval_days") or global_config.get("interval_days", 2)
+    }
+
+
+@router.put("/networks/{network_id}/reminder-config")
+async def update_network_reminder_config(
+    network_id: str,
+    data: dict,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Update per-network reminder configuration override (Admin/Super Admin only)"""
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0, "brand_id": 1})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    require_brand_access(network["brand_id"], current_user)
+    
+    interval_days = data.get("interval_days")
+    use_global = data.get("use_global", False)
+    
+    if use_global:
+        # Remove network override, use global default
+        await db.seo_networks.update_one(
+            {"id": network_id},
+            {"$unset": {"reminder_config": 1}}
+        )
+        return {"message": "Network will use global reminder settings"}
+    
+    if interval_days is not None:
+        if interval_days < 1 or interval_days > 30:
+            raise HTTPException(status_code=400, detail="Reminder interval must be between 1 and 30 days")
+        
+        await db.seo_networks.update_one(
+            {"id": network_id},
+            {"$set": {
+                "reminder_config": {
+                    "interval_days": interval_days,
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_by": {
+                        "user_id": current_user["id"],
+                        "email": current_user["email"]
+                    }
+                }
+            }}
+        )
+        return {"message": "Network reminder configuration updated", "interval_days": interval_days}
+    
+    raise HTTPException(status_code=400, detail="Must provide interval_days or set use_global=true")
+
+
+@router.get("/optimization-reminders")
+async def get_optimization_reminders(
+    network_id: Optional[str] = None,
+    limit: int = Query(default=50, le=200),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get optimization reminder logs for accountability (Admin/Super Admin only)"""
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    query = {}
+    if network_id:
+        query["network_id"] = network_id
+    
+    reminders = await db.optimization_reminders.find(
+        query,
+        {"_id": 0}
+    ).sort("sent_at", -1).limit(limit).to_list(limit)
+    
+    return {"reminders": reminders, "total": len(reminders)}
+
+
 # ==================== ACTIVITY TYPE MANAGEMENT ====================
 
 @router.get("/optimization-activity-types")
