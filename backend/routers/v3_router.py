@@ -33,8 +33,11 @@ from models_v3 import (
     SeoConflict, ConflictType, ConflictSeverity,
     MonitoringSettings, MonitoringSettingsUpdate,
     AssetStatus, NetworkStatus, DomainRole, SeoStatus, IndexStatus,
-    ActionType, EntityType, get_tier_label
+    ActionType, EntityType, get_tier_label,
+    SeoOptimizationCreate, SeoOptimizationUpdate, SeoOptimizationResponse,
+    OptimizationActivityType, OptimizationStatus
 )
+from services.seo_optimization_telegram_service import SeoOptimizationTelegramService
 
 logger = logging.getLogger(__name__)
 
