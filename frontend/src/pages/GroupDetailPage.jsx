@@ -1860,24 +1860,15 @@ export default function GroupDetailPage() {
                                         />
                                     </div>
 
-                                    {/* Change Note (Required) */}
-                                    <div className="space-y-2 p-4 bg-amber-500/10 border border-amber-400/30 rounded-lg">
-                                        <Label className="text-amber-400 flex items-center gap-2">
-                                            <span>Change Note</span>
-                                            <span className="text-xs text-amber-400/70">(Required)</span>
-                                        </Label>
-                                        <Textarea
-                                            value={editForm.change_note}
-                                            onChange={(e) => setEditForm({...editForm, change_note: e.target.value})}
-                                            placeholder="Why are you making this change? e.g., 'Support halaman promo utama' or 'Perbaikan keyword cannibalization'"
-                                            className="bg-black border-amber-400/30 resize-none"
-                                            rows={2}
-                                            data-testid="edit-change-note"
-                                        />
-                                        <p className="text-xs text-zinc-500">
-                                            This note will be logged for team visibility and audit purposes.
-                                        </p>
-                                    </div>
+                                    {/* Change Note (Required) - Enhanced UX */}
+                                    <ChangeNoteInput
+                                        value={editForm.change_note}
+                                        onChange={(value) => setEditForm({...editForm, change_note: value})}
+                                        label="Change Note"
+                                        placeholder="Explain the reason for this change. Include: what, why, and expected impact..."
+                                        required={true}
+                                        variant="default"
+                                    />
                                 </div>
                             )}
 
