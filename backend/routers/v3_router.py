@@ -3285,12 +3285,23 @@ async def get_down_domains(
 async def get_network_change_history(
     network_id: str,
     include_archived: bool = False,
+    actor_email: Optional[str] = None,
+    action_type: Optional[str] = None,
+    affected_node: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
     skip: int = 0,
     limit: int = Query(default=50, le=200),
     current_user: dict = Depends(get_current_user_wrapper)
 ):
     """
-    Get SEO change history for a network.
+    Get SEO change history for a network with filtering.
+    
+    Filters:
+    - actor_email: Filter by user who made changes
+    - action_type: Filter by action (create_node, update_node, delete_node, relink_node, change_role, change_path)
+    - affected_node: Search in affected node name (partial match)
+    - date_from / date_to: ISO date range filter
     
     This shows human-readable SEO decision logs, NOT system logs.
     Each entry includes who changed what, when, and WHY (change_note).
@@ -3308,14 +3319,78 @@ async def get_network_change_history(
     if not seo_change_log_service:
         return []
     
-    logs = await seo_change_log_service.get_network_change_history(
-        network_id=network_id,
-        include_archived=include_archived,
-        skip=skip,
-        limit=limit
-    )
+    # Build filter query
+    query = {"network_id": network_id}
+    if not include_archived:
+        query["archived"] = {"$ne": True}
+    if actor_email:
+        query["actor_email"] = {"$regex": actor_email, "$options": "i"}
+    if action_type:
+        query["action_type"] = action_type
+    if affected_node:
+        query["affected_node"] = {"$regex": affected_node, "$options": "i"}
+    if date_from:
+        query["created_at"] = {"$gte": date_from}
+    if date_to:
+        if "created_at" in query:
+            query["created_at"]["$lte"] = date_to
+        else:
+            query["created_at"] = {"$lte": date_to}
     
-    # Enrich with names
+    # Get logs with filters
+    logs = await db.seo_change_logs.find(
+        query, {"_id": 0}
+    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Get total count for pagination info
+    total_count = await db.seo_change_logs.count_documents(query)
+    
+    # Helper function to enrich snapshot with human-readable labels
+    async def enrich_snapshot(snapshot):
+        if not snapshot:
+            return None
+        
+        enriched = dict(snapshot)
+        
+        # Translate target_entry_id to node_label
+        if enriched.get("target_entry_id"):
+            target = await db.seo_structure_entries.find_one(
+                {"id": enriched["target_entry_id"]},
+                {"_id": 0, "asset_domain_id": 1, "optimized_path": 1}
+            )
+            if target:
+                domain = await db.asset_domains.find_one(
+                    {"id": target["asset_domain_id"]},
+                    {"_id": 0, "domain_name": 1}
+                )
+                enriched["target_node_label"] = f"{domain['domain_name'] if domain else 'unknown'}{target.get('optimized_path', '') or ''}"
+        
+        # Translate status codes to labels
+        status_labels = {
+            "primary": "Primary Target",
+            "canonical": "Canonical",
+            "301_redirect": "301 Redirect",
+            "302_redirect": "302 Redirect",
+            "restore": "Restore"
+        }
+        if enriched.get("domain_status"):
+            enriched["domain_status_label"] = status_labels.get(enriched["domain_status"], enriched["domain_status"])
+        
+        # Translate role to labels
+        role_labels = {
+            "main": "Main (LP/Money Site)",
+            "supporting": "Supporting"
+        }
+        if enriched.get("domain_role"):
+            enriched["domain_role_label"] = role_labels.get(enriched["domain_role"], enriched["domain_role"])
+        
+        # Translate index status
+        if enriched.get("index_status"):
+            enriched["index_status_label"] = enriched["index_status"].upper()
+        
+        return enriched
+    
+    # Enrich logs
     enriched = []
     for log in logs:
         log["network_name"] = network.get("name")
@@ -3324,6 +3399,10 @@ async def get_network_change_history(
         if log.get("brand_id"):
             brand = await db.brands.find_one({"id": log["brand_id"]}, {"_id": 0, "name": 1})
             log["brand_name"] = brand["name"] if brand else None
+        
+        # Enrich before/after snapshots with human-readable labels
+        log["before_snapshot"] = await enrich_snapshot(log.get("before_snapshot"))
+        log["after_snapshot"] = await enrich_snapshot(log.get("after_snapshot"))
         
         enriched.append(SeoChangeLogResponse(**log))
     
