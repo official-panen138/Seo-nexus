@@ -591,7 +591,7 @@ export default function OptimizationDetailDrawer({
                             </Card>
                         )}
 
-                        {/* Section F: Team Responses */}
+                        {/* Section G: Team Responses */}
                         <Card className="bg-zinc-900/50 border-border">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm text-zinc-400 flex items-center gap-2">
