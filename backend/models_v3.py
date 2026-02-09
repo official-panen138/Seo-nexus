@@ -516,3 +516,98 @@ class MonitoringSettingsUpdate(BaseModel):
     expiration: Optional[Dict[str, Any]] = None
     availability: Optional[Dict[str, Any]] = None
     telegram: Optional[Dict[str, Any]] = None
+
+
+# ==================== SEO CHANGE LOG MODELS ====================
+
+class SeoChangeLogCreate(BaseModel):
+    """Model for creating an SEO change log entry (internal use)"""
+    network_id: str
+    brand_id: str
+    actor_user_id: str
+    action_type: SeoChangeActionType
+    affected_node: str  # domain + optimized_path
+    before_snapshot: Optional[Dict[str, Any]] = None
+    after_snapshot: Optional[Dict[str, Any]] = None
+    change_note: str  # REQUIRED - human explanation
+
+
+class SeoChangeLogResponse(BaseModel):
+    """Response model for SEO change log"""
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    network_id: str
+    network_name: Optional[str] = None  # Enriched
+    brand_id: str
+    brand_name: Optional[str] = None  # Enriched
+    actor_user_id: str
+    actor_email: Optional[str] = None  # Enriched
+    action_type: str
+    affected_node: str
+    before_snapshot: Optional[Dict[str, Any]] = None
+    after_snapshot: Optional[Dict[str, Any]] = None
+    change_note: str
+    archived: bool = False
+    archived_at: Optional[str] = None
+    created_at: str
+
+
+# ==================== SEO NETWORK NOTIFICATION MODELS ====================
+
+class SeoNetworkNotification(BaseModel):
+    """Model for SEO network notifications"""
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    network_id: str
+    network_name: Optional[str] = None
+    brand_id: str
+    notification_type: str
+    title: str
+    message: str
+    affected_node: Optional[str] = None
+    actor_email: Optional[str] = None
+    change_log_id: Optional[str] = None  # Link to related change log
+    read: bool = False
+    read_at: Optional[str] = None
+    created_at: str
+
+
+class SeoChangeNoteRequest(BaseModel):
+    """Request model for structure changes requiring change note"""
+    change_note: str = Field(..., min_length=3, max_length=500, description="Explanation for this SEO change (required)")
+
+
+class SeoStructureEntryCreateWithNote(BaseModel):
+    """Model for creating structure entry with mandatory change note"""
+    asset_domain_id: str
+    network_id: str
+    optimized_path: Optional[str] = None
+    domain_role: DomainRole = DomainRole.SUPPORTING
+    domain_status: SeoStatus = SeoStatus.CANONICAL
+    index_status: IndexStatus = IndexStatus.INDEX
+    target_entry_id: Optional[str] = None
+    target_asset_domain_id: Optional[str] = None
+    ranking_url: Optional[str] = None
+    primary_keyword: Optional[str] = None
+    ranking_position: Optional[int] = None
+    last_rank_check: Optional[str] = None
+    notes: Optional[str] = ""
+    # Mandatory change note
+    change_note: str = Field(..., min_length=3, max_length=500, description="Explanation for this SEO change (required)")
+
+
+class SeoStructureEntryUpdateWithNote(BaseModel):
+    """Model for updating structure entry with mandatory change note"""
+    domain_role: Optional[DomainRole] = None
+    domain_status: Optional[SeoStatus] = None
+    index_status: Optional[IndexStatus] = None
+    optimized_path: Optional[str] = None
+    target_entry_id: Optional[str] = None
+    target_asset_domain_id: Optional[str] = None
+    ranking_url: Optional[str] = None
+    primary_keyword: Optional[str] = None
+    ranking_position: Optional[int] = None
+    last_rank_check: Optional[str] = None
+    notes: Optional[str] = None
+    # Mandatory change note
+    change_note: str = Field(..., min_length=3, max_length=500, description="Explanation for this SEO change (required)")
