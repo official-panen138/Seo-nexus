@@ -218,12 +218,18 @@ export const networksAPI = {
 export const optimizationsAPI = {
     getAll: (networkId, params = {}) => apiV3.get(`/networks/${networkId}/optimizations`, { params }),
     getOne: (optimizationId) => apiV3.get(`/optimizations/${optimizationId}`),
+    getDetail: (optimizationId) => apiV3.get(`/optimizations/${optimizationId}/detail`),
     create: (networkId, data) => apiV3.post(`/networks/${networkId}/optimizations`, data),
     update: (optimizationId, data) => apiV3.put(`/optimizations/${optimizationId}`, data),
     delete: (optimizationId) => apiV3.delete(`/optimizations/${optimizationId}`),
     // Complaints
     createComplaint: (optimizationId, data) => apiV3.post(`/optimizations/${optimizationId}/complaints`, data),
     getComplaints: (optimizationId) => apiV3.get(`/optimizations/${optimizationId}/complaints`),
+    resolveComplaint: (optimizationId, complaintId, data) => apiV3.patch(`/optimizations/${optimizationId}/complaints/${complaintId}/resolve`, data),
+    // Responses
+    addResponse: (optimizationId, data) => apiV3.post(`/optimizations/${optimizationId}/responses`, data),
+    // Closure
+    closeOptimization: (optimizationId, data = {}) => apiV3.patch(`/optimizations/${optimizationId}/close`, data),
     // Observed Impact
     updateObservedImpact: (optimizationId, impact) => apiV3.patch(`/optimizations/${optimizationId}/observed-impact`, { observed_impact: impact })
 };
