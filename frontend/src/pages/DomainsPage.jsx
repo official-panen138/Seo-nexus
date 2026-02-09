@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { domainsAPI, brandsAPI, groupsAPI, categoriesAPI, assetDomainsAPI, networksAPI, registrarsAPI, exportAPI } from '../lib/api';
@@ -17,6 +17,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip';
+import { Skeleton } from '../components/ui/skeleton';
 import { toast } from 'sonner';
 import { 
     Plus, 
@@ -38,7 +39,9 @@ import {
     ChevronsUpDown,
     Check,
     Download,
-    Network
+    Network,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
