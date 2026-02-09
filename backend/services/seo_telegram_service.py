@@ -507,15 +507,16 @@ class SeoTelegramService:
             # Get user display name
             user_display_name = await self._get_user_display_name(actor_user_id, actor_email)
             
-            # Resolve target labels for before/after (NO ObjectIds!)
+            # Resolve target labels for before/after - SIMPLE FORMAT (domain/path only, NO STATUS)
+            # Status annotations belong ONLY in STRUKTUR SEO TERKINI section
             before_target_label = None
             after_target_label = None
             
             if before_snapshot and before_snapshot.get("target_entry_id"):
-                before_target_label = await self._resolve_target_for_display(before_snapshot.get("target_entry_id"))
+                before_target_label = await self._resolve_target_simple(before_snapshot.get("target_entry_id"))
             
             if after_snapshot and after_snapshot.get("target_entry_id"):
-                after_target_label = await self._resolve_target_for_display(after_snapshot.get("target_entry_id"))
+                after_target_label = await self._resolve_target_simple(after_snapshot.get("target_entry_id"))
             
             # Get current structure with full authority chains
             structure = await self._get_network_structure_with_chains(network_id)
