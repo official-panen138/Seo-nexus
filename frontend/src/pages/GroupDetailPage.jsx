@@ -1359,20 +1359,35 @@ export default function GroupDetailPage() {
                                 </TableBody>
                             </Table>
                         </div>
+                        )}
                     </TabsContent>
 
                     {/* Change History Tab */}
                     <TabsContent value="history" className="mt-0">
                         <Card className="bg-card border-border">
                             <CardHeader className="pb-4 flex flex-row items-center justify-between">
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <History className="h-5 w-5" />
-                                    SEO Change History
-                                </CardTitle>
+                                <div className="flex items-center gap-4">
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                        <History className="h-5 w-5" />
+                                        SEO Change History
+                                    </CardTitle>
+                                    {/* Filter Toggle */}
+                                    <Button
+                                        variant={isFilterOpen ? "secondary" : "outline"}
+                                        size="sm"
+                                        onClick={() => setIsFilterOpen(!isFilterOpen)}
+                                    >
+                                        <Filter className="h-4 w-4 mr-1" />
+                                        Filters
+                                        {(timelineFilters.actor || timelineFilters.action || timelineFilters.node || timelineFilters.dateFrom) && (
+                                            <Badge className="ml-1 bg-amber-500 text-black">Active</Badge>
+                                        )}
+                                    </Button>
+                                </div>
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={loadChangeHistory}
+                                    onClick={() => loadChangeHistory(timelineFilters)}
                                     disabled={changeHistoryLoading}
                                 >
                                     {changeHistoryLoading ? (
@@ -1382,6 +1397,70 @@ export default function GroupDetailPage() {
                                     )}
                                 </Button>
                             </CardHeader>
+                            
+                            {/* Filter Panel */}
+                            {isFilterOpen && (
+                                <div className="px-6 pb-4 border-b border-border">
+                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-zinc-500">User</Label>
+                                            <Input
+                                                placeholder="Email..."
+                                                value={timelineFilters.actor}
+                                                onChange={(e) => setTimelineFilters({...timelineFilters, actor: e.target.value})}
+                                                className="h-8 bg-black border-border"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-zinc-500">Action</Label>
+                                            <Select 
+                                                value={timelineFilters.action || 'all'} 
+                                                onValueChange={(v) => setTimelineFilters({...timelineFilters, action: v === 'all' ? '' : v})}
+                                            >
+                                                <SelectTrigger className="h-8 bg-black border-border">
+                                                    <SelectValue placeholder="All" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="all">All Actions</SelectItem>
+                                                    <SelectItem value="create_node">Created</SelectItem>
+                                                    <SelectItem value="update_node">Updated</SelectItem>
+                                                    <SelectItem value="delete_node">Deleted</SelectItem>
+                                                    <SelectItem value="relink_node">Relinked</SelectItem>
+                                                    <SelectItem value="change_role">Role Changed</SelectItem>
+                                                    <SelectItem value="change_path">Path Changed</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-zinc-500">Node</Label>
+                                            <Input
+                                                placeholder="Domain or path..."
+                                                value={timelineFilters.node}
+                                                onChange={(e) => setTimelineFilters({...timelineFilters, node: e.target.value})}
+                                                className="h-8 bg-black border-border"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-zinc-500">From Date</Label>
+                                            <Input
+                                                type="date"
+                                                value={timelineFilters.dateFrom}
+                                                onChange={(e) => setTimelineFilters({...timelineFilters, dateFrom: e.target.value})}
+                                                className="h-8 bg-black border-border"
+                                            />
+                                        </div>
+                                        <div className="flex items-end gap-2">
+                                            <Button size="sm" onClick={applyTimelineFilters} className="h-8">
+                                                Apply
+                                            </Button>
+                                            <Button size="sm" variant="ghost" onClick={clearTimelineFilters} className="h-8">
+                                                Clear
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
                             <CardContent>
                                 {changeHistoryLoading ? (
                                     <div className="flex items-center justify-center py-12">
