@@ -71,6 +71,20 @@ export default function GroupsPage() {
     
     // Filter state
     const [filterBrand, setFilterBrand] = useState('all');
+    const [filterRankingStatus, setFilterRankingStatus] = useState('all');
+    const [sortBy, setSortBy] = useState('');
+
+    // Ranking status badge helper
+    const getRankingStatusBadge = (status) => {
+        switch (status) {
+            case 'ranking':
+                return { label: 'Ranking', className: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', icon: TrendingUp };
+            case 'tracking':
+                return { label: 'Tracking', className: 'bg-amber-500/20 text-amber-400 border-amber-500/30', icon: Activity };
+            default:
+                return { label: 'No Ranking', className: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30', icon: BarChart3 };
+        }
+    };
 
     useEffect(() => {
         loadData();
