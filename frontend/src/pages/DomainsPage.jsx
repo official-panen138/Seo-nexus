@@ -199,44 +199,100 @@ export default function DomainsPage() {
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterMonitoring, setFilterMonitoring] = useState('all');
     const [showFilters, setShowFilters] = useState(false);
+    
+    // SERVER-SIDE PAGINATION STATE
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
+    const [totalItems, setTotalItems] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+    
+    // Debounced search for server-side
+    const [debouncedSearch, setDebouncedSearch] = useState('');
 
+    // Reset to page 1 when filters change
     useEffect(() => {
-        loadData();
+        setCurrentPage(1);
+    }, [debouncedSearch, filterBrand, filterStatus, filterMonitoring, pageSize]);
+
+    // Load data when pagination or filters change
+    useEffect(() => {
+        if (useV3) {
+            loadPaginatedData();
+        }
+    }, [useV3, currentPage, pageSize, debouncedSearch, filterBrand, filterStatus, filterMonitoring]);
+
+    // Load reference data once
+    useEffect(() => {
+        loadReferenceData();
     }, [useV3]);
 
-    const loadData = async () => {
-        setLoading(true);
+    // Debounce search input
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    const loadReferenceData = async () => {
         try {
             if (useV3) {
-                const [assetsRes, brandsRes, networksRes, categoriesRes, registrarsRes] = await Promise.all([
-                    assetDomainsAPI.getAll(),
+                const [brandsRes, networksRes, categoriesRes, registrarsRes] = await Promise.all([
                     brandsAPI.getAll(),
                     networksAPI.getAll(),
                     categoriesAPI.getAll(),
                     registrarsAPI.getAll({ status: 'active' })
                 ]);
-                setAssets(assetsRes.data);
                 setBrands(brandsRes.data);
                 setNetworks(networksRes.data);
                 setCategories(categoriesRes.data);
                 setRegistrars(registrarsRes.data);
             } else {
-                // V2 fallback
-                const [domainsRes, brandsRes, groupsRes, categoriesRes] = await Promise.all([
-                    domainsAPI.getAll(),
+                const [brandsRes, groupsRes, categoriesRes] = await Promise.all([
                     brandsAPI.getAll(),
                     groupsAPI.getAll(),
                     categoriesAPI.getAll()
                 ]);
-                setDomains(domainsRes.data);
                 setBrands(brandsRes.data);
                 setGroups(groupsRes.data);
                 setCategories(categoriesRes.data);
             }
         } catch (err) {
-            console.error('Failed to load data:', err);
+            console.error('Failed to load reference data:', err);
+        }
+    };
+
+    const loadPaginatedData = async () => {
+        setLoading(true);
+        try {
+            // Build params for server-side filtering and pagination
+            const params = {
+                page: currentPage,
+                limit: pageSize
+            };
+            
+            if (debouncedSearch) params.search = debouncedSearch;
+            if (filterBrand !== 'all') params.brand_id = filterBrand;
+            if (filterStatus !== 'all') params.status = filterStatus;
+            if (filterMonitoring === 'enabled') params.monitoring_enabled = true;
+            if (filterMonitoring === 'disabled') params.monitoring_enabled = false;
+            
+            const response = await assetDomainsAPI.getAll(params);
+            
+            // Handle paginated response
+            if (response.data?.data && response.data?.meta) {
+                setAssets(response.data.data);
+                setTotalItems(response.data.meta.total);
+                setTotalPages(response.data.meta.total_pages);
+            } else {
+                // Fallback for old response format (array)
+                setAssets(Array.isArray(response.data) ? response.data : []);
+                setTotalItems(response.data?.length || 0);
+                setTotalPages(1);
+            }
+        } catch (err) {
+            console.error('Failed to load domains:', err);
             toast.error('Failed to load domains');
-            // Try V2 fallback if V3 fails
             if (useV3) {
                 setUseV3(false);
             }
@@ -245,28 +301,40 @@ export default function DomainsPage() {
         }
     };
 
-    // Filtered data
+    const loadData = async () => {
+        if (useV3) {
+            await loadPaginatedData();
+        } else {
+            // V2 fallback - load all
+            setLoading(true);
+            try {
+                const domainsRes = await domainsAPI.getAll();
+                setDomains(domainsRes.data);
+            } catch (err) {
+                console.error('Failed to load V2 data:', err);
+                toast.error('Failed to load domains');
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    // For V2 mode, use client-side filtering
     const filteredData = useMemo(() => {
-        const data = useV3 ? assets : domains;
-        return data.filter(item => {
+        if (useV3) {
+            // V3 uses server-side filtering, just return assets
+            return assets;
+        }
+        // V2 client-side filtering
+        return domains.filter(item => {
             if (searchQuery && !item.domain_name.toLowerCase().includes(searchQuery.toLowerCase())) {
                 return false;
             }
             if (filterBrand !== 'all' && item.brand_id !== filterBrand) return false;
-            
-            if (useV3) {
-                if (filterStatus !== 'all' && item.status !== filterStatus) return false;
-                if (filterMonitoring !== 'all') {
-                    if (filterMonitoring === 'enabled' && !item.monitoring_enabled) return false;
-                    if (filterMonitoring === 'disabled' && item.monitoring_enabled) return false;
-                }
-            } else {
-                if (filterStatus !== 'all' && item.domain_status !== filterStatus) return false;
-            }
-            
+            if (filterStatus !== 'all' && item.domain_status !== filterStatus) return false;
             return true;
         });
-    }, [assets, domains, searchQuery, filterBrand, filterStatus, filterMonitoring, useV3]);
+    }, [assets, domains, searchQuery, filterBrand, filterStatus, useV3]);
 
     const handleSearchChange = debounce((value) => {
         setSearchQuery(value);
