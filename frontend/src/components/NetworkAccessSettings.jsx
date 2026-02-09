@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../lib/auth';
+import { networksAPI } from '../lib/api';
 import api from '../lib/api';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
@@ -23,6 +24,22 @@ import {
     Search,
     Plus
 } from 'lucide-react';
+import axios from 'axios';
+
+// Create a v3 API instance for access control
+const apiV3 = axios.create({
+    baseURL: process.env.REACT_APP_BACKEND_URL + '/api/v3',
+    headers: { 'Content-Type': 'application/json' }
+});
+
+// Add auth interceptor
+apiV3.interceptors.request.use((config) => {
+    const token = localStorage.getItem('seo_nexus_token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
 
 const VISIBILITY_OPTIONS = [
     {
