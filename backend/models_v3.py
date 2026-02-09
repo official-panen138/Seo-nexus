@@ -179,6 +179,28 @@ class OptimizationStatus(str, Enum):
     REVERTED = "reverted"
 
 
+class NetworkVisibilityMode(str, Enum):
+    """Visibility mode for SEO networks"""
+    RESTRICTED = "restricted"  # Only allowed_user_ids can see
+    BRAND_BASED = "brand_based"  # Users with brand access (default)
+    PUBLIC = "public"  # Super admin only setting - everyone can see
+
+
+class ComplaintPriority(str, Enum):
+    """Priority level for optimization complaints"""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class OptimizationOutcome(str, Enum):
+    """Manual outcome evaluation for completed optimizations"""
+    POSITIVE = "positive"
+    NEUTRAL = "neutral"
+    NEGATIVE = "negative"
+    UNKNOWN = "unknown"
+
+
 class OptimizationCreatedBy(BaseModel):
     """User who created the optimization"""
     user_id: str
