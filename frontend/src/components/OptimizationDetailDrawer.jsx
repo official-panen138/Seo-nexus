@@ -460,7 +460,15 @@ export default function OptimizationDetailDrawer({
                             </Card>
                         )}
 
-                        {/* Section E: Complaint Thread */}
+                        {/* Section E: Complaint Timeline (Visual) */}
+                        {(detail.complaints?.length > 0 || detail.responses?.length > 0) && (
+                            <ComplaintTimeline 
+                                complaints={detail.complaints || []}
+                                responses={detail.responses || []}
+                            />
+                        )}
+
+                        {/* Section F: Complaint Thread (Detailed) */}
                         {detail.complaints?.length > 0 && (
                             <Card className="bg-red-950/20 border-red-900/30">
                                 <CardHeader className="pb-2">
