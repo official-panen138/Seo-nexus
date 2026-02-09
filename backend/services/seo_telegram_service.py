@@ -560,6 +560,9 @@ class SeoTelegramService:
 ━━━━━━━━━━━━━━━━━━━━━━
 {structure_text}"""
 
+            # DEBUG: Log the full message for verification
+            logger.info(f"=== TELEGRAM MESSAGE CONTENT ===\n{message}\n=== END MESSAGE ===")
+            
             # Send message
             success = await self._send_telegram_message(message)
             
