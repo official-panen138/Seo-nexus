@@ -1545,6 +1545,22 @@ export default function GroupDetailPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
+
+                            {/* Change Note (Required) */}
+                            <div className="space-y-2 p-4 bg-amber-500/10 border border-amber-400/30 rounded-lg">
+                                <Label className="text-amber-400 flex items-center gap-2">
+                                    <span>Change Note</span>
+                                    <span className="text-xs text-amber-400/70">(Required)</span>
+                                </Label>
+                                <Textarea
+                                    value={addNodeForm.change_note}
+                                    onChange={(e) => setAddNodeForm({...addNodeForm, change_note: e.target.value})}
+                                    placeholder="Why are you adding this node? e.g., 'New supporting page for promo campaign'"
+                                    className="bg-black border-amber-400/30 resize-none"
+                                    rows={2}
+                                    data-testid="add-node-change-note"
+                                />
+                            </div>
                         </div>
 
                         <DialogFooter>
@@ -1556,7 +1572,7 @@ export default function GroupDetailPage() {
                             </Button>
                             <Button
                                 onClick={handleAddNode}
-                                disabled={saving || !addNodeForm.asset_domain_id}
+                                disabled={saving || !addNodeForm.asset_domain_id || !addNodeForm.change_note || addNodeForm.change_note.trim().length < 3}
                                 className="bg-white text-black hover:bg-zinc-200"
                             >
                                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
