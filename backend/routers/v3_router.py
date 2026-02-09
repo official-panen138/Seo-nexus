@@ -1887,11 +1887,6 @@ async def delete_optimization(
     
     return {"message": "Optimization deleted"}
 
-    
-    updated = await db.seo_structure_entries.find_one({"id": entry_id}, {"_id": 0})
-    updated = await enrich_structure_entry(updated)
-    return SeoStructureEntryResponse(**updated)
-
 
 # ==================== SWITCH MAIN TARGET ENDPOINT ====================
 
