@@ -247,7 +247,7 @@ class ExpirationMonitoringService:
             return "error"
     
     async def _enrich_domain(self, domain: Dict[str, Any]) -> Dict[str, Any]:
-        """Enrich domain with brand and registrar names"""
+        """Enrich domain with brand and registrar names, and timezone settings"""
         enriched = {**domain}
         
         if domain.get("brand_id"):
@@ -261,6 +261,11 @@ class ExpirationMonitoringService:
             enriched["registrar_name"] = registrar["name"] if registrar else domain.get("registrar", "N/A")
         else:
             enriched["registrar_name"] = domain.get("registrar", "N/A")
+        
+        # Add timezone settings for alert formatting
+        tz_str, tz_label = await get_system_timezone(self.db)
+        enriched["_timezone_str"] = tz_str
+        enriched["_timezone_label"] = tz_label
         
         return enriched
     
