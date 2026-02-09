@@ -195,6 +195,19 @@ async def check_network_visibility_access(network: dict, user: dict) -> bool:
     return True
 
 
+async def require_network_access(network: dict, user: dict):
+    """
+    Raise 403 if user doesn't have access to the network.
+    Uses visibility mode rules to determine access.
+    """
+    has_access = await check_network_visibility_access(network, user)
+    if not has_access:
+        visibility_mode = network.get("visibility_mode", "brand_based")
+        if visibility_mode == "restricted":
+            raise HTTPException(status_code=403, detail="You do not have access to this network. It is restricted to specific users.")
+        raise HTTPException(status_code=403, detail="You do not have access to this network.")
+
+
 async def require_network_access(network_id: str, user: dict):
     """
     Raise 403 if user doesn't have access to the network.
