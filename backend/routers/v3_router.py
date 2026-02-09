@@ -1641,8 +1641,9 @@ async def delete_structure_entry(
     await db.seo_structure_entries.delete_one({"id": entry_id})
     
     # Log SEO change with mandatory note
+    change_log_id = None
     if seo_change_log_service:
-        await seo_change_log_service.log_change(
+        change_log_id = await seo_change_log_service.log_change(
             network_id=existing["network_id"],
             brand_id=brand_id,
             actor_user_id=current_user.get("id", ""),
@@ -1653,6 +1654,21 @@ async def delete_structure_entry(
             before_snapshot=existing,
             after_snapshot=None,
             entry_id=entry_id
+        )
+    
+    # Send SEO Telegram notification
+    if seo_telegram_service:
+        await seo_telegram_service.send_seo_change_notification(
+            network_id=existing["network_id"],
+            brand_id=brand_id,
+            actor_user_id=current_user.get("id", ""),
+            actor_email=current_user["email"],
+            action_type="delete_node",
+            affected_node=node_label,
+            change_note=data.change_note,
+            before_snapshot=existing,
+            after_snapshot=None,
+            change_log_id=change_log_id
         )
     
     # Log system activity
