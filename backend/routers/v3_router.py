@@ -2236,7 +2236,7 @@ async def create_optimization_complaint(
     """
     Create a complaint on an SEO optimization.
     Only Super Admin can create complaints.
-    Tagged users will be notified via Telegram.
+    Automatically tags assigned users from network Access Summary via Telegram.
     """
     # Only Super Admin can create complaints
     if current_user.get("role") != "super_admin":
@@ -2250,11 +2250,22 @@ async def create_optimization_complaint(
     if not data.reason or not data.reason.strip():
         raise HTTPException(status_code=400, detail="Complaint reason is required")
     
+    # Get network to access assigned users from Access Summary
+    network = await db.seo_networks.find_one({"id": optimization["network_id"]}, {"_id": 0})
+    
+    # Build responsible user list: combine explicit selection + network assigned users
+    all_responsible_user_ids = set(data.responsible_user_ids or [])
+    
+    # Auto-add users from network Access Summary (if Restricted mode)
+    if network and network.get("visibility_mode") == "restricted" and network.get("allowed_user_ids"):
+        all_responsible_user_ids.update(network["allowed_user_ids"])
+        logger.info(f"[COMPLAINT] Auto-added {len(network['allowed_user_ids'])} users from network Access Summary")
+    
     # Get responsible users info for notification
     responsible_users = []
-    if data.responsible_user_ids:
+    if all_responsible_user_ids:
         users = await db.users.find(
-            {"id": {"$in": data.responsible_user_ids}},
+            {"id": {"$in": list(all_responsible_user_ids)}},
             {"_id": 0, "id": 1, "email": 1, "name": 1, "telegram_username": 1}
         ).to_list(100)
         responsible_users = users
@@ -2273,7 +2284,9 @@ async def create_optimization_complaint(
         },
         "created_at": now,
         "reason": data.reason.strip(),
-        "responsible_user_ids": data.responsible_user_ids,
+        "responsible_user_ids": list(all_responsible_user_ids),  # Store all responsible users
+        "explicit_responsible_user_ids": data.responsible_user_ids or [],  # Explicitly selected users
+        "auto_assigned_from_network": True if network and network.get("visibility_mode") == "restricted" else False,
         "priority": data.priority.value if data.priority else "medium",
         "report_urls": data.report_urls,
         "status": "open",
