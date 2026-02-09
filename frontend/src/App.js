@@ -107,6 +107,11 @@ function AppRoutes() {
                     <ReportsPage />
                 </ProtectedRoute>
             } />
+            <Route path="/reports/team-evaluation" element={
+                <ProtectedRoute>
+                    <TeamEvaluationPage />
+                </ProtectedRoute>
+            } />
             <Route path="/brands" element={
                 <ProtectedRoute>
                     <BrandsPage />
