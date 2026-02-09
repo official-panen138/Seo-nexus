@@ -683,7 +683,7 @@ export default function DomainsPage() {
                         <TableBody>
                             {filteredData.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={useV3 ? 7 : 8} className="h-32 text-center">
+                                    <TableCell colSpan={useV3 ? 8 : 8} className="h-32 text-center">
                                         <div className="empty-state py-8">
                                             <Globe className="empty-state-icon mx-auto" />
                                             <p className="empty-state-title">No domains found</p>
