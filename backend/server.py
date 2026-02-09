@@ -217,6 +217,7 @@ class UserManualCreate(BaseModel):
     name: str
     role: UserRole = UserRole.VIEWER
     brand_scope_ids: List[str] = []
+    password: Optional[str] = None  # If not provided, auto-generate
 
 
 class UserLogin(BaseModel):
