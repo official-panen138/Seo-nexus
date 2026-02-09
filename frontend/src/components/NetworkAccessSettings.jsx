@@ -434,6 +434,25 @@ export function NetworkAccessSettings({ networkId, brandId }) {
                     </div>
                 </div>
 
+                {/* Last Updated Info */}
+                {accessUpdatedAt && (
+                    <div className="p-4 rounded-lg bg-zinc-900/50 border border-border flex items-start gap-3">
+                        <History className="h-5 w-5 text-zinc-500 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm">
+                            <p className="text-zinc-400 font-medium">Last Updated</p>
+                            <div className="flex items-center gap-2 mt-1 text-zinc-500">
+                                <Clock className="h-3 w-3" />
+                                <span>{new Date(accessUpdatedAt).toLocaleString()}</span>
+                            </div>
+                            {accessUpdatedBy && (
+                                <div className="mt-1 text-zinc-500">
+                                    by <span className="text-zinc-300">{accessUpdatedBy.name || accessUpdatedBy.email}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Save Button */}
                 <div className="flex justify-end pt-4 border-t border-border">
                     <Button 
