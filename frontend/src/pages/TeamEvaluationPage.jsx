@@ -271,6 +271,17 @@ export default function TeamEvaluationPage() {
                         >
                             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                         </Button>
+                        
+                        <Button 
+                            variant="outline"
+                            onClick={handleExportCSV}
+                            disabled={exporting || !summary?.top_contributors?.length}
+                            data-testid="export-csv-btn"
+                            className="gap-2"
+                        >
+                            <Download className={`h-4 w-4 ${exporting ? 'animate-bounce' : ''}`} />
+                            {exporting ? 'Exporting...' : 'Export CSV'}
+                        </Button>
                     </div>
                 </div>
 
