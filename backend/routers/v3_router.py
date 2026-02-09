@@ -208,6 +208,51 @@ async def require_network_access(network: dict, user: dict):
         raise HTTPException(status_code=403, detail="You do not have access to this network.")
 
 
+def is_network_manager(network: dict, user: dict) -> bool:
+    """
+    Check if user is a manager for the network.
+    
+    Manager permissions allow:
+    - Creating/updating optimizations
+    - Responding to complaints
+    - Receiving notifications/reminders
+    
+    Super Admin always has manager permissions.
+    """
+    if user.get("role") == "super_admin":
+        return True
+    
+    manager_ids = network.get("manager_ids", [])
+    return user.get("id") in manager_ids
+
+
+async def require_manager_permission(network: dict, user: dict):
+    """
+    Raise 403 if user is not a manager for the network.
+    Used for execution permissions (create/update optimizations, respond to complaints).
+    
+    Super Admin always passes.
+    """
+    if not is_network_manager(network, user):
+        raise HTTPException(
+            status_code=403, 
+            detail="You are not assigned as a manager for this SEO Network. Only managers can perform this action."
+        )
+
+
+async def require_manager_permission_by_network_id(network_id: str, user: dict) -> dict:
+    """
+    Fetch network and check manager permission.
+    Returns the network if permission granted.
+    """
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    await require_manager_permission(network, user)
+    return network
+
+
 async def require_network_access_by_id(network_id: str, user: dict):
     """
     Raise 403 if user doesn't have access to the network.
