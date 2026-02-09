@@ -223,11 +223,10 @@ class TestPhase2ComplaintAutoTagging:
     
     def test_create_complaint_auto_tags_network_users(self, auth_headers):
         """Creating complaint should auto-include users from network Access Summary"""
-        # First get an optimization to create complaint on
+        # First get an optimization to create complaint on - using correct endpoint
         opt_response = requests.get(
-            f"{BASE_URL}/api/v3/optimizations",
-            headers=auth_headers,
-            params={"network_id": TEST_NETWORK_ID}
+            f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/optimizations",
+            headers=auth_headers
         )
         
         if opt_response.status_code != 200:
