@@ -931,6 +931,48 @@ Full optimization detail view with complaint thread, team response system, and c
 
 **Tests:** All features manually verified ✅
 
+### P2 Features (Feb 11, 2026) - COMPLETE
+
+**1. Auto-switch to Optimizations Tab on Deep-link:**
+- ✅ Added `useSearchParams` hook to GroupDetailPage
+- ✅ Auto-switches to Optimizations tab when `?optimization_id=xxx` is in URL
+- ✅ Seamless deep-linking experience
+
+**2. Optimization Export to CSV:**
+- ✅ `GET /api/v3/networks/{network_id}/optimizations/export` endpoint
+- ✅ Export button in Optimizations header
+- ✅ CSV includes: ID, Title, Type, Status, Complaints, Dates, Description, etc.
+- ✅ Filename includes network name and date
+
+**3. Telegram Account Linking:**
+- ✅ Added `telegram_username` to User model
+- ✅ `PATCH /api/users/me/telegram` for self-update
+- ✅ Telegram Username field in User Edit dialog
+- ✅ Used for @mentions in complaint notifications
+
+**4. Weekly SEO Optimization Digest:**
+- ✅ `SeoDigestService` for generating digests
+- ✅ `POST /api/v3/optimizations/digest` - Send digest via Telegram
+- ✅ `GET /api/v3/optimizations/digest/preview` - Preview without sending
+- ✅ Aggregates: by status, activity type, user, network
+- ✅ Top performers, complaint stats, resolution rates
+- ✅ Formatted Telegram message in Bahasa Indonesia
+
+**5. AI-generated Optimization Summaries:**
+- ✅ `AiSummaryService` using GPT-4o via Emergent LLM key
+- ✅ `GET /api/v3/optimizations/ai-summary` - Generate period summary
+- ✅ `GET /api/v3/optimizations/{id}/ai-summary` - Single optimization summary
+- ✅ Summaries in Bahasa Indonesia
+- ✅ Includes: activity analysis, focus insights, recommendations
+
+**Key Files:**
+- `backend/services/seo_digest_service.py` - Weekly digest generation
+- `backend/services/ai_summary_service.py` - AI summary service
+- `frontend/src/pages/UsersPage.jsx` - Telegram username field
+- `frontend/src/components/OptimizationsTab.jsx` - Export CSV button
+
+**Tests:** All API endpoints verified via curl ✅
+
 ## Prioritized Backlog
 
 ### P0 - Critical
