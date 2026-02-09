@@ -657,6 +657,32 @@ Tier 2:
 
 **Tests:** Verified with API curl tests and browser screenshots ✅
 
+### App Settings & Monitoring Timezone (Feb 9, 2026) - COMPLETE
+
+**1. App Branding Settings:**
+- ✅ `GET/PUT /api/settings/branding` - Site title, description, logo URL
+- ✅ `POST /api/settings/branding/upload-logo` - Logo upload (PNG, JPEG, SVG, WebP, max 2MB)
+- ✅ Frontend Settings page with Branding tab
+
+**2. Monitoring Timezone Standardization:**
+- ✅ `GET/PUT /api/settings/timezone` - Default timezone configuration
+- ✅ Centralized timezone helper (`/app/backend/services/timezone_helper.py`)
+- ✅ Default: GMT+7 (Asia/Jakarta)
+- ✅ All monitoring Telegram alerts use configured timezone
+- ✅ Format: `2026-02-09 23:02 GMT+7 (Asia/Jakarta)`
+- ✅ Internal storage remains UTC (display-level conversion only)
+
+**Updated Services:**
+- `monitoring_service.py` - Down alerts, recovery alerts, expiration alerts
+- `server.py` - Test Telegram message
+
+**Key Files:**
+- `backend/services/timezone_helper.py` - Centralized timezone conversion
+- `backend/server.py` - Branding & timezone API endpoints
+- `frontend/src/pages/SettingsPage.jsx` - New Branding & Timezone tabs
+
+**Tests:** Verified with API curl tests and browser screenshots ✅
+
 ## Test Credentials
 - **Super Admin**: `superadmin@seonoc.com` / `SuperAdmin123!`
 - **Alt Super Admin**: `admin@test.com` / `admin123`
