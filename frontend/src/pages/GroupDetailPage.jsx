@@ -1685,8 +1685,8 @@ export default function GroupDetailPage() {
                         </Card>
                     </TabsContent>
 
-                    {/* Settings Tab */}
-                    <TabsContent value="settings">
+                    {/* Access Tab */}
+                    <TabsContent value="access">
                         <div className="space-y-6">
                             <NetworkAccessSettings 
                                 networkId={network.id} 
