@@ -512,6 +512,11 @@ class AvailabilityMonitoringService:
         else:
             enriched["category_name"] = "N/A"
         
+        # Add timezone settings for alert formatting
+        tz_str, tz_label = await get_system_timezone(self.db)
+        enriched["_timezone_str"] = tz_str
+        enriched["_timezone_label"] = tz_label
+        
         # SEO Network context
         structure_entry = await self.db.seo_structure_entries.find_one(
             {"asset_domain_id": domain["id"]},
