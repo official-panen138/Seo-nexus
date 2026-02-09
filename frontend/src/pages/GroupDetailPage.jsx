@@ -1547,6 +1547,19 @@ export default function GroupDetailPage() {
                         </Card>
                     </TabsContent>
 
+                    {/* Optimizations Tab */}
+                    <TabsContent value="optimizations" className="mt-0">
+                        <Card className="bg-card border-border">
+                            <CardContent className="pt-6">
+                                <OptimizationsTab 
+                                    networkId={network?.id}
+                                    networkName={network?.name}
+                                    brandName={brands.find(b => b.id === network?.brand_id)?.name}
+                                />
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
                     {/* Alerts Tab */}
                     <TabsContent value="alerts" className="mt-0">
                         <Card className="bg-card border-border">
