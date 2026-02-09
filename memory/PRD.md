@@ -506,12 +506,14 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
   - "View Node in Graph" button for highlighting
 - ✅ **SEO Change Notifications via Telegram** (Feb 9, 2026)
   - Dedicated Telegram channel for SEO changes (separate from monitoring)
-  - Full Bahasa Indonesia message format
+  - Full Bahasa Indonesia message format with detailed structure snapshot
   - Settings UI at Settings → SEO Notifications tab
-  - Change note enforcement (minimum 10 characters)
+  - **ATOMIC SAVE + NOTIFICATION**: Change note validation (min 10 chars) blocks save if invalid
+  - Telegram notification tracked with `notified_at` and `notification_status` fields
+  - Frontend shows warning: "⚠️ Catatan ini wajib dan akan dikirim ke tim SEO via Telegram"
+  - Save button disabled until change_note is valid (10+ characters)
   - Rate limiting (1 msg per network per minute)
   - Fallback to main Telegram if SEO channel not configured
-  - Real-time SEO structure snapshot in notifications
 - ✅ **User Registration Approval & Super Admin User Management** (Feb 9, 2026)
   - New users register with status=pending, cannot login until approved
   - Super Admin can view pending users in Users → Pending Approvals tab
