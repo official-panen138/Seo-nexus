@@ -2412,6 +2412,99 @@ async def get_team_evaluation_summary(
     )
 
 
+@router.get("/team-evaluation/export")
+async def export_team_evaluation_csv(
+    brand_id: Optional[str] = None,
+    network_id: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Export team evaluation data as CSV.
+    Only Admin/Super Admin can export.
+    """
+    import csv
+    import io
+    from fastapi.responses import StreamingResponse
+    
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Default to last 30 days if no dates provided
+    if not end_date:
+        end_date = datetime.now(timezone.utc).isoformat()
+    if not start_date:
+        start_date = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+    
+    # Get all user scores
+    user_scores = await get_team_evaluation_users(brand_id, network_id, start_date, end_date, current_user)
+    
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Header row
+    writer.writerow([
+        'User Name',
+        'Email',
+        'Total Optimizations',
+        'Completed',
+        'Reverted',
+        'Complaints',
+        'Positive Impact',
+        'Negative Impact',
+        'Score (0-5)',
+        'Score Status',
+        'Revert Penalty',
+        'Complaint Penalty'
+    ])
+    
+    # Data rows
+    for user in user_scores:
+        # Determine status label
+        if user.score >= 4.5:
+            status = 'Excellent'
+        elif user.score >= 3.5:
+            status = 'Good'
+        elif user.score >= 2.5:
+            status = 'Average'
+        else:
+            status = 'Needs Improvement'
+        
+        writer.writerow([
+            user.user_name or 'Unknown',
+            user.user_email or '',
+            user.total_optimizations,
+            user.completed_optimizations,
+            user.reverted_optimizations,
+            user.complaint_count,
+            user.positive_impact_count,
+            user.negative_impact_count,
+            user.score,
+            status,
+            user.score_breakdown.get('revert_penalty', 0),
+            user.score_breakdown.get('complaint_penalty', 0)
+        ])
+    
+    # Prepare response
+    output.seek(0)
+    
+    # Generate filename with date range
+    start_short = start_date[:10] if start_date else 'unknown'
+    end_short = end_date[:10] if end_date else 'unknown'
+    filename = f"seo_team_evaluation_{start_short}_to_{end_short}.csv"
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
+    )
+
+
 # ==================== SWITCH MAIN TARGET ENDPOINT ====================
 
 from pydantic import BaseModel as PydanticBaseModel, Field as PydanticField
