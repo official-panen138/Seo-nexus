@@ -417,6 +417,12 @@ export default function GroupDetailPage() {
             return;
         }
         
+        // Validate change_note
+        if (!addNodeForm.change_note || addNodeForm.change_note.trim().length < 3) {
+            toast.error('Change note is required (min 3 characters)');
+            return;
+        }
+        
         setSaving(true);
         try {
             await structureAPI.create({
@@ -424,11 +430,20 @@ export default function GroupDetailPage() {
                 asset_domain_id: addNodeForm.asset_domain_id,
                 optimized_path: addNodeForm.optimized_path || null,
                 domain_role: addNodeForm.domain_role,
-                target_entry_id: addNodeForm.target_entry_id || null
+                target_entry_id: addNodeForm.target_entry_id || null,
+                change_note: addNodeForm.change_note.trim()  // Required for SEO logging
             });
             
             toast.success('Node added to network');
             setAddNodeDialogOpen(false);
+            // Reset form
+            setAddNodeForm({
+                asset_domain_id: '',
+                optimized_path: '',
+                domain_role: 'supporting',
+                target_entry_id: '',
+                change_note: ''
+            });
             loadNetwork();
         } catch (err) {
             toast.error(err.response?.data?.detail || 'Failed to add node');
