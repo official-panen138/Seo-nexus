@@ -266,25 +266,21 @@ class TestPhase2ComplaintAutoTagging:
         
         complaint = complaint_response.json()
         
-        # Verify complaint has auto-assigned users from network (if restricted mode)
+        # Verify complaint has responsible_user_ids field
+        assert "responsible_user_ids" in complaint, "Missing responsible_user_ids"
+        
+        # Verify auto-assignment from network (if restricted mode with allowed users)
         if visibility_mode == "restricted" and network_allowed_users:
-            assert "responsible_user_ids" in complaint, "Missing responsible_user_ids"
-            assert "auto_assigned_from_network" in complaint, "Missing auto_assigned_from_network flag"
-            
-            if complaint.get("auto_assigned_from_network"):
-                # Check that all network allowed users are included
-                for user_id in network_allowed_users:
-                    assert user_id in complaint["responsible_user_ids"], \
-                        f"Network user {user_id} not auto-assigned to complaint"
-                print(f"Auto-tagging verified: {len(complaint['responsible_user_ids'])} users assigned")
-            else:
-                print("Network not in restricted mode, auto-tagging not applied")
+            # Check that network users are included in responsible_user_ids
+            for user_id in network_allowed_users:
+                assert user_id in complaint["responsible_user_ids"], \
+                    f"Network user {user_id} should be auto-assigned to complaint"
+            print(f"Auto-tagging verified: {len(complaint['responsible_user_ids'])} users assigned from network")
         else:
-            print(f"Network mode is '{visibility_mode}', auto-tagging only applies to 'restricted' mode")
+            print(f"Network mode is '{visibility_mode}' - auto-tagging only applies to 'restricted' mode with allowed users")
         
         print(f"Complaint created: {complaint['id']}")
         print(f"Responsible users: {complaint.get('responsible_user_ids', [])}")
-        print(f"Auto-assigned from network: {complaint.get('auto_assigned_from_network', False)}")
 
 
 class TestPhase1Verification:
