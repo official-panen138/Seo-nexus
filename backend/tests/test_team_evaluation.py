@@ -11,7 +11,7 @@ import requests
 import os
 from datetime import datetime, timedelta
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://seo-team-eval.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://access-control-hub-44.preview.emergentagent.com')
 
 class TestTeamEvaluationAPI:
     """Tests for team evaluation endpoints"""
