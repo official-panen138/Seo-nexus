@@ -1552,6 +1552,24 @@ async def switch_main_target(
             change_note=data.change_note
         )
     
+    # Send SEO Telegram notification for main target switch
+    if seo_telegram_service:
+        new_domain = await db.asset_domains.find_one({"id": new_main["asset_domain_id"]}, {"domain_name": 1, "_id": 0})
+        new_node_label = f"{new_domain['domain_name'] if new_domain else 'unknown'}{new_main.get('optimized_path', '') or ''}"
+        
+        await seo_telegram_service.send_seo_change_notification(
+            network_id=network_id,
+            brand_id=network.get("brand_id", ""),
+            actor_user_id=current_user.get("id", ""),
+            actor_email=current_user["email"],
+            action_type="change_role",
+            affected_node=new_node_label,
+            change_note=f"[Main Switch] {data.change_note}",
+            before_snapshot=new_main,
+            after_snapshot={**new_main, **new_main_update},
+            skip_rate_limit=True  # Important changes should bypass rate limit
+        )
+    
     return {
         "message": "Main target switched successfully",
         "new_main_entry_id": data.new_main_entry_id,
