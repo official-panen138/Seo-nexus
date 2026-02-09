@@ -1152,8 +1152,11 @@ async def get_network(
     if not network:
         raise HTTPException(status_code=404, detail="Network not found")
     
-    # Validate brand access
+    # Validate brand access first
     require_brand_access(network.get("brand_id", ""), current_user)
+    
+    # Validate network visibility access (Restricted mode enforcement)
+    await require_network_access(network, current_user)
     
     # Get brand name
     if network.get("brand_id"):
