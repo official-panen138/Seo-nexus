@@ -74,10 +74,11 @@ const INITIAL_FORM = {
     activity_type: 'backlink',
     title: '',
     description: '',
-    affected_scope: 'domain',
-    affected_targets: [],
+    reason_note: '',  // MANDATORY - min 20 chars
+    affected_scope: 'specific_domain',
+    target_domains: [],  // renamed from affected_targets
     keywords: [],
-    report_urls: [],
+    report_urls: [],  // Now supports { url, start_date, end_date }
     expected_impact: [],
     status: 'completed'
 };
