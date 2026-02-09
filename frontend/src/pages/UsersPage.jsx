@@ -464,10 +464,50 @@ export default function UsersPage() {
                                             <TableCell className="text-zinc-500 text-sm">{formatDate(user.created_at)}</TableCell>
                                             <TableCell className="text-right">
                                                 {user.id !== currentUser?.id && (
-                                                    <div className="flex items-center justify-end gap-1">
-                                                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(user)} className="h-8 w-8 hover:bg-blue-500/10 hover:text-blue-500" data-testid={`edit-user-${user.id}`}><Edit className="h-4 w-4" /></Button>
-                                                        <Button variant="ghost" size="icon" onClick={() => { setSelectedUser(user); setDeleteDialogOpen(true); }} className="h-8 w-8 hover:bg-red-500/10 hover:text-red-500" data-testid={`delete-user-${user.id}`}><Trash2 className="h-4 w-4" /></Button>
-                                                    </div>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`user-actions-${user.id}`}>
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-48">
+                                                            <DropdownMenuItem onClick={() => openEditDialog(user)} className="cursor-pointer">
+                                                                <Edit className="h-4 w-4 mr-2" />
+                                                                Edit User
+                                                            </DropdownMenuItem>
+                                                            
+                                                            {user.status === 'active' ? (
+                                                                <DropdownMenuItem 
+                                                                    onClick={() => { setSelectedUser(user); setDeactivateDialogOpen(true); }}
+                                                                    className="cursor-pointer text-amber-500 focus:text-amber-500"
+                                                                    data-testid={`deactivate-user-${user.id}`}
+                                                                >
+                                                                    <UserX className="h-4 w-4 mr-2" />
+                                                                    Deactivate User
+                                                                </DropdownMenuItem>
+                                                            ) : (user.status === 'inactive' || user.status === 'suspended') && (
+                                                                <DropdownMenuItem 
+                                                                    onClick={() => { setSelectedUser(user); setActivateDialogOpen(true); }}
+                                                                    className="cursor-pointer text-emerald-500 focus:text-emerald-500"
+                                                                    data-testid={`activate-user-${user.id}`}
+                                                                >
+                                                                    <UserCheck className="h-4 w-4 mr-2" />
+                                                                    Activate User
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                            
+                                                            <DropdownMenuSeparator />
+                                                            
+                                                            <DropdownMenuItem 
+                                                                onClick={() => { setSelectedUser(user); setDeleteDialogOpen(true); }}
+                                                                className="cursor-pointer text-red-500 focus:text-red-500"
+                                                                data-testid={`delete-user-${user.id}`}
+                                                            >
+                                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                                Delete User
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
                                                 )}
                                             </TableCell>
                                         </TableRow>
