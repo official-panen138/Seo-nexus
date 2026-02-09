@@ -32,7 +32,9 @@ import {
     ChevronRight,
     Edit,
     Trash2,
-    LinkIcon
+    LinkIcon,
+    AlertTriangle,
+    MessageSquare
 } from 'lucide-react';
 
 // Activity type configuration
