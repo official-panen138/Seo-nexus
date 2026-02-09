@@ -1608,6 +1608,285 @@ async def update_structure_entry(
             before_value=existing,
             after_value=after_snapshot
         )
+
+
+# ==================== SEO OPTIMIZATIONS ENDPOINTS ====================
+
+@router.get("/networks/{network_id}/optimizations")
+async def get_network_optimizations(
+    network_id: str,
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    activity_type: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get all SEO optimizations for a network with pagination.
+    This does NOT affect the SEO structure - it's an execution & intelligence layer.
+    """
+    import math
+    
+    # Verify network exists and user has access
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    require_brand_access(network["brand_id"], current_user)
+    
+    # Build query
+    query = {"network_id": network_id}
+    if activity_type:
+        query["activity_type"] = activity_type
+    if status:
+        query["status"] = status
+    
+    # Get total count
+    total = await db.seo_optimizations.count_documents(query)
+    total_pages = math.ceil(total / limit) if total > 0 else 1
+    
+    # Fetch paginated data
+    skip = (page - 1) * limit
+    optimizations = await db.seo_optimizations.find(
+        query, {"_id": 0}
+    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Get brand name for enrichment
+    brand = await db.brands.find_one({"id": network["brand_id"]}, {"_id": 0, "name": 1})
+    brand_name = brand["name"] if brand else "Unknown"
+    
+    # Enrich responses
+    for opt in optimizations:
+        opt["network_name"] = network["name"]
+        opt["brand_name"] = brand_name
+    
+    return {
+        "data": [SeoOptimizationResponse(**opt) for opt in optimizations],
+        "meta": {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "total_pages": total_pages
+        }
+    }
+
+
+@router.post("/networks/{network_id}/optimizations", response_model=SeoOptimizationResponse)
+async def create_network_optimization(
+    network_id: str,
+    data: SeoOptimizationCreate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Create a new SEO optimization activity for a network.
+    This does NOT modify the SEO structure (graph).
+    Sends Telegram notification on creation.
+    """
+    # Verify network exists and user has access
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    require_brand_access(network["brand_id"], current_user)
+    
+    # Validate required fields
+    if not data.title or not data.title.strip():
+        raise HTTPException(status_code=400, detail="Title is required")
+    if not data.description or not data.description.strip():
+        raise HTTPException(status_code=400, detail="Description is required")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    optimization = {
+        "id": str(uuid.uuid4()),
+        "network_id": network_id,
+        "brand_id": network["brand_id"],
+        "created_by": {
+            "user_id": current_user["id"],
+            "display_name": current_user.get("name", current_user["email"].split("@")[0].title()),
+            "email": current_user["email"]
+        },
+        "created_at": now,
+        "updated_at": now,
+        "activity_type": data.activity_type.value,
+        "title": data.title.strip(),
+        "description": data.description.strip(),
+        "affected_scope": data.affected_scope.value,
+        "affected_targets": data.affected_targets,
+        "keywords": data.keywords,
+        "report_urls": data.report_urls,
+        "expected_impact": [i.value for i in data.expected_impact],
+        "status": data.status.value,
+        "telegram_notified_at": None
+    }
+    
+    await db.seo_optimizations.insert_one(optimization)
+    
+    # Get brand for notification
+    brand = await db.brands.find_one({"id": network["brand_id"]}, {"_id": 0})
+    
+    # Send Telegram notification
+    try:
+        telegram_service = SeoOptimizationTelegramService(db)
+        await telegram_service.send_optimization_created_notification(
+            optimization, network, brand or {}
+        )
+    except Exception as e:
+        logger.warning(f"Failed to send Telegram notification for optimization: {e}")
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.CREATE,
+            entity_type=EntityType.SEO_OPTIMIZATION,
+            entity_id=optimization["id"],
+            after_value={"title": optimization["title"], "activity_type": optimization["activity_type"]}
+        )
+    
+    # Enrich response
+    optimization["network_name"] = network["name"]
+    optimization["brand_name"] = brand["name"] if brand else "Unknown"
+    
+    return SeoOptimizationResponse(**optimization)
+
+
+@router.get("/optimizations/{optimization_id}", response_model=SeoOptimizationResponse)
+async def get_optimization(
+    optimization_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get a single SEO optimization by ID"""
+    optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
+    if not optimization:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    require_brand_access(optimization["brand_id"], current_user)
+    
+    # Enrich with network and brand names
+    network = await db.seo_networks.find_one({"id": optimization["network_id"]}, {"_id": 0, "name": 1})
+    brand = await db.brands.find_one({"id": optimization["brand_id"]}, {"_id": 0, "name": 1})
+    
+    optimization["network_name"] = network["name"] if network else "Unknown"
+    optimization["brand_name"] = brand["name"] if brand else "Unknown"
+    
+    return SeoOptimizationResponse(**optimization)
+
+
+@router.put("/optimizations/{optimization_id}", response_model=SeoOptimizationResponse)
+async def update_optimization(
+    optimization_id: str,
+    data: SeoOptimizationUpdate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Update an SEO optimization activity.
+    Sends Telegram notification if status changes to COMPLETED or REVERTED.
+    """
+    optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
+    if not optimization:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    require_brand_access(optimization["brand_id"], current_user)
+    
+    old_status = optimization.get("status")
+    
+    # Build update dict
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if data.activity_type is not None:
+        update_data["activity_type"] = data.activity_type.value
+    if data.title is not None:
+        if not data.title.strip():
+            raise HTTPException(status_code=400, detail="Title cannot be empty")
+        update_data["title"] = data.title.strip()
+    if data.description is not None:
+        if not data.description.strip():
+            raise HTTPException(status_code=400, detail="Description cannot be empty")
+        update_data["description"] = data.description.strip()
+    if data.affected_scope is not None:
+        update_data["affected_scope"] = data.affected_scope.value
+    if data.affected_targets is not None:
+        update_data["affected_targets"] = data.affected_targets
+    if data.keywords is not None:
+        update_data["keywords"] = data.keywords
+    if data.report_urls is not None:
+        update_data["report_urls"] = data.report_urls
+    if data.expected_impact is not None:
+        update_data["expected_impact"] = [i.value for i in data.expected_impact]
+    if data.status is not None:
+        update_data["status"] = data.status.value
+    
+    await db.seo_optimizations.update_one(
+        {"id": optimization_id},
+        {"$set": update_data}
+    )
+    
+    # Get updated optimization
+    updated_optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
+    
+    # Check if status changed to completed or reverted
+    new_status = update_data.get("status", old_status)
+    if new_status != old_status and new_status in ["completed", "reverted"]:
+        # Get network and brand for notification
+        network = await db.seo_networks.find_one({"id": optimization["network_id"]}, {"_id": 0})
+        brand = await db.brands.find_one({"id": optimization["brand_id"]}, {"_id": 0})
+        
+        try:
+            telegram_service = SeoOptimizationTelegramService(db)
+            await telegram_service.send_status_change_notification(
+                updated_optimization, network or {}, brand or {},
+                old_status, new_status, current_user
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send status change notification: {e}")
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.SEO_OPTIMIZATION,
+            entity_id=optimization_id,
+            before_value={"status": old_status},
+            after_value=update_data
+        )
+    
+    # Enrich response
+    network = await db.seo_networks.find_one({"id": updated_optimization["network_id"]}, {"_id": 0, "name": 1})
+    brand = await db.brands.find_one({"id": updated_optimization["brand_id"]}, {"_id": 0, "name": 1})
+    updated_optimization["network_name"] = network["name"] if network else "Unknown"
+    updated_optimization["brand_name"] = brand["name"] if brand else "Unknown"
+    
+    return SeoOptimizationResponse(**updated_optimization)
+
+
+@router.delete("/optimizations/{optimization_id}")
+async def delete_optimization(
+    optimization_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Delete an SEO optimization activity"""
+    optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
+    if not optimization:
+        raise HTTPException(status_code=404, detail="Optimization not found")
+    
+    require_brand_access(optimization["brand_id"], current_user)
+    
+    await db.seo_optimizations.delete_one({"id": optimization_id})
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.DELETE,
+            entity_type=EntityType.SEO_OPTIMIZATION,
+            entity_id=optimization_id,
+            before_value={"title": optimization.get("title")}
+        )
+    
+    return {"message": "Optimization deleted"}
+
     
     updated = await db.seo_structure_entries.find_one({"id": entry_id}, {"_id": 0})
     updated = await enrich_structure_entry(updated)
