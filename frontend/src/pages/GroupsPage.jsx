@@ -337,6 +337,105 @@ export default function GroupsPage() {
                     </div>
                 </div>
 
+                {/* Domain Search with Auto-suggest */}
+                <div className="mb-6">
+                    <Popover open={searchOpen && searchResults.length > 0} onOpenChange={setSearchOpen}>
+                        <PopoverTrigger asChild>
+                            <div className="relative max-w-md">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                                <Input
+                                    ref={searchInputRef}
+                                    value={searchQuery}
+                                    onChange={(e) => handleSearchChange(e.target.value)}
+                                    onFocus={() => searchResults.length > 0 && setSearchOpen(true)}
+                                    placeholder="Search domains or paths..."
+                                    className="pl-10 pr-10 bg-card border-border"
+                                    data-testid="domain-search-input"
+                                />
+                                {searchLoading && (
+                                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-zinc-500" />
+                                )}
+                                {searchQuery && !searchLoading && (
+                                    <button
+                                        onClick={clearSearch}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[400px] p-0" align="start">
+                            <div className="max-h-[300px] overflow-y-auto">
+                                {searchResults.map((result) => (
+                                    <div key={result.asset_domain_id} className="border-b border-border last:border-b-0">
+                                        <div className="px-4 py-2 bg-zinc-900/50">
+                                            <span className="font-mono text-sm text-white">{result.domain_name}</span>
+                                        </div>
+                                        <div className="divide-y divide-border/50">
+                                            {result.entries.map((entry, idx) => (
+                                                <div 
+                                                    key={entry.entry_id || idx}
+                                                    className="px-4 py-2 hover:bg-zinc-800/50 cursor-pointer flex items-center justify-between gap-2"
+                                                    onClick={() => handleSelectSearchResult(result, entry, 'filter')}
+                                                    data-testid={`search-result-${entry.network_id}`}
+                                                >
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-mono text-xs text-zinc-400">
+                                                                {entry.optimized_path}
+                                                            </span>
+                                                            <span className="text-zinc-500">→</span>
+                                                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                                                entry.role === 'main' 
+                                                                    ? 'bg-green-500/10 text-green-400' 
+                                                                    : 'bg-purple-500/10 text-purple-400'
+                                                            }`}>
+                                                                {entry.role === 'main' ? 'Main' : 'Support'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-sm text-zinc-300 truncate mt-0.5">
+                                                            {entry.network_name}
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 px-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleSelectSearchResult(result, entry, 'navigate');
+                                                        }}
+                                                        data-testid={`navigate-to-${entry.network_id}`}
+                                                    >
+                                                        <ExternalLink className="h-3 w-3 mr-1" />
+                                                        Open
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                    
+                    {/* Highlight indicator */}
+                    {highlightedNetworkIds.length > 0 && (
+                        <div className="mt-2 flex items-center gap-2 text-sm text-amber-400">
+                            <Badge variant="outline" className="text-amber-400 border-amber-400/30">
+                                {highlightedNetworkIds.length} highlighted
+                            </Badge>
+                            <button
+                                onClick={clearSearch}
+                                className="text-zinc-500 hover:text-white underline"
+                            >
+                                Clear filter
+                            </button>
+                        </div>
+                    )}
+                </div>
+
                 {/* Networks Grid */}
                 {filteredNetworks.length === 0 ? (
                     <div className="empty-state mt-16">
