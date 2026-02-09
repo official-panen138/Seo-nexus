@@ -208,7 +208,7 @@ async def require_network_access(network: dict, user: dict):
         raise HTTPException(status_code=403, detail="You do not have access to this network.")
 
 
-async def require_network_access(network_id: str, user: dict):
+async def require_network_access_by_id(network_id: str, user: dict):
     """
     Raise 403 if user doesn't have access to the network.
     """
