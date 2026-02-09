@@ -21,7 +21,7 @@ import logging
 import sys
 sys.path.insert(0, '/app/backend')
 from models_v3 import (
-    AssetDomainCreate, AssetDomainUpdate, AssetDomainResponse,
+    AssetDomainCreate, AssetDomainUpdate, AssetDomainResponse, NetworkUsageInfo,
     SeoNetworkCreate, SeoNetworkUpdate, SeoNetworkResponse, SeoNetworkDetail,
     SeoNetworkCreateLegacy, MainNodeConfig,
     SeoStructureEntryCreate, SeoStructureEntryUpdate, SeoStructureEntryResponse,
