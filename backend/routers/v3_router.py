@@ -35,7 +35,9 @@ from models_v3 import (
     AssetStatus, NetworkStatus, DomainRole, SeoStatus, IndexStatus,
     ActionType, EntityType, get_tier_label,
     SeoOptimizationCreate, SeoOptimizationUpdate, SeoOptimizationResponse,
-    OptimizationActivityType, OptimizationStatus
+    OptimizationActivityType, OptimizationStatus,
+    OptimizationComplaintCreate, OptimizationComplaintResponse, ComplaintPriority,
+    NetworkAccessControl, NetworkVisibilityMode, UserTelegramSettings
 )
 from services.seo_optimization_telegram_service import SeoOptimizationTelegramService
 
