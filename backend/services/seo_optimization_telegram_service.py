@@ -390,3 +390,21 @@ pada SEO Network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{bran
         except Exception as e:
             logger.error(f"Failed to send complaint notification: {e}")
             return False
+    
+    async def send_message(self, message: str) -> bool:
+        """
+        Public method to send a custom Telegram message.
+        Used by other parts of the system to send notifications.
+        """
+        return await self._send_telegram_message(message)
+
+
+# Global instance for use across the application
+seo_optimization_telegram_service: Optional[SeoOptimizationTelegramService] = None
+
+
+def init_seo_optimization_telegram_service(db: AsyncIOMotorDatabase):
+    """Initialize the global SEO optimization Telegram service instance"""
+    global seo_optimization_telegram_service
+    seo_optimization_telegram_service = SeoOptimizationTelegramService(db)
+    return seo_optimization_telegram_service
