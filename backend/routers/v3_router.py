@@ -1580,7 +1580,7 @@ async def switch_main_target(
 
 class DeleteStructureEntryRequest(PydanticBaseModel):
     """Request model for deleting structure entry with mandatory change note"""
-    change_note: str
+    change_note: str = PydanticField(..., min_length=10, max_length=2000, description="Penjelasan penghapusan node (wajib, minimal 10 karakter)")
 
 
 @router.delete("/structure/{entry_id}")
