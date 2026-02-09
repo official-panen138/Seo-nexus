@@ -1097,11 +1097,12 @@ Full optimization detail view with complaint thread, team response system, and c
 
 **6. Visibility Mode (Separate from Managers):**
 - ✅ **Brand Based:** All brand users can VIEW
-- ✅ **Restricted:** Only managers can VIEW
-- ✅ **Public:** All platform users can VIEW (Super Admin only)
+- ✅ **Brand Based:** All brand users can VIEW (default)
+- ✅ **Restricted:** Only managers and Super Admins can VIEW
+- ❌ **Public (Super Admin):** REMOVED - December 2025
 - ✅ Visibility ≠ Execution (execution controlled by manager_ids)
 
-**Tests:** 100% pass rate (15/15 backend, 8/8 frontend) ✅
+**Tests:** 100% pass rate (11/11 backend, 14/14 frontend) ✅
 
 ---
 
@@ -1123,7 +1124,11 @@ Full optimization detail view with complaint thread, team response system, and c
    - Summary stats bar showing complaint/response/resolved counts
    - Average resolution time displayed
    - Integrated into OptimizationDetailDrawer.jsx
-3. **Time-to-Resolution Metric** - Backend logic already implemented (calculating time between complaint creation and resolution) ✅
+3. ✅ **Time-to-Resolution Metric** - Backend logic already implemented
+4. ✅ **Visibility Mode Cleanup** - COMPLETE (Dec 11, 2025)
+   - Removed "Public (Super Admin)" visibility option
+   - Clarified: Visibility = VIEW access, Managers = EXECUTE access
+   - Updated UI descriptions and backend validation
 
 ### P2 - Medium Priority
 1. ✅ **Scheduler Dashboard UI** - COMPLETE (Feb 9, 2026)
