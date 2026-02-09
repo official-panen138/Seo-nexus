@@ -866,28 +866,62 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
                         {/* Report URLs */}
                         <div>
                             <Label>Report URLs</Label>
+                            <p className="text-xs text-zinc-500 mb-2">Add report URLs with their start dates</p>
                             <div className="flex gap-2 mt-1">
                                 <Input
                                     value={reportUrlInput}
                                     onChange={(e) => setReportUrlInput(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addReportUrl())}
                                     placeholder="https://docs.google.com/..."
-                                    className="bg-black border-border"
+                                    className="bg-black border-border flex-1"
                                 />
-                                <Button type="button" variant="outline" onClick={addReportUrl}>Add</Button>
+                                <Input
+                                    type="date"
+                                    value={reportUrlDate}
+                                    onChange={(e) => setReportUrlDate(e.target.value)}
+                                    className="bg-black border-border w-[140px]"
+                                    title="Report Start Date"
+                                />
+                                <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    onClick={addReportUrl}
+                                    disabled={!reportUrlInput.trim() || !reportUrlDate}
+                                >
+                                    Add
+                                </Button>
                             </div>
                             {form.report_urls.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mt-2">
+                                <div className="space-y-2 mt-3">
                                     {form.report_urls.map((urlItem, i) => {
                                         const url = typeof urlItem === 'string' ? urlItem : urlItem.url;
-                                        const displayUrl = url.length > 40 ? url.slice(0, 40) + '...' : url;
+                                        const startDate = typeof urlItem === 'object' ? urlItem.start_date : null;
+                                        const displayUrl = url.length > 50 ? url.slice(0, 50) + '...' : url;
                                         return (
-                                            <Badge key={i} variant="secondary" className="pr-1">
-                                                <a href={url} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400">
-                                                    {displayUrl}
-                                                </a>
-                                                <button onClick={() => removeReportUrl(urlItem)} className="ml-1 hover:text-red-400">×</button>
-                                            </Badge>
+                                            <div key={i} className="flex items-center justify-between p-2 rounded bg-zinc-900/50 border border-border">
+                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                    <a 
+                                                        href={url} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer" 
+                                                        className="text-blue-400 hover:text-blue-300 text-sm truncate"
+                                                    >
+                                                        {displayUrl}
+                                                    </a>
+                                                    {startDate && (
+                                                        <Badge variant="outline" className="text-xs flex-shrink-0">
+                                                            <Calendar className="h-3 w-3 mr-1" />
+                                                            {startDate}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <button 
+                                                    onClick={() => removeReportUrl(urlItem)} 
+                                                    className="ml-2 text-zinc-500 hover:text-red-400 flex-shrink-0"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         );
                                     })}
                                 </div>
