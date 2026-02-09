@@ -530,11 +530,13 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
    - Node highlighting in D3 diagram
    - Conflict details in node detail panel
 2. **P1: SEO Telegram Settings UI** - Add configuration page for SEO alerts channel
-3. Email notification integration (Resend/SendGrid)
-4. Scheduled conflict alerts (cron)
-5. Domain health check improvements
-6. Alert history and analytics
-7. **BACKLOG: Compare Changes** - Side-by-side diff viewer (parked until Change History UI validated by team)
+3. **P1: Root vs. Path Main Node Visualization** - Solid vs dashed border in D3 graph
+4. **P1: Milestone Tag on Change Notes** - Optional milestone field
+5. Email notification integration (Resend/SendGrid)
+6. Scheduled conflict alerts (cron)
+7. Domain health check improvements
+8. Alert history and analytics
+9. **BACKLOG: Compare Changes** - Advanced diff viewer (parked)
 
 ## Test Credentials
 - **Super Admin**: `admin@test.com` / `admin123` (confirmed working)
