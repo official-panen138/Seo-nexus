@@ -207,10 +207,10 @@ class TestPhase2ComplaintAutoTagging:
     
     def test_get_optimizations_for_network(self, auth_headers):
         """Get optimizations for the test network to use in complaint creation"""
+        # Correct endpoint: /networks/{network_id}/optimizations
         response = requests.get(
-            f"{BASE_URL}/api/v3/optimizations",
-            headers=auth_headers,
-            params={"network_id": TEST_NETWORK_ID}
+            f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/optimizations",
+            headers=auth_headers
         )
         assert response.status_code == 200, f"Failed: {response.text}"
         
