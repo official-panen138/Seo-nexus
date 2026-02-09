@@ -446,10 +446,22 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
                         Track SEO activities that don't change the network structure
                     </p>
                 </div>
-                <Button onClick={openCreateDialog} className="gap-2" data-testid="add-optimization-btn">
-                    <Plus className="h-4 w-4" />
-                    Add Optimization
-                </Button>
+                <div className="flex gap-2">
+                    <Button 
+                        variant="outline" 
+                        onClick={handleExportCSV} 
+                        disabled={exporting || optimizations.length === 0}
+                        className="gap-2"
+                        data-testid="export-optimizations-btn"
+                    >
+                        <Download className={`h-4 w-4 ${exporting ? 'animate-bounce' : ''}`} />
+                        {exporting ? 'Exporting...' : 'Export CSV'}
+                    </Button>
+                    <Button onClick={openCreateDialog} className="gap-2" data-testid="add-optimization-btn">
+                        <Plus className="h-4 w-4" />
+                        Add Optimization
+                    </Button>
+                </div>
             </div>
 
             {/* Filters */}
