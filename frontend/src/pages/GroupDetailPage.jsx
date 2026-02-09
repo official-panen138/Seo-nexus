@@ -2053,6 +2053,75 @@ export default function GroupDetailPage() {
                     </DialogContent>
                 </Dialog>
 
+                {/* Switch Main Target Dialog */}
+                <Dialog open={switchMainDialogOpen} onOpenChange={setSwitchMainDialogOpen}>
+                    <DialogContent className="bg-card border-border max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Crown className="h-5 w-5 text-amber-400" />
+                                Switch Main Target
+                            </DialogTitle>
+                            <DialogDescription>
+                                This will safely transfer the main target role to a new node.
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        {entryToPromote && (
+                            <div className="space-y-4">
+                                <div className="p-4 bg-emerald-500/10 border border-emerald-400/30 rounded-lg">
+                                    <div className="text-xs text-emerald-400 uppercase font-medium mb-1">New Main Target</div>
+                                    <div className="font-mono text-lg text-white">
+                                        {entryToPromote.node_label || entryToPromote.domain_name}
+                                    </div>
+                                    <div className="text-sm text-zinc-400 mt-1">
+                                        {entryToPromote.optimized_path 
+                                            ? `Path: ${entryToPromote.optimized_path}` 
+                                            : 'Root domain (no path)'}
+                                    </div>
+                                </div>
+
+                                <div className="p-3 bg-zinc-900 rounded-lg text-sm text-zinc-400">
+                                    <p className="font-medium text-white mb-2">What will happen:</p>
+                                    <ul className="space-y-1 list-disc list-inside">
+                                        <li>Current main node → Supporting (canonical to new main)</li>
+                                        <li>Selected node → Main (primary status, no target)</li>
+                                        <li>All tiers will be recalculated via BFS</li>
+                                        <li>All other nodes remain unchanged</li>
+                                    </ul>
+                                </div>
+
+                                {/* Change Note (Required) */}
+                                <ChangeNoteInput
+                                    value={switchMainChangeNote}
+                                    onChange={setSwitchMainChangeNote}
+                                    label="Reason for Change"
+                                    placeholder="Why are you switching the main target? Include: strategic reasoning, expected SEO impact, and any optimization goals..."
+                                    required={true}
+                                    variant="default"
+                                />
+                            </div>
+                        )}
+
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setSwitchMainDialogOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleSwitchMainTarget}
+                                disabled={switching || !switchMainChangeNote || switchMainChangeNote.trim().length < 3}
+                                className="bg-amber-600 hover:bg-amber-700"
+                            >
+                                {switching && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                <ArrowRightLeft className="h-4 w-4 mr-2" />
+                                Switch Main Target
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
                 {/* Add Node Dialog */}
                 <Dialog open={addNodeDialogOpen} onOpenChange={setAddNodeDialogOpen}>
                     <DialogContent className="bg-card border-border max-w-lg">
