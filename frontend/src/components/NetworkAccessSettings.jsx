@@ -53,17 +53,9 @@ const VISIBILITY_OPTIONS = [
     {
         value: 'restricted',
         label: 'Restricted',
-        description: 'Only managers can view this network',
+        description: 'Only managers and Super Admins can view this network',
         icon: Lock,
         color: 'text-amber-400'
-    },
-    {
-        value: 'public',
-        label: 'Public (Super Admin)',
-        description: 'All platform users can view',
-        icon: Globe,
-        color: 'text-emerald-400',
-        superAdminOnly: true
     }
 ];
 
