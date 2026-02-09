@@ -581,7 +581,7 @@ class SeoNetworkNotification(BaseModel):
 
 class SeoChangeNoteRequest(BaseModel):
     """Request model for structure changes requiring change note"""
-    change_note: str = Field(..., min_length=3, max_length=2000, description="Explanation for this SEO change (required). Recommended ≥150 chars for detailed reasoning.")
+    change_note: str = Field(..., min_length=10, max_length=2000, description="Penjelasan perubahan SEO ini (wajib, minimal 10 karakter). Disarankan ≥50 karakter untuk penjelasan yang jelas.")
 
 
 class SeoStructureEntryCreateWithNote(BaseModel):
@@ -599,8 +599,8 @@ class SeoStructureEntryCreateWithNote(BaseModel):
     ranking_position: Optional[int] = None
     last_rank_check: Optional[str] = None
     notes: Optional[str] = ""
-    # Mandatory change note - increased to 2000 chars for detailed SEO reasoning
-    change_note: str = Field(..., min_length=3, max_length=2000, description="Explanation for this SEO change (required). Recommended ≥150 chars for detailed reasoning.")
+    # Mandatory change note - minimum 10 chars for clear SEO reasoning
+    change_note: str = Field(..., min_length=10, max_length=2000, description="Penjelasan perubahan SEO ini (wajib, minimal 10 karakter). Disarankan ≥50 karakter.")
 
 
 class SeoStructureEntryUpdateWithNote(BaseModel):
@@ -616,5 +616,5 @@ class SeoStructureEntryUpdateWithNote(BaseModel):
     ranking_position: Optional[int] = None
     last_rank_check: Optional[str] = None
     notes: Optional[str] = None
-    # Mandatory change note - increased to 2000 chars for detailed SEO reasoning
-    change_note: str = Field(..., min_length=3, max_length=2000, description="Explanation for this SEO change (required). Recommended ≥150 chars for detailed reasoning.")
+    # Mandatory change note - minimum 10 chars for clear SEO reasoning
+    change_note: str = Field(..., min_length=10, max_length=2000, description="Penjelasan perubahan SEO ini (wajib, minimal 10 karakter). Disarankan ≥50 karakter.")
