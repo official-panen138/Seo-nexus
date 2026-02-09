@@ -411,6 +411,20 @@ class TelegramConfig(BaseModel):
     bot_token: Optional[str] = None
     chat_id: Optional[str] = None
 
+
+class AppBrandingSettings(BaseModel):
+    """App branding settings - title, description, logo"""
+    site_title: Optional[str] = None
+    site_description: Optional[str] = None
+    logo_url: Optional[str] = None
+
+
+class TimezoneSettings(BaseModel):
+    """Timezone settings for monitoring display"""
+    default_timezone: str = "Asia/Jakarta"
+    timezone_label: str = "GMT+7"
+
+
 class MonitoringStats(BaseModel):
     total_monitored: int = 0
     up_count: int = 0
@@ -418,6 +432,61 @@ class MonitoringStats(BaseModel):
     unknown_count: int = 0
     expiring_soon: int = 0
     expired: int = 0
+
+
+# ==================== TIMEZONE HELPER ====================
+
+def format_to_local_time(dt_str: str, timezone_str: str = "Asia/Jakarta") -> str:
+    """
+    Convert UTC datetime string to local timezone for display.
+    Storage remains UTC - this is DISPLAY-LEVEL only.
+    
+    Args:
+        dt_str: ISO format datetime string (UTC)
+        timezone_str: Target timezone (default: Asia/Jakarta = GMT+7)
+    
+    Returns:
+        Formatted string like "2026-02-09 23:02 GMT+7 (Asia/Jakarta)"
+    """
+    try:
+        from zoneinfo import ZoneInfo
+        
+        # Parse the datetime string
+        if isinstance(dt_str, str):
+            # Handle various formats
+            if 'T' in dt_str:
+                dt_str = dt_str.replace('Z', '+00:00')
+            try:
+                dt = datetime.fromisoformat(dt_str)
+            except:
+                dt = datetime.strptime(dt_str[:19], '%Y-%m-%d %H:%M:%S')
+                dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            dt = dt_str
+        
+        # If naive datetime, assume UTC
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        
+        # Convert to target timezone
+        local_tz = ZoneInfo(timezone_str)
+        local_dt = dt.astimezone(local_tz)
+        
+        # Format with timezone label
+        tz_label = "GMT+7" if timezone_str == "Asia/Jakarta" else timezone_str
+        return f"{local_dt.strftime('%Y-%m-%d %H:%M')} {tz_label} ({timezone_str})"
+    except Exception as e:
+        logger.warning(f"Timezone conversion error: {e}")
+        return dt_str  # Return original if conversion fails
+
+
+async def get_system_timezone() -> tuple:
+    """Get the configured system timezone from settings"""
+    settings = await db.settings.find_one({"key": "timezone"}, {"_id": 0})
+    if settings:
+        return settings.get("default_timezone", "Asia/Jakarta"), settings.get("timezone_label", "GMT+7")
+    return "Asia/Jakarta", "GMT+7"
+
 
 # ==================== HELPER FUNCTIONS ====================
 
