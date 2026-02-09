@@ -167,6 +167,12 @@ export default function GroupDetailPage() {
     const [deleting, setDeleting] = useState(false);
     const [deleteChangeNote, setDeleteChangeNote] = useState('');  // Required for delete
     
+    // Switch Main Target state
+    const [switchMainDialogOpen, setSwitchMainDialogOpen] = useState(false);
+    const [entryToPromote, setEntryToPromote] = useState(null);
+    const [switchMainChangeNote, setSwitchMainChangeNote] = useState('');
+    const [switching, setSwitching] = useState(false);
+    
     // Add node state
     const [addNodeDialogOpen, setAddNodeDialogOpen] = useState(false);
     const [availableDomains, setAvailableDomains] = useState([]);
@@ -174,6 +180,7 @@ export default function GroupDetailPage() {
         asset_domain_id: '',
         optimized_path: '',
         domain_role: 'supporting',
+        domain_status: 'canonical',
         target_entry_id: '',
         change_note: ''  // Required for SEO change logging
     });
