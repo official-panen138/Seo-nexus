@@ -648,10 +648,35 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
                                 value={form.description}
                                 onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
                                 placeholder="Describe the optimization activity in detail..."
-                                className="mt-1 bg-black border-border min-h-[120px]"
-                                rows={5}
+                                className="mt-1 bg-black border-border min-h-[100px]"
+                                rows={4}
                             />
                         </div>
+                        
+                        {/* Reason Note - MANDATORY for new entries */}
+                        {!selectedOptimization && (
+                            <div className="border border-amber-500/30 rounded-lg p-4 bg-amber-500/5">
+                                <div className="flex items-center justify-between mb-2">
+                                    <Label className="text-amber-400 flex items-center gap-2">
+                                        <AlertTriangle className="h-4 w-4" />
+                                        Reason Note (Alasan Optimasi) *
+                                    </Label>
+                                    <span className={`text-xs ${form.reason_note.length >= 20 ? 'text-green-400' : 'text-amber-400'}`}>
+                                        {form.reason_note.length} / 20+ chars
+                                    </span>
+                                </div>
+                                <Textarea
+                                    value={form.reason_note}
+                                    onChange={(e) => setForm(prev => ({ ...prev, reason_note: e.target.value }))}
+                                    placeholder="Jelaskan mengapa optimasi ini dilakukan. Contoh: 'Meningkatkan authority domain utama untuk keyword kompetitif...'"
+                                    className="bg-black border-amber-500/50 min-h-[80px] focus:border-amber-500"
+                                    rows={3}
+                                />
+                                <p className="text-xs text-amber-400/70 mt-2">
+                                    ⚠️ Catatan ini wajib dan akan dikirim ke tim SEO via Telegram
+                                </p>
+                            </div>
+                        )}
                         
                         {/* Affected Scope */}
                         <div>
