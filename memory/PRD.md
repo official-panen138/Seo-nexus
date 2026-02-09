@@ -561,9 +561,54 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
 8. Alert history and analytics
 9. **BACKLOG: Compare Changes** - Advanced diff viewer (parked)
 
+### P0 SEO Telegram Notification - Full Authority Chains (Feb 9, 2026) - COMPLETE
+**Issue:** Telegram notifications showed ObjectIDs instead of human-readable domain names, and didn't display complete authority chains.
+
+**Fixed Implementation:**
+- ✅ `seo_telegram_service.py` - Complete rewrite of notification formatting
+- ✅ **Full Authority Chains:** Structure snapshot now shows complete paths like:
+  - `tier1-site2.com [Canonical] → tier1-site1.com [301 Redirect] → moneysite.com [Primary]`
+- ✅ **Human-Readable Labels:** All ObjectIDs replaced with domain names + status
+  - Before: `target_entry_id: 210a8a26-a296-42bc-b1c0-afeaf6b43299`
+  - After: `Target: tier1-site1.com [301 Redirect]`
+- ✅ **Status Labels:** Clear status for each node:
+  - `[Primary]` for main nodes
+  - `[Canonical]`, `[301 Redirect]`, `[302 Redirect]`, `[Restore]` for supporting nodes
+- ✅ **Tier Grouping:** Structure organized by tier (LP/Money Site, Tier 1, Tier 2, etc.)
+- ✅ **Before/After Details:** Shows target changes with full domain labels
+
+**Notification Format (Bahasa Indonesia):**
+```
+👤 PEMBARUAN OPTIMASI BAGAN SEO
+{user} telah melakukan perubahan pada network '{network}' untuk brand '{brand}'
+
+📌 RINGKASAN AKSI
+• Aksi: {action}
+• Dilakukan Oleh: {user}
+• Waktu: {timestamp}
+
+📝 ALASAN PERUBAHAN
+"{change_note}"
+
+🔄 Detail Perubahan:
+• Node: {domain}{path}
+• Target Sebelumnya: domain.com [Status]
+• Target Baru: domain.com [Status]
+
+🧭 STRUKTUR SEO TERKINI
+LP / Money Site:
+  • moneysite.com [Primary]
+Tier 1:
+  • tier1.com [301 Redirect] → moneysite.com [Primary]
+Tier 2:
+  • tier2.com [Canonical] → tier1.com [301 Redirect] → moneysite.com [Primary]
+```
+
+**Tests:** Verified with live Telegram notification - all chains displayed correctly
+
 ## Test Credentials
-- **Super Admin**: `admin@test.com` / `admin123` (confirmed working)
-- **Alt Super Admin**: `superadmin@seonoc.com` / `SuperAdmin123!`
+- **Super Admin**: `superadmin@seonoc.com` / `test123` (updated Feb 9, 2026)
+- **Alt Super Admin**: `admin@test.com` / `admin123`
 - **Admin**: `admin@seonoc.com` / `Admin123!`
 
 ## Key Files Reference
