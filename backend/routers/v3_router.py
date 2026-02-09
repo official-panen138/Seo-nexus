@@ -4893,6 +4893,58 @@ async def trigger_expiration_check(
     return {"message": "Expiration check scheduled", "status": "running"}
 
 
+@router.post("/optimizations/digest")
+async def send_optimization_digest(
+    background_tasks: BackgroundTasks,
+    brand_id: Optional[str] = None,
+    days: int = Query(default=7, ge=1, le=90),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Generate and send SEO optimization digest via Telegram.
+    Admin/Super Admin only.
+    """
+    if current_user.get("role") not in ["super_admin", "admin"]:
+        raise HTTPException(status_code=403, detail="Admin role required")
+    
+    from services.seo_digest_service import SeoDigestService
+    digest_service = SeoDigestService(db)
+    
+    # Run in background
+    async def send_digest_task():
+        success = await digest_service.send_digest(brand_id, days)
+        logger.info(f"Digest send result: {success}")
+    
+    background_tasks.add_task(send_digest_task)
+    
+    return {"message": "Digest scheduled", "status": "running", "days": days}
+
+
+@router.get("/optimizations/digest/preview")
+async def preview_optimization_digest(
+    brand_id: Optional[str] = None,
+    days: int = Query(default=7, ge=1, le=90),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Preview the optimization digest without sending.
+    Returns the digest data and formatted message.
+    """
+    if current_user.get("role") not in ["super_admin", "admin"]:
+        raise HTTPException(status_code=403, detail="Admin role required")
+    
+    from services.seo_digest_service import SeoDigestService
+    digest_service = SeoDigestService(db)
+    
+    digest = await digest_service.generate_weekly_digest(brand_id, days)
+    message = await digest_service.format_telegram_digest(digest)
+    
+    return {
+        "data": digest,
+        "formatted_message": message
+    }
+
+
 @router.post("/monitoring/check-availability")
 async def trigger_availability_check(
     background_tasks: BackgroundTasks,
