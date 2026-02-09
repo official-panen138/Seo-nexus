@@ -727,6 +727,16 @@ export default function UsersPage() {
                             {editForm.role !== 'super_admin' && (
                                 <BrandSelector value={editForm.brand_scope_ids} onChange={(v) => setEditForm(prev => ({ ...prev, brand_scope_ids: v }))} formSetter={setEditForm} />
                             )}
+                            <div className="space-y-2">
+                                <Label>Telegram Username</Label>
+                                <Input
+                                    value={editForm.telegram_username}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, telegram_username: e.target.value }))}
+                                    placeholder="@username (without @)"
+                                    className="bg-black border-border"
+                                />
+                                <p className="text-xs text-zinc-500">Used for @mentions in Telegram notifications</p>
+                            </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
