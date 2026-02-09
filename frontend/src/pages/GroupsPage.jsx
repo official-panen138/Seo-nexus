@@ -29,7 +29,10 @@ import {
     CheckCircle,
     Search,
     X,
-    ExternalLink
+    ExternalLink,
+    TrendingUp,
+    BarChart3,
+    Activity
 } from 'lucide-react';
 import { formatDate, debounce } from '../lib/utils';
 
