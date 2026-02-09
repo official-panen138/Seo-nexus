@@ -200,10 +200,12 @@ DEFAULT_CATEGORIES = [
 # ==================== MODELS ====================
 
 class UserStatus(str, Enum):
-    """User account status for approval workflow"""
+    """User account status for approval workflow and access control"""
     PENDING = "pending"
     ACTIVE = "active"
+    INACTIVE = "inactive"  # Soft disabled - preserves history
     REJECTED = "rejected"
+    SUSPENDED = "suspended"  # Future use - policy violations
 
 
 class UserBase(BaseModel):
