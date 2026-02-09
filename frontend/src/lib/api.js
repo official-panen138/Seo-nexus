@@ -222,6 +222,11 @@ export const optimizationsAPI = {
     create: (networkId, data) => apiV3.post(`/networks/${networkId}/optimizations`, data),
     update: (optimizationId, data) => apiV3.put(`/optimizations/${optimizationId}`, data),
     delete: (optimizationId) => apiV3.delete(`/optimizations/${optimizationId}`),
+    // Export
+    exportCSV: (networkId, params = {}) => apiV3.get(`/networks/${networkId}/optimizations/export`, {
+        params,
+        responseType: 'blob'
+    }),
     // Complaints
     createComplaint: (optimizationId, data) => apiV3.post(`/optimizations/${optimizationId}/complaints`, data),
     getComplaints: (optimizationId) => apiV3.get(`/optimizations/${optimizationId}/complaints`),
