@@ -931,6 +931,18 @@ async def login(credentials: UserLogin):
             detail="Your account registration has been rejected. Please contact the administrator."
         )
     
+    if user_status == "inactive":
+        raise HTTPException(
+            status_code=403, 
+            detail="User account is inactive. Please contact administrator."
+        )
+    
+    if user_status == "suspended":
+        raise HTTPException(
+            status_code=403, 
+            detail="User account is suspended due to policy violation. Please contact administrator."
+        )
+    
     token = create_token(user["id"], user["email"], user["role"])
     user_response = UserResponse(
         id=user["id"], email=user["email"], name=user["name"],
