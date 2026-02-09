@@ -835,6 +835,67 @@ Team Evaluation Dashboard providing performance metrics and scoring for the SEO 
 
 **Tests:** 100% pass rate (12/12 backend, 100% frontend) ✅
 
+### Optimization View + Complaint Flow (Feb 11, 2026) - COMPLETE
+
+**Feature Overview:**
+Full optimization detail view with complaint thread, team response system, and controlled closure workflow.
+
+**1. Optimization Detail Drawer:**
+- ✅ View button (Eye icon) on optimization cards
+- ✅ Slide-out drawer with all sections:
+  - Summary (Activity Type, Status, Created By, Dates)
+  - Reason for Optimization (highlighted amber section)
+  - Scope & Targets (domains, keywords, expected impact)
+  - Reports & Timeline (clickable URLs with dates)
+  - Complaint Thread (chronological, expandable)
+  - Team Responses (history with add form)
+  - Final Closure (Super Admin only)
+- ✅ Copy Link button for deep-linking
+- ✅ Full View button for detailed audit view
+- ✅ URL updates with `optimization_id` param
+
+**2. Complaint Thread System:**
+- ✅ Chronological display of all complaints
+- ✅ Complaint numbering (#1, #2, etc.)
+- ✅ Active complaint highlighted
+- ✅ Status badges: complained (red), under_review (amber), resolved (green)
+- ✅ Collapsible older complaints
+- ✅ Time-to-resolution metric calculated
+
+**3. Team Response System:**
+- ✅ `POST /api/v3/optimizations/{id}/responses` endpoint
+- ✅ Validation: min 20 chars, max 2000 chars
+- ✅ Response form visible to Admin/Super Admin
+- ✅ Auto-changes status from `complained` to `under_review`
+- ✅ Telegram notification on response
+
+**4. Complaint Resolution (Super Admin Only):**
+- ✅ `PATCH /api/v3/optimizations/{id}/complaints/{complaint_id}/resolve`
+- ✅ Resolution note required (min 10 chars)
+- ✅ Option to mark optimization as completed
+- ✅ Time-to-resolution recorded
+- ✅ Telegram notification on resolution
+
+**5. Final Closure (Super Admin Only):**
+- ✅ `PATCH /api/v3/optimizations/{id}/close`
+- ✅ Blocked if unresolved complaints exist
+- ✅ Warning displayed: "⚠ Blocked by Complaint – resolve before closing"
+- ✅ Final note optional
+- ✅ Telegram notification on closure
+
+**6. Status & Blocking Rules:**
+- ✅ Status badges on optimization cards (🟢 Completed, 🔴 Complained, 🟡 Under Review)
+- ✅ Cannot mark `completed` if unresolved complaint exists
+- ✅ Proper validation enforced at API level
+
+**Key Files:**
+- `frontend/src/components/OptimizationDetailDrawer.jsx` - Detail drawer component
+- `frontend/src/components/OptimizationsTab.jsx` - Updated with View button
+- `backend/routers/v3_router.py` - New endpoints: /detail, /responses, /resolve, /close
+- `backend/models_v3.py` - New models: TeamResponseCreate, ComplaintResolveRequest, etc.
+
+**Tests:** 82% backend (9/11), 95% frontend ✅
+
 ## Prioritized Backlog
 
 ### P0 - Critical
