@@ -1226,8 +1226,9 @@ async def create_structure_entry(
     node_label = f"{asset['domain_name']}{normalized_path or ''}"
     
     # Log SEO change with mandatory note
+    change_log_id = None
     if seo_change_log_service:
-        await seo_change_log_service.log_change(
+        change_log_id = await seo_change_log_service.log_change(
             network_id=data.network_id,
             brand_id=network.get("brand_id", ""),
             actor_user_id=current_user.get("id", ""),
@@ -1238,6 +1239,21 @@ async def create_structure_entry(
             before_snapshot=None,
             after_snapshot=entry,
             entry_id=entry["id"]
+        )
+    
+    # Send SEO Telegram notification
+    if seo_telegram_service:
+        await seo_telegram_service.send_seo_change_notification(
+            network_id=data.network_id,
+            brand_id=network.get("brand_id", ""),
+            actor_user_id=current_user.get("id", ""),
+            actor_email=current_user["email"],
+            action_type="create_node",
+            affected_node=node_label,
+            change_note=change_note,
+            before_snapshot=None,
+            after_snapshot=entry,
+            change_log_id=change_log_id
         )
     
     # Log system activity (separate from SEO change log)
