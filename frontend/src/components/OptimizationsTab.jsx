@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
+import { useSearchParams } from 'react-router-dom';
 import { optimizationsAPI } from '../lib/api';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -13,6 +14,7 @@ import { Skeleton } from './ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { toast } from 'sonner';
 import { formatDate } from '../lib/utils';
+import OptimizationDetailDrawer from './OptimizationDetailDrawer';
 import { 
     Plus, 
     Loader2, 
@@ -34,7 +36,9 @@ import {
     Trash2,
     LinkIcon,
     AlertTriangle,
-    MessageSquare
+    MessageSquare,
+    Eye,
+    AlertCircle
 } from 'lucide-react';
 
 // Activity type configuration
