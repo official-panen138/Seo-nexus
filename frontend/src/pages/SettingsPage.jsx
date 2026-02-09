@@ -1,15 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../lib/auth';
 import { settingsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
 import { toast } from 'sonner';
-import { Loader2, Settings, Send, MessageCircle, CheckCircle, AlertCircle, Network, Bell } from 'lucide-react';
+import { Loader2, Settings, Send, MessageCircle, CheckCircle, AlertCircle, Network, Bell, Palette, Clock, Upload, Image } from 'lucide-react';
+
+// Timezone options
+const TIMEZONE_OPTIONS = [
+    { value: "Asia/Jakarta", label: "GMT+7 (Asia/Jakarta)" },
+    { value: "Asia/Singapore", label: "GMT+8 (Asia/Singapore)" },
+    { value: "Asia/Tokyo", label: "GMT+9 (Asia/Tokyo)" },
+    { value: "Asia/Bangkok", label: "GMT+7 (Asia/Bangkok)" },
+    { value: "Asia/Kolkata", label: "GMT+5:30 (Asia/Kolkata)" },
+    { value: "Europe/London", label: "GMT+0 (Europe/London)" },
+    { value: "Europe/Paris", label: "GMT+1 (Europe/Paris)" },
+    { value: "America/New_York", label: "GMT-5 (America/New_York)" },
+    { value: "America/Los_Angeles", label: "GMT-8 (America/Los_Angeles)" },
+    { value: "UTC", label: "UTC" },
+];
 
 export default function SettingsPage() {
     const { isSuperAdmin } = useAuth();
@@ -33,6 +49,23 @@ export default function SettingsPage() {
     const [newSeoChatId, setNewSeoChatId] = useState('');
     const [savingSeo, setSavingSeo] = useState(false);
     const [testingSeo, setTestingSeo] = useState(false);
+    
+    // Branding state
+    const [brandingConfig, setBrandingConfig] = useState({
+        site_title: 'SEO//NOC',
+        site_description: '',
+        logo_url: ''
+    });
+    const [savingBranding, setSavingBranding] = useState(false);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
+    const fileInputRef = useRef(null);
+    
+    // Timezone state
+    const [timezoneConfig, setTimezoneConfig] = useState({
+        default_timezone: 'Asia/Jakarta',
+        timezone_label: 'GMT+7'
+    });
+    const [savingTimezone, setSavingTimezone] = useState(false);
 
     useEffect(() => {
         loadSettings();
