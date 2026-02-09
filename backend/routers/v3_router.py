@@ -562,7 +562,7 @@ async def delete_registrar(
 
 # ==================== ASSET DOMAINS ENDPOINTS ====================
 
-@router.get("/asset-domains", response_model=List[AssetDomainResponse])
+@router.get("/asset-domains")
 async def get_asset_domains(
     brand_id: Optional[str] = None,
     category_id: Optional[str] = None,
@@ -570,11 +570,27 @@ async def get_asset_domains(
     status: Optional[AssetStatus] = None,
     monitoring_enabled: Optional[bool] = None,
     search: Optional[str] = None,
-    skip: int = 0,
-    limit: int = 100,
+    network_id: Optional[str] = None,
+    page: int = Query(default=1, ge=1, description="Page number (1-based)"),
+    limit: int = Query(default=25, ge=1, le=100, description="Items per page"),
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Get all asset domains with optional filters - BRAND SCOPED"""
+    """
+    Get asset domains with SERVER-SIDE PAGINATION - BRAND SCOPED.
+    
+    Returns paginated response with meta information:
+    {
+        "data": [...],
+        "meta": {
+            "page": 1,
+            "limit": 25,
+            "total": 1284,
+            "total_pages": 52
+        }
+    }
+    """
+    import math
+    
     # Start with brand scope filter
     query = build_brand_filter(current_user)
     
@@ -594,7 +610,25 @@ async def get_asset_domains(
     if search:
         query["domain_name"] = {"$regex": search, "$options": "i"}
     
-    assets = await db.asset_domains.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
+    # Filter by network_id if provided (domains used in a specific SEO network)
+    if network_id:
+        # Get all asset_domain_ids used in this network
+        structure_entries = await db.seo_structure_entries.find(
+            {"network_id": network_id},
+            {"_id": 0, "asset_domain_id": 1}
+        ).to_list(10000)
+        domain_ids_in_network = [e["asset_domain_id"] for e in structure_entries]
+        query["id"] = {"$in": domain_ids_in_network}
+    
+    # Get total count for pagination
+    total = await db.asset_domains.count_documents(query)
+    total_pages = math.ceil(total / limit) if total > 0 else 1
+    
+    # Calculate skip from page number
+    skip = (page - 1) * limit
+    
+    # Fetch paginated data
+    assets = await db.asset_domains.find(query, {"_id": 0}).sort("domain_name", 1).skip(skip).limit(limit).to_list(limit)
     
     # Batch enrich - brands, categories, registrars
     brands = {b["id"]: b["name"] for b in await db.brands.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)}
@@ -648,7 +682,16 @@ async def get_asset_domains(
             for n in raw_networks if n.get("network_id")
         ]
     
-    return [AssetDomainResponse(**a) for a in assets]
+    # Return paginated response
+    return {
+        "data": [AssetDomainResponse(**a) for a in assets],
+        "meta": {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "total_pages": total_pages
+        }
+    }
 
 
 @router.get("/asset-domains/{asset_id}", response_model=AssetDomainResponse)
