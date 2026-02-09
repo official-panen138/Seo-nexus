@@ -1963,6 +1963,86 @@ async def create_network_optimization(
     return SeoOptimizationResponse(**optimization)
 
 
+# ==================== STATIC OPTIMIZATION ROUTES (Must be before parameterized routes) ====================
+
+@router.post("/optimizations/digest")
+async def send_optimization_digest(
+    background_tasks: BackgroundTasks,
+    brand_id: Optional[str] = None,
+    days: int = Query(default=7, ge=1, le=90),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Generate and send SEO optimization digest via Telegram.
+    Admin/Super Admin only.
+    """
+    if current_user.get("role") not in ["super_admin", "admin"]:
+        raise HTTPException(status_code=403, detail="Admin role required")
+    
+    from services.seo_digest_service import SeoDigestService
+    digest_service = SeoDigestService(db)
+    
+    async def send_digest_task():
+        success = await digest_service.send_digest(brand_id, days)
+        logger.info(f"Digest send result: {success}")
+    
+    background_tasks.add_task(send_digest_task)
+    
+    return {"message": "Digest scheduled", "status": "running", "days": days}
+
+
+@router.get("/optimizations/digest/preview")
+async def preview_optimization_digest(
+    brand_id: Optional[str] = None,
+    days: int = Query(default=7, ge=1, le=90),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Preview the optimization digest without sending.
+    Returns the digest data and formatted message.
+    """
+    if current_user.get("role") not in ["super_admin", "admin"]:
+        raise HTTPException(status_code=403, detail="Admin role required")
+    
+    from services.seo_digest_service import SeoDigestService
+    digest_service = SeoDigestService(db)
+    
+    digest = await digest_service.generate_weekly_digest(brand_id, days)
+    message = await digest_service.format_telegram_digest(digest)
+    
+    return {
+        "data": digest,
+        "formatted_message": message
+    }
+
+
+@router.get("/optimizations/ai-summary")
+async def get_ai_optimization_summary(
+    network_id: Optional[str] = None,
+    brand_id: Optional[str] = None,
+    days: int = Query(default=7, ge=1, le=30),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Generate an AI-powered summary of SEO optimization activities.
+    Uses GPT-4o to analyze and summarize activities.
+    """
+    if current_user.get("role") not in ["super_admin", "admin"]:
+        raise HTTPException(status_code=403, detail="Admin role required")
+    
+    from services.ai_summary_service import AiSummaryService
+    ai_service = AiSummaryService(db)
+    
+    result = await ai_service.generate_optimization_summary(network_id, brand_id, days)
+    
+    if result.get("error"):
+        raise HTTPException(status_code=500, detail=result["error"])
+    
+    return result
+
+
+# ==================== PARAMETERIZED OPTIMIZATION ROUTES ====================
+
 @router.get("/optimizations/{optimization_id}", response_model=SeoOptimizationResponse)
 async def get_optimization(
     optimization_id: str,
