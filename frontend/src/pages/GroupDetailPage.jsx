@@ -277,13 +277,21 @@ export default function GroupDetailPage() {
         }
     };
 
-    // Load change history for the network
-    const loadChangeHistory = useCallback(async () => {
+    // Load change history for the network with optional filters
+    const loadChangeHistory = useCallback(async (filters = {}) => {
         if (!groupId) return;
         
         setChangeHistoryLoading(true);
         try {
-            const { data } = await changeLogsAPI.getNetworkHistory(groupId, { limit: 100 });
+            const params = {
+                limit: 100,
+                ...(filters.actor && { actor_email: filters.actor }),
+                ...(filters.action && { action_type: filters.action }),
+                ...(filters.node && { affected_node: filters.node }),
+                ...(filters.dateFrom && { date_from: filters.dateFrom }),
+                ...(filters.dateTo && { date_to: filters.dateTo })
+            };
+            const { data } = await changeLogsAPI.getNetworkHistory(groupId, params);
             setChangeHistory(data || []);
         } catch (err) {
             console.error('Failed to load change history:', err);
@@ -292,6 +300,17 @@ export default function GroupDetailPage() {
             setChangeHistoryLoading(false);
         }
     }, [groupId]);
+    
+    // Apply timeline filters
+    const applyTimelineFilters = () => {
+        loadChangeHistory(timelineFilters);
+    };
+    
+    // Clear timeline filters
+    const clearTimelineFilters = () => {
+        setTimelineFilters({ actor: '', action: '', node: '', dateFrom: '', dateTo: '' });
+        loadChangeHistory({});
+    };
 
     // Load notifications for the network
     const loadNotifications = useCallback(async () => {
