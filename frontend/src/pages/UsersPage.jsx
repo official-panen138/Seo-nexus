@@ -186,20 +186,41 @@ export default function UsersPage() {
             toast.error('Please assign at least one brand');
             return;
         }
+        if (createForm.useManualPassword && (!createForm.password || createForm.password.length < 6)) {
+            toast.error('Password must be at least 6 characters');
+            return;
+        }
 
         setSaving(true);
         try {
             const token = localStorage.getItem('seo_nexus_token');
+            const payload = {
+                email: createForm.email,
+                name: createForm.name,
+                role: createForm.role,
+                brand_scope_ids: createForm.brand_scope_ids
+            };
+            
+            // Only include password if manual password is enabled
+            if (createForm.useManualPassword && createForm.password) {
+                payload.password = createForm.password;
+            }
+            
             const response = await fetch(`${API_URL}/api/users/create`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(createForm)
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
                 const data = await response.json();
-                setGeneratedPassword(data.generated_password);
-                toast.success('User created successfully');
+                if (data.password_was_generated) {
+                    setGeneratedPassword(data.generated_password);
+                } else {
+                    // Manual password was used, just close dialog
+                    toast.success('User created successfully');
+                    closeCreateDialog();
+                }
                 loadData();
             } else {
                 const error = await response.json();
