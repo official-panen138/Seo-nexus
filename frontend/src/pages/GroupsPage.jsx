@@ -32,7 +32,10 @@ import {
     ExternalLink,
     TrendingUp,
     BarChart3,
-    Activity
+    Activity,
+    Lock,
+    Users,
+    Globe2
 } from 'lucide-react';
 import { formatDate, debounce } from '../lib/utils';
 
