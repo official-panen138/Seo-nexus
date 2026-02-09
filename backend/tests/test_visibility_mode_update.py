@@ -154,14 +154,14 @@ class TestManagerSearch:
             assert "email" in user, "User should have email"
     
     def test_user_search_minimum_query_length(self, authenticated_client, test_network_id):
-        """User search should handle short queries gracefully"""
+        """User search should reject queries less than 2 characters"""
         response = authenticated_client.get(
             f"{BASE_URL}/api/v3/users/search",
             params={"q": "a", "network_id": test_network_id}
         )
         
-        # Should still return 200, possibly empty results
-        assert response.status_code == 200, f"Short query search failed: {response.text}"
+        # Should return 422 for query length less than 2 characters
+        assert response.status_code == 422, f"Short query should be rejected with 422, got {response.status_code}"
 
 
 class TestAddRemoveManagers:
