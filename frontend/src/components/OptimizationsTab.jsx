@@ -120,6 +120,7 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
     const [targetInput, setTargetInput] = useState('');
     const [keywordInput, setKeywordInput] = useState('');
     const [reportUrlInput, setReportUrlInput] = useState('');
+    const [reportUrlDate, setReportUrlDate] = useState(new Date().toISOString().split('T')[0]);
 
     // Check for deep-link on mount
     useEffect(() => {
