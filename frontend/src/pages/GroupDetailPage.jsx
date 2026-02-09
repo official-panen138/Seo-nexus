@@ -1745,7 +1745,14 @@ export default function GroupDetailPage() {
                                                 <Label>Role</Label>
                                                 <Select 
                                                     value={editForm.domain_role} 
-                                                    onValueChange={(v) => setEditForm({...editForm, domain_role: v})}
+                                                    onValueChange={(v) => setEditForm({
+                                                        ...editForm, 
+                                                        domain_role: v,
+                                                        // Auto-update status when role changes
+                                                        domain_status: v === 'main' ? 'primary' : (editForm.domain_status === 'primary' ? 'canonical' : editForm.domain_status),
+                                                        // Clear target when switching to main
+                                                        target_entry_id: v === 'main' ? '' : editForm.target_entry_id
+                                                    })}
                                                 >
                                                     <SelectTrigger className="bg-black border-border">
                                                         <SelectValue />
