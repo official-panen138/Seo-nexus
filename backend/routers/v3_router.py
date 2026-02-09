@@ -34,9 +34,10 @@ from models_v3 import (
     MonitoringSettings, MonitoringSettingsUpdate,
     AssetStatus, NetworkStatus, DomainRole, SeoStatus, IndexStatus,
     ActionType, EntityType, get_tier_label,
-    SeoOptimizationCreate, SeoOptimizationUpdate, SeoOptimizationResponse,
+    SeoOptimizationCreate, SeoOptimizationUpdate, SeoOptimizationResponse, SeoOptimizationDetailResponse,
     OptimizationActivityType, OptimizationStatus, ComplaintStatus, ObservedImpact,
     OptimizationComplaintCreate, OptimizationComplaintResponse, ComplaintPriority,
+    TeamResponseCreate, TeamResponseEntry, ComplaintResolveRequest, OptimizationCloseRequest,
     NetworkAccessControl, NetworkVisibilityMode, UserTelegramSettings,
     OptimizationActivityTypeCreate, OptimizationActivityTypeResponse,
     UserSeoScore, TeamEvaluationSummary
