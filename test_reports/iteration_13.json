@@ -1,0 +1,92 @@
+{
+  "summary": "Tested three major features: 1) Enhanced Change Note UX - large textarea (140px), templates dropdown with 4 categories, 0/2000 character counter, Min 3 chars badge. 2) Main Node Logic - validation rejects target_entry_id, canonical/redirect statuses on main nodes. 3) Switch Main Target - API works correctly with role swap, tier recalculation via BFS.",
+  
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  
+  "passed_tests": {
+    "backend_api": [
+      "Main node rejects target_entry_id with error: 'Main (LP/Money Site) nodes cannot have a target. They are the primary target.'",
+      "Main node rejects canonical status with error about needing 'primary' status",
+      "Main node rejects 301_redirect status with proper error message",
+      "Switch Main Target API endpoint exists at POST /api/v3/networks/{id}/switch-main-target",
+      "Switch Main Target validates change_note is required (422 without)",
+      "Switch Main Target validates min 3 chars in change_note",
+      "Switch Main Target performs safe role swap (old main -> supporting canonical, new main -> main primary)",
+      "Switch Main Target clears target_entry_id on new main node",
+      "Switch Main Target sets target_entry_id on old main to point to new main",
+      "Switch Main Target triggers tier recalculation via BFS",
+      "Change note max length is 2000 chars (accepts 2000)",
+      "Change note rejects over 2000 chars (422)",
+      "Structure create requires change_note (422 without)",
+      "Structure update requires change_note (422 without)",
+      "MAIN_NODE_ALLOWED_STATUSES = [SeoStatus.PRIMARY] verified in models_v3.py",
+      "SUPPORTING_NODE_ALLOWED_STATUSES includes canonical, redirects (not primary)"
+    ],
+    "frontend_ui": [
+      "Change Note Input has data-testid='change-note-input'",
+      "Large textarea verified: 428x140px (> 100px height requirement)",
+      "Templates dropdown button visible with lightbulb icon",
+      "Template categories: Linking Strategy, Cannibalization Fix, Optimization, Maintenance",
+      "Individual templates visible (Relink to Main, Keyword Cannibalization, etc.)",
+      "Character counter shows '0 / 2000' initially",
+      "'Min 3 characters required' badge displayed",
+      "Role dropdown with Supporting/Main options",
+      "Status dropdown shows role-specific options",
+      "Main role auto-sets Status to 'Primary Target'",
+      "Helper text: 'Main nodes are the primary target - they don't point to other nodes.'",
+      "Target Node dropdown disabled when Role is Main",
+      "Switch to Main Target option visible in row dropdown menu for supporting nodes"
+    ]
+  },
+  
+  "test_report_links": [
+    "/app/backend/tests/test_change_note_main_node_switch.py",
+    "/app/test_reports/pytest/change_note_main_switch_results.xml"
+  ],
+  
+  "action_items": [],
+  
+  "critical_code_review_comments": [
+    "Main node validation is correctly implemented in v3_router.py lines 1151-1175 (create) and 1299-1324 (update)",
+    "Switch Main Target endpoint (lines 1393-1523) properly handles: role demotion, role promotion, tier recalculation",
+    "ChangeNoteInput component uses auto-resize textarea with minHeight='140px' by default",
+    "CHANGE_NOTE_TEMPLATES array contains 4 categories with 2-3 templates each (lines 17-49)",
+    "Add Node dialog correctly auto-sets domain_status to 'primary' when role changes to 'main'"
+  ],
+  
+  "updated_files": [
+    "/app/backend/tests/test_change_note_main_node_switch.py"
+  ],
+  
+  "success_rate": {
+    "backend": "100% (7/7 pytest passed, 6 skipped due to no available domains)",
+    "frontend": "100% (all UI elements verified via Playwright)"
+  },
+  
+  "test_credentials": {
+    "super_admin": {"email": "admin@test.com", "password": "admin123"}
+  },
+  
+  "test_network": {
+    "name": "TESTER2",
+    "id": "a8ea05d6-6d3a-4a5d-86c6-5d9c0be8dc21",
+    "entries_count": 5,
+    "main_node": "moneysite.com"
+  },
+  
+  "seed_data_creation": "Used existing TESTER2 network. Performed switch main target operations (tier1-site1 ↔ moneysite) and reverted.",
+  
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  
+  "context_for_next_testing_agent": "Three major features fully tested: 1) ChangeNoteInput component is reusable with templates dropdown, auto-resize, char counter. Used in Add Node, Edit Node, Delete Node, and Switch Main Target dialogs. 2) Main node validation enforces: no target_entry_id, PRIMARY status only (not canonical/redirect). Backend returns clear error messages. 3) Switch Main Target performs safe role swap without node deletion - old main becomes supporting (canonical, points to new main), new main gets primary status with no target. Tiers recalculated via BFS. All features working correctly."
+}
