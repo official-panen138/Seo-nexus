@@ -175,6 +175,11 @@ function AppRoutes() {
                     <ActivityTypesPage />
                 </ProtectedRoute>
             } />
+            <Route path="/settings/scheduler" element={
+                <ProtectedRoute>
+                    <SchedulerDashboardPage />
+                </ProtectedRoute>
+            } />
             
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
