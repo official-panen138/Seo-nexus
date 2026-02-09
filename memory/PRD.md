@@ -785,3 +785,63 @@ Please review and respond to this complaint.
 
 **Tests:** Verified with API curl tests and browser screenshots ✅
 
+
+
+
+### SEO Team Evaluation Dashboard (Feb 11, 2026) - COMPLETE
+
+**Feature Overview:**
+Team Evaluation Dashboard providing performance metrics and scoring for the SEO optimization team.
+
+**1. Team Evaluation Dashboard (`/reports/team-evaluation`):**
+- ✅ Summary stat cards: Total Optimizations, Completed, Total Complaints, Reverted
+- ✅ Top Contributors table with scoring (0-5 scale)
+- ✅ Score formula: base 5.0 - revert_penalty - complaint_penalty
+- ✅ Status labels: Excellent (4.5+), Good (3.5+), Average (2.5+), Needs Improvement (<2.5)
+- ✅ Status Distribution pie chart (Completed, In Progress, Planned, Reverted)
+- ✅ Activity Types bar chart (Backlink, On-Page, etc.)
+- ✅ Most Complained Users alert section
+- ✅ Date range filter (7/30/90/365 days)
+- ✅ Brand filter dropdown
+
+**2. Mandatory Reason Note (`reason_note`) for Optimizations:**
+- ✅ Minimum 20 characters required for new optimizations
+- ✅ Character count indicator with color feedback (amber → green when valid)
+- ✅ Warning text: "Catatan ini wajib dan akan dikirim ke tim SEO via Telegram"
+- ✅ Create button disabled until validation passes
+- ✅ reason_note displayed on optimization cards with "Alasan:" prefix
+
+**3. Activity Types API (Master Data):**
+- ✅ `GET /api/v3/optimization-activity-types` - List all types
+- ✅ `POST /api/v3/optimization-activity-types` - Create new type (Super Admin)
+- ✅ `DELETE /api/v3/optimization-activity-types/{id}` - Delete type (Super Admin)
+- ✅ Default types: Backlink Campaign, On-Page Optimization, Technical SEO, Content Update, Other
+
+**4. Team Evaluation Summary API:**
+- ✅ `GET /api/v3/team-evaluation/summary` - Aggregated metrics
+- ✅ Response includes: period_start, period_end, total_optimizations, by_status, by_activity_type, by_observed_impact, total_complaints, top_contributors, most_complained_users
+
+**Key Files:**
+- `frontend/src/pages/TeamEvaluationPage.jsx` - Dashboard UI with recharts
+- `frontend/src/components/OptimizationsTab.jsx` - Updated form with reason_note
+- `frontend/src/lib/api.js` - teamEvaluationAPI, activityTypesAPI
+- `backend/routers/v3_router.py` - Team evaluation & activity types endpoints
+
+**Tests:** 100% pass rate (12/12 backend, 100% frontend) ✅
+
+## Prioritized Backlog
+
+### P0 - Critical
+- None (Team Evaluation core features complete)
+
+### P1 - High Priority
+1. **Activity Type Management UI** - Settings page for managing `seo_optimization_activity_types`
+2. **Project-Level User Visibility** - Extend SEO Network with `allowed_user_ids` and `visibility_mode` enforcement
+3. **Telegram Account Linking UI** - User settings to link Telegram for notification tagging
+
+### P2 - Medium Priority
+1. Correlate optimization timeline with ranking history
+2. Automatic optimization impact score calculation
+3. Export optimization logs to CSV
+4. Weekly SEO optimization digest (Telegram/Email)
+5. AI-generated optimization summaries
