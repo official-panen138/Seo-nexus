@@ -119,7 +119,20 @@ export const settingsAPI = {
     // SEO Telegram (V3)
     getSeoTelegram: () => api.get('/v3/settings/telegram-seo'),
     updateSeoTelegram: (data) => api.put('/v3/settings/telegram-seo', data),
-    testSeoTelegram: () => api.post('/v3/settings/telegram-seo/test')
+    testSeoTelegram: () => api.post('/v3/settings/telegram-seo/test'),
+    // App Branding
+    getBranding: () => api.get('/settings/branding'),
+    updateBranding: (data) => api.put('/settings/branding', data),
+    uploadLogo: (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.post('/settings/branding/upload-logo', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
+    // Timezone
+    getTimezone: () => api.get('/settings/timezone'),
+    updateTimezone: (data) => api.put('/settings/timezone', data)
 };
 
 // Audit logs API
