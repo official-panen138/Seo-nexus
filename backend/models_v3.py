@@ -156,6 +156,14 @@ class AssetDomainUpdate(BaseModel):
     notes: Optional[str] = None
 
 
+class NetworkUsageInfo(BaseModel):
+    """Info about a network that uses this asset domain"""
+    network_id: str
+    network_name: str
+    role: str  # "main" or "supporting"
+    optimized_path: Optional[str] = None
+
+
 class AssetDomainResponse(AssetDomainBase):
     """Response model for asset domain"""
     model_config = ConfigDict(extra="ignore")
@@ -168,6 +176,9 @@ class AssetDomainResponse(AssetDomainBase):
     # Monitoring status display
     monitoring_status: Optional[str] = None  # up/down/unknown
     days_until_expiration: Optional[int] = None  # Calculated field
+    
+    # SEO Network usage - derived from seo_structure_entries
+    seo_networks: List[NetworkUsageInfo] = []
     
     created_at: str
     updated_at: str
