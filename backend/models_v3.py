@@ -245,6 +245,13 @@ class SeoNetworkUpdate(BaseModel):
     status: Optional[NetworkStatus] = None
 
 
+class RankingStatus(str, Enum):
+    """SEO Network ranking status"""
+    RANKING = "ranking"  # Has at least one node with ranking_position 1-100 or ranking_url
+    TRACKING = "tracking"  # No ranking but has primary_keyword/ranking_url with INDEX
+    NONE = "none"  # No ranking data
+
+
 class SeoNetworkResponse(SeoNetworkBase):
     """Response model for SEO network"""
     model_config = ConfigDict(extra="ignore")
@@ -254,6 +261,13 @@ class SeoNetworkResponse(SeoNetworkBase):
     domain_count: int = 0
     main_node_id: Optional[str] = None  # ID of the main structure entry
     main_domain_name: Optional[str] = None  # Name of main domain for display
+    
+    # Ranking visibility fields (derived from structure entries)
+    ranking_status: RankingStatus = RankingStatus.NONE
+    ranking_nodes_count: int = 0  # Nodes with ranking_position 1-100
+    best_ranking_position: Optional[int] = None  # Lowest position (best rank)
+    tracked_urls_count: int = 0  # Nodes with ranking_url or primary_keyword
+    
     created_at: str
     updated_at: str
 
