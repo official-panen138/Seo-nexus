@@ -725,3 +725,63 @@ Tier 2:
 - Migration Plan: `/app/docs/migration/V3_MIGRATION_PLAN.md`
 - Database Backup: `/app/backups/v2_backup_20260208_085617/`
 - Technical Docs: `/app/docs/` (README, API, INSTALL, DEPLOYMENT, etc.)
+
+### SEO Optimizations PRD Addendum (Feb 9, 2026) - COMPLETE
+
+**Implemented Enhancements:**
+
+**1. Optimization Deletion Rule (CRITICAL GOVERNANCE):**
+- ✅ Only Super Admin can delete optimization records
+- ✅ Non-super-admin receives 403 error with clear message
+- ✅ Delete button hidden in UI for non-super-admins
+
+**2. User Telegram Settings:**
+- ✅ `telegram_username`, `telegram_user_id`, `telegram_linked_at` fields
+- ✅ `GET/PUT /api/users/{id}/telegram` endpoints
+- ✅ Users can update their own, Super Admin can update any
+
+**3. Optimization Complaints:**
+- ✅ `POST /api/v3/optimizations/{id}/complaints` - Create complaint (Super Admin)
+- ✅ `GET /api/v3/optimizations/{id}/complaints` - List complaints
+- ✅ Priority levels: low, medium, high
+- ✅ Telegram notification with user tagging (@telegram_username)
+- ✅ Complaint count indicator badge on optimization cards
+
+**4. Network Access Control:**
+- ✅ `visibility_mode`: restricted, brand_based, public
+- ✅ `allowed_user_ids` for restricted access
+- ✅ `GET/PUT /api/v3/networks/{id}/access-control` endpoints
+
+**Telegram Complaint Format:**
+```
+🚨 SEO OPTIMIZATION COMPLAINT
+
+{Super Admin} telah mengajukan komplain
+pada SEO Network '{network}' untuk brand '{brand}'.
+
+👥 Tagged Users:
+  • @telegram_username
+  • user@email.com (no Telegram)
+
+📌 Optimization:
+  • Judul: ...
+  • Jenis: Backlink Campaign
+  • Status: Selesai
+
+🔴 Prioritas: Tinggi
+
+📝 Alasan Komplain:
+"..."
+
+⚠️ Action Required:
+Please review and respond to this complaint.
+```
+
+**Key Files:**
+- `backend/routers/v3_router.py` - Complaint & access control endpoints
+- `backend/server.py` - User Telegram settings endpoints
+- `backend/services/seo_optimization_telegram_service.py` - Complaint notifications
+- `frontend/src/components/OptimizationsTab.jsx` - Complaint dialog, delete restriction
+
+**Tests:** Verified with API curl tests and browser screenshots ✅
+
