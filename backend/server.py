@@ -1969,7 +1969,8 @@ init_v3_router(
     roles_dep=require_roles,
     activity_service=activity_log_service,
     tier_svc=tier_service,
-    seo_change_svc=seo_change_log_service
+    seo_change_svc=seo_change_log_service,
+    seo_telegram_svc=seo_telegram_service
 )
 
 # Include routers
