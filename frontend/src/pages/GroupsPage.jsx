@@ -530,6 +530,8 @@ export default function GroupsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="networks-grid">
                         {filteredNetworks.map((network, index) => {
                             const isHighlighted = highlightedNetworkIds.includes(network.id);
+                            const rankingBadge = getRankingStatusBadge(network.ranking_status);
+                            const RankingIcon = rankingBadge.icon;
                             return (
                             <Link 
                                 key={network.id} 
@@ -542,18 +544,31 @@ export default function GroupsPage() {
                                         ? 'ring-2 ring-amber-400 border-amber-400/50' 
                                         : highlightedNetworkIds.length > 0 
                                             ? 'opacity-40' 
-                                            : ''
+                                            : network.ranking_status === 'ranking'
+                                                ? 'border-emerald-500/30'
+                                                : ''
                                 }`}>
                                     <CardHeader className="pb-3">
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className={`p-2 rounded-md ${
-                                                    isHighlighted ? 'bg-amber-500/20' : 'bg-purple-500/10'
+                                                    isHighlighted ? 'bg-amber-500/20' 
+                                                        : network.ranking_status === 'ranking' ? 'bg-emerald-500/10'
+                                                        : 'bg-purple-500/10'
                                                 }`}>
-                                                    <Network className="h-5 w-5 text-purple-500" />
+                                                    <Network className={`h-5 w-5 ${
+                                                        network.ranking_status === 'ranking' ? 'text-emerald-500' : 'text-purple-500'
+                                                    }`} />
                                                 </div>
                                                 <div>
-                                                    <CardTitle className="text-base">{network.name}</CardTitle>
+                                                    <div className="flex items-center gap-2">
+                                                        <CardTitle className="text-base">{network.name}</CardTitle>
+                                                        {/* Ranking Status Badge */}
+                                                        <Badge className={`text-[10px] px-1.5 py-0 ${rankingBadge.className}`} data-testid={`ranking-badge-${network.id}`}>
+                                                            <RankingIcon className="h-3 w-3 mr-1" />
+                                                            {rankingBadge.label}
+                                                        </Badge>
+                                                    </div>
                                                     {network.brand_name && (
                                                         <Badge variant="outline" className="mt-1 text-xs">
                                                             <Tag className="h-3 w-3 mr-1" />
