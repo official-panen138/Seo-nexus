@@ -2773,6 +2773,95 @@ Status: 🟢 COMPLETED ✓"""
     }
 
 
+# ==================== USER SEARCH FOR ACCESS CONTROL ====================
+
+@router.get("/users/search")
+async def search_users_for_access_control(
+    q: str = Query(min_length=2, max_length=100, description="Search query for email, name, or display_name"),
+    network_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Search users for Restricted mode access control picker.
+    
+    Behavior:
+    - Search by email OR full_name/name (case-insensitive partial match)
+    - Exclude disabled/inactive users (unless super_admin explicitly wants them)
+    - Super Admin: Can search all users across platform
+    - Admin/Viewer: Can only search users that share brand access
+    
+    Returns lightweight payload: id, name, email, role, status
+    Max 10 results for debounce-friendly performance.
+    """
+    logger.info(f"[USER_SEARCH] Query: '{q}', network_id: {network_id}, user: {current_user.get('email')}")
+    
+    search_term = q.strip()
+    if len(search_term) < 2:
+        return {"results": [], "total": 0, "query": search_term}
+    
+    is_super_admin = current_user.get("role") == "super_admin"
+    
+    # Build search query - search email OR name (case-insensitive)
+    search_regex = {"$regex": search_term, "$options": "i"}
+    base_query = {
+        "$or": [
+            {"email": search_regex},
+            {"name": search_regex},
+            {"display_name": search_regex}  # fallback field
+        ]
+    }
+    
+    # Exclude inactive/suspended users (unless super_admin)
+    if not is_super_admin:
+        base_query["status"] = {"$in": ["active", None]}  # Include users without status field (legacy)
+    else:
+        # Super Admin can see all, but still exclude rejected/pending by default
+        base_query["status"] = {"$nin": ["rejected", "pending"]}
+    
+    # Brand scoping for non-super-admin
+    # If network_id provided, get network's brand and filter users with that brand access
+    if not is_super_admin and network_id:
+        network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0, "brand_id": 1})
+        if network and network.get("brand_id"):
+            network_brand_id = network["brand_id"]
+            # Users must have this brand in their scope, OR be super_admin, OR have null scope (legacy full access)
+            base_query["$or"] = [
+                {"email": search_regex, "brand_scope_ids": network_brand_id},
+                {"email": search_regex, "brand_scope_ids": None},  # Full access users
+                {"email": search_regex, "role": "super_admin"},
+                {"name": search_regex, "brand_scope_ids": network_brand_id},
+                {"name": search_regex, "brand_scope_ids": None},
+                {"name": search_regex, "role": "super_admin"},
+            ]
+    
+    logger.info(f"[USER_SEARCH] Query built: {base_query}")
+    
+    # Execute search
+    users = await db.users.find(
+        base_query,
+        {"_id": 0, "id": 1, "email": 1, "name": 1, "display_name": 1, "role": 1, "status": 1}
+    ).limit(10).to_list(10)
+    
+    logger.info(f"[USER_SEARCH] Found {len(users)} users")
+    
+    # Format results
+    results = []
+    for u in users:
+        results.append({
+            "id": u["id"],
+            "email": u["email"],
+            "name": u.get("name") or u.get("display_name") or u["email"].split("@")[0],
+            "role": u.get("role", "viewer"),
+            "status": u.get("status", "active")
+        })
+    
+    return {
+        "results": results,
+        "total": len(results),
+        "query": search_term
+    }
+
+
 # ==================== NETWORK ACCESS CONTROL ====================
 
 @router.put("/networks/{network_id}/access-control")
