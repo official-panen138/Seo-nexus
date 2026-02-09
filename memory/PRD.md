@@ -634,6 +634,29 @@ Tier 2:
 
 **Tests:** Verified with API curl tests and browser screenshots ✅
 
+### User Deactivation (Soft Disable) Feature (Feb 9, 2026) - COMPLETE
+
+**Implementation:**
+- ✅ **Data Model:** Extended `UserStatus` enum with `inactive` and `suspended` values
+- ✅ **Auth Control:** Inactive/suspended users blocked at login AND on every API request
+- ✅ **API Endpoints:**
+  - `PATCH /api/users/{id}/deactivate` - Deactivate user (Super Admin only)
+  - `PATCH /api/users/{id}/activate` - Reactivate user (Super Admin only)
+- ✅ **Safety Rules:**
+  - Cannot deactivate yourself
+  - Cannot deactivate last Super Admin
+- ✅ **Activity Logging:** All status changes logged with before/after values
+- ✅ **Frontend UI:**
+  - Actions dropdown menu with Edit, Deactivate, Delete options
+  - Status badges for `active`, `inactive`, `suspended`
+  - Confirmation dialogs with clear messaging
+
+**Key Files:**
+- `backend/server.py` - Updated `UserStatus`, `get_current_user`, added activate/deactivate endpoints
+- `frontend/src/pages/UsersPage.jsx` - Dropdown menu, dialogs, handlers
+
+**Tests:** Verified with API curl tests and browser screenshots ✅
+
 ## Test Credentials
 - **Super Admin**: `superadmin@seonoc.com` / `SuperAdmin123!`
 - **Alt Super Admin**: `admin@test.com` / `admin123`
