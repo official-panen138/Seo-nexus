@@ -1866,10 +1866,10 @@ export default function GroupDetailPage() {
                                     </div>
                                 </div>
 
-                                {/* Before/After Snapshot */}
+                                {/* Before/After Snapshot - Human Readable */}
                                 {(selectedChangeLog.before_snapshot || selectedChangeLog.after_snapshot) && (
                                     <div className="space-y-4">
-                                        <Label className="text-zinc-400">Before / After</Label>
+                                        <Label className="text-zinc-400">Before / After (Human Readable)</Label>
                                         
                                         <div className="grid grid-cols-2 gap-4">
                                             {/* Before */}
@@ -1877,18 +1877,23 @@ export default function GroupDetailPage() {
                                                 <div className="text-xs text-red-400 uppercase font-medium">Before</div>
                                                 <div className="p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
                                                     {selectedChangeLog.before_snapshot ? (
-                                                        <div className="space-y-1 text-xs">
-                                                            {selectedChangeLog.before_snapshot.domain_role && (
-                                                                <div><span className="text-zinc-500">Role:</span> {selectedChangeLog.before_snapshot.domain_role}</div>
+                                                        <div className="space-y-2 text-xs">
+                                                            {selectedChangeLog.before_snapshot.domain_role_label && (
+                                                                <div><span className="text-zinc-500">Role:</span> <span className="text-red-300">{selectedChangeLog.before_snapshot.domain_role_label}</span></div>
                                                             )}
                                                             {selectedChangeLog.before_snapshot.optimized_path && (
-                                                                <div><span className="text-zinc-500">Path:</span> {selectedChangeLog.before_snapshot.optimized_path}</div>
+                                                                <div><span className="text-zinc-500">Path:</span> <span className="font-mono">{selectedChangeLog.before_snapshot.optimized_path}</span></div>
                                                             )}
-                                                            {selectedChangeLog.before_snapshot.index_status && (
-                                                                <div><span className="text-zinc-500">Index:</span> {selectedChangeLog.before_snapshot.index_status}</div>
+                                                            {selectedChangeLog.before_snapshot.domain_status_label && (
+                                                                <div><span className="text-zinc-500">Status:</span> {selectedChangeLog.before_snapshot.domain_status_label}</div>
                                                             )}
-                                                            {selectedChangeLog.before_snapshot.target_entry_id && (
-                                                                <div><span className="text-zinc-500">Target:</span> {selectedChangeLog.before_snapshot.target_entry_id.slice(0, 8)}...</div>
+                                                            {selectedChangeLog.before_snapshot.index_status_label && (
+                                                                <div><span className="text-zinc-500">Index:</span> {selectedChangeLog.before_snapshot.index_status_label}</div>
+                                                            )}
+                                                            {selectedChangeLog.before_snapshot.target_node_label ? (
+                                                                <div><span className="text-zinc-500">Target:</span> <span className="font-mono text-red-300">{selectedChangeLog.before_snapshot.target_node_label}</span></div>
+                                                            ) : selectedChangeLog.before_snapshot.target_entry_id && (
+                                                                <div><span className="text-zinc-500">Target:</span> <span className="font-mono">{selectedChangeLog.before_snapshot.target_entry_id.slice(0, 8)}...</span></div>
                                                             )}
                                                         </div>
                                                     ) : (
@@ -1902,18 +1907,23 @@ export default function GroupDetailPage() {
                                                 <div className="text-xs text-emerald-400 uppercase font-medium">After</div>
                                                 <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
                                                     {selectedChangeLog.after_snapshot ? (
-                                                        <div className="space-y-1 text-xs">
-                                                            {selectedChangeLog.after_snapshot.domain_role && (
-                                                                <div><span className="text-zinc-500">Role:</span> {selectedChangeLog.after_snapshot.domain_role}</div>
+                                                        <div className="space-y-2 text-xs">
+                                                            {selectedChangeLog.after_snapshot.domain_role_label && (
+                                                                <div><span className="text-zinc-500">Role:</span> <span className="text-emerald-300">{selectedChangeLog.after_snapshot.domain_role_label}</span></div>
                                                             )}
                                                             {selectedChangeLog.after_snapshot.optimized_path && (
-                                                                <div><span className="text-zinc-500">Path:</span> {selectedChangeLog.after_snapshot.optimized_path}</div>
+                                                                <div><span className="text-zinc-500">Path:</span> <span className="font-mono">{selectedChangeLog.after_snapshot.optimized_path}</span></div>
                                                             )}
-                                                            {selectedChangeLog.after_snapshot.index_status && (
-                                                                <div><span className="text-zinc-500">Index:</span> {selectedChangeLog.after_snapshot.index_status}</div>
+                                                            {selectedChangeLog.after_snapshot.domain_status_label && (
+                                                                <div><span className="text-zinc-500">Status:</span> {selectedChangeLog.after_snapshot.domain_status_label}</div>
                                                             )}
-                                                            {selectedChangeLog.after_snapshot.target_entry_id && (
-                                                                <div><span className="text-zinc-500">Target:</span> {selectedChangeLog.after_snapshot.target_entry_id.slice(0, 8)}...</div>
+                                                            {selectedChangeLog.after_snapshot.index_status_label && (
+                                                                <div><span className="text-zinc-500">Index:</span> {selectedChangeLog.after_snapshot.index_status_label}</div>
+                                                            )}
+                                                            {selectedChangeLog.after_snapshot.target_node_label ? (
+                                                                <div><span className="text-zinc-500">Target:</span> <span className="font-mono text-emerald-300">{selectedChangeLog.after_snapshot.target_node_label}</span></div>
+                                                            ) : selectedChangeLog.after_snapshot.target_entry_id && (
+                                                                <div><span className="text-zinc-500">Target:</span> <span className="font-mono">{selectedChangeLog.after_snapshot.target_entry_id.slice(0, 8)}...</span></div>
                                                             )}
                                                         </div>
                                                     ) : (
