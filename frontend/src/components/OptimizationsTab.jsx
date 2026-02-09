@@ -706,9 +706,9 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
                                 />
                                 <Button type="button" variant="outline" onClick={addTarget}>Add</Button>
                             </div>
-                            {form.affected_targets.length > 0 && (
+                            {form.target_domains.length > 0 && (
                                 <div className="flex flex-wrap gap-2 mt-2">
-                                    {form.affected_targets.map((target, i) => (
+                                    {form.target_domains.map((target, i) => (
                                         <Badge key={i} variant="secondary" className="pr-1">
                                             {target}
                                             <button onClick={() => removeTarget(target)} className="ml-1 hover:text-red-400">×</button>
@@ -758,14 +758,18 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
                             </div>
                             {form.report_urls.length > 0 && (
                                 <div className="flex flex-wrap gap-2 mt-2">
-                                    {form.report_urls.map((url, i) => (
-                                        <Badge key={i} variant="secondary" className="pr-1">
-                                            <a href={url} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400">
-                                                {url.length > 40 ? url.slice(0, 40) + '...' : url}
-                                            </a>
-                                            <button onClick={() => removeReportUrl(url)} className="ml-1 hover:text-red-400">×</button>
-                                        </Badge>
-                                    ))}
+                                    {form.report_urls.map((urlItem, i) => {
+                                        const url = typeof urlItem === 'string' ? urlItem : urlItem.url;
+                                        const displayUrl = url.length > 40 ? url.slice(0, 40) + '...' : url;
+                                        return (
+                                            <Badge key={i} variant="secondary" className="pr-1">
+                                                <a href={url} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400">
+                                                    {displayUrl}
+                                                </a>
+                                                <button onClick={() => removeReportUrl(urlItem)} className="ml-1 hover:text-red-400">×</button>
+                                            </Badge>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
