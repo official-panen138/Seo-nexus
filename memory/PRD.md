@@ -821,6 +821,12 @@ Team Evaluation Dashboard providing performance metrics and scoring for the SEO 
 - ✅ `GET /api/v3/team-evaluation/summary` - Aggregated metrics
 - ✅ Response includes: period_start, period_end, total_optimizations, by_status, by_activity_type, by_observed_impact, total_complaints, top_contributors, most_complained_users
 
+**5. Export to CSV:**
+- ✅ `GET /api/v3/team-evaluation/export` - Download team evaluation data as CSV
+- ✅ Export button in Team Evaluation Dashboard header
+- ✅ CSV includes: User Name, Email, Total Optimizations, Completed, Reverted, Complaints, Positive/Negative Impact, Score, Status, Penalties
+- ✅ Filename includes date range: `seo_team_evaluation_{start}_to_{end}.csv`
+
 **Key Files:**
 - `frontend/src/pages/TeamEvaluationPage.jsx` - Dashboard UI with recharts
 - `frontend/src/components/OptimizationsTab.jsx` - Updated form with reason_note
