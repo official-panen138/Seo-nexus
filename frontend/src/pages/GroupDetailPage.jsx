@@ -603,6 +603,44 @@ export default function GroupDetailPage() {
         setAddNodeDialogOpen(true);
     };
 
+    // Open Switch Main Target dialog
+    const openSwitchMainDialog = (entry) => {
+        setEntryToPromote(entry);
+        setSwitchMainChangeNote('');
+        setSwitchMainDialogOpen(true);
+    };
+
+    // Handle Switch Main Target
+    const handleSwitchMainTarget = async () => {
+        if (!entryToPromote?.id || !network?.id) return;
+        
+        // Validate change_note
+        if (!switchMainChangeNote || switchMainChangeNote.trim().length < 3) {
+            toast.error('Change note is required (min 3 characters)');
+            return;
+        }
+        
+        setSwitching(true);
+        try {
+            await networksAPI.switchMainTarget(network.id, {
+                new_main_entry_id: entryToPromote.id,
+                change_note: switchMainChangeNote.trim()
+            });
+            
+            toast.success('Main target switched successfully. Tiers recalculated.');
+            setSwitchMainDialogOpen(false);
+            setEntryToPromote(null);
+            setSwitchMainChangeNote('');
+            loadNetwork();
+            loadChangeHistory();
+            loadNotifications();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to switch main target');
+        } finally {
+            setSwitching(false);
+        }
+    };
+
     // Add node handler
     const handleAddNode = async () => {
         if (!addNodeForm.asset_domain_id) {
