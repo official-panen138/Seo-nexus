@@ -736,11 +736,72 @@ export default function UsersPage() {
                 <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                     <DialogContent className="bg-card border-border max-w-md">
                         <DialogHeader><DialogTitle>Delete User</DialogTitle></DialogHeader>
-                        <p className="text-zinc-400">Are you sure you want to delete <span className="text-white font-medium">{selectedUser?.name}</span>? This action cannot be undone.</p>
+                        <p className="text-zinc-400">Are you sure you want to <span className="text-red-400 font-medium">permanently delete</span> <span className="text-white font-medium">{selectedUser?.name}</span>?</p>
+                        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-md mt-2">
+                            <p className="text-sm text-red-400 flex items-start gap-2">
+                                <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                <span>This will permanently remove the user and all their data. This action cannot be undone. Consider <strong>deactivating</strong> instead to preserve history.</span>
+                            </p>
+                        </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
                             <Button onClick={handleDelete} disabled={saving} className="bg-red-600 hover:bg-red-700" data-testid="confirm-delete-user-btn">
-                                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Delete
+                                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Delete Permanently
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Deactivate Confirmation Dialog */}
+                <Dialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>
+                    <DialogContent className="bg-card border-border max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <UserX className="h-5 w-5 text-amber-500" />
+                                Deactivate User
+                            </DialogTitle>
+                        </DialogHeader>
+                        <p className="text-zinc-400">
+                            Are you sure you want to deactivate <span className="text-white font-medium">{selectedUser?.name}</span>?
+                        </p>
+                        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md mt-2">
+                            <ul className="text-sm text-amber-400 space-y-1">
+                                <li>• User will immediately lose access</li>
+                                <li>• All activity history will remain intact</li>
+                                <li>• User can be reactivated at any time</li>
+                            </ul>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setDeactivateDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleDeactivate} disabled={saving} className="bg-amber-600 hover:bg-amber-700" data-testid="confirm-deactivate-user-btn">
+                                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Deactivate
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Activate Confirmation Dialog */}
+                <Dialog open={activateDialogOpen} onOpenChange={setActivateDialogOpen}>
+                    <DialogContent className="bg-card border-border max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <UserCheck className="h-5 w-5 text-emerald-500" />
+                                Activate User
+                            </DialogTitle>
+                        </DialogHeader>
+                        <p className="text-zinc-400">
+                            Are you sure you want to reactivate <span className="text-white font-medium">{selectedUser?.name}</span>?
+                        </p>
+                        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-md mt-2">
+                            <ul className="text-sm text-emerald-400 space-y-1">
+                                <li>• User will regain access based on their role</li>
+                                <li>• Previous brand assignments will be restored</li>
+                            </ul>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setActivateDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleActivate} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700" data-testid="confirm-activate-user-btn">
+                                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Activate
                             </Button>
                         </DialogFooter>
                     </DialogContent>
