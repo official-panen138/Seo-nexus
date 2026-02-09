@@ -1288,6 +1288,34 @@ async def delete_user(user_id: str, current_user: dict = Depends(require_roles([
     return {"message": "User deleted"}
 
 
+class TelegramSettingsUpdate(BaseModel):
+    """Update user's Telegram settings"""
+    telegram_username: Optional[str] = None
+
+
+@api_router.patch("/users/me/telegram")
+async def update_my_telegram_settings(
+    settings: TelegramSettingsUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update current user's Telegram settings"""
+    update_dict = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if settings.telegram_username is not None:
+        # Clean up the username (remove @ if present)
+        username = settings.telegram_username.strip()
+        if username.startswith("@"):
+            username = username[1:]
+        update_dict["telegram_username"] = username if username else None
+    
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": update_dict}
+    )
+    
+    return {"message": "Telegram settings updated", "telegram_username": update_dict.get("telegram_username")}
+
+
 @api_router.patch("/users/{user_id}/deactivate")
 async def deactivate_user(
     user_id: str,
