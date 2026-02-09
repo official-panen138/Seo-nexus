@@ -3174,15 +3174,7 @@ async def get_network_access_audit_logs_legacy(
 ):
     """Legacy endpoint - redirects to managers audit logs"""
     return await get_network_managers_audit_logs(network_id, limit, current_user)
-    
-    require_brand_access(network["brand_id"], current_user)
-    
-    logs = await db.network_access_audit_logs.find(
-        {"network_id": network_id},
-        {"_id": 0}
-    ).sort("changed_at", -1).limit(limit).to_list(limit)
-    
-    return {"logs": logs, "total": len(logs)}
+    return await get_network_managers_audit_logs(network_id, limit, current_user)
 
 
 # ==================== REMINDER CONFIGURATION ====================
