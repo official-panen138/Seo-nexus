@@ -1091,6 +1091,217 @@ export default function GroupDetailPage() {
                             </Table>
                         </div>
                     </TabsContent>
+
+                    {/* Change History Tab */}
+                    <TabsContent value="history" className="mt-0">
+                        <Card className="bg-card border-border">
+                            <CardHeader className="pb-4 flex flex-row items-center justify-between">
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <History className="h-5 w-5" />
+                                    SEO Change History
+                                </CardTitle>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={loadChangeHistory}
+                                    disabled={changeHistoryLoading}
+                                >
+                                    {changeHistoryLoading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <RefreshCw className="h-4 w-4" />
+                                    )}
+                                </Button>
+                            </CardHeader>
+                            <CardContent>
+                                {changeHistoryLoading ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
+                                    </div>
+                                ) : changeHistory.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <History className="h-12 w-12 text-zinc-700 mx-auto mb-3" />
+                                        <p className="text-zinc-500">No change history yet</p>
+                                        <p className="text-sm text-zinc-600 mt-1">
+                                            Changes will appear here when you modify SEO structure
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="data-table-container" data-testid="change-history-table">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-[140px]">Date</TableHead>
+                                                    <TableHead className="w-[160px]">User</TableHead>
+                                                    <TableHead>Domain / Path</TableHead>
+                                                    <TableHead className="w-[120px]">Action</TableHead>
+                                                    <TableHead>Note</TableHead>
+                                                    <TableHead className="w-[80px] text-right">Details</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {changeHistory.map((log) => (
+                                                    <TableRow 
+                                                        key={log.id} 
+                                                        className="table-row-hover cursor-pointer"
+                                                        onClick={() => handleViewChangeDetail(log)}
+                                                        data-testid={`change-log-${log.id}`}
+                                                    >
+                                                        <TableCell className="text-xs text-zinc-400">
+                                                            <div className="flex items-center gap-1">
+                                                                <Clock className="h-3 w-3" />
+                                                                {formatChangeDate(log.created_at)}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="h-6 w-6 rounded-full bg-zinc-700 flex items-center justify-center">
+                                                                    <User className="h-3 w-3 text-zinc-400" />
+                                                                </div>
+                                                                <span className="text-sm text-zinc-300 truncate max-w-[120px]">
+                                                                    {log.actor_email?.split('@')[0] || 'Unknown'}
+                                                                </span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <span className="font-mono text-sm text-white">
+                                                                {log.affected_node}
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Badge className={`text-xs ${ACTION_TYPE_COLORS[log.action_type] || 'bg-zinc-500/20 text-zinc-400'}`}>
+                                                                {ACTION_TYPE_LABELS[log.action_type] || log.action_type}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <span className="text-sm text-zinc-400 line-clamp-1">
+                                                                {log.change_note}
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* Alerts Tab */}
+                    <TabsContent value="alerts" className="mt-0">
+                        <Card className="bg-card border-border">
+                            <CardHeader className="pb-4 flex flex-row items-center justify-between">
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <Bell className="h-5 w-5" />
+                                    Network Alerts
+                                    {unreadCount > 0 && (
+                                        <Badge className="bg-red-500 text-white">{unreadCount} unread</Badge>
+                                    )}
+                                </CardTitle>
+                                <div className="flex items-center gap-2">
+                                    {unreadCount > 0 && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleMarkAllNotificationsRead}
+                                        >
+                                            <Check className="h-4 w-4 mr-1" />
+                                            Mark all read
+                                        </Button>
+                                    )}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={loadNotifications}
+                                        disabled={notificationsLoading}
+                                    >
+                                        {notificationsLoading ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <RefreshCw className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                {notificationsLoading ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
+                                    </div>
+                                ) : notifications.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <Bell className="h-12 w-12 text-zinc-700 mx-auto mb-3" />
+                                        <p className="text-zinc-500">No alerts yet</p>
+                                        <p className="text-sm text-zinc-600 mt-1">
+                                            Important SEO changes will generate alerts here
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <ScrollArea className="h-[500px] pr-4">
+                                        <div className="space-y-3" data-testid="alerts-list">
+                                            {notifications.map((notification) => (
+                                                <div
+                                                    key={notification.id}
+                                                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                                                        notification.read 
+                                                            ? 'bg-card border-border hover:bg-zinc-900/50' 
+                                                            : 'bg-blue-500/5 border-blue-500/30 hover:bg-blue-500/10'
+                                                    }`}
+                                                    onClick={() => handleNotificationClick(notification)}
+                                                    data-testid={`notification-${notification.id}`}
+                                                >
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                {!notification.read && (
+                                                                    <div className="h-2 w-2 rounded-full bg-blue-500" />
+                                                                )}
+                                                                <span className="font-medium text-white">
+                                                                    {NOTIFICATION_TYPE_LABELS[notification.notification_type] || notification.title}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-sm text-zinc-400 mb-2">{notification.message}</p>
+                                                            {notification.affected_node && (
+                                                                <div className="text-xs font-mono text-zinc-500 mb-2">
+                                                                    Node: {notification.affected_node}
+                                                                </div>
+                                                            )}
+                                                            <div className="flex items-center gap-3 text-xs text-zinc-500">
+                                                                <span className="flex items-center gap-1">
+                                                                    <Clock className="h-3 w-3" />
+                                                                    {formatChangeDate(notification.created_at)}
+                                                                </span>
+                                                                {notification.actor_email && (
+                                                                    <span className="flex items-center gap-1">
+                                                                        <User className="h-3 w-3" />
+                                                                        {notification.actor_email.split('@')[0]}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {notification.change_note && (
+                                                                <div className="mt-2 p-2 bg-black/30 rounded text-xs text-zinc-400">
+                                                                    <span className="text-amber-400">Note:</span> {notification.change_note}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0">
+                                                            <ChevronRight className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </ScrollArea>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
                 </Tabs>
 
                 {/* Entry/Domain Detail Sheet */}
