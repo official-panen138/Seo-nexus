@@ -683,6 +683,34 @@ Tier 2:
 
 **Tests:** Verified with API curl tests and browser screenshots ✅
 
+### SEO Optimizations Module (Feb 9, 2026) - COMPLETE
+
+**Feature Overview:**
+- New "Optimizations" tab in SEO Network detail page
+- Track SEO activities that do NOT change the network structure (graph)
+- Telegram notifications on CREATE and status change (COMPLETED/REVERTED)
+- Messages in Bahasa Indonesia with GMT+7 timezone
+
+**Data Model:** `seo_optimizations` collection
+- Fields: `network_id`, `brand_id`, `created_by`, `activity_type`, `title`, `description`, `affected_scope`, `affected_targets`, `keywords`, `report_urls`, `expected_impact`, `status`, `telegram_notified_at`
+
+**Activity Types:**
+- `backlink`, `onpage`, `content`, `technical`, `schema`, `internal-link`, `experiment`, `other`
+
+**API Endpoints:**
+- `GET /api/v3/networks/{network_id}/optimizations` - Paginated list with filters
+- `POST /api/v3/networks/{network_id}/optimizations` - Create (triggers notification)
+- `PUT /api/v3/optimizations/{id}` - Update (triggers notification on status change to completed/reverted)
+- `DELETE /api/v3/optimizations/{id}` - Delete
+
+**Key Files:**
+- `backend/models_v3.py` - Optimization models & enums
+- `backend/routers/v3_router.py` - API endpoints
+- `backend/services/seo_optimization_telegram_service.py` - Telegram notifications
+- `frontend/src/components/OptimizationsTab.jsx` - UI component
+
+**Tests:** Verified with API curl tests and browser screenshots ✅
+
 ## Test Credentials
 - **Super Admin**: `superadmin@seonoc.com` / `SuperAdmin123!`
 - **Alt Super Admin**: `admin@test.com` / `admin123`
