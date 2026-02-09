@@ -163,6 +163,53 @@ def require_brand_access(brand_id: str, user: dict):
         raise HTTPException(status_code=403, detail="Access denied for this brand.")
 
 
+async def check_network_visibility_access(network: dict, user: dict) -> bool:
+    """
+    Check if user has access to a specific network based on visibility settings.
+    
+    Visibility modes:
+    - brand_based: User must have brand access (default)
+    - restricted: User must be in allowed_user_ids OR be Super Admin
+    - public: Everyone with brand access can see (Super Admin only setting)
+    
+    Returns True if user has access.
+    """
+    # Super Admin always has access
+    if user.get("role") == "super_admin":
+        return True
+    
+    # First check brand access
+    if not check_brand_access(user, network.get("brand_id", "")):
+        return False
+    
+    visibility_mode = network.get("visibility_mode", "brand_based")
+    
+    if visibility_mode == "public":
+        return True  # Anyone with brand access
+    
+    if visibility_mode == "restricted":
+        allowed_user_ids = network.get("allowed_user_ids", [])
+        return user.get("id") in allowed_user_ids
+    
+    # brand_based (default) - brand access is enough
+    return True
+
+
+async def require_network_access(network_id: str, user: dict):
+    """
+    Raise 403 if user doesn't have access to the network.
+    """
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    has_access = await check_network_visibility_access(network, user)
+    if not has_access:
+        raise HTTPException(status_code=403, detail="Access denied. This network has restricted visibility.")
+    
+    return network
+
+
 # Minimum change note length for SEO changes
 MIN_CHANGE_NOTE_LENGTH = 10
 
