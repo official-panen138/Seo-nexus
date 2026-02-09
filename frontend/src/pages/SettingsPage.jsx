@@ -6,8 +6,10 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Switch } from '../components/ui/switch';
 import { toast } from 'sonner';
-import { Loader2, Settings, Send, MessageCircle, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Settings, Send, MessageCircle, CheckCircle, AlertCircle, Network, Bell } from 'lucide-react';
 
 export default function SettingsPage() {
     const { isSuperAdmin } = useAuth();
