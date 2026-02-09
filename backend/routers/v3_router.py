@@ -1362,6 +1362,8 @@ async def update_structure_entry(
     
     # Determine action type based on what changed
     after_snapshot = {**existing, **update_dict}
+    change_log_id = None
+    action_type_str = "update_node"
     if seo_change_log_service:
         action_type = seo_change_log_service.determine_action_type(
             is_create=False,
@@ -1369,8 +1371,9 @@ async def update_structure_entry(
             before=existing,
             after=after_snapshot
         )
+        action_type_str = action_type.value if hasattr(action_type, 'value') else action_type
         
-        await seo_change_log_service.log_change(
+        change_log_id = await seo_change_log_service.log_change(
             network_id=existing["network_id"],
             brand_id=brand_id,
             actor_user_id=current_user.get("id", ""),
@@ -1381,6 +1384,21 @@ async def update_structure_entry(
             before_snapshot=existing,
             after_snapshot=after_snapshot,
             entry_id=entry_id
+        )
+    
+    # Send SEO Telegram notification
+    if seo_telegram_service:
+        await seo_telegram_service.send_seo_change_notification(
+            network_id=existing["network_id"],
+            brand_id=brand_id,
+            actor_user_id=current_user.get("id", ""),
+            actor_email=current_user["email"],
+            action_type=action_type_str,
+            affected_node=node_label,
+            change_note=change_note,
+            before_snapshot=existing,
+            after_snapshot=after_snapshot,
+            change_log_id=change_log_id
         )
     
     # Log system activity (separate from SEO change log)
