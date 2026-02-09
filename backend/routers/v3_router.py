@@ -3680,6 +3680,23 @@ async def get_team_evaluation_summary(
         "created_at": {"$gte": start_date, "$lte": end_date}
     })
     
+    # Calculate average time-to-resolution for resolved complaints
+    resolution_pipeline = [
+        {"$match": {
+            "created_at": {"$gte": start_date, "$lte": end_date},
+            "status": "resolved",
+            "time_to_resolution_hours": {"$exists": True, "$ne": None}
+        }},
+        {"$group": {
+            "_id": None,
+            "avg_hours": {"$avg": "$time_to_resolution_hours"},
+            "resolved_count": {"$sum": 1}
+        }}
+    ]
+    resolution_result = await db.optimization_complaints.aggregate(resolution_pipeline).to_list(1)
+    avg_resolution_time_hours = resolution_result[0]["avg_hours"] if resolution_result else None
+    resolved_complaints_count = resolution_result[0]["resolved_count"] if resolution_result else 0
+    
     # Get top contributors
     top_users = await get_team_evaluation_users(brand_id, network_id, start_date, end_date, current_user)
     
