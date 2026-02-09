@@ -224,30 +224,42 @@ class OptimizationCreatedBy(BaseModel):
     email: str
 
 
+class ReportUrlEntry(BaseModel):
+    """Report URL with date range"""
+    url: str
+    start_date: str  # Required
+    end_date: Optional[str] = None
+
+
 class SeoOptimizationCreate(BaseModel):
     """Create SEO optimization activity"""
-    activity_type: OptimizationActivityType
+    activity_type_id: Optional[str] = None  # FK to activity_types, optional for backward compat
+    activity_type: Optional[str] = None  # Legacy string type, will be deprecated
     title: str
     description: str
-    affected_scope: OptimizationAffectedScope = OptimizationAffectedScope.DOMAIN
-    affected_targets: List[str] = []  # domains or paths
+    reason_note: str  # REQUIRED, min 20 chars - reason for this optimization
+    affected_scope: OptimizationAffectedScope = OptimizationAffectedScope.SPECIFIC_DOMAIN
+    target_domains: List[str] = []  # domains or paths
     keywords: List[str] = []
-    report_urls: List[str] = []
+    report_urls: List[ReportUrlEntry] = []  # With start/end dates
     expected_impact: List[OptimizationExpectedImpact] = []
     status: OptimizationStatus = OptimizationStatus.COMPLETED
 
 
 class SeoOptimizationUpdate(BaseModel):
     """Update SEO optimization activity"""
-    activity_type: Optional[OptimizationActivityType] = None
+    activity_type_id: Optional[str] = None
+    activity_type: Optional[str] = None
     title: Optional[str] = None
     description: Optional[str] = None
+    reason_note: Optional[str] = None
     affected_scope: Optional[OptimizationAffectedScope] = None
-    affected_targets: Optional[List[str]] = None
+    target_domains: Optional[List[str]] = None
     keywords: Optional[List[str]] = None
-    report_urls: Optional[List[str]] = None
+    report_urls: Optional[List[ReportUrlEntry]] = None
     expected_impact: Optional[List[OptimizationExpectedImpact]] = None
     status: Optional[OptimizationStatus] = None
+    observed_impact: Optional[ObservedImpact] = None  # Set after 14-30 days
 
 
 class SeoOptimizationResponse(BaseModel):
@@ -260,9 +272,12 @@ class SeoOptimizationResponse(BaseModel):
     created_by: OptimizationCreatedBy
     created_at: str
     updated_at: Optional[str] = None
-    activity_type: str
+    activity_type_id: Optional[str] = None
+    activity_type: str  # Legacy or resolved from activity_type_id
+    activity_type_name: Optional[str] = None  # Resolved name from master
     title: str
     description: str
+    reason_note: Optional[str] = None
     affected_scope: str
     affected_targets: List[str] = []
     keywords: List[str] = []
