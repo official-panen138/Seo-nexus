@@ -87,6 +87,54 @@ Build a full-stack SEO Network Operations Center combining:
 
 **Tests:** 100% pass rate (14/14 backend, 100% frontend)
 
+### P0 SEO Change Intelligence Layer (Feb 9, 2026) - COMPLETE
+**Feature Overview:** Separates system logs from SEO decision logs. Forces human-readable explanations for all SEO structure changes.
+
+**1. Log Separation (TWO DISTINCT LOG SYSTEMS):**
+- **System Logs** (`activity_logs_v3`): Infrastructure & operations (monitoring, background jobs, migrations)
+- **SEO Change Logs** (`seo_change_logs`): Human SEO decisions with mandatory change_note
+
+**2. SEO Change Logs - Data Model:**
+```
+Collection: seo_change_logs
+Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
+        affected_node, before_snapshot, after_snapshot, change_note (REQUIRED),
+        entry_id, archived, archived_at, created_at
+```
+- Action types: create_node, update_node, delete_node, relink_node, change_role, change_path
+
+**3. Mandatory Change Note (NON-NEGOTIABLE):**
+- ✅ All structure CRUD operations require `change_note` field (min 3 chars, max 500)
+- ✅ Pydantic validation enforced at API level (422 if missing)
+- ✅ Frontend dialogs show amber-highlighted Change Note field
+- ✅ Save/Delete buttons disabled until change_note is filled
+- Example notes: "Support halaman promo utama", "Perbaikan keyword cannibalization"
+
+**4. API Endpoints:**
+- `GET /api/v3/networks/{id}/change-history` - Get SEO change logs for a network
+- `GET /api/v3/networks/{id}/notifications` - Get network notifications
+- `POST /api/v3/networks/{id}/notifications/{id}/read` - Mark notification as read
+- `POST /api/v3/networks/{id}/notifications/read-all` - Mark all as read
+- `GET /api/v3/change-logs/stats?days=30` - Team evaluation metrics
+
+**5. SEO Network Notifications:**
+- Auto-triggered on important events: Main domain change, Node deletion, Target relink, Orphan detected
+- Stored in `seo_network_notifications` collection
+- UI panel in Network Detail page (to be implemented in Phase 4)
+
+**6. Separate SEO Telegram Channel:**
+- `GET /api/v3/settings/telegram-seo` - Get SEO telegram config
+- `POST /api/v3/settings/telegram-seo` - Update SEO telegram settings
+- `POST /api/v3/settings/telegram-seo/test` - Send test message
+- Falls back to main Telegram channel if not configured
+
+**7. Log Lifecycle:**
+- `archived` and `archived_at` fields for retention management
+- Archived logs remain in same collection (not moved)
+- Method: `archive_old_logs(days_old=90)`
+
+**Tests:** 100% pass rate (16/16 backend, 100% frontend)
+
 ### P0 Asset Domain ↔ SEO Network Visibility (Feb 9, 2026) - COMPLETE
 **Feature 1: Show SEO Network Usage in Asset Domains Table**
 - ✅ Enhanced `GET /api/v3/asset-domains` to include `seo_networks` array
