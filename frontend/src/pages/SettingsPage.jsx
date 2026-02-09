@@ -255,8 +255,16 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="max-w-3xl">
-                    <Tabs defaultValue="monitoring" className="w-full">
-                        <TabsList className="mb-6">
+                    <Tabs defaultValue="branding" className="w-full">
+                        <TabsList className="mb-6 flex-wrap h-auto gap-1">
+                            <TabsTrigger value="branding" className="flex items-center gap-2">
+                                <Palette className="h-4 w-4" />
+                                Branding
+                            </TabsTrigger>
+                            <TabsTrigger value="timezone" className="flex items-center gap-2">
+                                <Clock className="h-4 w-4" />
+                                Timezone
+                            </TabsTrigger>
                             <TabsTrigger value="monitoring" className="flex items-center gap-2">
                                 <Bell className="h-4 w-4" />
                                 Monitoring Alerts
@@ -266,6 +274,140 @@ export default function SettingsPage() {
                                 SEO Notifications
                             </TabsTrigger>
                         </TabsList>
+                        
+                        {/* Branding Tab */}
+                        <TabsContent value="branding" className="space-y-6">
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-purple-500/10">
+                                            <Palette className="h-5 w-5 text-purple-500" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-lg">App Branding</CardTitle>
+                                            <CardDescription>Customize site title, description, and logo</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div>
+                                        <Label>Site Title</Label>
+                                        <Input
+                                            value={brandingConfig.site_title}
+                                            onChange={(e) => setBrandingConfig(prev => ({ ...prev, site_title: e.target.value }))}
+                                            placeholder="SEO//NOC"
+                                            className="mt-1 bg-black border-border"
+                                        />
+                                        <p className="text-xs text-zinc-500 mt-1">Appears in browser tab and header</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <Label>Site Description</Label>
+                                        <Textarea
+                                            value={brandingConfig.site_description}
+                                            onChange={(e) => setBrandingConfig(prev => ({ ...prev, site_description: e.target.value }))}
+                                            placeholder="SEO Network Operations Center - Manage your domain networks efficiently"
+                                            className="mt-1 bg-black border-border"
+                                            rows={2}
+                                        />
+                                        <p className="text-xs text-zinc-500 mt-1">Meta description for SEO</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <Label>Logo</Label>
+                                        <div className="flex items-center gap-4 mt-2">
+                                            {brandingConfig.logo_url ? (
+                                                <div className="w-16 h-16 rounded-lg bg-zinc-800 flex items-center justify-center overflow-hidden border border-border">
+                                                    <img src={brandingConfig.logo_url} alt="Logo" className="max-w-full max-h-full object-contain" />
+                                                </div>
+                                            ) : (
+                                                <div className="w-16 h-16 rounded-lg bg-zinc-800 flex items-center justify-center border border-dashed border-zinc-600">
+                                                    <Image className="h-6 w-6 text-zinc-500" />
+                                                </div>
+                                            )}
+                                            <div className="flex flex-col gap-2">
+                                                <input
+                                                    type="file"
+                                                    ref={fileInputRef}
+                                                    onChange={handleLogoUpload}
+                                                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                                                    className="hidden"
+                                                />
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    disabled={uploadingLogo}
+                                                >
+                                                    {uploadingLogo ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                                                    Upload Logo
+                                                </Button>
+                                                <p className="text-xs text-zinc-500">PNG, JPEG, SVG, or WebP. Max 2MB.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex justify-end pt-2">
+                                        <Button onClick={handleSaveBranding} disabled={savingBranding}>
+                                            {savingBranding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                            Save Branding
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                        
+                        {/* Timezone Tab */}
+                        <TabsContent value="timezone" className="space-y-6">
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-cyan-500/10">
+                                            <Clock className="h-5 w-5 text-cyan-500" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-lg">Monitoring Timezone</CardTitle>
+                                            <CardDescription>Set default timezone for all monitoring alerts and displays</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
+                                        <p className="text-sm text-cyan-300">
+                                            All monitoring timestamps (Domain Expiration, Availability/Ping alerts, Telegram messages) 
+                                            will be displayed in the selected timezone. Internal storage remains in UTC.
+                                        </p>
+                                    </div>
+                                    
+                                    <div>
+                                        <Label>Default Timezone</Label>
+                                        <Select
+                                            value={timezoneConfig.default_timezone}
+                                            onValueChange={handleTimezoneChange}
+                                        >
+                                            <SelectTrigger className="mt-1 bg-black border-border">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {TIMEZONE_OPTIONS.map(opt => (
+                                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-zinc-500 mt-1">
+                                            Currently: {timezoneConfig.timezone_label} ({timezoneConfig.default_timezone})
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="flex justify-end pt-2">
+                                        <Button onClick={handleSaveTimezone} disabled={savingTimezone}>
+                                            {savingTimezone && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                            Save Timezone
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
                         
                         {/* Monitoring Alerts Tab */}
                         <TabsContent value="monitoring" className="space-y-6">
