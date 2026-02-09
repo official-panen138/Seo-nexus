@@ -843,10 +843,23 @@ export default function GroupDetailPage() {
                 )}
 
                 {/* Tabs */}
-                <Tabs defaultValue="graph" className="space-y-4">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                     <TabsList className="bg-card border border-border">
                         <TabsTrigger value="graph" data-testid="graph-tab">Visual Graph</TabsTrigger>
                         <TabsTrigger value="list" data-testid="list-tab">Domain List</TabsTrigger>
+                        <TabsTrigger value="history" data-testid="history-tab" className="flex items-center gap-2">
+                            <History className="h-4 w-4" />
+                            Change History
+                        </TabsTrigger>
+                        <TabsTrigger value="alerts" data-testid="alerts-tab" className="flex items-center gap-2 relative">
+                            <Bell className="h-4 w-4" />
+                            Alerts
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                                    {unreadCount}
+                                </span>
+                            )}
+                        </TabsTrigger>
                     </TabsList>
 
                     {/* Graph View */}
@@ -857,7 +870,7 @@ export default function GroupDetailPage() {
                                     domains={useV3 ? null : network.domains}
                                     entries={useV3 ? network.entries : null}
                                     onNodeClick={handleNodeClick}
-                                    selectedNodeId={useV3 ? selectedEntry?.asset_domain_id : selectedEntry?.id}
+                                    selectedNodeId={highlightedNodeId || (useV3 ? selectedEntry?.asset_domain_id : selectedEntry?.id)}
                                     useV3={useV3}
                                 />
                             ) : (
