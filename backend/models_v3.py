@@ -111,6 +111,7 @@ class EntityType(str, Enum):
     CATEGORY = "category"
     USER = "user"
     REGISTRAR = "registrar"
+    SETTINGS = "settings"
 
 
 class RegistrarStatus(str, Enum):
