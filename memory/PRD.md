@@ -1116,8 +1116,14 @@ Full optimization detail view with complaint thread, team response system, and c
    - Runs every 24 hours to check for in_progress optimizations
    - APIs: `/scheduler/reminder-status`, `/scheduler/trigger-reminders`, `/scheduler/execution-logs`
    - Graceful shutdown implemented
-2. **Complaint Timeline UI** - Chronological, threaded view for complaint history within Optimization Detail View
-3. **Time-to-Resolution Metric** - Backend logic to calculate time between complaint creation and resolution
+2. ✅ **Complaint Timeline UI** - COMPLETE (Dec 11, 2025)
+   - Visual timeline component (`ComplaintTimeline.jsx`) showing chronological history
+   - Events: Complaint Created (red), Team Response (blue), Complaint Resolved (green)
+   - Interactive expand/collapse for event details
+   - Summary stats bar showing complaint/response/resolved counts
+   - Average resolution time displayed
+   - Integrated into OptimizationDetailDrawer.jsx
+3. **Time-to-Resolution Metric** - Backend logic already implemented (calculating time between complaint creation and resolution) ✅
 
 ### P2 - Medium Priority
 1. ✅ **Scheduler Dashboard UI** - COMPLETE (Feb 9, 2026)
