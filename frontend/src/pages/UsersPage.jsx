@@ -265,6 +265,60 @@ export default function UsersPage() {
         }
     };
 
+    const handleDeactivate = async () => {
+        if (!selectedUser) return;
+        
+        setSaving(true);
+        try {
+            const token = localStorage.getItem('seo_nexus_token');
+            const response = await fetch(`${API_URL}/api/users/${selectedUser.id}/deactivate`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                toast.success('User deactivated successfully');
+                setDeactivateDialogOpen(false);
+                setSelectedUser(null);
+                loadData();
+            } else {
+                const error = await response.json();
+                toast.error(error.detail || 'Failed to deactivate user');
+            }
+        } catch (err) {
+            toast.error('Failed to deactivate user');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleActivate = async () => {
+        if (!selectedUser) return;
+        
+        setSaving(true);
+        try {
+            const token = localStorage.getItem('seo_nexus_token');
+            const response = await fetch(`${API_URL}/api/users/${selectedUser.id}/activate`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                toast.success('User activated successfully');
+                setActivateDialogOpen(false);
+                setSelectedUser(null);
+                loadData();
+            } else {
+                const error = await response.json();
+                toast.error(error.detail || 'Failed to activate user');
+            }
+        } catch (err) {
+            toast.error('Failed to activate user');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const toggleBrand = (brandId, formSetter) => {
         formSetter(prev => ({
             ...prev,
