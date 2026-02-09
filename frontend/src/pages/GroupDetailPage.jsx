@@ -990,6 +990,10 @@ export default function GroupDetailPage() {
                             <History className="h-4 w-4" />
                             Change History
                         </TabsTrigger>
+                        <TabsTrigger value="optimizations" data-testid="optimizations-tab" className="flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            Optimizations
+                        </TabsTrigger>
                         <TabsTrigger value="alerts" data-testid="alerts-tab" className="flex items-center gap-2 relative">
                             <Bell className="h-4 w-4" />
                             Alerts
