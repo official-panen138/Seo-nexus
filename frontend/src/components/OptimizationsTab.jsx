@@ -460,7 +460,14 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
                                         {/* Content */}
                                         <div className="flex-1 min-w-0">
                                             <h4 className="font-medium text-white mb-1">{opt.title}</h4>
-                                            <p className="text-sm text-zinc-400 line-clamp-2 mb-3">{opt.description}</p>
+                                            <p className="text-sm text-zinc-400 line-clamp-2 mb-2">{opt.description}</p>
+                                            
+                                            {/* Show reason note if exists */}
+                                            {opt.reason_note && (
+                                                <p className="text-xs text-amber-400/80 italic mb-2 line-clamp-1">
+                                                    Alasan: {opt.reason_note}
+                                                </p>
+                                            )}
                                             
                                             <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
                                                 <span className="flex items-center gap-1">
@@ -478,15 +485,15 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
                                                         {opt.keywords.length > 3 && ` +${opt.keywords.length - 3}`}
                                                     </span>
                                                 )}
-                                                {opt.affected_targets?.length > 0 && (
+                                                {(opt.target_domains?.length > 0 || opt.affected_targets?.length > 0) && (
                                                     <span className="flex items-center gap-1">
                                                         <Target className="h-3 w-3" />
-                                                        {opt.affected_targets.length} target{opt.affected_targets.length !== 1 ? 's' : ''}
+                                                        {(opt.target_domains || opt.affected_targets).length} target{(opt.target_domains || opt.affected_targets).length !== 1 ? 's' : ''}
                                                     </span>
                                                 )}
                                                 {opt.report_urls?.length > 0 && (
                                                     <a 
-                                                        href={opt.report_urls[0]} 
+                                                        href={typeof opt.report_urls[0] === 'string' ? opt.report_urls[0] : opt.report_urls[0]?.url} 
                                                         target="_blank" 
                                                         rel="noopener noreferrer"
                                                         className="flex items-center gap-1 text-blue-400 hover:text-blue-300"
