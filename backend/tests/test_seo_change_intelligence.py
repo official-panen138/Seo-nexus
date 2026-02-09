@@ -409,10 +409,13 @@ class TestSeoChangeIntelligence:
         
         print(f"✓ SEO Telegram settings updated successfully")
     
-    def test_telegram_seo_settings_requires_auth(self, api_client):
+    def test_telegram_seo_settings_requires_auth(self):
         """Test that SEO telegram settings require authentication"""
-        # No auth token
-        response = api_client.get(f"{BASE_URL}/api/v3/settings/telegram-seo")
+        # Create a fresh client without auth
+        fresh_client = requests.Session()
+        fresh_client.headers.update({"Content-Type": "application/json"})
+        
+        response = fresh_client.get(f"{BASE_URL}/api/v3/settings/telegram-seo")
         
         assert response.status_code in [401, 403], \
             f"Expected 401/403 without auth, got {response.status_code}"
