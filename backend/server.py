@@ -1402,6 +1402,74 @@ async def activate_user(
         "status": "active"
     }
 
+
+# ==================== USER TELEGRAM SETTINGS ====================
+
+@api_router.get("/users/{user_id}/telegram")
+async def get_user_telegram_settings(
+    user_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get Telegram settings for a user"""
+    # Users can view their own, Super Admin can view any
+    if user_id != current_user["id"] and current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "telegram_username": 1, "telegram_user_id": 1, "telegram_linked_at": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "telegram_username": user.get("telegram_username"),
+        "telegram_user_id": user.get("telegram_user_id"),
+        "telegram_linked_at": user.get("telegram_linked_at")
+    }
+
+
+@api_router.put("/users/{user_id}/telegram")
+async def update_user_telegram_settings(
+    user_id: str,
+    telegram_username: Optional[str] = None,
+    telegram_user_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update Telegram settings for a user"""
+    # Users can update their own, Super Admin can update any
+    if user_id != current_user["id"] and current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    update_data = {"updated_at": now}
+    
+    if telegram_username is not None:
+        # Clean up the username (remove @ if present)
+        clean_username = telegram_username.strip().lstrip("@") if telegram_username else None
+        update_data["telegram_username"] = clean_username
+        if clean_username and not user.get("telegram_linked_at"):
+            update_data["telegram_linked_at"] = now
+    
+    if telegram_user_id is not None:
+        update_data["telegram_user_id"] = telegram_user_id
+    
+    await db.users.update_one({"id": user_id}, {"$set": update_data})
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.USER,
+            entity_id=user_id,
+            after_value={"action": "telegram_settings_updated", "telegram_username": update_data.get("telegram_username")}
+        )
+    
+    return {"message": "Telegram settings updated"}
+
+
 # ==================== CATEGORY ENDPOINTS ====================
 
 @api_router.get("/categories", response_model=List[CategoryResponse])
