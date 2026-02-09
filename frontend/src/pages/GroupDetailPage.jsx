@@ -863,37 +863,42 @@ export default function GroupDetailPage() {
                                 <p className="page-subtitle mt-2">{network.description}</p>
                             )}
                             
-                            {/* Access Summary - Quick Visibility */}
+                            {/* Manager Summary - Quick Visibility */}
                             {useV3 && (
                                 <div 
                                     className="mt-3 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                                     onClick={() => setActiveTab('access')}
-                                    data-testid="access-summary-header"
-                                    title="Click to manage access"
+                                    data-testid="manager-summary-header"
+                                    title="Click to manage network managers"
                                 >
                                     {network.visibility_mode === 'restricted' ? (
                                         <>
                                             <Lock className="h-4 w-4 text-amber-400" />
-                                            <span className="text-sm text-amber-400">Visible To: Restricted</span>
-                                            {network.access_summary_cache?.count > 0 && (
+                                            <span className="text-sm text-amber-400">Managed By: Restricted</span>
+                                            {network.manager_summary_cache?.count > 0 && (
                                                 <span className="text-sm text-zinc-400">
-                                                    · {network.access_summary_cache.names?.slice(0, 2).join(', ')}
-                                                    {network.access_summary_cache.count > 2 && ` +${network.access_summary_cache.count - 2}`}
+                                                    · {network.manager_summary_cache.names?.slice(0, 2).join(', ')}
+                                                    {network.manager_summary_cache.count > 2 && ` +${network.manager_summary_cache.count - 2}`}
                                                 </span>
                                             )}
-                                            {network.access_summary_cache?.count === 0 && (
+                                            {network.manager_summary_cache?.count === 0 && (
                                                 <span className="text-sm text-red-400">· Super Admin only</span>
                                             )}
                                         </>
                                     ) : network.visibility_mode === 'public' ? (
                                         <>
                                             <Globe className="h-4 w-4 text-blue-400" />
-                                            <span className="text-sm text-blue-400">Visible To: Public</span>
+                                            <span className="text-sm text-blue-400">Visibility: Public</span>
                                         </>
                                     ) : (
                                         <>
                                             <Users className="h-4 w-4 text-zinc-500" />
-                                            <span className="text-sm text-zinc-500">Visible To: Brand Based</span>
+                                            <span className="text-sm text-zinc-500">Visibility: Brand Based</span>
+                                            {network.manager_summary_cache?.count > 0 && (
+                                                <span className="text-sm text-zinc-400">
+                                                    · {network.manager_summary_cache.count} manager{network.manager_summary_cache.count !== 1 ? 's' : ''}
+                                                </span>
+                                            )}
                                         </>
                                     )}
                                     <ChevronRight className="h-4 w-4 text-zinc-600" />
