@@ -43,8 +43,9 @@ export default function UsersPage() {
     const [selectedUser, setSelectedUser] = useState(null);
     const [editForm, setEditForm] = useState({ role: '', brand_scope_ids: [] });
     const [approveForm, setApproveForm] = useState({ role: 'viewer', brand_scope_ids: [] });
-    const [createForm, setCreateForm] = useState({ email: '', name: '', role: 'viewer', brand_scope_ids: [] });
+    const [createForm, setCreateForm] = useState({ email: '', name: '', role: 'viewer', brand_scope_ids: [], password: '', useManualPassword: false });
     const [generatedPassword, setGeneratedPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     const isSuperAdmin = hasRole('super_admin');
 
