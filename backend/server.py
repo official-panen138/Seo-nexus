@@ -445,6 +445,25 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         user = await db.users.find_one({"id": user_id}, {"_id": 0})
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
+        
+        # Check if user is still active (invalidate token if deactivated)
+        user_status = user.get("status", "active")
+        if user_status == "inactive":
+            raise HTTPException(
+                status_code=403, 
+                detail="User account is inactive. Please contact administrator."
+            )
+        if user_status == "suspended":
+            raise HTTPException(
+                status_code=403, 
+                detail="User account is suspended. Please contact administrator."
+            )
+        if user_status not in ["active"]:
+            raise HTTPException(
+                status_code=403, 
+                detail="User account is not active. Please contact administrator."
+            )
+        
         return user
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
