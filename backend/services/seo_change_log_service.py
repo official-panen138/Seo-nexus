@@ -50,6 +50,10 @@ class SeoChangeLogService:
         """
         now = datetime.now(timezone.utc).isoformat()
         
+        # Clean snapshots to remove MongoDB _id
+        cleaned_before = self._clean_snapshot(before_snapshot)
+        cleaned_after = self._clean_snapshot(after_snapshot)
+        
         log_entry = {
             "id": str(uuid.uuid4()),
             "network_id": network_id,
@@ -58,8 +62,8 @@ class SeoChangeLogService:
             "actor_email": actor_email,
             "action_type": action_type.value if hasattr(action_type, 'value') else action_type,
             "affected_node": affected_node,
-            "before_snapshot": before_snapshot,
-            "after_snapshot": after_snapshot,
+            "before_snapshot": cleaned_before,
+            "after_snapshot": cleaned_after,
             "change_note": change_note,
             "entry_id": entry_id,  # For linking back to structure entry
             "archived": False,
