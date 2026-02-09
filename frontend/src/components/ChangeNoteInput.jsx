@@ -13,37 +13,39 @@ import {
 } from './ui/dropdown-menu';
 import { ChevronDown, Lightbulb, FileText } from 'lucide-react';
 
-// Quick templates for common SEO actions
+// Quick templates for common SEO actions (Bahasa Indonesia)
 const CHANGE_NOTE_TEMPLATES = [
     {
-        category: 'Linking Strategy',
+        category: 'Strategi Linking',
         templates: [
-            { label: 'Relink to Main', text: 'Relink support page to main target for consolidated link juice and authority transfer.' },
-            { label: 'New Support Page', text: 'Added new supporting page to strengthen topical relevance for main target.' },
-            { label: 'Tier Structure Adjustment', text: 'Adjusted tier structure to improve internal linking flow and crawl efficiency.' }
+            { label: 'Relink ke Main', text: 'Domain diarahkan langsung ke domain utama untuk konsolidasi link juice dan transfer authority.' },
+            { label: 'Halaman Support Baru', text: 'Menambahkan halaman support baru untuk memperkuat topical relevance ke target utama.' },
+            { label: 'Penyesuaian Struktur Tier', text: 'Menyesuaikan struktur tier untuk memperbaiki aliran internal linking dan efisiensi crawl.' },
+            { label: 'Penguatan Authority', text: 'Support halaman promo utama menjelang update Google, untuk meningkatkan authority domain.' }
         ]
     },
     {
-        category: 'Cannibalization Fix',
+        category: 'Perbaikan Cannibalization',
         templates: [
-            { label: 'Keyword Cannibalization', text: 'Fixed keyword cannibalization issue. This page was competing with main target for the same keywords. Redirecting to consolidate rankings.' },
-            { label: 'Content Consolidation', text: 'Consolidating duplicate/similar content to prevent search engine confusion and improve ranking potential.' }
+            { label: 'Keyword Cannibalization', text: 'Perbaikan keyword cannibalization antar path. Halaman ini bersaing dengan target utama untuk keyword yang sama.' },
+            { label: 'Konsolidasi Konten', text: 'Konsolidasi konten duplikat/serupa untuk menghindari kebingungan search engine dan meningkatkan potensi ranking.' }
         ]
     },
     {
-        category: 'Optimization',
+        category: 'Optimisasi',
         templates: [
-            { label: 'Path Optimization', text: 'Optimized URL path structure for better SEO signal and clearer site architecture.' },
-            { label: 'Role Upgrade', text: 'Promoting this page to main target based on performance metrics and strategic priority.' },
-            { label: 'Index Status Change', text: 'Changed index status to prevent thin content from diluting site quality.' }
+            { label: 'Optimisasi Path', text: 'Optimisasi struktur URL path untuk sinyal SEO yang lebih baik dan arsitektur site yang lebih jelas.' },
+            { label: 'Upgrade Role', text: 'Mempromosikan halaman ini menjadi target utama berdasarkan metrik performa dan prioritas strategis.' },
+            { label: 'Perubahan Status Index', text: 'Mengubah status index untuk mencegah thin content dari menurunkan kualitas site.' },
+            { label: 'Penguatan LP', text: 'Penguatan internal authority ke LP untuk meningkatkan ranking target keyword utama.' }
         ]
     },
     {
         category: 'Maintenance',
         templates: [
-            { label: 'Domain Expired', text: 'Removing expired domain from network. No renewal planned.' },
-            { label: 'Site Migration', text: 'Part of site migration project. Updating structure to reflect new domain architecture.' },
-            { label: 'Cleanup', text: 'Network cleanup - removing unused/abandoned supporting pages.' }
+            { label: 'Domain Expired', text: 'Menghapus domain expired dari network. Tidak ada rencana perpanjangan.' },
+            { label: 'Migrasi Site', text: 'Bagian dari proyek migrasi site. Memperbarui struktur untuk mencerminkan arsitektur domain baru.' },
+            { label: 'Cleanup', text: 'Pembersihan network - menghapus halaman support yang tidak terpakai/abandoned.' }
         ]
     }
 ];
