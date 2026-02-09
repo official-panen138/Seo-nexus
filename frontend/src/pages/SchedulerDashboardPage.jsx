@@ -59,6 +59,7 @@ export default function SchedulerDashboardPage() {
         if (isSuperAdmin()) {
             loadDashboardData();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const loadDashboardData = async () => {
