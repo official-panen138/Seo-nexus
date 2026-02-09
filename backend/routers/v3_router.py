@@ -2164,12 +2164,19 @@ async def update_optimization(
     """
     Update an SEO optimization activity.
     Sends Telegram notification if status changes to COMPLETED or REVERTED.
+    
+    Only Managers or Super Admin can update optimizations.
     """
     optimization = await db.seo_optimizations.find_one({"id": optimization_id}, {"_id": 0})
     if not optimization:
         raise HTTPException(status_code=404, detail="Optimization not found")
     
     require_brand_access(optimization["brand_id"], current_user)
+    
+    # Get network to check manager permission
+    network = await db.seo_networks.find_one({"id": optimization["network_id"]}, {"_id": 0})
+    if network:
+        await require_manager_permission(network, current_user)
     
     old_status = optimization.get("status")
     
