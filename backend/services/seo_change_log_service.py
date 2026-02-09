@@ -68,6 +68,10 @@ class SeoChangeLogService:
             "entry_id": entry_id,  # For linking back to structure entry
             "archived": False,
             "archived_at": None,
+            # Notification tracking fields
+            "notified_at": None,
+            "notification_status": None,  # "success" | "failed" | None (not attempted)
+            "notification_channel": None,  # "seo_telegram" | "main_telegram"
             "created_at": now
         }
         
@@ -77,6 +81,22 @@ class SeoChangeLogService:
         await self._check_and_notify(log_entry, before_snapshot, after_snapshot)
         
         return log_entry["id"]
+    
+    async def update_notification_status(
+        self,
+        log_id: str,
+        status: str,  # "success" | "failed"
+        channel: str = "seo_telegram"
+    ):
+        """Update the notification status for a change log"""
+        await self.change_logs.update_one(
+            {"id": log_id},
+            {"$set": {
+                "notified_at": datetime.now(timezone.utc).isoformat(),
+                "notification_status": status,
+                "notification_channel": channel
+            }}
+        )
     
     async def _check_and_notify(
         self,
