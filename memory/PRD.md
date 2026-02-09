@@ -459,14 +459,14 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
 - White-label option
 
 ## Next Tasks List
-1. **P1: Conflict Detection UI** (Backend API exists at `/api/v3/reports/conflicts`)
-   - Alert Center panel for conflicts
-   - Node highlighting in D3 diagram
-   - Conflict details in node detail panel
-2. Email notification integration (Resend/SendGrid)
-3. Scheduled conflict alerts (cron)
-4. Domain health check improvements
-5. Alert history and analytics
+1. **P0: SEO Change History UI** - Add "Change History" tab to Network Detail page
+   - Table view: Date | User | Domain/Path | Action | Note
+   - Detail view on row click (before/after snapshot)
+   - Click log → highlight node in D3 diagram
+2. **P0: Network Alerts Panel** - Add notifications panel to Network Detail
+3. **P1: Conflict Detection UI** (Backend API exists at `/api/v3/reports/conflicts`)
+4. **P1: SEO Telegram Settings UI** - Add configuration page for SEO alerts channel
+5. Email notification integration (Resend/SendGrid)
 
 ## Test Credentials
 - **Super Admin**: `admin@test.com` / `admin123` (confirmed working)
