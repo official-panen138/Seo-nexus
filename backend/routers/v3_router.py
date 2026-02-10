@@ -8428,6 +8428,122 @@ async def get_audit_event_types(
             {"value": -1, "label": "-1 day (already expired)"},
         ],
         "reminder_schedule": {
+
+
+# ==================== METRICS & ANALYTICS API ====================
+
+
+@router.get("/metrics/reminder-effectiveness")
+async def get_reminder_effectiveness_metrics(
+    days: int = Query(30, ge=1, le=90),
+    network_id: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get reminder effectiveness metrics.
+    
+    Returns response rates, average response times, and breakdown by type.
+    """
+    if current_user.get("role") not in ["super_admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    from services.reminder_effectiveness_service import get_reminder_effectiveness_service
+    service = get_reminder_effectiveness_service(db)
+    
+    metrics = await service.get_effectiveness_metrics(days=days, network_id=network_id)
+    return metrics
+
+
+@router.get("/metrics/conflict-aging")
+async def get_conflict_aging_metrics(
+    network_id: Optional[str] = Query(None),
+    brand_id: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get conflict/complaint aging metrics.
+    
+    Returns how long complaints have been open and identifies bottlenecks.
+    """
+    if current_user.get("role") not in ["super_admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    from services.conflict_aging_service import get_conflict_aging_service
+    service = get_conflict_aging_service(db)
+    
+    metrics = await service.get_aging_metrics(network_id=network_id, brand_id=brand_id)
+    return metrics
+
+
+@router.get("/metrics/conflict-resolution")
+async def get_conflict_resolution_metrics(
+    days: int = Query(30, ge=1, le=90),
+    network_id: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get conflict/complaint resolution time metrics.
+    
+    Returns average resolution times and breakdown by time buckets.
+    """
+    if current_user.get("role") not in ["super_admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    from services.conflict_aging_service import get_conflict_aging_service
+    service = get_conflict_aging_service(db)
+    
+    metrics = await service.get_resolution_metrics(days=days, network_id=network_id)
+    return metrics
+
+
+@router.get("/metrics/dashboard")
+async def get_metrics_dashboard(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get combined metrics dashboard data.
+    
+    Returns key metrics from all tracking systems.
+    """
+    if current_user.get("role") not in ["super_admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    from services.reminder_effectiveness_service import get_reminder_effectiveness_service
+    from services.conflict_aging_service import get_conflict_aging_service
+    from services.audit_log_service import get_audit_service
+    
+    reminder_service = get_reminder_effectiveness_service(db)
+    conflict_service = get_conflict_aging_service(db)
+    audit_service = get_audit_service(db)
+    
+    # Get metrics in parallel would be better, but for simplicity:
+    reminder_metrics = await reminder_service.get_effectiveness_metrics(days=7)
+    conflict_aging = await conflict_service.get_aging_metrics()
+    conflict_resolution = await conflict_service.get_resolution_metrics(days=30)
+    audit_stats = await audit_service.get_stats(days=7)
+    
+    return {
+        "reminder_effectiveness": {
+            "response_rate_percent": reminder_metrics.get("response_rate_percent", 0),
+            "avg_response_time_hours": reminder_metrics.get("avg_response_time_hours", 0),
+            "total_reminders_7d": reminder_metrics.get("total_reminders", 0),
+        },
+        "conflict_aging": {
+            "total_open": conflict_aging.get("total_open", 0),
+            "critical_count": conflict_aging.get("critical_count", 0),
+            "avg_age_days": conflict_aging.get("avg_age_days", 0),
+        },
+        "conflict_resolution": {
+            "total_resolved_30d": conflict_resolution.get("total_resolved", 0),
+            "avg_resolution_time_days": conflict_resolution.get("avg_resolution_time_days", 0),
+        },
+        "audit": {
+            "total_events_7d": audit_stats.get("total_events", 0),
+            "permission_violations": audit_stats.get("permission_violations", 0),
+            "notification_failures": audit_stats.get("notification_failures", 0),
+        },
+    }
+
             "30_days": "One-time alert",
             "14_days": "One-time alert",
             "7_days": "One-time alert",
