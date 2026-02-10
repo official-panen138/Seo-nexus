@@ -54,6 +54,7 @@ export default function SchedulerDashboardPage() {
     });
     const [triggering, setTriggering] = useState(false);
     const [savingConfig, setSavingConfig] = useState(false);
+    const [clearingLogs, setClearingLogs] = useState(false);
 
     useEffect(() => {
         if (isSuperAdmin()) {
