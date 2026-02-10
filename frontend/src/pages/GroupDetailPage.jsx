@@ -7,6 +7,7 @@ import { ChangeNoteInput } from '../components/ChangeNoteInput';
 import { OptimizationsTab } from '../components/OptimizationsTab';
 import { NetworkAccessSettings } from '../components/NetworkAccessSettings';
 import { NetworkComplaintsTab } from '../components/NetworkComplaintsTab';
+import { NetworkSettingsTab } from '../components/NetworkSettingsTab';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
