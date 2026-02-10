@@ -43,7 +43,8 @@ export const authAPI = {
 export const usersAPI = {
     getAll: () => api.get('/users'),
     update: (userId, role) => api.put(`/users/${userId}`, null, { params: { role } }),
-    delete: (userId) => api.delete(`/users/${userId}`)
+    delete: (userId) => api.delete(`/users/${userId}`),
+    getByIds: (ids) => apiV3.get('/users/by-ids', { params: { ids: ids.join(',') } })
 };
 
 // Categories API
