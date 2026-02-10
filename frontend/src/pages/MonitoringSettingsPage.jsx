@@ -170,7 +170,7 @@ export default function MonitoringSettingsPage() {
                 domain: testAlertDomain.trim(),
                 issue_type: testAlertIssueType,
                 reason: testAlertReason,
-                force_severity: testAlertSeverity || null
+                force_severity: testAlertSeverity === 'AUTO' ? null : testAlertSeverity
             });
             
             if (response.data.success) {
