@@ -62,6 +62,9 @@ export default function UsersPage() {
     const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [bulkMenuDialogOpen, setBulkMenuDialogOpen] = useState(false);
     const [bulkMenuSelection, setBulkMenuSelection] = useState([]);
+    const [bulkBrandDialogOpen, setBulkBrandDialogOpen] = useState(false);
+    const [bulkBrandSelection, setBulkBrandSelection] = useState([]);
+    const [bulkBrandMode, setBulkBrandMode] = useState('replace');
 
     const isSuperAdmin = hasRole('super_admin');
 
