@@ -433,7 +433,7 @@ class ExpirationMonitoringService:
         return enriched
 
     def _format_expiration_alert_seo_aware(
-        self, domain: Dict[str, Any], days_remaining: int
+        self, domain: Dict[str, Any], days_remaining: int, is_test: bool = False
     ) -> str:
         """Format SEO-aware expiration alert for Telegram"""
         seo = domain.get("seo", {})
@@ -464,6 +464,8 @@ class ExpirationMonitoringService:
             issue = f"EXPIRED ({abs(days_remaining)} days ago)"
         elif days_remaining == 0:
             issue = "EXPIRES TODAY"
+        elif days_remaining == 1:
+            issue = "Expires TOMORROW"
         else:
             issue = f"Expires in {days_remaining} days"
 
@@ -473,66 +475,108 @@ class ExpirationMonitoringService:
         local_time = format_now_local(tz_str, tz_label)
 
         # Build message
+        test_marker = "🧪 <b>TEST MODE</b> - " if is_test else ""
         lines = [
-            f"{severity_emoji} <b>DOMAIN MONITORING ALERT</b>",
+            f"{test_marker}{severity_emoji} <b>DOMAIN EXPIRATION ALERT</b>",
             "",
-            f"<b>Domain:</b> <code>{domain.get('domain_name', 'Unknown')}</code>",
-            f"<b>Brand:</b> {domain.get('brand_name', 'N/A')}",
-            f"<b>Issue:</b> Domain Expiration - {issue}",
-            f"<b>Checked At:</b> {local_time}",
+            "━━━━━━━━━━━━━━━━━━━━━━",
+            "📅 <b>EXPIRATION INFO</b>",
+            "━━━━━━━━━━━━━━━━━━━━━━",
+            f"• <b>Domain:</b> <code>{domain.get('domain_name', 'Unknown')}</code>",
+            f"• <b>Brand:</b> {domain.get('brand_name', 'N/A')}",
+            f"• <b>Registrar:</b> {domain.get('registrar_name', 'N/A')}",
+            f"• <b>Status:</b> {issue}",
+            f"• <b>Expiry Date:</b> {domain.get('expiration_date', 'N/A')}",
+            f"• <b>Severity:</b> {severity}",
         ]
 
         # SEO Context section
+        lines.append("")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("🧩 <b>SEO CONTEXT</b>")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+        
         if seo.get("used_in_seo"):
-            lines.append("")
-            lines.append("🧩 <b>SEO CONTEXT</b>")
-
             for ctx in seo.get("seo_context", [])[:3]:
-                lines.append(f"<b>Network:</b> {ctx.get('network_name', 'N/A')}")
-                lines.append(f"<b>Node:</b> {ctx.get('node', 'N/A')}")
-                lines.append(f"<b>Role:</b> {ctx.get('role', 'N/A')}")
-                lines.append(f"<b>Tier:</b> {ctx.get('tier_label', 'N/A')}")
+                lines.append(f"• <b>Network:</b> {ctx.get('network_name', 'N/A')}")
+                lines.append(f"• <b>Brand:</b> {ctx.get('brand_name', 'N/A')}")
+                lines.append(f"• <b>Role:</b> {ctx.get('role', 'N/A')}")
+                lines.append(f"• <b>Tier:</b> {ctx.get('tier_label', 'N/A')}")
                 lines.append(
-                    f"<b>Status:</b> {ctx.get('domain_status', 'N/A').replace('_', ' ').title()}"
+                    f"• <b>Status:</b> {ctx.get('domain_status', 'N/A').replace('_', ' ').title()}"
                 )
-                if ctx.get("target_node"):
-                    lines.append(f"<b>Target:</b> {ctx.get('target_node')}")
-                lines.append("")
 
             if seo.get("additional_networks_count", 0) > 0:
-                lines.append(
-                    f"<i>Used in +{seo['additional_networks_count']} other networks (see UI)</i>"
-                )
                 lines.append("")
+                lines.append(
+                    f"<i>Also used in +{seo['additional_networks_count']} other networks</i>"
+                )
 
-            # Structure Chain
+            # Structure Chain with arrows
+            lines.append("")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+            lines.append("🔗 <b>STRUCTURE CHAIN</b>")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+            
             chain = seo.get("upstream_chain", [])
             if chain:
-                lines.append("🧭 <b>SEO STRUCTURE CHAIN (To Final Target)</b>")
-                for i, hop in enumerate(chain, 1):
+                # Start with the domain
+                first_ctx = seo.get("seo_context", [{}])[0]
+                status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
+                lines.append(f"🗑️ {domain.get('domain_name', 'Unknown')} [{status_label}]")
+                
+                for hop in chain:
+                    target = hop.get("target", hop.get("node", ""))
+                    relation = hop.get("target_relation", hop.get("relation", ""))
+                    
                     if hop.get("is_end"):
-                        lines.append(f"{i}) {hop['node']} [{hop['relation']}]")
-                        lines.append(f"END: {hop.get('end_reason', 'Reached')}")
+                        end_reason = hop.get("end_reason", "END")
+                        if "money" in end_reason.lower() or hop.get("relation") == "main":
+                            lines.append(f"   → 💰 {hop.get('node', target)} [{relation}]")
+                            lines.append("   → END: 💰 MONEY SITE")
+                        else:
+                            lines.append(f"   → {hop.get('node', target)} [{relation}]")
+                            lines.append(f"   → END: {end_reason}")
                     else:
-                        lines.append(
-                            f"{i}) {hop['node']} [{hop['relation']}] → {hop['target']} [{hop.get('target_relation', '')}]"
-                        )
-                lines.append("")
+                        lines.append(f"   → {target} [{relation}]")
+                
+                # If chain didn't end with money site marker
+                if not chain or not chain[-1].get("is_end"):
+                    if chain:
+                        last_hop = chain[-1]
+                        if last_hop.get("relation") == "main" or "money" in str(last_hop.get("target", "")).lower():
+                            lines.append("   → END: 💰 MONEY SITE")
+                        else:
+                            lines.append("   → END: (chain incomplete)")
+            else:
+                # No chain - check if it's orphan or main
+                first_ctx = seo.get("seo_context", [{}])[0] if seo.get("seo_context") else {}
+                if first_ctx.get("role") == "main":
+                    lines.append(f"💰 {domain.get('domain_name', 'Unknown')} [Primary]")
+                    lines.append("   → END: 💰 THIS IS MONEY SITE")
+                else:
+                    status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
+                    lines.append(f"⚠️ {domain.get('domain_name', 'Unknown')} [{status_label}]")
+                    lines.append("   → END: ⚠️ ORPHAN NODE (no target)")
 
             # Downstream Impact
             downstream = seo.get("downstream_impact", [])
             if downstream:
-                lines.append("📌 <b>DOWNSTREAM IMPACT (Direct Children)</b>")
-                for d in downstream[:5]:
-                    lines.append(f"• {d['node']} [{d['relation']}] → {d['target']}")
-                if len(downstream) > 5:
-                    lines.append(f"(+{len(downstream) - 5} more...)")
-                if seo.get("downstream_impact_more", 0) > 0:
-                    lines.append(f"(+{seo['downstream_impact_more']} more...)")
                 lines.append("")
+                lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+                lines.append("📌 <b>DOWNSTREAM IMPACT</b>")
+                lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+                lines.append(f"<b>{len(downstream)}</b> nodes will lose authority flow:")
+                for d in downstream[:5]:
+                    lines.append(f"  • {d['node']} [{d.get('relation', '')}]")
+                if len(downstream) > 5:
+                    lines.append(f"  ... +{len(downstream) - 5} more")
 
             # Impact Score
-            lines.append("🔥 <b>IMPACT SCORE</b>")
+            lines.append("")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+            lines.append("🔥 <b>SEO IMPACT</b>")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━")
             lines.append(f"• <b>Severity:</b> {impact_score.get('severity', 'LOW')}")
             lines.append(
                 f"• <b>Networks Affected:</b> {impact_score.get('networks_affected', 0)}"
@@ -541,16 +585,30 @@ class ExpirationMonitoringService:
                 f"• <b>Downstream Nodes:</b> {impact_score.get('downstream_nodes_count', 0)}"
             )
             lines.append(
-                f"• <b>Reaches Money Site:</b> {'YES' if impact_score.get('reaches_money_site') else 'NO'}"
+                f"• <b>Reaches Money Site:</b> {'✅ YES' if impact_score.get('reaches_money_site') else '❌ NO'}"
             )
             if impact_score.get("highest_tier_impacted") is not None:
                 lines.append(
                     f"• <b>Highest Tier:</b> Tier {impact_score.get('highest_tier_impacted')}"
                 )
         else:
+            lines.append("<i>Domain not used in any SEO Network</i>")
             lines.append("")
-            lines.append("🧩 <b>SEO CONTEXT</b>")
-            lines.append("<i>Not used in any SEO Network</i>")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+            lines.append("🔥 <b>SEO IMPACT</b>")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+            lines.append("• <b>Severity:</b> LOW")
+            lines.append("• <b>Networks Affected:</b> 0")
+            lines.append("• <b>Reaches Money Site:</b> ❌ NO")
+
+        # Footer
+        lines.append("")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append(f"🕐 <b>Checked:</b> {local_time}")
+        
+        if is_test:
+            lines.append("")
+            lines.append("<i>⚠️ This is a TEST alert - no action tracking affected</i>")
 
         return "\n".join(lines)
 
