@@ -320,7 +320,10 @@ export const seoTelegramAPI = {
 export const domainMonitoringTelegramAPI = {
     getSettings: () => apiV3.get('/settings/telegram-monitoring'),
     updateSettings: (data) => apiV3.put('/settings/telegram-monitoring', data),
-    testAlert: () => apiV3.post('/settings/telegram-monitoring/test')
+    testAlert: () => apiV3.post('/settings/telegram-monitoring/test'),
+    // Test expiration alerts
+    testExpirationAlert: (domainId, simulatedDays) => apiV3.post('/monitoring/expiration/test', { domain_id: domainId, simulated_days: simulatedDays }),
+    getTestOptions: () => apiV3.get('/monitoring/expiration/test-options'),
 };
 
 // V3 Email Alerts API
