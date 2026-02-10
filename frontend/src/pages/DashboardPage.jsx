@@ -337,13 +337,13 @@ export default function DashboardPage() {
                         </div>
                     </div>
 
-                    <div className={`stat-card card-hover ${conflicts.length > 0 ? 'border-red-900/50' : ''}`}>
+                    <div className="stat-card card-hover">
                         <div className="flex items-center gap-2 mb-2">
-                            <AlertTriangle className={`h-4 w-4 ${conflicts.length > 0 ? 'text-red-500' : 'text-zinc-500'}`} />
-                            <span className="stat-label mb-0 text-xs">SEO Conflicts</span>
+                            <Building2 className="h-4 w-4 text-cyan-500" />
+                            <span className="stat-label mb-0 text-xs">Brands</span>
                         </div>
-                        <div className={`stat-value text-2xl ${conflicts.length > 0 ? 'text-red-500' : ''}`}>
-                            {conflicts.length}
+                        <div className="stat-value text-2xl text-cyan-500">
+                            {brandDomainCounts.length || 0}
                         </div>
                     </div>
                 </div>
