@@ -465,10 +465,12 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
                         <Download className={`h-4 w-4 ${exporting ? 'animate-bounce' : ''}`} />
                         {exporting ? 'Exporting...' : 'Export CSV'}
                     </Button>
-                    <Button onClick={openCreateDialog} className="gap-2" data-testid="add-optimization-btn">
-                        <Plus className="h-4 w-4" />
-                        Add Optimization
-                    </Button>
+                    {canEdit && (
+                        <Button onClick={openCreateDialog} className="gap-2" data-testid="add-optimization-btn">
+                            <Plus className="h-4 w-4" />
+                            Add Optimization
+                        </Button>
+                    )}
                 </div>
             </div>
 
