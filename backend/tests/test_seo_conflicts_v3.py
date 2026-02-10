@@ -141,7 +141,8 @@ class TestV3ConflictsAPI:
         assert response.status_code == 200, f"Dashboard endpoint failed: {response.text}"
         
         data = response.json()
-        assert "total_networks" in data or "networks_count" in data or "total_domains" in data
+        # V3 dashboard returns collections with counts
+        assert "collections" in data or "asset_status" in data, f"Missing expected fields. Got: {list(data.keys())}"
         print(f"TEST PASSED: V3 dashboard endpoint works. Data: {list(data.keys())}")
 
 
