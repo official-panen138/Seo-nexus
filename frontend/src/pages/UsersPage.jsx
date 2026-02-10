@@ -12,9 +12,10 @@ import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { toast } from 'sonner';
-import { Trash2, Loader2, Users, Shield, Building2, Edit, UserPlus, Clock, CheckCircle, XCircle, Copy, UserX, UserCheck, MoreHorizontal, AlertTriangle } from 'lucide-react';
+import { Trash2, Loader2, Users, Shield, Building2, Edit, UserPlus, Clock, CheckCircle, XCircle, Copy, UserX, UserCheck, MoreHorizontal, AlertTriangle, Key } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
 import { formatDate } from '../lib/utils';
+import { menuPermissionsAPI } from '../lib/api';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
