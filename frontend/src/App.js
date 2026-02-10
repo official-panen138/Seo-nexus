@@ -25,6 +25,7 @@ import ActivityLogsPage from "./pages/ActivityLogsPage";
 import RegistrarsPage from "./pages/RegistrarsPage";
 import MonitoringSettingsPage from "./pages/MonitoringSettingsPage";
 import SchedulerDashboardPage from "./pages/SchedulerDashboardPage";
+import MetricsDashboardPage from "./pages/MetricsDashboardPage";
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
