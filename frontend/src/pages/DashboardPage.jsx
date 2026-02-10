@@ -50,15 +50,13 @@ const REFRESH_OPTIONS = [
 export default function DashboardPage() {
     const { user, isSuperAdmin } = useAuth();
     const [stats, setStats] = useState(null);
-    const [tierData, setTierData] = useState([]);
-    const [indexData, setIndexData] = useState([]);
     const [brands, setBrands] = useState([]);
+    const [brandDomainCounts, setBrandDomainCounts] = useState([]);
     const [selectedBrand, setSelectedBrand] = useState('all');
     const [loading, setLoading] = useState(true);
     const [seeding, setSeeding] = useState(false);
     const [monitoringStats, setMonitoringStats] = useState(null);
     const [recentAlerts, setRecentAlerts] = useState([]);
-    const [conflicts, setConflicts] = useState([]);
     
     // Auto-refresh state
     const [refreshInterval, setRefreshInterval] = useState(0);
