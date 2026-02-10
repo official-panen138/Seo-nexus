@@ -501,12 +501,7 @@ export default function ConflictDashboardPage() {
                                     <tbody>
                                         {storedConflicts.slice(0, 10).map((conflict) => {
                                             const colors = SEVERITY_COLORS[conflict.severity] || SEVERITY_COLORS.medium;
-                                            const statusColors = {
-                                                detected: 'bg-amber-500/20 text-amber-400',
-                                                under_review: 'bg-blue-500/20 text-blue-400',
-                                                resolved: 'bg-emerald-500/20 text-emerald-400',
-                                                ignored: 'bg-zinc-500/20 text-zinc-400',
-                                            };
+                                            const statusInfo = STATUS_FLOW[conflict.status] || STATUS_FLOW.detected;
                                             
                                             return (
                                                 <tr key={conflict.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
@@ -521,8 +516,8 @@ export default function ConflictDashboardPage() {
                                                         </Badge>
                                                     </td>
                                                     <td className="py-3 px-4">
-                                                        <Badge className={statusColors[conflict.status] || statusColors.detected}>
-                                                            {conflict.status?.replace('_', ' ')}
+                                                        <Badge className={statusInfo.color}>
+                                                            {statusInfo.label}
                                                         </Badge>
                                                     </td>
                                                     <td className="py-3 px-4">
