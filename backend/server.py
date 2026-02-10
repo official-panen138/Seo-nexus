@@ -2144,7 +2144,7 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "super_admin" and brand_scope_ids:
         brand_filter = {"brand_id": {"$in": brand_scope_ids}}
     
-    # Domain filters
+    # Use asset_domains collection (new V3 data)
     domain_base_filter = brand_filter.copy()
     domain_indexed_filter = {**domain_base_filter, "index_status": "index"}
     domain_noindex_filter = {**domain_base_filter, "index_status": "noindex"}
@@ -2152,19 +2152,20 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     domain_up_filter = {**domain_base_filter, "monitoring_enabled": True, "ping_status": "up"}
     domain_down_filter = {**domain_base_filter, "monitoring_enabled": True, "ping_status": "down"}
     
-    # Group/brand filter
-    group_filter = brand_filter.copy()
+    # Use seo_networks collection (new V3 data)
+    network_filter = brand_filter.copy()
     
-    total_domains = await db.domains.count_documents(domain_base_filter)
-    total_groups = await db.groups.count_documents(group_filter)
+    # Use asset_domains for domain counts
+    total_domains = await db.asset_domains.count_documents(domain_base_filter)
+    total_networks = await db.seo_networks.count_documents(network_filter)
     total_brands = await db.brands.count_documents({} if not brand_scope_ids or current_user.get("role") == "super_admin" else {"id": {"$in": brand_scope_ids}})
-    indexed_count = await db.domains.count_documents(domain_indexed_filter)
-    noindex_count = await db.domains.count_documents(domain_noindex_filter)
+    indexed_count = await db.asset_domains.count_documents(domain_indexed_filter)
+    noindex_count = await db.asset_domains.count_documents(domain_noindex_filter)
     
-    # Monitoring stats
-    monitored = await db.domains.count_documents(domain_monitored_filter)
-    up = await db.domains.count_documents(domain_up_filter)
-    down = await db.domains.count_documents(domain_down_filter)
+    # Monitoring stats from asset_domains
+    monitored = await db.asset_domains.count_documents(domain_monitored_filter)
+    up = await db.asset_domains.count_documents(domain_up_filter)
+    down = await db.asset_domains.count_documents(domain_down_filter)
     
     # Active alerts
     active_alerts = await db.alerts.count_documents({"acknowledged": False})
@@ -2172,7 +2173,7 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     
     return {
         "total_domains": total_domains,
-        "total_groups": total_groups,
+        "total_groups": total_networks,  # Keeping old key name for frontend compatibility
         "total_brands": total_brands,
         "indexed_count": indexed_count,
         "noindex_count": noindex_count,
