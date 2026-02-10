@@ -820,34 +820,66 @@ class SeoTelegramService:
         }
         status_label = status_labels.get(domain_status, domain_status)
         
-        # Format target info
-        target_text = "(Tidak ada target)"
-        if target_info:
-            target_text = f"{target_info.get('full_label', 'unknown')} [{target_info.get('role', '')}]"
+        # ================================================================
+        # BUILD CHAIN STRUCTURE: node → target → ... → END
+        # ================================================================
+        is_orphan = not target_info
         
-        # Format upstream chain
-        upstream_text = "(Langsung ke Money Site)" if not upstream_chain else ""
-        if upstream_chain:
-            chain_parts = [f"  → {item['label']} [{item.get('role', '')}]" for item in upstream_chain]
-            upstream_text = "\n".join(chain_parts)
+        # Build the chain from deleted node to money site
+        chain_lines = []
         
-        # Format affected children
+        # Start with deleted node
+        chain_lines.append(f"🗑️ {node_label} [{status_label}]")
+        
+        if is_orphan:
+            # Orphan node - no target
+            chain_lines.append("   → END: ⚠️ ORPHAN NODE (tidak ada target)")
+        else:
+            # Has target - build the chain
+            if target_info:
+                target_role_label = role_labels.get(target_info.get('role', ''), target_info.get('role', ''))
+                chain_lines.append(f"   → {target_info.get('full_label', 'unknown')} [{target_role_label}]")
+            
+            # Continue with upstream chain
+            for i, item in enumerate(upstream_chain):
+                item_role_label = role_labels.get(item.get('role', ''), item.get('role', ''))
+                is_last = (i == len(upstream_chain) - 1)
+                
+                if item.get('role') == 'main':
+                    chain_lines.append(f"   → 💰 {item['label']} [{item_role_label}]")
+                    chain_lines.append("   → END: 💰 MONEY SITE")
+                else:
+                    chain_lines.append(f"   → {item['label']} [{item_role_label}]")
+            
+            # If chain doesn't end with money site, add end marker
+            if not upstream_chain or upstream_chain[-1].get('role') != 'main':
+                if target_info and target_info.get('role') == 'main':
+                    chain_lines.append("   → END: 💰 MONEY SITE")
+                elif not upstream_chain:
+                    chain_lines.append("   → END: (chain tidak lengkap)")
+        
+        chain_text = "\n".join(chain_lines)
+        
+        # Format affected children (downstream nodes that will be orphaned)
         affected_text = "(Tidak ada)"
         if affected_children:
             affected_text = "\n".join([f"  • {child}" for child in affected_children[:5]])
             if len(affected_children) > 5:
                 affected_text += f"\n  ... dan {len(affected_children) - 5} node lainnya"
         
-        # Format structure before deletion with hierarchy
-        structure_text = ""
+        # Format full structure before deletion showing all nodes
+        structure_lines = []
         for entry in structure_before:
-            marker = "🗑️ " if entry.get("is_deleted_node") else "   "
+            is_deleted = entry.get("is_deleted_node")
+            marker = "🗑️ " if is_deleted else "   "
             role_emoji = "💰" if entry.get("role") == "main" else "🔗"
-            status_tag = f"[{entry.get('status', '')}]" if entry.get('status') else ""
-            structure_text += f"{marker}{role_emoji} {entry['label']} {status_tag}\n"
+            entry_status = status_labels.get(entry.get('status', ''), entry.get('status', ''))
+            structure_lines.append(f"{marker}{role_emoji} {entry['label']} [{entry_status}]")
         
-        if not structure_text:
-            structure_text = "(Tidak ada struktur)"
+        if not structure_lines:
+            full_structure_text = "(Tidak ada struktur)"
+        else:
+            full_structure_text = "\n".join(structure_lines)
         
         # Try to use template system
         message = await render_notification(
@@ -864,9 +896,7 @@ class SeoTelegramService:
                     "domain_role": role_label,
                     "domain_status": status_label,
                     "index_status": index_status,
-                    "target": target_text,
-                    "upstream_chain": upstream_text,
-                    "affected_children": affected_text,
+                    "is_orphan": is_orphan,
                 },
                 "change": {
                     "action": "delete_node",
@@ -874,12 +904,14 @@ class SeoTelegramService:
                     "reason": change_note,
                 },
                 "structure": {
-                    "before_deletion": structure_text.strip(),
+                    "chain": chain_text,
+                    "before_deletion": full_structure_text,
                 },
                 "impact": {
-                    "severity": "HIGH" if orphan_count > 0 else "MEDIUM",
+                    "severity": "HIGH" if orphan_count > 0 else ("MEDIUM" if is_orphan else "LOW"),
                     "description": f"{orphan_count} node terdampak" if orphan_count > 0 else "Tidak ada node terdampak",
                     "affected_count": orphan_count,
+                    "affected_children": affected_text,
                 },
                 "telegram_leaders": seo_leaders,
             }
