@@ -666,6 +666,10 @@ class SeoNetworkResponse(SeoNetworkBase):
     visibility_mode: Optional[str] = "brand_based"  # brand_based, restricted, public
     manager_summary_cache: Optional[Dict[str, Any]] = None  # {count: int, names: [str]}
     
+    # Access Summary Panel fields (P0)
+    open_complaints_count: int = 0  # Optimizations with complaint_status in [complained, under_review]
+    last_optimization_at: Optional[str] = None  # Most recent optimization date
+    
     created_at: str
     updated_at: str
 
