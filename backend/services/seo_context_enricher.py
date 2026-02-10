@@ -405,18 +405,41 @@ class SeoContextEnricher:
 
         children = await self.db.seo_structure_entries.find(
             {"network_id": network_id, "target_entry_id": entry_id},
-            {"_id": 0, "domain": 1, "optimized_path": 1, "domain_status": 1},
+            {"_id": 0, "domain": 1, "optimized_path": 1, "domain_status": 1, "asset_domain_id": 1},
         ).to_list(50)
+        
+        # Get domain names for all asset_domain_ids
+        asset_ids = [c.get("asset_domain_id") for c in children if c.get("asset_domain_id") and not c.get("domain")]
+        asset_ids.append(entry.get("asset_domain_id"))  # Add parent entry's asset_domain_id
+        asset_ids = list(set(filter(None, asset_ids)))
+        
+        domain_cache = {}
+        if asset_ids:
+            assets = await self.db.asset_domains.find(
+                {"id": {"$in": asset_ids}}, {"_id": 0, "id": 1, "domain_name": 1}
+            ).to_list(100)
+            domain_cache = {a["id"]: a.get("domain_name", "") for a in assets}
+        
+        def get_node_label(entry_data):
+            """Get full node label from entry data."""
+            domain = entry_data.get('domain') or ''
+            if not domain and entry_data.get('asset_domain_id'):
+                domain = domain_cache.get(entry_data['asset_domain_id'], '')
+            path = entry_data.get('optimized_path') or ''
+            return f"{domain}{path}"
 
         result = []
+        entry_node_label = get_node_label(entry)
+        
         for child in children:
+            child_node_label = get_node_label(child)
             result.append(
                 {
-                    "node": f"{child.get('domain', '')}{child.get('optimized_path', '')}",
+                    "node": child_node_label,
                     "relation": self._get_relation_type(
                         child.get("domain_status", "canonical")
                     ),
-                    "target": f"{entry.get('domain', '')}{entry.get('optimized_path', '')}",
+                    "target": entry_node_label,
                 }
             )
 
