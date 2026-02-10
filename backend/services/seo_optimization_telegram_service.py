@@ -151,6 +151,31 @@ class SeoOptimizationTelegramService:
                 tags.append(f"{name} (no Telegram)")
         
         return tags
+    
+    async def _get_network_manager_usernames(self, network_id: str) -> List[str]:
+        """
+        Get raw Telegram usernames for all managers of a specific network.
+        Returns list of usernames WITHOUT @ prefix (for template engine).
+        """
+        network = await self.db.seo_networks.find_one(
+            {"id": network_id}, {"_id": 0, "manager_ids": 1}
+        )
+        if not network or not network.get("manager_ids"):
+            return []
+
+        # Get users with their telegram usernames
+        managers = await self.db.users.find(
+            {"id": {"$in": network["manager_ids"]}},
+            {"_id": 0, "telegram_username": 1}
+        ).to_list(100)
+
+        usernames = []
+        for manager in managers:
+            if manager.get("telegram_username"):
+                username = manager["telegram_username"].replace("@", "")
+                usernames.append(username)
+        
+        return usernames
 
     async def _send_telegram_message(
         self, message: str, topic_type: str = None
