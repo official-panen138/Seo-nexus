@@ -1229,15 +1229,17 @@ export default function GroupDetailPage() {
                                                                         <TableCell className="w-[15%] text-right">
                                                                             <div className="flex items-center justify-end gap-1">
                                                                                 <Button variant="ghost" size="sm" onClick={() => handleNodeClick(entry)} className="h-7 px-2 text-zinc-400 hover:text-white">View</Button>
-                                                                                <DropdownMenu>
-                                                                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="h-7 w-7"><MoreVertical className="h-3.5 w-3.5" /></Button></DropdownMenuTrigger>
-                                                                                    <DropdownMenuContent align="end">
-                                                                                        <DropdownMenuItem onClick={() => openEditDialog(entry)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                                                                                        {!isMainNode && <DropdownMenuItem onClick={() => openSwitchMainDialog(entry)} className="text-amber-400"><Crown className="h-4 w-4 mr-2" />Make Main</DropdownMenuItem>}
-                                                                                        <DropdownMenuSeparator />
-                                                                                        <DropdownMenuItem onClick={() => openDeleteDialog(entry)} className="text-red-400"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
-                                                                                    </DropdownMenuContent>
-                                                                                </DropdownMenu>
+                                                                                {canEdit && (
+                                                                                    <DropdownMenu>
+                                                                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()} className="h-7 w-7"><MoreVertical className="h-3.5 w-3.5" /></Button></DropdownMenuTrigger>
+                                                                                        <DropdownMenuContent align="end">
+                                                                                            <DropdownMenuItem onClick={() => openEditDialog(entry)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+                                                                                            {!isMainNode && <DropdownMenuItem onClick={() => openSwitchMainDialog(entry)} className="text-amber-400"><Crown className="h-4 w-4 mr-2" />Make Main</DropdownMenuItem>}
+                                                                                            <DropdownMenuSeparator />
+                                                                                            <DropdownMenuItem onClick={() => openDeleteDialog(entry)} className="text-red-400"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                                                                                        </DropdownMenuContent>
+                                                                                    </DropdownMenu>
+                                                                                )}
                                                                             </div>
                                                                         </TableCell>
                                                                     </TableRow>
