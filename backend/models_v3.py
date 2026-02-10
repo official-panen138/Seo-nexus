@@ -173,6 +173,7 @@ class OptimizationActivityType(str, Enum):
     SCHEMA = "schema"
     INTERNAL_LINK = "internal-link"
     EXPERIMENT = "experiment"
+    CONFLICT_RESOLUTION = "conflict_resolution"  # Auto-created from detected conflicts
     OTHER = "other"
 
 
