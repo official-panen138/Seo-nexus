@@ -381,7 +381,8 @@ export const menuPermissionsAPI = {
     getUserPermissions: (userId) => apiV3.get(`/admin/menu-permissions/${userId}`),
     updateUserPermissions: (userId, enabledMenus) => apiV3.put(`/admin/menu-permissions/${userId}`, { enabled_menus: enabledMenus }),
     resetUserPermissions: (userId) => apiV3.delete(`/admin/menu-permissions/${userId}`),
-    bulkUpdatePermissions: (userIds, enabledMenus) => apiV3.put('/admin/menu-permissions/bulk', { user_ids: userIds, enabled_menus: enabledMenus })
+    bulkUpdatePermissions: (userIds, enabledMenus) => apiV3.put('/admin/menu-permissions/bulk', { user_ids: userIds, enabled_menus: enabledMenus }),
+    bulkUpdateBrandAccess: (userIds, brandIds, mode = 'replace') => apiV3.put('/admin/brand-access/bulk', { user_ids: userIds, brand_scope_ids: brandIds, mode })
 };
 
 // V3 Export API
