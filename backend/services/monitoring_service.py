@@ -1161,36 +1161,43 @@ class AvailabilityMonitoringService:
                 lines.append(f"• <b>Tier:</b> {ctx.get('tier_label', 'N/A')}")
                 lines.append(f"• <b>Status:</b> {ctx.get('domain_status', 'N/A').replace('_', ' ').title()}")
 
-            # Structure Chain with arrows
+            # Structure - use full network structure formatted by tiers
             lines.append("")
             lines.append("━━━━━━━━━━━━━━━━━━━━━━")
-            lines.append("🔗 <b>AUTHORITY CHAIN</b>")
+            lines.append("🔗 <b>FULL SEO STRUCTURE</b>")
             lines.append("━━━━━━━━━━━━━━━━━━━━━━")
             
-            chain = seo.get("upstream_chain", [])
-            if chain:
-                first_ctx = seo.get("seo_context", [{}])[0]
-                status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
-                lines.append(f"⚠️ {domain.get('domain_name', 'Unknown')} [{status_label}] ← DOWN")
-                
-                for hop in chain:
-                    target = hop.get("target", hop.get("node", ""))
-                    relation = hop.get("target_relation", hop.get("relation", ""))
-                    
-                    if hop.get("is_end") or hop.get("relation") == "main":
-                        lines.append(f"   → 💰 {hop.get('node', target)} [{relation}]")
-                        lines.append("   → END: 💰 MONEY SITE")
-                        break
-                    else:
-                        lines.append(f"   → {target} [{relation}]")
+            # Use pre-fetched full structure if available
+            full_structure_lines = seo.get("full_structure_lines", [])
+            if full_structure_lines:
+                for line in full_structure_lines:
+                    lines.append(line)
             else:
-                first_ctx = seo.get("seo_context", [{}])[0] if seo.get("seo_context") else {}
-                if first_ctx.get("role") == "main":
-                    lines.append(f"💰 {domain.get('domain_name', 'Unknown')} [Primary] ← DOWN")
-                    lines.append("   → END: ⚠️ THIS IS THE MONEY SITE!")
+                # Fallback to old chain display
+                chain = seo.get("upstream_chain", [])
+                if chain:
+                    first_ctx = seo.get("seo_context", [{}])[0]
+                    status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
+                    lines.append(f"⚠️ {domain.get('domain_name', 'Unknown')} [{status_label}] ← DOWN")
+                    
+                    for hop in chain:
+                        target = hop.get("target", hop.get("node", ""))
+                        relation = hop.get("target_relation", hop.get("relation", ""))
+                        
+                        if hop.get("is_end") or hop.get("relation") == "main":
+                            lines.append(f"   → 💰 {hop.get('node', target)} [{relation}]")
+                            lines.append("   → END: 💰 MONEY SITE")
+                            break
+                        else:
+                            lines.append(f"   → {target} [{relation}]")
                 else:
-                    lines.append(f"⚠️ {domain.get('domain_name', 'Unknown')} ← DOWN")
-                    lines.append("   → END: ⚠️ ORPHAN NODE (no target)")
+                    first_ctx = seo.get("seo_context", [{}])[0] if seo.get("seo_context") else {}
+                    if first_ctx.get("role") == "main":
+                        lines.append(f"💰 {domain.get('domain_name', 'Unknown')} [Primary] ← DOWN")
+                        lines.append("   → END: ⚠️ THIS IS THE MONEY SITE!")
+                    else:
+                        lines.append(f"⚠️ {domain.get('domain_name', 'Unknown')} ← DOWN")
+                        lines.append("   → END: ⚠️ ORPHAN NODE (no target)")
 
             # Downstream Impact
             downstream = seo.get("downstream_impact", [])
