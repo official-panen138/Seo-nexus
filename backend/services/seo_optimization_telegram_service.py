@@ -87,8 +87,17 @@ class SeoOptimizationTelegramService:
         logger.warning("No Telegram configuration found for SEO Optimizations")
         return None
     
-    async def _send_telegram_message(self, message: str) -> bool:
-        """Send message to Telegram"""
+    async def _send_telegram_message(self, message: str, topic_type: str = None) -> bool:
+        """
+        Send message to Telegram with optional forum topic routing.
+        
+        topic_type can be:
+        - "seo_change" → Uses seo_change_topic_id
+        - "seo_optimization" → Uses seo_optimization_topic_id
+        - "seo_complaint" → Uses seo_complaint_topic_id
+        - "seo_reminder" → Uses seo_reminder_topic_id
+        - None → Sends to General (no topic)
+        """
         config = await self._get_telegram_config()
         if not config:
             return False
@@ -100,21 +109,36 @@ class SeoOptimizationTelegramService:
             logger.warning("Telegram bot_token or chat_id not configured")
             return False
         
+        # Determine message_thread_id for forum topic routing
+        message_thread_id = None
+        if config.get("enable_topic_routing") and topic_type:
+            topic_id_field = f"{topic_type}_topic_id"
+            message_thread_id = config.get(topic_id_field)
+            if not message_thread_id:
+                logger.warning(f"Topic routing enabled but {topic_id_field} not configured, sending to General")
+        
         try:
+            payload = {
+                "chat_id": chat_id,
+                "text": message,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True
+            }
+            
+            # Add message_thread_id for forum topic
+            if message_thread_id:
+                payload["message_thread_id"] = int(message_thread_id)
+            
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                    json={
-                        "chat_id": chat_id,
-                        "text": message,
-                        "parse_mode": "HTML",
-                        "disable_web_page_preview": True
-                    },
+                    json=payload,
                     timeout=30.0
                 )
                 
                 if response.status_code == 200:
-                    logger.info("SEO Optimization Telegram notification sent successfully")
+                    topic_info = f" (topic: {topic_type})" if message_thread_id else ""
+                    logger.info(f"SEO Telegram notification sent successfully{topic_info}")
                     return True
                 else:
                     logger.error(f"Telegram API error: {response.status_code} - {response.text}")
