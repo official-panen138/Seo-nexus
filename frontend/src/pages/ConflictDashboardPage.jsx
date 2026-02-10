@@ -18,7 +18,9 @@ import {
     Target,
     Repeat,
     ArrowRight,
-    ExternalLink
+    ExternalLink,
+    Loader2,
+    Plus
 } from 'lucide-react';
 
 // Status colors and flow
