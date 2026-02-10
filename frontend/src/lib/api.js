@@ -156,6 +156,7 @@ export const auditAPI = {
         apiV3.get('/audit-logs', { params: { limit, resource_type: entityType, event_type: eventType, severity, success } }),
     getStats: (days = 7) => apiV3.get('/audit-logs/stats', { params: { days } }),
     getEventTypes: () => apiV3.get('/audit-logs/event-types'),
+    clearLogs: () => apiV3.delete('/audit-logs'),
 };
 
 // Metrics API (V3)
