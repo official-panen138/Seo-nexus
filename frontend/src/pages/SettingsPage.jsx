@@ -254,6 +254,77 @@ export default function SettingsPage() {
         }
     };
 
+    // ==================== EMAIL ALERTS HANDLERS ====================
+    
+    const handleSaveEmailAlerts = async () => {
+        setSavingEmailAlerts(true);
+        try {
+            const data = {};
+            
+            // Only send API key if provided (new)
+            if (newResendApiKey) {
+                data.resend_api_key = newResendApiKey;
+            }
+            
+            // Always send these settings
+            data.enabled = emailAlertsConfig.enabled;
+            data.severity_threshold = emailAlertsConfig.severity_threshold;
+            data.include_network_managers = emailAlertsConfig.include_network_managers;
+            data.global_admin_emails = emailAlertsConfig.global_admin_emails;
+            
+            if (emailAlertsConfig.sender_email) {
+                data.sender_email = emailAlertsConfig.sender_email;
+            }
+            
+            const res = await emailAlertsAPI.updateSettings(data);
+            setEmailAlertsConfig(res.data);
+            setNewResendApiKey('');
+            toast.success('Email alert settings saved');
+        } catch (err) {
+            toast.error('Failed to save email alert settings');
+        } finally {
+            setSavingEmailAlerts(false);
+        }
+    };
+
+    const handleTestEmailAlerts = async () => {
+        if (!testEmailAddress) {
+            toast.error('Please enter a test email address');
+            return;
+        }
+        
+        setTestingEmailAlerts(true);
+        try {
+            await emailAlertsAPI.testEmail(testEmailAddress);
+            toast.success(`Test email sent to ${testEmailAddress}`);
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to send test email');
+        } finally {
+            setTestingEmailAlerts(false);
+        }
+    };
+
+    const handleAddAdminEmail = () => {
+        if (!newAdminEmail || !newAdminEmail.includes('@')) {
+            toast.error('Please enter a valid email address');
+            return;
+        }
+        
+        const emails = [...(emailAlertsConfig.global_admin_emails || [])];
+        if (!emails.includes(newAdminEmail.toLowerCase())) {
+            emails.push(newAdminEmail.toLowerCase());
+            setEmailAlertsConfig({ ...emailAlertsConfig, global_admin_emails: emails });
+            setNewAdminEmail('');
+        } else {
+            toast.error('Email already added');
+        }
+    };
+
+    const handleRemoveAdminEmail = (email) => {
+        const emails = (emailAlertsConfig.global_admin_emails || []).filter(e => e !== email);
+        setEmailAlertsConfig({ ...emailAlertsConfig, global_admin_emails: emails });
+    };
+
     if (!isSuperAdmin()) {
         return (
             <Layout>
