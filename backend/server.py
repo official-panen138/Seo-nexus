@@ -134,6 +134,7 @@ security = HTTPBearer()
 class UserRole(str, Enum):
     SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
+    MANAGER = "manager"
     VIEWER = "viewer"
 
 
