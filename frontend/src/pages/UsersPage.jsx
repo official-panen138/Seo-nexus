@@ -57,6 +57,11 @@ export default function UsersPage() {
     const [menuRegistry, setMenuRegistry] = useState([]);
     const [userMenuPerms, setUserMenuPerms] = useState({ enabled_menus: [], is_default: true });
     const [savingMenuPerms, setSavingMenuPerms] = useState(false);
+    
+    // Bulk selection state
+    const [selectedUserIds, setSelectedUserIds] = useState([]);
+    const [bulkMenuDialogOpen, setBulkMenuDialogOpen] = useState(false);
+    const [bulkMenuSelection, setBulkMenuSelection] = useState([]);
 
     const isSuperAdmin = hasRole('super_admin');
 
