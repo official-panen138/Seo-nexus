@@ -104,6 +104,88 @@ export default function UsersPage() {
         setApproveDialogOpen(true);
     };
 
+    const openMenuPermDialog = async (user) => {
+        setSelectedUser(user);
+        setSavingMenuPerms(true);
+        setMenuPermDialogOpen(true);
+        
+        try {
+            const response = await menuPermissionsAPI.getUserPermissions(user.id);
+            setUserMenuPerms({
+                enabled_menus: response.data.enabled_menus || [],
+                is_default: response.data.is_default || false,
+                is_super_admin: response.data.is_super_admin || false
+            });
+        } catch (err) {
+            toast.error('Failed to load menu permissions');
+            setMenuPermDialogOpen(false);
+        } finally {
+            setSavingMenuPerms(false);
+        }
+    };
+
+    const handleMenuPermToggle = (menuKey) => {
+        setUserMenuPerms(prev => {
+            const enabled = prev.enabled_menus.includes(menuKey);
+            return {
+                ...prev,
+                enabled_menus: enabled 
+                    ? prev.enabled_menus.filter(k => k !== menuKey)
+                    : [...prev.enabled_menus, menuKey],
+                is_default: false
+            };
+        });
+    };
+
+    const handleSelectAllMenus = () => {
+        setUserMenuPerms(prev => ({
+            ...prev,
+            enabled_menus: menuRegistry.map(m => m.key),
+            is_default: false
+        }));
+    };
+
+    const handleDeselectAllMenus = () => {
+        setUserMenuPerms(prev => ({
+            ...prev,
+            enabled_menus: [],
+            is_default: false
+        }));
+    };
+
+    const handleSaveMenuPerms = async () => {
+        if (!selectedUser) return;
+        
+        setSavingMenuPerms(true);
+        try {
+            await menuPermissionsAPI.updateUserPermissions(selectedUser.id, userMenuPerms.enabled_menus);
+            toast.success('Menu permissions updated');
+            setMenuPermDialogOpen(false);
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to update menu permissions');
+        } finally {
+            setSavingMenuPerms(false);
+        }
+    };
+
+    const handleResetMenuPerms = async () => {
+        if (!selectedUser) return;
+        
+        setSavingMenuPerms(true);
+        try {
+            const response = await menuPermissionsAPI.resetUserPermissions(selectedUser.id);
+            setUserMenuPerms({
+                enabled_menus: response.data.enabled_menus || [],
+                is_default: true
+            });
+            toast.success('Menu permissions reset to default');
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to reset menu permissions');
+        } finally {
+            setSavingMenuPerms(false);
+        }
+    };
+
     const handleUpdateUser = async () => {
         if (!selectedUser) return;
         if (editForm.role !== 'super_admin' && editForm.brand_scope_ids.length === 0) {
