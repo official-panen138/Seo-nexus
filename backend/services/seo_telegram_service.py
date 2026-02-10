@@ -104,22 +104,48 @@ class SeoTelegramService:
         logger.warning("No Telegram channel configured for SEO notifications")
         return None
     
-    async def _send_telegram_message(self, message: str) -> bool:
-        """Send message to Telegram"""
+    async def _send_telegram_message(self, message: str, topic_type: str = None) -> bool:
+        """
+        Send message to Telegram with optional forum topic routing.
+        
+        topic_type can be:
+        - "seo_change" → Uses seo_change_topic_id
+        - "seo_optimization" → Uses seo_optimization_topic_id
+        - "seo_complaint" → Uses seo_complaint_topic_id
+        - "seo_reminder" → Uses seo_reminder_topic_id
+        - None → Sends to General (no topic)
+        """
         settings = await self._get_telegram_settings()
         if not settings:
             return False
         
+        # Determine message_thread_id for forum topic routing
+        message_thread_id = None
+        if settings.get("enable_topic_routing") and topic_type:
+            topic_id_field = f"{topic_type}_topic_id"
+            message_thread_id = settings.get(topic_id_field)
+            if not message_thread_id:
+                logger.warning(f"Topic routing enabled but {topic_id_field} not configured, sending to General")
+        
         try:
             url = f"https://api.telegram.org/bot{settings['bot_token']}/sendMessage"
+            
+            payload = {
+                "chat_id": settings["chat_id"],
+                "text": message,
+                "parse_mode": "HTML"
+            }
+            
+            # Add message_thread_id for forum topic
+            if message_thread_id:
+                payload["message_thread_id"] = int(message_thread_id)
+            
             async with httpx.AsyncClient() as client:
-                response = await client.post(url, json={
-                    "chat_id": settings["chat_id"],
-                    "text": message,
-                    "parse_mode": "HTML"
-                }, timeout=15)
+                response = await client.post(url, json=payload, timeout=15)
                 
                 if response.status_code == 200:
+                    topic_info = f" (topic: {topic_type})" if message_thread_id else ""
+                    logger.info(f"SEO Telegram notification sent{topic_info}")
                     return True
                 else:
                     logger.error(f"Telegram API error: {response.status_code} - {response.text}")
