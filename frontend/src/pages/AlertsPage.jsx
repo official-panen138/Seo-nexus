@@ -173,6 +173,23 @@ export default function AlertsPage() {
         }, {})
     };
 
+    // Stored conflict stats for tabs
+    const storedStats = {
+        all: storedConflicts.length,
+        detected: storedConflicts.filter(c => c.status === 'detected').length,
+        in_progress: storedConflicts.filter(c => c.status === 'under_review').length,
+        resolved: storedConflicts.filter(c => c.status === 'resolved').length
+    };
+
+    // Filter stored conflicts based on active tab
+    const filteredStoredConflicts = storedConflicts.filter(c => {
+        if (activeTab === 'all') return true;
+        if (activeTab === 'detected') return c.status === 'detected';
+        if (activeTab === 'in_progress') return c.status === 'under_review';
+        if (activeTab === 'resolved') return c.status === 'resolved';
+        return true;
+    });
+
     if (loading) {
         return (
             <Layout>
