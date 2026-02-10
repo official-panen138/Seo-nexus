@@ -238,6 +238,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    telegram_username: Optional[str] = None
 
 
 class UserUpdate(BaseModel):
