@@ -5021,10 +5021,113 @@ async def delete_structure_entry(
                 detail="Cannot delete main node while other nodes exist. Delete supporting nodes first or reassign main role.",
             )
 
-    # Check how many entries point to this one (they will become orphans)
+    # ========================================================================
+    # CAPTURE FULL PRE-DELETION SNAPSHOT FOR AUDIT
+    # ========================================================================
+    
+    # Get domain name for this node
+    domain = await db.asset_domains.find_one(
+        {"id": existing["asset_domain_id"]}, {"_id": 0, "domain_name": 1}
+    )
+    domain_name = domain["domain_name"] if domain else "unknown"
+    node_label = f"{domain_name}{existing.get('optimized_path', '') or ''}"
+    
+    # Get target node info if exists
+    target_info = None
+    if existing.get("target_entry_id"):
+        target_entry = await db.seo_structure_entries.find_one(
+            {"id": existing["target_entry_id"]}, {"_id": 0}
+        )
+        if target_entry:
+            target_domain = await db.asset_domains.find_one(
+                {"id": target_entry.get("asset_domain_id")}, {"_id": 0, "domain_name": 1}
+            )
+            target_domain_name = target_domain["domain_name"] if target_domain else "unknown"
+            target_info = {
+                "domain_name": target_domain_name,
+                "path": target_entry.get("optimized_path", ""),
+                "role": target_entry.get("domain_role", ""),
+                "full_label": f"{target_domain_name}{target_entry.get('optimized_path', '') or ''}"
+            }
+    
+    # Build upstream chain (path to Money Site)
+    upstream_chain = []
+    current_entry = existing
+    visited = {entry_id}
+    while current_entry and current_entry.get("target_entry_id"):
+        next_entry = await db.seo_structure_entries.find_one(
+            {"id": current_entry["target_entry_id"]}, {"_id": 0}
+        )
+        if not next_entry or next_entry.get("id") in visited:
+            break
+        visited.add(next_entry.get("id"))
+        next_domain = await db.asset_domains.find_one(
+            {"id": next_entry.get("asset_domain_id")}, {"_id": 0, "domain_name": 1}
+        )
+        next_domain_name = next_domain["domain_name"] if next_domain else "unknown"
+        upstream_chain.append({
+            "label": f"{next_domain_name}{next_entry.get('optimized_path', '') or ''}",
+            "role": next_entry.get("domain_role", ""),
+            "status": next_entry.get("domain_status", "")
+        })
+        current_entry = next_entry
+    
+    # Check how many entries point to this one (they will become orphans/affected)
     orphan_count = await db.seo_structure_entries.count_documents(
         {"target_entry_id": entry_id, "id": {"$ne": entry_id}}
     )
+    
+    # Get affected child nodes for impact analysis
+    affected_children = []
+    if orphan_count > 0:
+        children = await db.seo_structure_entries.find(
+            {"target_entry_id": entry_id, "id": {"$ne": entry_id}},
+            {"_id": 0, "asset_domain_id": 1, "optimized_path": 1, "domain_role": 1}
+        ).to_list(10)
+        for child in children:
+            child_domain = await db.asset_domains.find_one(
+                {"id": child.get("asset_domain_id")}, {"_id": 0, "domain_name": 1}
+            )
+            child_domain_name = child_domain["domain_name"] if child_domain else "unknown"
+            affected_children.append(f"{child_domain_name}{child.get('optimized_path', '') or ''}")
+    
+    # Get FULL structure BEFORE deletion
+    structure_before = await db.seo_structure_entries.find(
+        {"network_id": existing["network_id"]}, {"_id": 0}
+    ).to_list(100)
+    
+    # Format structure for notification
+    structure_before_formatted = []
+    for entry in structure_before:
+        entry_domain = await db.asset_domains.find_one(
+            {"id": entry.get("asset_domain_id")}, {"_id": 0, "domain_name": 1}
+        )
+        entry_domain_name = entry_domain["domain_name"] if entry_domain else "unknown"
+        entry_label = f"{entry_domain_name}{entry.get('optimized_path', '') or ''}"
+        entry_status = entry.get("domain_status", "")
+        entry_role = entry.get("domain_role", "")
+        
+        # Mark the node being deleted
+        is_deleted = entry.get("id") == entry_id
+        structure_before_formatted.append({
+            "label": entry_label,
+            "role": entry_role,
+            "status": entry_status,
+            "is_deleted_node": is_deleted
+        })
+    
+    # Enrich the before_snapshot with all captured data
+    enriched_before_snapshot = {
+        **existing,
+        "domain_name": domain_name,
+        "node_label": node_label,
+        "target_info": target_info,
+        "upstream_chain": upstream_chain,
+        "affected_children": affected_children,
+        "orphan_count": orphan_count,
+        "structure_before": structure_before_formatted,
+    }
+    # ========================================================================
 
     # Clear target_entry_id on orphaned entries
     if orphan_count > 0:
@@ -5037,13 +5140,6 @@ async def delete_structure_entry(
                 }
             },
         )
-
-    # Get domain name for logging
-    domain = await db.asset_domains.find_one(
-        {"id": existing["asset_domain_id"]}, {"_id": 0, "domain_name": 1}
-    )
-    domain_name = domain["domain_name"] if domain else "unknown"
-    node_label = f"{domain_name}{existing.get('optimized_path', '') or ''}"
 
     # Get network for brand_id
     network = await db.seo_networks.find_one(
@@ -5067,7 +5163,7 @@ async def delete_structure_entry(
             action_type=SeoChangeActionType.DELETE_NODE,
             affected_node=node_label,
             change_note=data.change_note,
-            before_snapshot=existing,
+            before_snapshot=enriched_before_snapshot,
             after_snapshot=None,
             entry_id=entry_id,
             skip_rate_limit=True,  # DELETE actions bypass rate limit
