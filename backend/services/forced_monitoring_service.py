@@ -204,7 +204,7 @@ class ForcedMonitoringService:
         message = "\n".join(message_lines)
         
         # Send via telegram
-        success = await telegram._send_telegram_message(message)
+        success = await telegram.send_alert(message)
         
         if success:
             # Update last reminder time
