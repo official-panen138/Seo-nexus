@@ -1353,6 +1353,23 @@ async def create_network(
             metadata={"node_type": "main", "domain": main_domain["domain_name"]}
         )
     
+    # Send Telegram notification for network creation
+    try:
+        from services.seo_telegram_service import get_seo_telegram_service
+        telegram_service = get_seo_telegram_service()
+        if telegram_service:
+            main_node_label = f"{main_domain['domain_name']}{main_path if main_path != '/' else ''}"
+            await telegram_service.send_network_creation_notification(
+                network_id=network_id,
+                network_name=data.name,
+                brand_id=data.brand_id,
+                actor_user_id=current_user["id"],
+                actor_email=current_user["email"],
+                main_node_label=main_node_label
+            )
+    except Exception as e:
+        logger.error(f"Failed to send network creation notification: {e}")
+    
     # Build response
     network["domain_count"] = 1
     network["brand_name"] = brand["name"]
