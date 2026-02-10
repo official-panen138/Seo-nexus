@@ -89,6 +89,11 @@ export const alertsAPI = {
     acknowledge: (alertId) => api.post(`/alerts/${alertId}/acknowledge`)
 };
 
+// Domain Monitoring API (SEO-aware monitoring stats)
+export const monitoringAPI = {
+    getStats: () => api.get('/v3/monitoring/stats')
+};
+
 // SEO Conflicts API
 export const conflictsAPI = {
     detect: () => api.get('/seo/conflicts')
