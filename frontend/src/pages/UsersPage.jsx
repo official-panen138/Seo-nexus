@@ -580,6 +580,17 @@ export default function UsersPage() {
                                                                 Edit User
                                                             </DropdownMenuItem>
                                                             
+                                                            {user.role !== 'super_admin' && (
+                                                                <DropdownMenuItem 
+                                                                    onClick={() => openMenuPermDialog(user)} 
+                                                                    className="cursor-pointer"
+                                                                    data-testid={`menu-perms-user-${user.id}`}
+                                                                >
+                                                                    <Key className="h-4 w-4 mr-2" />
+                                                                    Menu Access
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                            
                                                             {user.status === 'active' ? (
                                                                 <DropdownMenuItem 
                                                                     onClick={() => { setSelectedUser(user); setDeactivateDialogOpen(true); }}
