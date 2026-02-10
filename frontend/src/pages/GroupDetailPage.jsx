@@ -147,11 +147,21 @@ export default function GroupDetailPage() {
     const [sheetOpen, setSheetOpen] = useState(false);
     const [useV3, setUseV3] = useState(true);
     
-    // Permission check - viewers can only view, not edit
+    // Permission check - Only super_admin OR users listed in network.manager_ids can edit
+    // All other users are VIEW-ONLY
     const canEdit = useMemo(() => {
         const role = currentUser?.role;
-        return role === 'super_admin' || role === 'admin' || role === 'manager';
-    }, [currentUser?.role]);
+        const userId = currentUser?.id;
+        
+        // Super admin can always edit
+        if (role === 'super_admin' || role === 'admin') {
+            return true;
+        }
+        
+        // Check if user is in network's manager_ids
+        const managerIds = network?.manager_ids || [];
+        return managerIds.includes(userId);
+    }, [currentUser?.role, currentUser?.id, network?.manager_ids]);
     
     // Change History state
     const [changeHistory, setChangeHistory] = useState([]);
