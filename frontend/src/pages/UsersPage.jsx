@@ -434,6 +434,7 @@ export default function UsersPage() {
                                     <TableRow>
                                         <TableHead>User</TableHead>
                                         <TableHead>Email</TableHead>
+                                        <TableHead>Telegram</TableHead>
                                         <TableHead>Role</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>Brand Access</TableHead>
@@ -443,7 +444,7 @@ export default function UsersPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {users.length === 0 ? (
-                                        <TableRow><TableCell colSpan={7} className="h-32 text-center"><div className="empty-state py-8"><Users className="empty-state-icon mx-auto" /><p className="empty-state-title">No users yet</p></div></TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={8} className="h-32 text-center"><div className="empty-state py-8"><Users className="empty-state-icon mx-auto" /><p className="empty-state-title">No users yet</p></div></TableCell></TableRow>
                                     ) : users.map((user) => (
                                         <TableRow key={user.id} className="table-row-hover" data-testid={`user-row-${user.id}`}>
                                             <TableCell>
@@ -454,6 +455,13 @@ export default function UsersPage() {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-zinc-400">{user.email}</TableCell>
+                                            <TableCell className="text-zinc-400">
+                                                {user.telegram_username ? (
+                                                    <span className="text-blue-400">@{user.telegram_username}</span>
+                                                ) : (
+                                                    <span className="text-zinc-600">-</span>
+                                                )}
+                                            </TableCell>
                                             <TableCell><Badge variant="outline" className={getRoleBadgeClass(user.role)}><Shield className="h-3 w-3 mr-1" />{ROLE_LABELS[user.role]}</Badge></TableCell>
                                             <TableCell><Badge className={STATUS_COLORS[user.status || 'active']}>{(user.status || 'active').toUpperCase()}</Badge></TableCell>
                                             <TableCell>
