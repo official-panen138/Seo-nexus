@@ -771,6 +771,7 @@ class SeoTelegramService:
 
             # Fallback to hardcoded if template disabled or failed
             if not message:
+                logger.warning("Template returned None, using fallback hardcoded message")
                 leader_section = ""
                 if seo_leader_tag:
                     leader_section = f"\n\n👁 <b>CC:</b> {seo_leader_tag}"
@@ -798,6 +799,8 @@ class SeoTelegramService:
 🧭 <b>STRUKTUR SEO TERKINI</b>
 ━━━━━━━━━━━━━━━━━━━━━━
 {structure_text}{leader_section}"""
+            else:
+                logger.info("Using template-rendered message")
 
             # Send message with topic routing
             success = await self._send_telegram_message(
