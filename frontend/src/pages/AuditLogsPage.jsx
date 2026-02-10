@@ -120,10 +120,28 @@ export default function AuditLogsPage() {
                         </h1>
                         <p className="text-zinc-400 mt-1">Track all system changes and security events</p>
                     </div>
-                    <Button onClick={loadLogs} variant="outline" disabled={loading}>
-                        <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button onClick={loadLogs} variant="outline" disabled={loading} data-testid="refresh-audit-logs-btn">
+                            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </Button>
+                        {logs.length > 0 && (
+                            <Button 
+                                onClick={handleClearLogs} 
+                                variant="outline" 
+                                disabled={clearing}
+                                className="text-red-400 border-red-500/30 hover:bg-red-500/10"
+                                data-testid="clear-audit-logs-btn"
+                            >
+                                {clearing ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                )}
+                                Clear
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Stats Cards */}
