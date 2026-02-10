@@ -6358,3 +6358,126 @@ Ini adalah pesan test dari sistem notifikasi SEO.
     else:
         raise HTTPException(status_code=500, detail="Failed to send test message. Check Telegram configuration.")
 
+
+# ==================== DOMAIN MONITORING TELEGRAM SETTINGS ====================
+
+@router.get("/settings/telegram-monitoring")
+async def get_telegram_monitoring_settings(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get dedicated Domain Monitoring Telegram configuration.
+    This is SEPARATE from SEO notifications.
+    """
+    settings = await db.settings.find_one({"key": "telegram_monitoring"}, {"_id": 0})
+    if not settings:
+        return {
+            "configured": False,
+            "enabled": True,
+            "chat_id": None,
+            "bot_token": None
+        }
+    
+    return {
+        "configured": bool(settings.get("bot_token") and settings.get("chat_id")),
+        "enabled": settings.get("enabled", True),
+        "chat_id": settings.get("chat_id"),
+        "bot_token": settings.get("bot_token")
+    }
+
+
+@router.put("/settings/telegram-monitoring")
+async def update_telegram_monitoring_settings(
+    settings: dict,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Update dedicated Domain Monitoring Telegram configuration.
+    This channel is for domain expiration and availability alerts ONLY.
+    NO fallback to SEO Telegram - must be configured separately.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can update Telegram settings")
+    
+    # Get existing settings
+    existing = await db.settings.find_one({"key": "telegram_monitoring"}, {"_id": 0})
+    
+    update_data = {
+        "key": "telegram_monitoring",
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Bot token (required for separate channel)
+    if "bot_token" in settings and settings["bot_token"]:
+        update_data["bot_token"] = settings["bot_token"]
+    elif existing and existing.get("bot_token"):
+        update_data["bot_token"] = existing["bot_token"]
+    
+    # Chat ID (required)
+    if "chat_id" in settings and settings["chat_id"]:
+        update_data["chat_id"] = settings["chat_id"]
+    elif existing and existing.get("chat_id"):
+        update_data["chat_id"] = existing["chat_id"]
+    
+    # Enabled toggle
+    if "enabled" in settings:
+        update_data["enabled"] = settings["enabled"]
+    elif existing:
+        update_data["enabled"] = existing.get("enabled", True)
+    else:
+        update_data["enabled"] = True
+    
+    await db.settings.update_one(
+        {"key": "telegram_monitoring"},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    return {"message": "Domain Monitoring Telegram settings updated"}
+
+
+@router.post("/settings/telegram-monitoring/test")
+async def test_telegram_monitoring_alert(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Send a test notification to the Domain Monitoring Telegram channel.
+    Tests the dedicated monitoring channel (NOT SEO channel).
+    """
+    from services.monitoring_service import DomainMonitoringTelegramService
+    from services.timezone_helper import format_now_local, get_system_timezone
+    
+    tz_str, tz_label = await get_system_timezone(db)
+    local_time = format_now_local(tz_str, tz_label)
+    
+    message = f"""🔔 <b>DOMAIN MONITORING TEST</b>
+
+Ini adalah pesan test dari sistem Domain Monitoring.
+
+━━━━━━━━━━━━━━━━━━━━━━
+📌 <b>DETAIL TEST</b>
+• Dikirim Oleh: {current_user.get('name') or current_user.get('email')}
+• Waktu: {local_time}
+• Channel: Domain Monitoring (Dedicated)
+
+━━━━━━━━━━━━━━━━━━━━━━
+<b>Catatan:</b>
+• Channel ini untuk alert DOMAIN (expiration, availability)
+• BUKAN untuk SEO change notifications
+• Alert akan mencakup SEO context jika domain ada di SEO Network
+
+✅ Jika Anda melihat pesan ini, konfigurasi Telegram untuk Domain Monitoring sudah benar!
+
+<i>TEST MESSAGE - NO ACTUAL ALERT</i>"""
+    
+    telegram_service = DomainMonitoringTelegramService(db)
+    success = await telegram_service.send_alert(message)
+    
+    if success:
+        return {"message": "Test message sent successfully to Domain Monitoring channel"}
+    else:
+        raise HTTPException(
+            status_code=500, 
+            detail="Failed to send test message. Check Domain Monitoring Telegram configuration (bot_token and chat_id required)."
+        )
+
