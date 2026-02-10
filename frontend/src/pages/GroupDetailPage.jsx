@@ -199,6 +199,9 @@ export default function GroupDetailPage() {
     const [notificationsLoading, setNotificationsLoading] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     
+    // Network managers state (for complaints auto-tagging)
+    const [networkManagers, setNetworkManagers] = useState([]);
+    
     // Active tab state (for coordinating between alerts and change history)
     const [activeTab, setActiveTab] = useState('graph');
     
