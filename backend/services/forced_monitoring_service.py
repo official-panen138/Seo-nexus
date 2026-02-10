@@ -328,8 +328,8 @@ class ForcedMonitoringService:
         # Domain Info
         lines.append(f"Domain        : {domain_name}")
         lines.append(f"Brand         : {brand_name}")
-        lines.append(f"Used In SEO   : YES")
-        lines.append(f"Monitoring    : ❌ Disabled")
+        lines.append("Used In SEO   : YES")
+        lines.append("Monitoring    : ❌ Disabled")
         lines.append("")
         
         # SEO CONTEXT
@@ -352,9 +352,9 @@ class ForcedMonitoringService:
             lines.append("SEO CONTEXT:")
             lines.append(f"Network       : {', '.join(domain_info.get('networks_used_in', ['N/A']))}")
             lines.append(f"Node Used     : {domain_name}")
-            lines.append(f"Role          : N/A")
-            lines.append(f"Tier          : N/A")
-            lines.append(f"Target        : N/A")
+            lines.append("Role          : N/A")
+            lines.append("Tier          : N/A")
+            lines.append("Target        : N/A")
         lines.append("")
         
         # STRUKTUR SEO TERKINI
