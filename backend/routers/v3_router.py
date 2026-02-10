@@ -3043,6 +3043,44 @@ async def update_optimization(
 
     # Check if status changed to completed or reverted
     new_status = update_data.get("status", old_status)
+    
+    # AUTO-SYNC: Update linked conflict status when optimization status changes
+    linked_conflict_id = optimization.get("linked_conflict_id")
+    if linked_conflict_id and new_status != old_status:
+        conflict_update = {"updated_at": datetime.now(timezone.utc).isoformat()}
+        
+        if new_status == "completed":
+            # When optimization is completed, mark conflict as RESOLVED
+            conflict_update["status"] = "resolved"
+            conflict_update["resolved_at"] = datetime.now(timezone.utc).isoformat()
+            conflict_update["resolved_by"] = current_user.get("id")
+            
+            # Send resolution notification
+            try:
+                conflict = await db.seo_conflicts.find_one({"id": linked_conflict_id}, {"_id": 0})
+                if conflict:
+                    from services.conflict_optimization_linker_service import get_conflict_linker_service
+                    linker_service = get_conflict_linker_service(db)
+                    await linker_service._send_resolution_notification(conflict, current_user.get("id", ""))
+            except Exception as e:
+                logger.warning(f"Failed to send conflict resolution notification: {e}")
+                
+        elif new_status == "in_progress":
+            # Confirm under_review status when work starts
+            conflict_update["status"] = "under_review"
+            
+        elif new_status == "reverted":
+            # If optimization is reverted, conflict goes back to detected
+            conflict_update["status"] = "detected"
+            conflict_update["resolved_at"] = None
+            conflict_update["resolved_by"] = None
+        
+        await db.seo_conflicts.update_one(
+            {"id": linked_conflict_id},
+            {"$set": conflict_update}
+        )
+        logger.info(f"Synced conflict {linked_conflict_id} status to match optimization status change to {new_status}")
+    
     if new_status != old_status and new_status in ["completed", "reverted"]:
         # Get network and brand for notification
         network = await db.seo_networks.find_one(
