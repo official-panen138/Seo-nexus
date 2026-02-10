@@ -71,6 +71,7 @@ export default function ConflictDashboardPage() {
     const [metrics, setMetrics] = useState(null);
     const [storedConflicts, setStoredConflicts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [creatingTask, setCreatingTask] = useState(null);
     const [periodDays, setPeriodDays] = useState('30');
 
     useEffect(() => {
