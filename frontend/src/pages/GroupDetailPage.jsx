@@ -867,13 +867,14 @@ export default function GroupDetailPage() {
                             {/* Manager Summary - Quick Visibility */}
                             {useV3 && (
                                 <div 
-                                    className="mt-3 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                                    className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 cursor-pointer hover:opacity-80 transition-opacity"
                                     onClick={() => setActiveTab('access')}
                                     data-testid="manager-summary-header"
                                     title="Click to manage network managers"
                                 >
+                                    {/* Visibility + Managers */}
                                     {network.visibility_mode === 'restricted' ? (
-                                        <>
+                                        <div className="flex items-center gap-2">
                                             <Lock className="h-4 w-4 text-amber-400" />
                                             <span className="text-sm text-amber-400">Managed By: Restricted</span>
                                             {network.manager_summary_cache?.count > 0 && (
@@ -885,9 +886,9 @@ export default function GroupDetailPage() {
                                             {network.manager_summary_cache?.count === 0 && (
                                                 <span className="text-sm text-red-400">· Super Admin only</span>
                                             )}
-                                        </>
+                                        </div>
                                     ) : (
-                                        <>
+                                        <div className="flex items-center gap-2">
                                             <Users className="h-4 w-4 text-zinc-500" />
                                             <span className="text-sm text-zinc-500">Visibility: Brand Based</span>
                                             {network.manager_summary_cache?.count > 0 && (
@@ -895,8 +896,27 @@ export default function GroupDetailPage() {
                                                     · {network.manager_summary_cache.count} manager{network.manager_summary_cache.count !== 1 ? 's' : ''}
                                                 </span>
                                             )}
-                                        </>
+                                        </div>
                                     )}
+                                    
+                                    {/* Open Complaints Badge */}
+                                    {network.open_complaints_count > 0 && (
+                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/20" data-testid="open-complaints-badge">
+                                            <AlertCircle className="h-3.5 w-3.5 text-red-400" />
+                                            <span className="text-xs text-red-400 font-medium">
+                                                {network.open_complaints_count} open complaint{network.open_complaints_count !== 1 ? 's' : ''}
+                                            </span>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Last Activity */}
+                                    {network.last_optimization_at && (
+                                        <div className="flex items-center gap-1.5 text-xs text-zinc-500" data-testid="last-activity-info">
+                                            <Clock className="h-3.5 w-3.5" />
+                                            <span>Last activity: {formatDate(network.last_optimization_at)}</span>
+                                        </div>
+                                    )}
+                                    
                                     <ChevronRight className="h-4 w-4 text-zinc-600" />
                                 </div>
                             )}
