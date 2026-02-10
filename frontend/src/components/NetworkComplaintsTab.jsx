@@ -218,7 +218,9 @@ export function NetworkComplaintsTab({ networkId, brandId, networkManagers = [] 
             toast.success('Project complaint created');
             setCreateDialogOpen(false);
             resetForm();
-            loadComplaints();
+            // Small delay to ensure backend has processed the complaint
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await loadComplaints();
         } catch (err) {
             toast.error(err.response?.data?.detail || 'Failed to create complaint');
         } finally {
