@@ -86,54 +86,56 @@ export function OnlineUsers() {
                     </h4>
                     <p className="text-xs text-zinc-500 mt-1">{onlineCount} user{onlineCount !== 1 ? 's' : ''} online</p>
                 </div>
-                <ScrollArea className="max-h-[300px]">
-                    {onlineUsers.length > 0 && (
-                        <div className="p-2">
-                            <p className="text-xs text-zinc-500 px-2 mb-2 flex items-center gap-1">
-                                <Circle className="h-2 w-2 fill-emerald-500 text-emerald-500" />Online Now
-                            </p>
-                            {onlineUsers.map((u) => (
-                                <div key={u.user_id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800">
-                                    <div className="relative">
-                                        <div className={`w-8 h-8 rounded-full ${getRoleColor(u.user_role)} flex items-center justify-center text-white text-sm font-medium`}>
-                                            {getInitial(u.user_name)}
+                <ScrollArea className="h-[350px]" data-testid="online-users-scroll">
+                    <div className="pb-2">
+                        {onlineUsers.length > 0 && (
+                            <div className="p-2">
+                                <p className="text-xs text-zinc-500 px-2 mb-2 flex items-center gap-1">
+                                    <Circle className="h-2 w-2 fill-emerald-500 text-emerald-500" />Online Now
+                                </p>
+                                {onlineUsers.map((u) => (
+                                    <div key={u.user_id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800">
+                                        <div className="relative">
+                                            <div className={`w-8 h-8 rounded-full ${getRoleColor(u.user_role)} flex items-center justify-center text-white text-sm font-medium`}>
+                                                {getInitial(u.user_name)}
+                                            </div>
+                                            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-emerald-500 rounded-full border-2 border-zinc-900" />
                                         </div>
-                                        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-emerald-500 rounded-full border-2 border-zinc-900" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-white truncate">
-                                            {u.user_name}{u.user_id === user?.id && <span className="text-zinc-500 text-xs ml-1">(you)</span>}
-                                        </p>
-                                        <p className="text-xs text-zinc-500 capitalize">{u.user_role?.replace('_', ' ')}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    {recentlyActive.length > 0 && (
-                        <div className="p-2 border-t border-border">
-                            <p className="text-xs text-zinc-500 px-2 mb-2 flex items-center gap-1"><Clock className="h-3 w-3" />Recently Active</p>
-                            {recentlyActive.map((u) => (
-                                <div key={u.user_id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800">
-                                    <div className="relative">
-                                        <div className={`w-8 h-8 rounded-full ${getRoleColor(u.user_role)} opacity-60 flex items-center justify-center text-white text-sm font-medium`}>
-                                            {getInitial(u.user_name)}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-white truncate">
+                                                {u.user_name}{u.user_id === user?.id && <span className="text-zinc-500 text-xs ml-1">(you)</span>}
+                                            </p>
+                                            <p className="text-xs text-zinc-500 capitalize">{u.user_role?.replace('_', ' ')}</p>
                                         </div>
-                                        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-zinc-500 rounded-full border-2 border-zinc-900" />
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-zinc-400 truncate">{u.user_name}</p>
-                                        <p className="text-xs text-zinc-600">{formatLastSeen(u.last_seen)}</p>
+                                ))}
+                            </div>
+                        )}
+                        {recentlyActive.length > 0 && (
+                            <div className="p-2 border-t border-border">
+                                <p className="text-xs text-zinc-500 px-2 mb-2 flex items-center gap-1"><Clock className="h-3 w-3" />Recently Active</p>
+                                {recentlyActive.map((u) => (
+                                    <div key={u.user_id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800">
+                                        <div className="relative">
+                                            <div className={`w-8 h-8 rounded-full ${getRoleColor(u.user_role)} opacity-60 flex items-center justify-center text-white text-sm font-medium`}>
+                                                {getInitial(u.user_name)}
+                                            </div>
+                                            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-zinc-500 rounded-full border-2 border-zinc-900" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-zinc-400 truncate">{u.user_name}</p>
+                                            <p className="text-xs text-zinc-600">{formatLastSeen(u.last_seen)}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    {onlineUsers.length === 0 && recentlyActive.length === 0 && (
-                        <div className="p-4 text-center text-zinc-500">
-                            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" /><p>No users online</p>
-                        </div>
-                    )}
+                                ))}
+                            </div>
+                        )}
+                        {onlineUsers.length === 0 && recentlyActive.length === 0 && (
+                            <div className="p-4 text-center text-zinc-500">
+                                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" /><p>No users online</p>
+                            </div>
+                        )}
+                    </div>
                 </ScrollArea>
             </PopoverContent>
         </Popover>
