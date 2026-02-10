@@ -1363,41 +1363,43 @@ export default function GroupDetailPage() {
                                                             >
                                                                 View
                                                             </Button>
-                                                            <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        onClick={(e) => e.stopPropagation()}
-                                                                        className="h-7 w-7"
-                                                                    >
-                                                                        <MoreVertical className="h-3.5 w-3.5" />
-                                                                    </Button>
-                                                                </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end">
-                                                                    <DropdownMenuItem onClick={() => openEditDialog(entry)}>
-                                                                        <Edit className="h-4 w-4 mr-2" />
-                                                                        Edit Node
-                                                                    </DropdownMenuItem>
-                                                                    {entry.domain_role !== 'main' && (
-                                                                        <DropdownMenuItem 
-                                                                            onClick={() => openSwitchMainDialog(entry)}
-                                                                            className="text-amber-400"
+                                                            {canEdit && (
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                            className="h-7 w-7"
                                                                         >
-                                                                            <Crown className="h-4 w-4 mr-2" />
-                                                                            Switch to Main Target
+                                                                            <MoreVertical className="h-3.5 w-3.5" />
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align="end">
+                                                                        <DropdownMenuItem onClick={() => openEditDialog(entry)}>
+                                                                            <Edit className="h-4 w-4 mr-2" />
+                                                                            Edit Node
                                                                         </DropdownMenuItem>
-                                                                    )}
-                                                                    <DropdownMenuSeparator />
-                                                                    <DropdownMenuItem 
-                                                                        onClick={() => openDeleteDialog(entry)}
-                                                                        className="text-red-400"
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4 mr-2" />
-                                                                        Delete Node
-                                                                    </DropdownMenuItem>
-                                                                </DropdownMenuContent>
-                                                            </DropdownMenu>
+                                                                        {entry.domain_role !== 'main' && (
+                                                                            <DropdownMenuItem 
+                                                                                onClick={() => openSwitchMainDialog(entry)}
+                                                                                className="text-amber-400"
+                                                                            >
+                                                                                <Crown className="h-4 w-4 mr-2" />
+                                                                                Switch to Main Target
+                                                                            </DropdownMenuItem>
+                                                                        )}
+                                                                        <DropdownMenuSeparator />
+                                                                        <DropdownMenuItem 
+                                                                            onClick={() => openDeleteDialog(entry)}
+                                                                            className="text-red-400"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4 mr-2" />
+                                                                            Delete Node
+                                                                        </DropdownMenuItem>
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            )}
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
