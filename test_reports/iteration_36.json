@@ -1,0 +1,126 @@
+{
+  "summary": "Tested domain save functionality and role-based access control. All 13 backend API tests pass. Manager role correctly restricts network and domain access via brand_scope_ids. Dashboard statistics BUG found - shows global data instead of brand-scoped data.",
+
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "GET /api/reports/dashboard-stats",
+        "issue": "Dashboard stats are NOT brand-scoped - returns global statistics instead of filtered by user's brand_scope_ids. Manager sees 23 domains (dashboard) vs 11 domains (API), 5 networks (dashboard) vs 3 networks (API).",
+        "priority": "HIGH",
+        "location": "/app/backend/server.py:2139-2168"
+      },
+      {
+        "endpoint": "GET /api/v3/dashboard/stats", 
+        "issue": "V3 dashboard stats endpoint also lacks brand scoping - returns global counts",
+        "priority": "HIGH",
+        "location": "/app/backend/routers/v3_router.py:5702-5721"
+      }
+    ],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Dashboard Statistics",
+        "issue": "Dashboard shows global domain/network counts instead of brand-scoped counts for manager role",
+        "affected_selectors": ["[data-testid='domains-count']", "[data-testid='networks-count']"]
+      }
+    ],
+    "design_issues": []
+  },
+
+  "passed_tests": {
+    "domain_save_rbac_api": [
+      "POST /api/v3/asset-domains - Domain creation with domain_name and brand_id works",
+      "POST /api/v3/asset-domains - Domain creation requires brand_id (400/422 without)",
+      "GET /api/v3/networks - Manager sees only 3 networks (Panen138 brand)",
+      "GET /api/v3/networks - Super admin sees all 5 networks",
+      "GET /api/v3/asset-domains - Manager sees only 11 domains (brand-scoped)",
+      "GET /api/v3/asset-domains - Super admin sees all 32 domains",
+      "Manager login works with 'manager' role in UserRole enum",
+      "Manager brand_scope_ids correctly set to ['a34a960f-feb3-4d1b-a231-4611ac7ecdb0']",
+      "Manager can create domain for their own brand",
+      "Manager cannot create domain for other brand (403 Forbidden)",
+      "GET /api/v3/asset-domains?brand_id=X - Filtering by brand_id works",
+      "GET /api/brands - Manager only sees their assigned brand"
+    ],
+    "frontend_ui": [
+      "Login page loads correctly",
+      "Manager can login successfully",
+      "Dashboard shows after login",
+      "SEO Networks page shows 3 networks for manager (correct via API, dashboard card shows 5 - BUG)",
+      "Sidebar shows only Panen138 brand for manager"
+    ]
+  },
+
+  "features_verified": {
+    "domain_save": {
+      "POST /api/v3/asset-domains": "VERIFIED - Creates domain with domain_name and brand_id",
+      "brand_id_required": "VERIFIED - Returns 400/422 without brand_id"
+    },
+    "role_based_access_control": {
+      "manager_role": "VERIFIED - UserRole enum includes 'manager'",
+      "manager_login": "VERIFIED - manager@test.com / manager123 works",
+      "manager_brand_scope": "VERIFIED - Manager has brand_scope_ids=['a34a960f-feb3-4d1b-a231-4611ac7ecdb0']",
+      "network_filtering": "VERIFIED - GET /api/v3/networks returns only brand-scoped networks",
+      "domain_filtering": "VERIFIED - GET /api/v3/asset-domains returns only brand-scoped domains",
+      "super_admin_access": "VERIFIED - Super admin has NULL brand_scope_ids (full access)"
+    },
+    "dashboard_stats": "BUG - Not brand-scoped, returns global counts"
+  },
+
+  "test_report_links": [
+    "/app/backend/tests/test_domain_save_rbac.py",
+    "/app/test_reports/pytest/domain_save_rbac_results.xml"
+  ],
+
+  "action_items": [
+    "FIX: /api/reports/dashboard-stats endpoint needs brand scoping - apply build_brand_filter(current_user) to all count queries",
+    "FIX: /api/v3/dashboard/stats endpoint needs brand scoping similarly",
+    "VERIFY: Frontend should call dashboard stats API with brand filter after fix"
+  ],
+
+  "critical_code_review_comments": [
+    "Good: UserRole enum correctly includes 'manager' at /app/backend/server.py:137",
+    "Good: build_brand_filter() helper function properly handles brand scoping",
+    "Good: GET /api/v3/networks applies brand filtering correctly via build_brand_filter()",
+    "Good: GET /api/v3/asset-domains applies brand filtering correctly",
+    "BUG: GET /api/reports/dashboard-stats (server.py:2139-2168) does NOT apply brand filtering",
+    "BUG: GET /api/v3/dashboard/stats (v3_router.py:5702-5721) does NOT apply brand filtering"
+  ],
+
+  "updated_files": [
+    "/app/backend/tests/test_domain_save_rbac.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% (13/13 tests passed)",
+    "frontend": "90% (Dashboard stats bug affects display)"
+  },
+
+  "test_credentials": {
+    "super_admin": {"email": "admin@test.com", "password": "admin123"},
+    "manager": {"email": "manager@test.com", "password": "manager123", "brand_scope_ids": ["a34a960f-feb3-4d1b-a231-4611ac7ecdb0"]}
+  },
+
+  "seed_data_creation": "Created and deleted test domains during testing - no persistent test data",
+
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "Domain save and network RBAC tested - all API endpoints work correctly with brand scoping. Dashboard statistics endpoints (/api/reports/dashboard-stats and /api/v3/dashboard/stats) need fixing to apply brand_scope_ids filtering. Manager user sees correct filtered data via API calls but dashboard UI shows global counts. Test file at /app/backend/tests/test_domain_save_rbac.py can be reused.",
+
+  "rca_of_the_issue": {
+    "root_cause": "Dashboard stats endpoints query all documents without applying brand filtering for non-super-admin users",
+    "reproduction_steps": [
+      "1. Login as manager@test.com / manager123",
+      "2. Navigate to dashboard",
+      "3. Observe DOMAINS card shows 23 (global) instead of 11 (brand-scoped)",
+      "4. Observe NETWORKS card shows 5 (global) instead of 3 (brand-scoped)",
+      "5. Compare with API calls: GET /api/v3/networks returns 3, GET /api/v3/asset-domains returns total:11"
+    ],
+    "fix_suggestion": "Apply build_brand_filter(current_user) to all count queries in dashboard-stats endpoint, similar to how GET /api/v3/networks applies it"
+  }
+}
