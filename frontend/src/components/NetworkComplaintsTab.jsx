@@ -116,29 +116,51 @@ export function NetworkComplaintsTab({ networkId, brandId, networkManagers = [] 
 
     const isSuperAdmin = user?.role === 'super_admin';
 
-    // Load complaints on mount and setup polling for real-time updates
+    // Track if there are new items available (without auto-refreshing)
+    const [newItemsAvailable, setNewItemsAvailable] = useState(false);
+    const [lastKnownCount, setLastKnownCount] = useState(0);
+    
+    // Load complaints on mount
     useEffect(() => {
         if (networkId) {
             loadComplaints();
-            
-            // Poll for new complaints every 10 seconds when tab is active
-            const pollInterval = setInterval(() => {
-                loadComplaints();
-            }, 10000);
-            
-            return () => clearInterval(pollInterval);
         }
     }, [networkId]);
+    
+    // Check for new complaints periodically (but don't auto-refresh)
+    useEffect(() => {
+        if (!networkId) return;
+        
+        const checkForNewComplaints = async () => {
+            // Don't check if dialog is open (user is creating/editing)
+            if (createDialogOpen || respondDialogOpen || resolveDialogOpen) return;
+            
+            try {
+                const projectRes = await projectComplaintsAPI.getAll(networkId);
+                const newCount = (projectRes.data || []).length;
+                
+                if (lastKnownCount > 0 && newCount > lastKnownCount) {
+                    setNewItemsAvailable(true);
+                }
+            } catch (err) {
+                // Silently fail - don't disrupt user
+            }
+        };
+        
+        // Check every 15 seconds
+        const interval = setInterval(checkForNewComplaints, 15000);
+        return () => clearInterval(interval);
+    }, [networkId, lastKnownCount, createDialogOpen, respondDialogOpen, resolveDialogOpen]);
 
     const loadComplaints = async () => {
-        // Don't show loading spinner during polling updates
-        if (projectComplaints.length === 0 && optimizationComplaints.length === 0) {
-            setLoading(true);
-        }
+        setLoading(true);
+        setNewItemsAvailable(false);
         try {
             // Load project-level complaints
             const projectRes = await projectComplaintsAPI.getAll(networkId);
-            setProjectComplaints(projectRes.data || []);
+            const complaints = projectRes.data || [];
+            setProjectComplaints(complaints);
+            setLastKnownCount(complaints.length);
         } catch (err) {
             console.error('Failed to load project complaints:', err);
         }
@@ -155,6 +177,11 @@ export function NetworkComplaintsTab({ networkId, brandId, networkManagers = [] 
         }
         
         setLoading(false);
+    };
+    
+    const handleRefreshComplaints = () => {
+        setNewItemsAvailable(false);
+        loadComplaints();
     };
 
     // Debounced user search
