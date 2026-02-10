@@ -463,131 +463,231 @@ export default function AlertsPage() {
                     </Card>
                 )}
 
-                {/* Conflicts List */}
-                {enhancedConflicts.length === 0 ? (
-                    <Card className="bg-card border-border">
-                        <CardContent className="py-12 text-center">
-                            <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-3" />
-                            <p className="text-lg font-medium text-white">No Conflicts Detected</p>
-                            <p className="text-sm text-zinc-500 mt-1">
-                                Your SEO networks are configured correctly
-                            </p>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <div className="space-y-4" data-testid="conflicts-list">
-                        {enhancedConflicts.map((conflict, idx) => {
-                            const severityClass = CONFLICT_SEVERITY_CLASSES[conflict.severity] || CONFLICT_SEVERITY_CLASSES.medium;
-                            const typeLabel = CONFLICT_TYPE_LABELS[conflict.conflict_type] || conflict.conflict_type;
-                            const hasLinkedOpt = conflict.linked_optimization;
-                            
-                            return (
-                                <Card 
-                                    key={idx} 
-                                    className={`bg-card border-border ${conflict.severity === 'critical' ? 'border-red-500/30' : conflict.severity === 'high' ? 'border-amber-500/30' : ''}`}
-                                    data-testid={`conflict-${idx}`}
-                                >
-                                    <CardContent className="pt-4">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex items-start gap-3">
-                                                <AlertTriangle className={`h-5 w-5 flex-shrink-0 ${
-                                                    conflict.severity === 'critical' ? 'text-red-400' :
-                                                    conflict.severity === 'high' ? 'text-amber-400' : 'text-yellow-400'
-                                                }`} />
-                                                <div>
-                                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                {/* Active Conflicts List - Dynamic */}
+                <Card className="bg-card border-border" data-testid="active-conflicts-section">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            Active Conflicts
+                            <Badge variant="outline" className="ml-2">{enhancedConflicts.length}</Badge>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {enhancedConflicts.length === 0 ? (
+                            <div className="py-8 text-center">
+                                <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-3" />
+                                <p className="text-lg font-medium text-white">No Conflicts Detected</p>
+                                <p className="text-sm text-zinc-500 mt-1">
+                                    Your SEO networks are configured correctly
+                                </p>
+                            </div>
+                        ) : viewMode === 'table' ? (
+                            /* Table View */
+                            <div className="overflow-x-auto">
+                                <table className="w-full" data-testid="active-conflicts-table">
+                                    <thead>
+                                        <tr className="border-b border-zinc-800">
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Severity</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Type</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Description</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Network</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Linked Task</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {enhancedConflicts.map((conflict, idx) => {
+                                            const severityClass = CONFLICT_SEVERITY_CLASSES[conflict.severity] || CONFLICT_SEVERITY_CLASSES.medium;
+                                            const typeLabel = CONFLICT_TYPE_LABELS[conflict.conflict_type] || conflict.conflict_type;
+                                            const hasLinkedOpt = conflict.linked_optimization;
+                                            
+                                            return (
+                                                <tr key={idx} className="border-b border-zinc-800/50 hover:bg-zinc-800/30" data-testid={`conflict-row-${idx}`}>
+                                                    <td className="py-3 px-4">
                                                         <Badge className={severityClass}>
                                                             {(conflict.severity || 'medium').toUpperCase()}
                                                         </Badge>
-                                                        <Badge variant="outline" className="text-xs">
-                                                            {typeLabel}
-                                                        </Badge>
-                                                        {hasLinkedOpt && (
-                                                            <Badge 
-                                                                className="bg-blue-500/20 text-blue-400 border-blue-500/30 cursor-pointer"
-                                                                onClick={() => window.location.href = `/optimizations/${conflict.linked_optimization.id}`}
-                                                                data-testid={`linked-opt-badge-${idx}`}
-                                                            >
-                                                                <Link2 className="h-3 w-3 mr-1" />
-                                                                Linked Optimization
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-sm text-white font-medium">
-                                                        {conflict.description || conflict.message || 'SEO structure conflict detected'}
-                                                    </p>
-                                                    {conflict.network_name && (
-                                                        <p className="text-xs text-zinc-500 mt-1">
-                                                            Network: {conflict.network_name}
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <span className="text-sm text-white">{typeLabel}</span>
+                                                    </td>
+                                                    <td className="py-3 px-4 max-w-xs">
+                                                        <p className="text-sm text-zinc-300 truncate">
+                                                            {conflict.description || conflict.message || 'SEO structure conflict detected'}
                                                         </p>
-                                                    )}
-                                                    {hasLinkedOpt && (
-                                                        <div className="mt-2 p-2 bg-blue-500/10 rounded border border-blue-500/20">
-                                                            <div className="flex items-center gap-2">
-                                                                <ClipboardList className="h-4 w-4 text-blue-400" />
-                                                                <div>
-                                                                    <p className="text-xs text-blue-400 font-medium">
-                                                                        {conflict.linked_optimization.title}
-                                                                    </p>
-                                                                    <p className="text-xs text-zinc-500">
-                                                                        Status: {conflict.linked_optimization.status?.toUpperCase()}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    {conflict.affected_nodes && conflict.affected_nodes.length > 0 && (
-                                                        <div className="mt-2 space-y-1">
-                                                            <p className="text-xs text-zinc-500">Affected Nodes:</p>
-                                                            {conflict.affected_nodes.slice(0, 3).map((node, nIdx) => (
-                                                                <div key={nIdx} className="flex items-center gap-2">
-                                                                    <Network className="h-3 w-3 text-zinc-600" />
-                                                                    <code className="text-xs text-zinc-400 bg-zinc-900 px-1 rounded">
-                                                                        {node.domain}{node.path || ''}
-                                                                    </code>
-                                                                </div>
-                                                            ))}
-                                                            {conflict.affected_nodes.length > 3 && (
-                                                                <p className="text-xs text-zinc-600">
-                                                                    +{conflict.affected_nodes.length - 3} more nodes
-                                                                </p>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        {conflict.network_id ? (
+                                                            <Button
+                                                                variant="link"
+                                                                size="sm"
+                                                                onClick={() => window.location.href = `/groups/${conflict.network_id}`}
+                                                                className="text-xs text-zinc-400 hover:text-blue-400 p-0 h-auto"
+                                                            >
+                                                                {conflict.network_name || 'View'}
+                                                                <ExternalLink className="h-3 w-3 ml-1" />
+                                                            </Button>
+                                                        ) : (
+                                                            <span className="text-sm text-zinc-500">-</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        {hasLinkedOpt ? (
+                                                            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                                                                <Link2 className="h-3 w-3 mr-1" />
+                                                                {conflict.linked_optimization.status?.toUpperCase()}
+                                                            </Badge>
+                                                        ) : (
+                                                            <span className="text-xs text-zinc-500">Not linked</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <div className="flex gap-2">
+                                                            {conflict.network_id && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => window.location.href = `/groups/${conflict.network_id}`}
+                                                                    className="text-xs"
+                                                                >
+                                                                    <ExternalLink className="h-3 w-3" />
+                                                                </Button>
+                                                            )}
+                                                            {hasLinkedOpt && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => window.location.href = `/optimizations/${conflict.linked_optimization.id}`}
+                                                                    className="text-xs border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                                                                >
+                                                                    <ClipboardList className="h-3 w-3" />
+                                                                </Button>
                                                             )}
                                                         </div>
-                                                    )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            /* Cards View */
+                            <div className="space-y-4" data-testid="conflicts-list">
+                                {enhancedConflicts.map((conflict, idx) => {
+                                    const severityClass = CONFLICT_SEVERITY_CLASSES[conflict.severity] || CONFLICT_SEVERITY_CLASSES.medium;
+                                    const typeLabel = CONFLICT_TYPE_LABELS[conflict.conflict_type] || conflict.conflict_type;
+                                    const hasLinkedOpt = conflict.linked_optimization;
+                                    
+                                    return (
+                                        <Card 
+                                            key={idx} 
+                                            className={`bg-zinc-900/50 border-border ${conflict.severity === 'critical' ? 'border-red-500/30' : conflict.severity === 'high' ? 'border-amber-500/30' : ''}`}
+                                            data-testid={`conflict-${idx}`}
+                                        >
+                                            <CardContent className="pt-4">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex items-start gap-3">
+                                                        <AlertTriangle className={`h-5 w-5 flex-shrink-0 ${
+                                                            conflict.severity === 'critical' ? 'text-red-400' :
+                                                            conflict.severity === 'high' ? 'text-amber-400' : 'text-yellow-400'
+                                                        }`} />
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                                <Badge className={severityClass}>
+                                                                    {(conflict.severity || 'medium').toUpperCase()}
+                                                                </Badge>
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    {typeLabel}
+                                                                </Badge>
+                                                                {hasLinkedOpt && (
+                                                                    <Badge 
+                                                                        className="bg-blue-500/20 text-blue-400 border-blue-500/30 cursor-pointer"
+                                                                        onClick={() => window.location.href = `/optimizations/${conflict.linked_optimization.id}`}
+                                                                        data-testid={`linked-opt-badge-${idx}`}
+                                                                    >
+                                                                        <Link2 className="h-3 w-3 mr-1" />
+                                                                        Linked Optimization
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-sm text-white font-medium">
+                                                                {conflict.description || conflict.message || 'SEO structure conflict detected'}
+                                                            </p>
+                                                            {conflict.network_name && (
+                                                                <p className="text-xs text-zinc-500 mt-1">
+                                                                    Network: {conflict.network_name}
+                                                                </p>
+                                                            )}
+                                                            {hasLinkedOpt && (
+                                                                <div className="mt-2 p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <ClipboardList className="h-4 w-4 text-blue-400" />
+                                                                        <div>
+                                                                            <p className="text-xs text-blue-400 font-medium">
+                                                                                {conflict.linked_optimization.title}
+                                                                            </p>
+                                                                            <p className="text-xs text-zinc-500">
+                                                                                Status: {conflict.linked_optimization.status?.toUpperCase()}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            {conflict.affected_nodes && conflict.affected_nodes.length > 0 && (
+                                                                <div className="mt-2 space-y-1">
+                                                                    <p className="text-xs text-zinc-500">Affected Nodes:</p>
+                                                                    {conflict.affected_nodes.slice(0, 3).map((node, nIdx) => (
+                                                                        <div key={nIdx} className="flex items-center gap-2">
+                                                                            <Network className="h-3 w-3 text-zinc-600" />
+                                                                            <code className="text-xs text-zinc-400 bg-zinc-900 px-1 rounded">
+                                                                                {node.domain}{node.path || ''}
+                                                                            </code>
+                                                                        </div>
+                                                                    ))}
+                                                                    {conflict.affected_nodes.length > 3 && (
+                                                                        <p className="text-xs text-zinc-600">
+                                                                            +{conflict.affected_nodes.length - 3} more nodes
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col gap-2">
+                                                        {conflict.network_id && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => window.location.href = `/groups/${conflict.network_id}`}
+                                                                className="text-xs"
+                                                            >
+                                                                <ExternalLink className="h-3 w-3 mr-1" />
+                                                                View Network
+                                                            </Button>
+                                                        )}
+                                                        {hasLinkedOpt && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => window.location.href = `/optimizations/${conflict.linked_optimization.id}`}
+                                                                className="text-xs border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                                                                data-testid={`view-optimization-${idx}`}
+                                                            >
+                                                                <ClipboardList className="h-3 w-3 mr-1" />
+                                                                View Task
+                                                            </Button>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="flex flex-col gap-2">
-                                                {conflict.network_id && (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => window.location.href = `/groups/${conflict.network_id}`}
-                                                        className="text-xs"
-                                                    >
-                                                        <ExternalLink className="h-3 w-3 mr-1" />
-                                                        View Network
-                                                    </Button>
-                                                )}
-                                                {hasLinkedOpt && (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => window.location.href = `/optimizations/${conflict.linked_optimization.id}`}
-                                                        className="text-xs border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
-                                                        data-testid={`view-optimization-${idx}`}
-                                                    >
-                                                        <ClipboardList className="h-3 w-3 mr-1" />
-                                                        View Task
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
-                    </div>
-                )}
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </Layout>
     );
