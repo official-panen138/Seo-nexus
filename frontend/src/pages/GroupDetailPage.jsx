@@ -1778,6 +1778,14 @@ export default function GroupDetailPage() {
                             />
                         </div>
                     </TabsContent>
+
+                    {/* Settings Tab */}
+                    <TabsContent value="settings" className="mt-0">
+                        <NetworkSettingsTab 
+                            networkId={network.id}
+                            networkName={network.name}
+                        />
+                    </TabsContent>
                 </Tabs>
 
                 {/* Entry/Domain Detail Sheet */}
