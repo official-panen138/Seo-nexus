@@ -1099,9 +1099,9 @@ class AvailabilityMonitoringService:
         return enriched
 
     def _format_down_alert_seo_aware(
-        self, domain: Dict[str, Any], error_message: str, previous_status: str
+        self, domain: Dict[str, Any], error_message: str, previous_status: str, is_test: bool = False
     ) -> str:
-        """Format SEO-aware DOWN alert for Telegram"""
+        """Format SEO-aware DOWN alert for Telegram with full context"""
         seo = domain.get("seo", {})
         impact_score = seo.get("impact_score", {})
         severity = impact_score.get("severity", "LOW")
@@ -1126,17 +1126,107 @@ class AvailabilityMonitoringService:
         tz_label = domain.get("_timezone_label", "GMT+7")
         local_time = format_now_local(tz_str, tz_label)
 
+        test_marker = "🧪 <b>TEST MODE</b> - " if is_test else ""
+        
         lines = [
-            f"{severity_emoji} <b>DOMAIN MONITORING ALERT</b>",
+            f"{test_marker}{severity_emoji} <b>DOMAIN DOWN ALERT</b>",
             "",
-            f"<b>Domain:</b> <code>{domain.get('domain_name', 'Unknown')}</code>",
-            f"<b>Brand:</b> {domain.get('brand_name', 'N/A')}",
-            f"<b>Issue:</b> Domain Down - {error_message or 'Unreachable'}",
-            f"<b>Checked At:</b> {local_time}",
+            "━━━━━━━━━━━━━━━━━━━━━━",
+            "🚨 <b>INCIDENT INFO</b>",
+            "━━━━━━━━━━━━━━━━━━━━━━",
+            f"• <b>Domain:</b> <code>{domain.get('domain_name', 'Unknown')}</code>",
+            f"• <b>Brand:</b> {domain.get('brand_name', 'N/A')}",
+            f"• <b>Issue:</b> {error_message or 'Unreachable'}",
+            f"• <b>Previous Status:</b> {previous_status.upper() if previous_status else 'Unknown'}",
+            f"• <b>Severity:</b> {severity}",
         ]
 
-        # SEO Context
-        lines.extend(self._format_seo_context_section(seo))
+        # SEO Context section
+        lines.append("")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("🧩 <b>SEO CONTEXT</b>")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+        
+        if seo.get("used_in_seo"):
+            for ctx in seo.get("seo_context", [])[:3]:
+                lines.append(f"• <b>Network:</b> {ctx.get('network_name', 'N/A')}")
+                lines.append(f"• <b>Role:</b> {ctx.get('role', 'N/A')}")
+                lines.append(f"• <b>Tier:</b> {ctx.get('tier_label', 'N/A')}")
+                lines.append(f"• <b>Status:</b> {ctx.get('domain_status', 'N/A').replace('_', ' ').title()}")
+
+            # Structure Chain with arrows
+            lines.append("")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+            lines.append("🔗 <b>AUTHORITY CHAIN</b>")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+            
+            chain = seo.get("upstream_chain", [])
+            if chain:
+                first_ctx = seo.get("seo_context", [{}])[0]
+                status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
+                lines.append(f"⚠️ {domain.get('domain_name', 'Unknown')} [{status_label}] ← DOWN")
+                
+                for hop in chain:
+                    target = hop.get("target", hop.get("node", ""))
+                    relation = hop.get("target_relation", hop.get("relation", ""))
+                    
+                    if hop.get("is_end") or hop.get("relation") == "main":
+                        lines.append(f"   → 💰 {hop.get('node', target)} [{relation}]")
+                        lines.append("   → END: 💰 MONEY SITE")
+                        break
+                    else:
+                        lines.append(f"   → {target} [{relation}]")
+            else:
+                first_ctx = seo.get("seo_context", [{}])[0] if seo.get("seo_context") else {}
+                if first_ctx.get("role") == "main":
+                    lines.append(f"💰 {domain.get('domain_name', 'Unknown')} [Primary] ← DOWN")
+                    lines.append("   → END: ⚠️ THIS IS THE MONEY SITE!")
+                else:
+                    lines.append(f"⚠️ {domain.get('domain_name', 'Unknown')} ← DOWN")
+                    lines.append("   → END: ⚠️ ORPHAN NODE (no target)")
+
+            # Downstream Impact
+            downstream = seo.get("downstream_impact", [])
+            if downstream:
+                lines.append("")
+                lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+                lines.append("📌 <b>DOWNSTREAM IMPACT</b>")
+                lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+                lines.append(f"<b>{len(downstream)}</b> nodes affected by this outage:")
+                for d in downstream[:5]:
+                    lines.append(f"  • {d['node']} [{d.get('relation', '')}]")
+                if len(downstream) > 5:
+                    lines.append(f"  ... +{len(downstream) - 5} more")
+
+            # Impact Score
+            lines.append("")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+            lines.append("🔥 <b>SEO IMPACT</b>")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+            lines.append(f"• <b>Severity:</b> {impact_score.get('severity', 'LOW')}")
+            lines.append(f"• <b>Networks Affected:</b> {impact_score.get('networks_affected', 0)}")
+            lines.append(f"• <b>Downstream Nodes:</b> {impact_score.get('downstream_nodes_count', 0)}")
+            lines.append(f"• <b>Reaches Money Site:</b> {'✅ YES' if impact_score.get('reaches_money_site') else '❌ NO'}")
+        else:
+            lines.append("<i>Domain not used in any SEO Network</i>")
+            lines.append("")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+            lines.append("🔥 <b>SEO IMPACT</b>")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+            lines.append("• <b>Severity:</b> LOW")
+            lines.append("• <b>Networks Affected:</b> 0")
+
+        # Footer
+        lines.append("")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append(f"🕐 <b>Detected:</b> {local_time}")
+        lines.append("")
+        lines.append("🚨 <b>URGENT:</b>")
+        lines.append("<i>Investigate and restore domain immediately!</i>")
+        
+        if is_test:
+            lines.append("")
+            lines.append("<i>⚠️ This is a TEST alert</i>")
 
         return "\n".join(lines)
 
