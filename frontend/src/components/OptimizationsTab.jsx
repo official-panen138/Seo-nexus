@@ -626,21 +626,24 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
                                                 </Tooltip>
                                             </TooltipProvider>
                                             
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="icon"
-                                                            onClick={() => openEditDialog(opt)}
-                                                            className="h-8 w-8 hover:bg-blue-500/10 hover:text-blue-400"
-                                                        >
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Edit</TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
+                                            {/* Edit button - canEdit only */}
+                                            {canEdit && (
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon"
+                                                                onClick={() => openEditDialog(opt)}
+                                                                className="h-8 w-8 hover:bg-blue-500/10 hover:text-blue-400"
+                                                            >
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>Edit</TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            )}
                                             
                                             {/* Complaint button - Super Admin only */}
                                             {isSuperAdmin() && (
