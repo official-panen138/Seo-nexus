@@ -228,7 +228,10 @@ class SeoOptimizationTelegramService:
     ) -> bool:
         """
         Send notification when a new optimization is created.
+        Uses template system with fallback to hardcoded message.
         """
+        from services.notification_template_engine import render_notification
+        
         try:
             # Get timezone settings
             tz_str, tz_label = await get_system_timezone(self.db)
@@ -291,14 +294,40 @@ class SeoOptimizationTelegramService:
                 ", ".join(impact_labels) if impact_labels else "(Tidak ditentukan)"
             )
 
-            # Get SEO Leader tag for global oversight
+            # Get SEO Leader tags
+            seo_leaders = await self._get_seo_leader_usernames()
             seo_leader_tag = await self._get_seo_leader_tag()
-            leader_section = ""
-            if seo_leader_tag:
-                leader_section = f"\n\n👁 <b>CC:</b> {seo_leader_tag}"
+            
+            # Try to use template system
+            message = await render_notification(
+                db=self.db,
+                channel="telegram",
+                event_type="seo_optimization",
+                context_data={
+                    "user": {"display_name": creator_name, "email": creator_email},
+                    "network": {"name": network.get("name", "Unknown"), "id": network.get("id", "")},
+                    "brand": {"name": brand.get("name", "Unknown"), "id": brand.get("id", "")},
+                    "optimization": {
+                        "title": optimization.get("title", "(Tanpa judul)"),
+                        "description": optimization.get("description", "(Tidak ada deskripsi)"),
+                        "activity_type": activity_label,
+                        "status": status_label,
+                        "affected_targets": targets,
+                        "keywords": keywords,
+                        "report_urls": [r.get("url", r) if isinstance(r, dict) else r for r in report_urls],
+                        "expected_impact": impacts,
+                    },
+                    "telegram_leaders": seo_leaders,
+                }
+            )
+            
+            # Fallback to hardcoded if template disabled or failed
+            if not message:
+                leader_section = ""
+                if seo_leader_tag:
+                    leader_section = f"\n\n👁 <b>CC:</b> {seo_leader_tag}"
 
-            # Build message
-            message = f"""📘 <b>SEO OPTIMIZATION ACTIVITY</b>
+                message = f"""📘 <b>SEO OPTIMIZATION ACTIVITY</b>
 
 <b>{creator_name}</b> telah menambahkan aktivitas optimasi SEO
 pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.get('name', 'Unknown')}</b>'.
