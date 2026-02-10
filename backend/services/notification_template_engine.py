@@ -106,15 +106,29 @@ ALLOWED_VARIABLES = {
     "structure.downstream_impact",
     "structure.before_deletion",
     "structure.chain",
+    "structure.full_structure",  # STRUKTUR SEO TERKINI
     
     # Node additional info for delete
     "node.target",
     "node.upstream_chain",
     "node.affected_children",
     "node.is_orphan",
+    "node.tier_label",  # Tier 1, Tier 2, LP/Money Site
+    "node.relation",  # 301 Redirect, Canonical, etc.
     
     # Impact additional
     "impact.affected_children",
+    "impact.reaches_money_site",  # ✅ YES / ❌ NO
+    "impact.money_site_warning",  # Warning if money site affected
+    "impact.action_required",  # Next action based on severity
+    
+    # Domain monitoring additional
+    "domain.error_message",  # Error reason for down alerts
+    "domain.category",  # Domain category
+    
+    # Domains list for unmonitored reminder
+    "domains.count",
+    "domains.list",
     
     # Reminder specific
     "reminder.days_in_progress",
