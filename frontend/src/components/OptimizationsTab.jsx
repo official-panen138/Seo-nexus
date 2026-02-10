@@ -208,6 +208,7 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
                 setOptimizations(response.data.data);
                 setTotalItems(response.data.meta.total);
                 setTotalPages(response.data.meta.total_pages);
+                setLastKnownCount(response.data.meta.total);
             } else {
                 setOptimizations(Array.isArray(response.data) ? response.data : []);
             }
@@ -217,6 +218,11 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
         } finally {
             setLoading(false);
         }
+    };
+    
+    const handleRefreshOptimizations = () => {
+        setNewItemsAvailable(false);
+        loadOptimizations();
     };
 
     const openDetailDrawer = (opt) => {
