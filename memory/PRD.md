@@ -557,21 +557,27 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
    - Users can respond to complaints (updates status to under_review)
    - Super Admin can resolve complaints with resolution note
    - Telegram notification sent on complaint creation
-3. **P1: Reminder System Override UI** - Create "Settings" tab in GroupDetailPage.jsx
+3. ✅ **SEO Telegram Notifications (Phase 1)** - COMPLETE (Feb 10, 2026)
+   - Forum topic routing for different notification types (SEO_CHANGE, SEO_OPTIMIZATION, SEO_COMPLAINT, SEO_REMINDER)
+   - Settings UI for topic IDs configuration at /settings > SEO Notifications
+   - Global reminder interval (default 2 days) + per-network override
+   - Manual reminder check via POST /api/v3/settings/reminder-config/run
+   - DO NOT send domain monitoring alerts (out of scope)
+4. **P1: Reminder System Override UI** - Create "Settings" tab in GroupDetailPage.jsx
    - Per-network reminder interval override (in days)
    - Toggle to enable/disable reminders per network
-4. **P1: Conflict Detection UI** (Backend API exists at `/api/v3/reports/conflicts`)
+5. **P1: Conflict Detection UI** (Backend API exists at `/api/v3/reports/conflicts`)
    - Alert Center panel for conflicts
    - Node highlighting in D3 diagram
    - Conflict details in node detail panel
-5. **P1: Root vs. Path Main Node Visualization** - Solid vs dashed border in D3 graph
-6. **P1: Milestone Tag on Change Notes** - Optional milestone field
-7. **P1: Network Creation Telegram Notification** - Trigger notification when new SEO network is created
-8. Email notification integration (Resend/SendGrid)
-9. Scheduled conflict alerts (cron)
-10. Domain health check improvements
-11. Alert history and analytics
-12. **BACKLOG: Compare Changes** - Advanced diff viewer (parked)
+6. **P1: Root vs. Path Main Node Visualization** - Solid vs dashed border in D3 graph
+7. **P1: Milestone Tag on Change Notes** - Optional milestone field
+8. **P1: Network Creation Telegram Notification** - Trigger notification when new SEO network is created
+9. Email notification integration (Resend/SendGrid)
+10. Scheduled conflict alerts (cron)
+11. Domain health check improvements
+12. Alert history and analytics
+13. **BACKLOG: Compare Changes** - Advanced diff viewer (parked)
 
 ### P0 SEO Telegram Notification - Full Authority Chains (Feb 9, 2026) - COMPLETE
 **Issue:** Telegram notifications showed ObjectIDs instead of human-readable domain names, and didn't display complete authority chains.
