@@ -36,8 +36,8 @@ import {
 } from 'recharts';
 import { SEVERITY_LABELS, getSeverityBadgeClass, formatDateTime } from '../lib/utils';
 
-const PIE_COLORS = ['#22C55E', '#52525B'];
 const MONITORING_COLORS = ['#22C55E', '#EF4444', '#6B7280'];
+const BRAND_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
 
 const REFRESH_OPTIONS = [
     { value: 0, label: 'Manual' },
