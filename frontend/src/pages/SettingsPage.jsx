@@ -42,7 +42,7 @@ export default function SettingsPage() {
         seo_optimization_topic_id: '',
         seo_complaint_topic_id: '',
         seo_reminder_topic_id: '',
-        seo_leader_telegram_username: ''  // Global SEO Leader for oversight tagging
+        seo_leader_telegram_usernames: []  // Multiple Global SEO Leaders
     });
     const [newSeoToken, setNewSeoToken] = useState('');
     const [newSeoChatId, setNewSeoChatId] = useState('');
