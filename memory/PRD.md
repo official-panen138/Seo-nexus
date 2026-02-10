@@ -598,6 +598,54 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
 
 **Tests:** 100% pass rate (15/15 backend, all frontend UI verified) ✅
 
+
+
+---
+
+### Weekly Digest Email (Feb 10, 2026) - COMPLETE
+**Feature:** Scheduled weekly summary email for management visibility into domain health.
+
+**Implementation Summary:**
+
+**1. Backend - Weekly Digest Service (`/app/backend/services/weekly_digest_service.py`):**
+- Collects expiring domains grouped by urgency: Critical (≤7d), High (8-14d), Medium (15-30d)
+- Collects currently down domains with SEO context
+- Collects soft-blocked domains with block type
+- Generates professional HTML email with executive summary
+
+**2. Scheduler Integration (`reminder_scheduler.py`):**
+- Added CronTrigger-based job for weekly digest
+- Configurable day of week and hour
+- Auto-updates schedule from database settings
+
+**3. API Endpoints:**
+- `GET /api/v3/settings/weekly-digest` - Get digest settings
+- `PUT /api/v3/settings/weekly-digest` - Update settings (day, hour, threshold, includes)
+- `GET /api/v3/settings/weekly-digest/preview` - Preview digest data without sending
+- `POST /api/v3/settings/weekly-digest/send` - Manually trigger digest send
+
+**4. Frontend - Settings Page Weekly Digest Card:**
+- Enable/disable toggle
+- Day of week dropdown (Monday-Sunday)
+- Hour dropdown (0-23)
+- Expiring threshold dropdown (7, 14, 30, 60, 90 days)
+- Include toggles: Expiring domains, Down domains, Soft-blocked
+- Preview button with inline preview panel
+- Send Now button (requires Resend API key)
+
+**Digest Email Content:**
+| Section | Content |
+|---------|---------|
+| Executive Summary | Total issues, Critical expiring, Down, Soft blocked counts |
+| Expiring Domains | Grouped by CRITICAL (≤7d), HIGH (8-14d), MEDIUM (15-30d) |
+| Down Domains | Domain, brand, status, SEO impact, HTTP code |
+| Soft Blocked | Domain, brand, block type, SEO impact |
+| Health Status | All Clear ✅, Minor Issues 🔵, Warning 🟡, Needs Attention 🔴 |
+
+**Recipients:** Global admin emails only (from email_alerts settings)
+
+**Tests:** 100% pass rate (17/17 backend, all frontend UI verified) ✅
+
 **Note:** Requires Resend API key from resend.com to actually send emails. Get key at: https://resend.com/api-keys
 
 3. Automatic optimization impact score calculation
