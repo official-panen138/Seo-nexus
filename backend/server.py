@@ -484,11 +484,12 @@ class TelegramConfig(BaseModel):
 
 
 class AppBrandingSettings(BaseModel):
-    """App branding settings - title, description, logo"""
+    """App branding settings - title, description, logo, tagline"""
 
     site_title: Optional[str] = None
     site_description: Optional[str] = None
     logo_url: Optional[str] = None
+    tagline: Optional[str] = None
 
 
 class TimezoneSettings(BaseModel):
