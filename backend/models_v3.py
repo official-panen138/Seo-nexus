@@ -1024,6 +1024,12 @@ class ConflictType(str, Enum):
     COMPETING_TARGETS = "competing_targets"  # Different paths targeting different nodes
     CANONICAL_MISMATCH = "canonical_mismatch"  # Path A canonical to B, B still indexed
     TIER_INVERSION = "tier_inversion"  # Higher tier supports lower tier
+    REDIRECT_LOOP = "redirect_loop"  # Redirect/canonical loop detected
+    MULTIPLE_PARENTS_TO_MAIN = "multiple_parents_to_main"  # Multiple non-supporting nodes pointing to main
+    CANONICAL_REDIRECT_CONFLICT = "canonical_redirect_conflict"  # Node has both canonical and redirect set
+    INDEX_NOINDEX_MISMATCH = "index_noindex_mismatch"  # Conflicting index status in link chain
+    ORPHAN_NODE = "orphan"  # Node not connected to main hierarchy
+    NOINDEX_HIGH_TIER = "noindex_high_tier"  # NOINDEX node in high tier
 
 
 class SeoConflict(BaseModel):
