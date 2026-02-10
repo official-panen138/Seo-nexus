@@ -636,7 +636,7 @@ class AvailabilityMonitoringService:
                 # Get partial response text for soft-block detection (max 5KB)
                 try:
                     response_text = response.text[:5000] if response.text else ""
-                except:
+                except Exception:
                     response_text = ""
                 
                 if 200 <= response.status_code < 400:
