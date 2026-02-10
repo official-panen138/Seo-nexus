@@ -1206,6 +1206,7 @@ async def create_user_manually(
         "role": user_data.role.value,
         "status": UserStatus.ACTIVE.value,  # Active immediately
         "brand_scope_ids": user_data.brand_scope_ids,
+        "telegram_username": user_data.telegram_username,
         "approved_by": current_user["id"],
         "approved_at": now,
         "created_at": now,
