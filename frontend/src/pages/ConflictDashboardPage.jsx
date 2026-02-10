@@ -96,6 +96,22 @@ export default function ConflictDashboardPage() {
         }
     };
 
+    const handleCreateTaskForConflict = async (conflictId) => {
+        setCreatingTask(conflictId);
+        try {
+            const res = await conflictsAPI.createOptimization(conflictId);
+            if (res.data?.optimization_id) {
+                toast.success('Optimization task created successfully');
+                loadData(); // Refresh data
+            }
+        } catch (err) {
+            console.error('Failed to create task for conflict:', err);
+            toast.error('Failed to create optimization task');
+        } finally {
+            setCreatingTask(null);
+        }
+    };
+
     const formatHours = (hours) => {
         if (!hours || hours === 0) return 'N/A';
         if (hours < 1) return `${Math.round(hours * 60)} min`;
