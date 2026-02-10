@@ -39,7 +39,39 @@ const CONFLICT_TYPE_LABELS = {
     'type_c': 'Canonical Mismatch',
     'type_d': 'Tier Inversion',
     'orphan': 'Orphan Node',
-    'noindex_high_tier': 'NOINDEX in High Tier'
+    'noindex_high_tier': 'NOINDEX in High Tier',
+    'keyword_cannibalization': 'Keyword Cannibalization',
+    'competing_targets': 'Competing Targets',
+    'canonical_mismatch': 'Canonical Mismatch',
+    'tier_inversion': 'Tier Inversion',
+    'redirect_loop': 'Redirect Loop',
+    'multiple_parents_to_main': 'Multiple Parents to Main',
+    'canonical_redirect_conflict': 'Canonical-Redirect Conflict',
+    'index_noindex_mismatch': 'Index/Noindex Mismatch'
+};
+
+// Status colors and flow for stored conflicts
+const STATUS_FLOW = {
+    detected: { 
+        label: 'Detected', 
+        color: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+        description: 'Conflict detected, awaiting resolution'
+    },
+    under_review: { 
+        label: 'In Progress', 
+        color: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+        description: 'Being worked on'
+    },
+    resolved: { 
+        label: 'Resolved', 
+        color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+        description: 'Conflict fixed and verified'
+    },
+    ignored: { 
+        label: 'Ignored', 
+        color: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
+        description: 'Marked as acceptable'
+    },
 };
 
 export default function AlertsPage() {
