@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { settingsAPI } from './api';
 
 const BrandingContext = createContext(null);
 
@@ -16,8 +15,31 @@ export function BrandingProvider({ children }) {
 
     const loadBranding = async () => {
         try {
-            const res = await settingsAPI.getBranding();
-            const data = res.data || {};
+            const token = localStorage.getItem('seo_nexus_token');
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+            
+            const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/settings/branding`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                setBranding({
+                    site_title: data.site_title || DEFAULT_BRANDING.site_title,
+                    site_description: data.site_description || DEFAULT_BRANDING.site_description,
+                    logo_url: data.logo_url || DEFAULT_BRANDING.logo_url,
+                    tagline: data.tagline || data.site_description || DEFAULT_BRANDING.tagline
+                });
+            }
+        } catch (err) {
+            console.log('Using default branding');
+        } finally {
+            setLoading(false);
+        }
+    };
             setBranding({
                 site_title: data.site_title || DEFAULT_BRANDING.site_title,
                 site_description: data.site_description || DEFAULT_BRANDING.site_description,
