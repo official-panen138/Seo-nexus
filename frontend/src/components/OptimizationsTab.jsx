@@ -90,8 +90,8 @@ const STATUS_CONFIG = {
 
 const SCOPE_OPTIONS = [
     { value: 'money_site', label: 'Money Site' },
-    { value: 'domain', label: 'Specific Domain' },
-    { value: 'path', label: 'Specific Path' },
+    { value: 'specific_domain', label: 'Specific Domain' },
+    { value: 'specific_path', label: 'Specific Path' },
     { value: 'whole_network', label: 'Whole Network' }
 ];
 
