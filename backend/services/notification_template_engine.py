@@ -998,3 +998,55 @@ def get_template_crud(db: AsyncIOMotorDatabase) -> NotificationTemplateCRUD:
     if _template_crud is None:
         _template_crud = NotificationTemplateCRUD(db)
     return _template_crud
+
+
+async def render_notification(
+    db: AsyncIOMotorDatabase,
+    channel: str,
+    event_type: str,
+    context_data: Dict[str, Any],
+) -> Optional[str]:
+    """
+    Render a notification using the template system.
+    
+    This is the main entry point for services to render notifications.
+    Automatically handles:
+    - Template lookup from database
+    - Fallback to default template
+    - Variable substitution
+    - Enabled/disabled checks
+    
+    Args:
+        db: Database connection
+        channel: "telegram" or "email"
+        event_type: The event type (e.g., "seo_change", "seo_optimization")
+        context_data: Context data to pass to build_notification_context()
+    
+    Returns:
+        Rendered template string, or None if template is disabled
+    """
+    try:
+        crud = get_template_crud(db)
+        template = await crud.get_template(channel, event_type)
+        
+        if not template:
+            logger.warning(f"No template found for {channel}/{event_type}")
+            return None
+        
+        # Check if enabled
+        if template.get("enabled") is False:
+            logger.debug(f"Template {channel}/{event_type} is disabled")
+            return None
+        
+        # Build context from data
+        context = build_notification_context(**context_data)
+        
+        # Render template
+        engine = NotificationTemplateEngine(db)
+        rendered = engine.render(template.get("template_body", ""), context)
+        
+        return rendered
+    except Exception as e:
+        logger.error(f"Failed to render notification {channel}/{event_type}: {e}")
+        # Return None to allow services to fall back to hardcoded templates
+        return None
