@@ -469,99 +469,218 @@ class TestAlertService:
         seo_context: Dict[str, Any],
         force_severity: Optional[str] = None
     ) -> str:
-        """Build test alert message using same format as real alerts."""
+        """
+        Build test alert message using the SAME format as real alerts.
         
-        # Determine severity
+        MESSAGE ORDER (per spec):
+        1. Alert Type (🧪 TEST MODE – DOWN / EXPIRATION / CONFIG MISSING)
+        2. Domain Info
+        3. SEO Context Summary
+        4. 🧭 STRUKTUR SEO TERKINI (Tier-based)
+        5. 🔥 Impact Summary
+        6. ⏰ Reminder / Next Action
+        """
+        impact_score = seo_context.get("impact_score", {})
+        
+        # Calculate STRICT severity
         if force_severity:
             severity = force_severity.upper()
         else:
-            impact = seo_context.get("impact_score", {})
-            severity = impact.get("severity", "LOW")
+            is_money_site = impact_score.get("node_role") == "main"
+            reaches_money = impact_score.get("reaches_money_site", False)
+            tier = impact_score.get("highest_tier_impacted")
+            downstream_count = impact_score.get("downstream_nodes_count", 0)
+            
+            severity = calculate_strict_severity(
+                is_money_site=is_money_site,
+                reaches_money_site=reaches_money,
+                tier=tier,
+                downstream_count=downstream_count,
+                is_orphan=(tier is None or tier >= 99)
+            )
         
-        severity_emoji = {
-            "LOW": "🟡",
-            "MEDIUM": "🟠",
-            "HIGH": "🔴",
-            "CRITICAL": "🚨"
-        }.get(severity, "⚪")
-        
+        severity_emoji = get_severity_emoji(severity)
         issue_emoji = "🔴" if issue_type == "DOWN" else "🟠"
         
-        lines = [
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            "🧪 TEST MODE – DOMAIN MONITORING ALERT",
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            "",
-            f"{issue_emoji} {issue_type}: {domain_name}",
-            f"Reason: {reason}",
-            f"Severity: {severity_emoji} {severity}",
-            ""
-        ]
+        lines = []
         
-        # Add domain info if available
+        # 1. ALERT TYPE
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("🧪 <b>TEST MODE – DOMAIN MONITORING ALERT</b>")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("")
+        lines.append(f"{issue_emoji} <b>{issue_type}:</b> <code>{domain_name}</code>")
+        lines.append(f"• <b>Reason:</b> {reason}")
+        lines.append(f"• <b>Severity:</b> {severity_emoji} {severity}")
+        lines.append("")
+        
+        # 2. DOMAIN INFO
         if domain:
-            lines.append("📋 DOMAIN INFO")
-            lines.append(f"  Status: {domain.get('status', 'Unknown')}")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            lines.append("📋 <b>DOMAIN INFO</b>")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            lines.append(f"• <b>Status:</b> {domain.get('status', 'Unknown')}")
             if domain.get("brand_id"):
                 brand = await self.db.brands.find_one({"id": domain["brand_id"]}, {"_id": 0, "name": 1})
                 if brand:
-                    lines.append(f"  Brand: {brand['name']}")
+                    lines.append(f"• <b>Brand:</b> {brand['name']}")
             if domain.get("expiration_date"):
-                lines.append(f"  Expires: {domain['expiration_date'][:10]}")
+                lines.append(f"• <b>Expires:</b> {domain['expiration_date'][:10]}")
+            lines.append(f"• <b>Monitoring:</b> {'✅ Enabled' if domain.get('monitoring_enabled') else '❌ Disabled'}")
             lines.append("")
         
-        # Add SEO context
+        # 3. SEO CONTEXT SUMMARY
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("🔗 <b>SEO CONTEXT</b>")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        
         if seo_context.get("used_in_seo"):
-            lines.append("🔗 SEO CONTEXT")
+            ctx_list = seo_context.get("seo_context", [])
+            if ctx_list:
+                first_ctx = ctx_list[0]
+                lines.append(f"• <b>Network:</b> {first_ctx.get('network_name', 'N/A')}")
+                lines.append(f"• <b>Tier:</b> {first_ctx.get('tier_label', 'N/A')}")
+                lines.append(f"• <b>Role:</b> {first_ctx.get('role', 'N/A')}")
+                lines.append(f"• <b>Relation:</b> {first_ctx.get('domain_status', 'N/A').replace('_', ' ').title()}")
             
-            impact = seo_context.get("impact_score", {})
-            lines.append(f"  Networks Affected: {impact.get('networks_affected', 0)}")
-            lines.append(f"  Downstream Nodes: {impact.get('downstream_nodes_count', 0)}")
-            lines.append(f"  Reaches Money Site: {'✅ Yes' if impact.get('reaches_money_site') else '❌ No'}")
-            
-            if impact.get("highest_tier_impacted"):
-                lines.append(f"  Highest Tier: {impact.get('highest_tier_impacted')}")
-            
+            lines.append(f"• <b>Networks Affected:</b> {impact_score.get('networks_affected', 0)}")
+            lines.append(f"• <b>Downstream Nodes:</b> {impact_score.get('downstream_nodes_count', 0)}")
+            lines.append(f"• <b>Reaches Money Site:</b> {'✅ YES' if impact_score.get('reaches_money_site') else '❌ NO'}")
             lines.append("")
             
-            # Add structure chain
-            if seo_context.get("seo_context"):
-                lines.append("📊 STRUCTURE")
-                for ctx in seo_context["seo_context"][:3]:
-                    lines.append(f"  Network: {ctx.get('network_name', 'Unknown')}")
-                    if ctx.get("node_role"):
-                        lines.append(f"    Role: {ctx['node_role']}")
-                    if ctx.get("tier"):
-                        lines.append(f"    Tier: {ctx['tier']}")
-                lines.append("")
+            # 4. 🧭 STRUKTUR SEO TERKINI (Tier-based)
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            lines.append("🧭 <b>STRUKTUR SEO TERKINI</b>")
+            lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             
-            # Add upstream chain
+            # Use the full_structure_lines from SEO context enricher
+            full_structure = seo_context.get("full_structure_lines", [])
+            if full_structure and len(full_structure) > 0:
+                for line in full_structure:
+                    lines.append(line)
+            else:
+                # Fallback: Build from upstream chain
+                chain = seo_context.get("upstream_chain", [])
+                if ctx_list:
+                    first_ctx = ctx_list[0]
+                    node_label = first_ctx.get("node") or domain_name
+                    status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
+                    
+                    if first_ctx.get("domain_role") == "main":
+                        lines.append("")
+                        lines.append("<b>LP / Money Site:</b>")
+                        lines.append(f"  • {node_label} [Primary]")
+                    else:
+                        tier_label = first_ctx.get("tier_label", "Unknown")
+                        lines.append("")
+                        lines.append(f"<b>{tier_label}:</b>")
+                        
+                        target_node = first_ctx.get("target_node")
+                        if target_node:
+                            lines.append(f"  • {node_label} [{status_label}] → {target_node}")
+                        else:
+                            lines.append(f"  • {node_label} [{status_label}]")
+                        
+                        # Show chain to money site
+                        if chain:
+                            for hop in chain:
+                                if hop.get("is_end"):
+                                    end_reason = hop.get("end_reason", "END")
+                                    if "money" in end_reason.lower():
+                                        lines.append(f"  → END: 💰 MONEY SITE")
+                                    else:
+                                        lines.append(f"  → END: {end_reason}")
+                                    break
+                else:
+                    lines.append("<i>Structure data unavailable</i>")
+            lines.append("")
+            
+            # UPSTREAM CHAIN - consistent with structure
             if seo_context.get("upstream_chain"):
-                lines.append("⬆️ UPSTREAM CHAIN (to Money Site)")
-                for node in seo_context["upstream_chain"][:5]:
-                    tier_label = f"[T{node.get('tier', '?')}]" if node.get("tier") else ""
-                    lines.append(f"  {tier_label} {node.get('label', node.get('domain', 'Unknown'))}")
+                lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                lines.append("⬆️ <b>UPSTREAM CHAIN</b>")
+                lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                
+                for hop in seo_context["upstream_chain"]:
+                    node = hop.get("node", "Unknown")
+                    relation = hop.get("relation", "")
+                    
+                    if hop.get("is_end"):
+                        end_reason = hop.get("end_reason", "END")
+                        if "money" in end_reason.lower():
+                            lines.append(f"💰 {node} [{relation}]")
+                            lines.append("→ END: 💰 MONEY SITE")
+                        elif "orphan" in end_reason.lower():
+                            lines.append(f"⚠️ {node} [{relation}]")
+                            lines.append("→ END: ⚠️ ORPHAN NODE")
+                        else:
+                            lines.append(f"{node} [{relation}]")
+                            lines.append(f"→ END: {end_reason}")
+                    else:
+                        target = hop.get("target", "")
+                        target_relation = hop.get("target_relation", "")
+                        lines.append(f"• {node} [{relation}] → {target} [{target_relation}]")
                 lines.append("")
             
-            # Add downstream impact
-            if seo_context.get("downstream_impact"):
-                lines.append("⬇️ DOWNSTREAM IMPACT")
-                for node in seo_context["downstream_impact"][:5]:
-                    lines.append(f"  → {node.get('label', node.get('domain', 'Unknown'))}")
-                if len(seo_context["downstream_impact"]) > 5:
-                    lines.append(f"  ... and {len(seo_context['downstream_impact']) - 5} more")
+            # DOWNSTREAM IMPACT
+            downstream = seo_context.get("downstream_impact", [])
+            if downstream:
+                lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                lines.append("⬇️ <b>DOWNSTREAM IMPACT</b>")
+                lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                lines.append(f"<b>{len(downstream)}</b> nodes affected if this goes DOWN:")
+                for node in downstream[:7]:
+                    node_name = node.get("node", "Unknown")
+                    relation = node.get("relation", "")
+                    target = node.get("target", "")
+                    lines.append(f"  • {node_name} [{relation}] → {target}")
+                if len(downstream) > 7:
+                    lines.append(f"  <i>+{len(downstream) - 7} more nodes</i>")
                 lines.append("")
         else:
-            lines.append("ℹ️ This domain is NOT used in any SEO network")
+            lines.append("<i>This domain is NOT used in any SEO network</i>")
+            lines.append("• <b>Severity:</b> LOW")
+            lines.append("• <b>Networks Affected:</b> 0")
+            lines.append("• <b>SEO Impact:</b> None")
             lines.append("")
         
-        # Add test mode footer
-        lines.extend([
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            "🧪 THIS IS A TEST ALERT",
-            "No real monitoring data was affected.",
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        ])
+        # 5. 🔥 IMPACT SUMMARY
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("🔥 <b>IMPACT SUMMARY</b>")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append(f"• <b>Severity:</b> {severity_emoji} {severity}")
+        
+        if seo_context.get("used_in_seo"):
+            if impact_score.get("reaches_money_site"):
+                lines.append("• ⚠️ Link flow to Money Site is BROKEN")
+            lines.append(f"• {impact_score.get('downstream_nodes_count', 0)} downstream nodes affected")
+            if impact_score.get("node_role") == "main":
+                lines.append("• 🚨 THIS IS THE MONEY SITE!")
+        else:
+            lines.append("• No SEO impact (domain not in any network)")
+        lines.append("")
+        
+        # 6. ⏰ NEXT ACTION
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("⏰ <b>NEXT ACTION</b>")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        
+        if severity == "CRITICAL":
+            lines.append("🚨 <b>IMMEDIATE ACTION REQUIRED</b>")
+            lines.append("Investigate and restore domain IMMEDIATELY!")
+        elif severity == "HIGH":
+            lines.append("⚠️ <b>HIGH PRIORITY</b>")
+            lines.append("Investigate within 1 hour")
+        else:
+            lines.append("📝 <b>INVESTIGATE</b>")
+            lines.append("Review domain status and restore if needed")
+        lines.append("")
+        
+        # TEST MODE FOOTER
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("🧪 <b>THIS IS A TEST ALERT</b>")
+        lines.append("<i>No real monitoring data was affected.</i>")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         
         return "\n".join(lines)
     
