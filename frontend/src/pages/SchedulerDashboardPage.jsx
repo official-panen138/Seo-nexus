@@ -112,6 +112,22 @@ export default function SchedulerDashboardPage() {
         }
     };
 
+    const handleClearLogs = async () => {
+        if (!window.confirm('Are you sure you want to clear all execution logs? This cannot be undone.')) {
+            return;
+        }
+        setClearingLogs(true);
+        try {
+            await apiV3.delete('/scheduler/execution-logs');
+            setExecutionLogs([]);
+            toast.success('Execution logs cleared');
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to clear logs');
+        } finally {
+            setClearingLogs(false);
+        }
+    };
+
     const formatDateTime = (isoString) => {
         if (!isoString) return '-';
         return new Date(isoString).toLocaleString();
