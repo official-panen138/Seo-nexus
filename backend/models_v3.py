@@ -553,6 +553,10 @@ class SeoOptimizationDetailResponse(BaseModel):
     status: str
     complaint_status: str = "none"
 
+    # Linked conflict (for conflict resolution type)
+    linked_conflict_id: Optional[str] = None
+    linked_conflict: Optional[Any] = None  # LinkedConflictInfo when enriched
+
     # Enriched fields
     network_name: Optional[str] = None
     brand_name: Optional[str] = None
@@ -569,6 +573,9 @@ class SeoOptimizationDetailResponse(BaseModel):
     has_repeated_issue: bool = False
     is_blocked: bool = False  # True if has unresolved complaint
     blocked_reason: Optional[str] = None
+    
+    # Permission info
+    can_edit: bool = True  # False for non-managers viewing conflict resolution
 
 
 class UserTelegramSettings(BaseModel):
