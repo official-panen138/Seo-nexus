@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { useMenuPermissions } from '../lib/menuPermissions';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
@@ -32,25 +33,26 @@ import {
     BarChart3
 } from 'lucide-react';
 
+// Nav items with menuKey for permission checking
 const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin', 'admin', 'viewer'] },
-    { path: '/domains', label: 'Asset Domains', icon: Globe, roles: ['super_admin', 'admin', 'viewer'] },
-    { path: '/groups', label: 'SEO Networks', icon: Network, roles: ['super_admin', 'admin', 'viewer'] },
-    { path: '/alerts', label: 'Alert Center', icon: Bell, roles: ['super_admin', 'admin', 'viewer'] },
-    { path: '/reports', label: 'Reports', icon: FileText, roles: ['super_admin', 'admin', 'viewer'] },
-    { path: '/reports/team-evaluation', label: 'Team Evaluation', icon: Users, roles: ['super_admin', 'admin'] },
-    { type: 'divider', roles: ['super_admin'] },
-    { path: '/brands', label: 'Brands', icon: Tag, roles: ['super_admin'] },
-    { path: '/categories', label: 'Categories', icon: Folder, roles: ['super_admin'] },
-    { path: '/registrars', label: 'Registrars', icon: Building, roles: ['super_admin'] },
-    { path: '/users', label: 'Users', icon: Users, roles: ['super_admin'] },
-    { path: '/audit-logs', label: 'Audit Logs', icon: Activity, roles: ['super_admin'] },
-    { path: '/metrics', label: 'Metrics', icon: BarChart3, roles: ['super_admin', 'manager'] },
-    { path: '/activity-logs', label: 'V3 Activity', icon: History, roles: ['super_admin', 'admin'] },
-    { path: '/settings/monitoring', label: 'Monitoring', icon: Radio, roles: ['super_admin', 'admin'] },
-    { path: '/settings/activity-types', label: 'Activity Types', icon: Zap, roles: ['super_admin'] },
-    { path: '/settings/scheduler', label: 'Scheduler', icon: Clock, roles: ['super_admin'] },
-    { path: '/settings', label: 'Settings', icon: Settings, roles: ['super_admin'] },
+    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, menuKey: 'dashboard' },
+    { path: '/domains', label: 'Asset Domains', icon: Globe, menuKey: 'asset_domains' },
+    { path: '/groups', label: 'SEO Networks', icon: Network, menuKey: 'seo_networks' },
+    { path: '/alerts', label: 'Alert Center', icon: Bell, menuKey: 'alert_center' },
+    { path: '/reports', label: 'Reports', icon: FileText, menuKey: 'reports' },
+    { path: '/reports/team-evaluation', label: 'Team Evaluation', icon: Users, menuKey: 'team_evaluation' },
+    { type: 'divider', menuKey: '_divider_admin' },
+    { path: '/brands', label: 'Brands', icon: Tag, menuKey: 'brands' },
+    { path: '/categories', label: 'Categories', icon: Folder, menuKey: 'categories' },
+    { path: '/registrars', label: 'Registrars', icon: Building, menuKey: 'registrars' },
+    { path: '/users', label: 'Users', icon: Users, menuKey: 'users' },
+    { path: '/audit-logs', label: 'Audit Logs', icon: Activity, menuKey: 'audit_logs' },
+    { path: '/metrics', label: 'Metrics', icon: BarChart3, menuKey: 'metrics' },
+    { path: '/activity-logs', label: 'V3 Activity', icon: History, menuKey: 'v3_activity' },
+    { path: '/settings/monitoring', label: 'Monitoring', icon: Radio, menuKey: 'monitoring' },
+    { path: '/settings/activity-types', label: 'Activity Types', icon: Zap, menuKey: 'activity_types' },
+    { path: '/settings/scheduler', label: 'Scheduler', icon: Clock, menuKey: 'scheduler' },
+    { path: '/settings', label: 'Settings', icon: Settings, menuKey: 'settings' },
 ];
 
 export const Layout = ({ children }) => {
