@@ -635,6 +635,10 @@ export default function UsersPage() {
                                 <Key className="h-4 w-4 mr-2" />
                                 Set Menu Access
                             </Button>
+                            <Button variant="outline" size="sm" onClick={openBulkBrandDialog}>
+                                <Building2 className="h-4 w-4 mr-2" />
+                                Set Brand Access
+                            </Button>
                             <Button variant="ghost" size="sm" onClick={() => setSelectedUserIds([])}>
                                 Clear Selection
                             </Button>
