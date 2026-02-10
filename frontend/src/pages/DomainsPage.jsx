@@ -235,6 +235,35 @@ export default function DomainsPage() {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
+    // Handle 'edit' URL parameter to open edit dialog directly
+    useEffect(() => {
+        const editDomainId = searchParams.get('edit');
+        if (editDomainId && !loading && assets.length > 0) {
+            // Find the domain by ID
+            const domainToEdit = assets.find(d => d.id === editDomainId);
+            if (domainToEdit) {
+                openEditDialog(domainToEdit);
+                // Remove the edit param from URL to prevent re-triggering
+                setSearchParams({}, { replace: true });
+            } else {
+                // Domain not found in current page, try to fetch it directly
+                assetDomainsAPI.getById(editDomainId)
+                    .then(response => {
+                        if (response.data) {
+                            openEditDialog(response.data);
+                        } else {
+                            toast.error('Domain not found');
+                        }
+                        setSearchParams({}, { replace: true });
+                    })
+                    .catch(() => {
+                        toast.error('Failed to load domain');
+                        setSearchParams({}, { replace: true });
+                    });
+            }
+        }
+    }, [searchParams, loading, assets]);
+
     const loadReferenceData = async () => {
         try {
             if (useV3) {
