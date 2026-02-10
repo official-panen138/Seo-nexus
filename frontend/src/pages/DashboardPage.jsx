@@ -351,45 +351,83 @@ export default function DashboardPage() {
 
                 {/* Charts Row - Domains by Brand & Monitoring */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    {/* Domains by Brand */}
+                    {/* Domains by Brand - Top 5 with Others */}
                     <Card className="bg-card border-border">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <Building2 className="h-4 w-4 text-blue-500" />
-                                Domains by Brand
-                            </CardTitle>
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Building2 className="h-4 w-4 text-blue-500" />
+                                    Domains by Brand
+                                </CardTitle>
+                                {brandDomainCounts.length > 5 && (
+                                    <Link to="/brands">
+                                        <Button variant="ghost" size="sm" className="text-xs">
+                                            View All ({brandDomainCounts.length}) <ArrowRight className="h-3 w-3 ml-1" />
+                                        </Button>
+                                    </Link>
+                                )}
+                            </div>
                         </CardHeader>
                         <CardContent>
                             {brandDomainCounts.length > 0 ? (
-                                <div className="space-y-3">
-                                    {brandDomainCounts.map((brand, idx) => {
-                                        const maxCount = Math.max(...brandDomainCounts.map(b => b.domain_count));
-                                        const percentage = maxCount > 0 ? (brand.domain_count / maxCount) * 100 : 0;
+                                <div className="space-y-2">
+                                    {(() => {
+                                        const top5 = brandDomainCounts.slice(0, 5);
+                                        const others = brandDomainCounts.slice(5);
+                                        const othersCount = others.reduce((sum, b) => sum + b.domain_count, 0);
+                                        const totalDomains = brandDomainCounts.reduce((sum, b) => sum + b.domain_count, 0);
+                                        const maxCount = Math.max(...top5.map(b => b.domain_count), othersCount);
+                                        
                                         return (
-                                            <div key={brand.brand_id} className="space-y-1">
-                                                <div className="flex items-center justify-between text-sm">
-                                                    <span className="font-medium truncate max-w-[200px]">{brand.brand_name}</span>
-                                                    <span className="text-zinc-400 font-mono">{brand.domain_count}</span>
+                                            <>
+                                                {top5.map((brand, idx) => {
+                                                    const percentage = maxCount > 0 ? (brand.domain_count / maxCount) * 100 : 0;
+                                                    return (
+                                                        <div key={brand.brand_id} className="flex items-center gap-3">
+                                                            <div className="w-24 text-sm font-medium truncate" title={brand.brand_name}>
+                                                                {brand.brand_name}
+                                                            </div>
+                                                            <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                                                <div 
+                                                                    className="h-full rounded-full transition-all duration-300"
+                                                                    style={{ 
+                                                                        width: `${percentage}%`,
+                                                                        backgroundColor: BRAND_COLORS[idx % BRAND_COLORS.length]
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                            <div className="w-8 text-right text-sm font-mono text-zinc-400">
+                                                                {brand.domain_count}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                                {others.length > 0 && (
+                                                    <div className="flex items-center gap-3 pt-1 border-t border-zinc-800/50">
+                                                        <div className="w-24 text-sm text-zinc-500 truncate">
+                                                            +{others.length} others
+                                                        </div>
+                                                        <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                                            <div 
+                                                                className="h-full rounded-full bg-zinc-600"
+                                                                style={{ width: `${(othersCount / maxCount) * 100}%` }}
+                                                            />
+                                                        </div>
+                                                        <div className="w-8 text-right text-sm font-mono text-zinc-500">
+                                                            {othersCount}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div className="pt-2 mt-1 border-t border-zinc-800 flex justify-between text-sm">
+                                                    <span className="text-zinc-500">Total</span>
+                                                    <span className="font-semibold">{totalDomains} domains</span>
                                                 </div>
-                                                <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className="h-full rounded-full transition-all duration-300"
-                                                        style={{ 
-                                                            width: `${percentage}%`,
-                                                            backgroundColor: BRAND_COLORS[idx % BRAND_COLORS.length]
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
+                                            </>
                                         );
-                                    })}
-                                    <div className="pt-2 mt-2 border-t border-zinc-800 flex justify-between text-sm">
-                                        <span className="text-zinc-500">Total Domains</span>
-                                        <span className="font-semibold">{brandDomainCounts.reduce((sum, b) => sum + b.domain_count, 0)}</span>
-                                    </div>
+                                    })()}
                                 </div>
                             ) : (
-                                <div className="h-[200px] flex items-center justify-center text-zinc-500 text-sm">
+                                <div className="h-[160px] flex items-center justify-center text-zinc-500 text-sm">
                                     No brand data available
                                 </div>
                             )}
