@@ -551,9 +551,12 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
 1. ✅ **P0: Access Summary Panel** - COMPLETE (Feb 10, 2026)
    - Network cards show managers, complaints, last activity
    - Network detail header shows full access summary
-2. **P1: Manual Project Complaint UI** - Create "Complaints" tab in GroupDetailPage.jsx
-   - Two sub-sections: "Optimization Complaints" and "Project-Level Complaints"
-   - Allow Super Admin to create complaint without associated optimization
+2. ✅ **P1: Manual Project Complaint UI** - COMPLETE (Feb 10, 2026)
+   - Created "Complaints" tab with Project-Level and Optimization sub-tabs
+   - Super Admin can create project-level complaints with reason, priority, category
+   - Users can respond to complaints (updates status to under_review)
+   - Super Admin can resolve complaints with resolution note
+   - Telegram notification sent on complaint creation
 3. **P1: Reminder System Override UI** - Create "Settings" tab in GroupDetailPage.jsx
    - Per-network reminder interval override (in days)
    - Toggle to enable/disable reminders per network
