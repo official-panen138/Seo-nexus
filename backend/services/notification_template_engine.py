@@ -382,20 +382,20 @@ Domain <b>{{domain.name}}</b> tidak dapat diakses!
 <i>Investigate and restore domain immediately.</i>"""
     },
     
-    # Node Deleted (Telegram)
+    # Node Deleted (Telegram) - Enhanced with full pre-deletion details
     ("telegram", "seo_node_deleted"): {
         "title": "SEO Node Deleted",
-        "template_body": """🗑️ <b>SEO NODE DELETED</b>
+        "template_body": """🗑️ <b>NODE SEO DIHAPUS</b>
 
-{{user.display_name}} telah menghapus node dari network '<b>{{network.name}}</b>'.
+<b>{{user.display_name}}</b> telah menghapus node dari network '<b>{{network.name}}</b>' untuk brand '<b>{{brand.name}}</b>'.
 
 ━━━━━━━━━━━━━━━━━━━━━━
-📌 <b>DETAIL NODE YANG DIHAPUS</b>
+📌 <b>DETAIL NODE (SEBELUM DIHAPUS)</b>
 ━━━━━━━━━━━━━━━━━━━━━━
-• Domain: {{node.domain}}
-• Path: {{node.full_path}}
-• Role: {{node.role}}
-• Tier: {{node.tier}}
+• <b>Node:</b> {{node.domain_name}}
+• <b>Role:</b> {{node.domain_role}}
+• <b>Status:</b> {{node.domain_status}}
+• <b>Index:</b> {{node.index_status}}
 
 ━━━━━━━━━━━━━━━━━━━━━━
 📝 <b>ALASAN PENGHAPUSAN</b>
@@ -403,8 +403,15 @@ Domain <b>{{domain.name}}</b> tidak dapat diakses!
 "{{change.reason}}"
 
 ━━━━━━━━━━━━━━━━━━━━━━
-👤 <b>Dihapus Oleh:</b> {{user.display_name}} ({{user.email}})
+⚠️ <b>DAMPAK PENGHAPUSAN</b>
+━━━━━━━━━━━━━━━━━━━━━━
+• <b>Authority Flow:</b> TERPUTUS
+• <b>Severity:</b> {{impact.severity}}
+• <b>Node Terdampak:</b> {{impact.affected_count}}
+
+━━━━━━━━━━━━━━━━━━━━━━
 🕐 <b>Waktu:</b> {{timestamp.gmt7}}
+👤 <b>Oleh:</b> {{user.display_name}} ({{user.email}})
 
 👁 <b>CC:</b> {{telegram.leaders}}"""
     },
