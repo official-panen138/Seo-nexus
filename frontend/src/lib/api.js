@@ -239,6 +239,14 @@ export const optimizationsAPI = {
     updateObservedImpact: (optimizationId, impact) => apiV3.patch(`/optimizations/${optimizationId}/observed-impact`, { observed_impact: impact })
 };
 
+// V3 Project Complaints API (Network-level complaints not tied to optimizations)
+export const projectComplaintsAPI = {
+    getAll: (networkId, params = {}) => apiV3.get(`/networks/${networkId}/complaints`, { params }),
+    create: (networkId, data) => apiV3.post(`/networks/${networkId}/complaints`, data),
+    respond: (networkId, complaintId, data) => apiV3.post(`/networks/${networkId}/complaints/${complaintId}/respond`, data),
+    resolve: (networkId, complaintId, data) => apiV3.patch(`/networks/${networkId}/complaints/${complaintId}/resolve`, data)
+};
+
 // V3 Activity Types API (Master Data)
 export const activityTypesAPI = {
     getAll: () => apiV3.get('/optimization-activity-types'),
