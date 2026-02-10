@@ -131,14 +131,24 @@ export default function AlertsPage() {
             <div data-testid="alerts-page">
                 {/* Header */}
                 <div className="page-header">
-                    <div className="flex items-center gap-3">
-                        <AlertTriangle className="h-7 w-7 text-amber-500" />
-                        <div>
-                            <h1 className="page-title">SEO Conflicts</h1>
-                            <p className="page-subtitle">
-                                Detect and resolve SEO configuration issues across networks
-                            </p>
+                    <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-3">
+                            <AlertTriangle className="h-7 w-7 text-amber-500" />
+                            <div>
+                                <h1 className="page-title">SEO Conflicts</h1>
+                                <p className="page-subtitle">
+                                    Detect and resolve SEO configuration issues across networks
+                                </p>
+                            </div>
                         </div>
+                        <Button
+                            variant="outline"
+                            onClick={() => window.location.href = '/conflicts/dashboard'}
+                            data-testid="conflict-dashboard-btn"
+                        >
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            Resolution Dashboard
+                        </Button>
                     </div>
                 </div>
 
