@@ -374,6 +374,15 @@ export const v3ReportsAPI = {
     getDomainsByBrand: () => apiV3.get('/reports/domains-by-brand')
 };
 
+// Menu Permissions API
+export const menuPermissionsAPI = {
+    getMenuRegistry: () => apiV3.get('/menu-registry'),
+    getMyPermissions: () => apiV3.get('/my-menu-permissions'),
+    getUserPermissions: (userId) => apiV3.get(`/admin/menu-permissions/${userId}`),
+    updateUserPermissions: (userId, enabledMenus) => apiV3.put(`/admin/menu-permissions/${userId}`, { enabled_menus: enabledMenus }),
+    resetUserPermissions: (userId) => apiV3.delete(`/admin/menu-permissions/${userId}`)
+};
+
 // V3 Export API
 export const exportAPI = {
     assetDomains: (format = 'json', params = {}) => apiV3.get(`/export/asset-domains?format=${format}`, { 
