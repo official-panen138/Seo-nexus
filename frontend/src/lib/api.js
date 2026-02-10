@@ -324,6 +324,9 @@ export const domainMonitoringTelegramAPI = {
     // Test expiration alerts
     testExpirationAlert: (domainId, simulatedDays) => apiV3.post('/monitoring/expiration/test', { domain_id: domainId, simulated_days: simulatedDays }),
     getTestOptions: () => apiV3.get('/monitoring/expiration/test-options'),
+    // Manual monitoring triggers
+    triggerExpirationCheck: () => apiV3.post('/monitoring/check-expiration'),
+    triggerAvailabilityCheck: () => apiV3.post('/monitoring/check-availability'),
 };
 
 // V3 Email Alerts API
