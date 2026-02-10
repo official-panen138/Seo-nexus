@@ -66,8 +66,12 @@ export const MenuPermissionsProvider = ({ children }) => {
     }, [isAuthenticated, user, permissions.loading]);
 
     useEffect(() => {
+        // Reset loading state when user changes
+        if (user?.id !== lastUserId.current) {
+            setPermissions(prev => ({ ...prev, loading: true }));
+        }
         loadPermissions();
-    }, [loadPermissions]);
+    }, [loadPermissions, user?.id]);
 
     // Check if a menu key is accessible
     const canAccessMenu = useCallback((menuKey) => {
