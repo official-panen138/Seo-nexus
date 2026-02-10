@@ -10,6 +10,23 @@
 - **Daily Unmonitored Domain Reminders** - ⚠️ MONITORING NOT CONFIGURED alerts via Telegram
 - **Enhanced Test Alerts** - Full SEO context and structure in test mode alerts
 
+#### Template Alerts Updated
+- `domain_down` - Full SEO structure with STRUKTUR SEO TERKINI section
+- `domain_expiration` - Full SEO structure with STRUKTUR SEO TERKINI section
+- `monitoring_not_configured` - NEW template for unmonitored domain reminders
+
+#### New Template Variables
+- `structure.full_structure` - STRUKTUR SEO TERKINI formatted content
+- `node.tier_label` - "Tier 1", "Tier 2", "LP/Money Site" labels
+- `node.relation` - Relation type (301 Redirect, Canonical, etc.)
+- `impact.reaches_money_site` - ✅ YES / ❌ NO
+- `impact.money_site_warning` - Warning if money site affected
+- `impact.action_required` - Next action based on severity
+- `domain.error_message` - Error reason for down alerts
+- `domain.category` - Domain category
+- `domains.count` - Count for unmonitored reminder
+- `domains.list` - List of unmonitored domains
+
 #### Severity Calculation Rules
 - **CRITICAL**: Domain is Money Site/LP OR Tier 1 reaching Money Site
 - **HIGH**: Tier 1 node OR has ≥3 downstream nodes
@@ -33,6 +50,10 @@
   - `_format_down_alert_seo_aware()` - New message order
 - Enhanced `reminder_scheduler.py`:
   - Added `unmonitored_domain_reminder_job` (daily 8:00 AM)
+- Enhanced `notification_template_engine.py`:
+  - Updated `domain_down` and `domain_expiration` templates
+  - Added `monitoring_not_configured` template
+  - Added new template variables
 - `seo_context_enricher.py`:
   - `get_full_network_structure_formatted()` - STRUKTUR SEO TERKINI
 
