@@ -82,11 +82,14 @@ async def lifespan(app: FastAPI):
 
     # Start Reminder Scheduler for In-Progress optimizations
     from services.seo_optimization_telegram_service import (
-        seo_optimization_telegram_service,
+        init_seo_optimization_telegram_service,
     )
 
+    # Initialize the optimization telegram service
+    optimization_telegram_service = init_seo_optimization_telegram_service(db)
+    
     reminder_scheduler = init_reminder_scheduler(
-        db, telegram_service=seo_optimization_telegram_service
+        db, telegram_service=optimization_telegram_service
     )
     reminder_scheduler.start()
     logger.info("Optimization Reminder Scheduler started")
