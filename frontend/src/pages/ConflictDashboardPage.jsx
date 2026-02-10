@@ -546,6 +546,16 @@ export default function ConflictDashboardPage() {
                                                             >
                                                                 View Task
                                                             </Button>
+                                                        ) : conflict.status === 'detected' ? (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handleCreateTaskForConflict(conflict.id)}
+                                                                className="text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                                                                data-testid={`create-task-${conflict.id}`}
+                                                            >
+                                                                Create Task
+                                                            </Button>
                                                         ) : (
                                                             <span className="text-xs text-zinc-500">-</span>
                                                         )}
