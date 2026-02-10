@@ -33,6 +33,7 @@ const TIMEZONE_OPTIONS = [
 
 export default function SettingsPage() {
     const { isSuperAdmin } = useAuth();
+    const { refreshBranding } = useBranding();
     const [loading, setLoading] = useState(true);
     
     // SEO Telegram state with topic routing support
