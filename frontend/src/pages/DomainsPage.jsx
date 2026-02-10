@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { domainsAPI, brandsAPI, groupsAPI, categoriesAPI, assetDomainsAPI, networksAPI, registrarsAPI, exportAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
