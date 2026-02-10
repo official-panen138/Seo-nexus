@@ -1417,6 +1417,28 @@ Full optimization detail view with complaint thread, team response system, and c
    - Backend queries `seo_optimizations` for complaints with status `complained` or `under_review`
    - Frontend conditionally renders badges only when data exists
 
+2. ✅ **Notification Template System** - COMPLETE (Feb 10, 2026)
+   - Global template management for Telegram & Email notifications
+   - Settings UI: Settings → Templates tab (Super Admin only)
+   - Features:
+     - List all 11 notification event types
+     - Edit template title, body, enabled toggle
+     - Live preview with sample data
+     - Variable validation against ALLOWED_VARIABLES
+     - Reset to default functionality
+   - API Endpoints:
+     - GET `/api/v3/settings/notification-templates` - list all
+     - GET `/api/v3/settings/notification-templates/variables` - allowed vars
+     - GET `/api/v3/settings/notification-templates/{channel}/{event_type}` - get one
+     - PUT `/api/v3/settings/notification-templates/{channel}/{event_type}` - update
+     - POST `/api/v3/settings/notification-templates/{channel}/{event_type}/reset` - reset
+     - POST `/api/v3/settings/notification-templates/{channel}/{event_type}/preview` - preview
+     - POST `/api/v3/settings/notification-templates/validate` - validate
+   - Template syntax: `{{variable}}` (Mustache-style)
+   - Event types: seo_change, seo_network_created, seo_optimization, seo_optimization_status, seo_complaint, seo_project_complaint, seo_reminder, domain_expiration, domain_down, seo_node_deleted, test
+   - Files: `notification_template_engine.py`, `NotificationTemplatesTab.jsx`
+   - Tests: 100% pass (25/25 backend, 16/16 frontend)
+
 ### P1 - High Priority
 1. ✅ **Scheduler Integration for Reminders** - COMPLETE (Feb 9, 2026)
    - APScheduler integrated with FastAPI
