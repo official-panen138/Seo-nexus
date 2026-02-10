@@ -485,12 +485,14 @@ selama <b>{days_in_progress} hari</b>.
             logger.error(f"Failed to send in-progress reminder notification: {e}")
             return False
     
-    async def send_message(self, message: str) -> bool:
+    async def send_message(self, message: str, topic_type: str = None) -> bool:
         """
         Public method to send a custom Telegram message.
         Used by other parts of the system to send notifications.
+        
+        topic_type: Optional forum topic routing (seo_change, seo_optimization, seo_complaint, seo_reminder)
         """
-        return await self._send_telegram_message(message)
+        return await self._send_telegram_message(message, topic_type=topic_type)
 
     async def send_project_complaint_notification(
         self,
