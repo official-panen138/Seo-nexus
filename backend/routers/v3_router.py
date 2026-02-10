@@ -7673,3 +7673,97 @@ async def preview_weekly_digest(current_user: dict = Depends(get_current_user_wr
 
     preview = await digest_service.preview_digest()
     return preview
+
+
+# ==================== USER IN-APP NOTIFICATIONS ====================
+
+@router.get("/notifications")
+async def get_user_notifications(
+    limit: int = Query(20, le=100),
+    unread_only: bool = Query(False),
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get notifications for the current user.
+    Used for in-app notification bell.
+    """
+    user_id = current_user.get("id")
+    
+    query = {"user_id": user_id}
+    if unread_only:
+        query["read"] = False
+    
+    notifications = await db.user_notifications.find(
+        query, {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    # Count unread
+    unread_count = await db.user_notifications.count_documents({"user_id": user_id, "read": False})
+    
+    return {
+        "notifications": notifications,
+        "unread_count": unread_count
+    }
+
+
+@router.post("/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """Mark a notification as read."""
+    user_id = current_user.get("id")
+    
+    result = await db.user_notifications.update_one(
+        {"id": notification_id, "user_id": user_id},
+        {"$set": {"read": True, "read_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    return {"success": True}
+
+
+@router.post("/notifications/read-all")
+async def mark_all_notifications_read(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """Mark all notifications as read for current user."""
+    user_id = current_user.get("id")
+    
+    await db.user_notifications.update_many(
+        {"user_id": user_id, "read": False},
+        {"$set": {"read": True, "read_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"success": True}
+
+
+async def create_user_notification(
+    user_id: str,
+    notification_type: str,
+    title: str,
+    message: str,
+    link: str = None,
+    metadata: dict = None,
+):
+    """
+    Create an in-app notification for a user.
+    Used when users are tagged in complaints, etc.
+    """
+    notification = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "type": notification_type,
+        "title": title,
+        "message": message,
+        "link": link,
+        "metadata": metadata or {},
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.user_notifications.insert_one(notification)
+    return notification
+
