@@ -191,6 +191,64 @@ export default function UsersPage() {
         }
     };
 
+    // Bulk selection handlers
+    const handleSelectUser = (userId) => {
+        setSelectedUserIds(prev => 
+            prev.includes(userId) 
+                ? prev.filter(id => id !== userId)
+                : [...prev, userId]
+        );
+    };
+
+    const handleSelectAllUsers = () => {
+        const eligibleUsers = users.filter(u => u.role !== 'super_admin');
+        if (selectedUserIds.length === eligibleUsers.length) {
+            setSelectedUserIds([]);
+        } else {
+            setSelectedUserIds(eligibleUsers.map(u => u.id));
+        }
+    };
+
+    const openBulkMenuDialog = () => {
+        setBulkMenuSelection([]);
+        setBulkMenuDialogOpen(true);
+    };
+
+    const handleBulkMenuToggle = (menuKey) => {
+        setBulkMenuSelection(prev => 
+            prev.includes(menuKey) 
+                ? prev.filter(k => k !== menuKey)
+                : [...prev, menuKey]
+        );
+    };
+
+    const handleBulkSelectAllMenus = () => {
+        setBulkMenuSelection(menuRegistry.map(m => m.key));
+    };
+
+    const handleBulkDeselectAllMenus = () => {
+        setBulkMenuSelection([]);
+    };
+
+    const handleBulkMenuUpdate = async () => {
+        if (selectedUserIds.length === 0) return;
+        
+        setSavingMenuPerms(true);
+        try {
+            const response = await menuPermissionsAPI.bulkUpdatePermissions(selectedUserIds, bulkMenuSelection);
+            toast.success(`Menu permissions updated for ${response.data.results.updated.length} users`);
+            if (response.data.results.skipped_super_admin.length > 0) {
+                toast.info(`Skipped ${response.data.results.skipped_super_admin.length} Super Admin users`);
+            }
+            setBulkMenuDialogOpen(false);
+            setSelectedUserIds([]);
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to update bulk permissions');
+        } finally {
+            setSavingMenuPerms(false);
+        }
+    };
+
     const handleUpdateUser = async () => {
         if (!selectedUser) return;
         if (editForm.role !== 'super_admin' && editForm.brand_scope_ids.length === 0) {
