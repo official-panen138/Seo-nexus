@@ -11,9 +11,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { 
     Settings, Activity, Clock, AlertTriangle, CheckCircle, XCircle, 
-    RefreshCw, Calendar, Globe, Loader2, Play, ExternalLink
+    RefreshCw, Calendar, Globe, Loader2, Play, ExternalLink, FlaskConical, 
+    Send, History, Shield
 } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
+import { forcedMonitoringAPI, domainsAPI } from '../lib/api';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
