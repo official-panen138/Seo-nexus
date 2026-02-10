@@ -299,7 +299,7 @@ class TestAlertService:
         )
         
         # Send via telegram
-        success = await self.telegram._send_telegram_message(message)
+        success = await self.telegram.send_alert(message)
         
         # Log test event separately
         now = datetime.now(timezone.utc)
