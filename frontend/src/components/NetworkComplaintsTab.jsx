@@ -407,7 +407,7 @@ export function NetworkComplaintsTab({ networkId, brandId }) {
                                                         </div>
                                                         <p className="text-xs text-zinc-500 mt-1 flex items-center gap-2">
                                                             <User className="h-3 w-3" />
-                                                            {complaint.created_by?.name || complaint.created_by?.email}
+                                                            {complaint.created_by?.display_name || complaint.created_by?.email}
                                                             <Clock className="h-3 w-3 ml-2" />
                                                             {formatDate(complaint.created_at)}
                                                         </p>
