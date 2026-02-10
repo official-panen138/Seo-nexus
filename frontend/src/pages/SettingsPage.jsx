@@ -296,6 +296,8 @@ export default function SettingsPage() {
             await settingsAPI.updateBranding(brandingConfig);
             toast.success('Branding settings saved');
             loadSettings();
+            // Refresh the global branding context so changes appear immediately
+            refreshBranding();
         } catch (err) {
             toast.error('Failed to save branding settings');
         } finally {
