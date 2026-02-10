@@ -125,7 +125,7 @@ export function NetworkComplaintsTab({ networkId, brandId }) {
         
         try {
             // Load optimization complaints (from optimizations with complaints)
-            const optRes = await optimizationsAPI.getByNetwork(networkId, { limit: 100 });
+            const optRes = await optimizationsAPI.getAll(networkId, { limit: 100 });
             const complainedOpts = (optRes.data?.data || []).filter(o => 
                 o.complaint_status && o.complaint_status !== 'none'
             );
