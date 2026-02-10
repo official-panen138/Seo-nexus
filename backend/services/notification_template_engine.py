@@ -712,6 +712,7 @@ def build_notification_context(
             "current": structure.get("current", ""),
             "upstream_chain": structure.get("upstream_chain", ""),
             "downstream_impact": structure.get("downstream_impact", ""),
+            "before_deletion": structure.get("before_deletion", "(Tidak ada struktur)"),
         }
     
     if reminder:
