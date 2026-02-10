@@ -475,10 +475,13 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
     ) -> bool:
         """
         Send notification when Super Admin creates a complaint on an optimization.
+        Uses template system with fallback.
         
         IMPORTANT: Per new policy, complaints ONLY tag Network Manager(s) -
         NOT global users, NOT viewers, NOT SEO leader.
         """
+        from services.notification_template_engine import render_notification
+        
         try:
             # Get timezone settings
             tz_str, tz_label = await get_system_timezone(self.db)
@@ -491,11 +494,12 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
             # Get creator info
             created_by = complaint.get("created_by", {})
             creator_name = created_by.get("display_name", "Unknown")
+            creator_email = created_by.get("email", "")
 
             # POLICY: Complaints ONLY tag Network Manager(s) of the specific project
-            # NOT global users, NOT viewers, NOT SEO leader
             network_id = network.get("id")
             manager_tags = await self._get_network_manager_tags(network_id)
+            manager_usernames = await self._get_network_manager_usernames(network_id)
             
             if manager_tags:
                 tagged_users_text = "\n".join([f"  • {tag}" for tag in manager_tags])
@@ -534,8 +538,34 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
                 if report_urls
                 else "  (Tidak ada)"
             )
-
-            message = f"""🚨 <b>SEO OPTIMIZATION COMPLAINT</b>
+            
+            # Try to use template system
+            message = await render_notification(
+                db=self.db,
+                channel="telegram",
+                event_type="seo_complaint",
+                context_data={
+                    "user": {"display_name": creator_name, "email": creator_email},
+                    "network": {"name": network.get("name", "Unknown"), "id": network_id},
+                    "brand": {"name": brand.get("name", "Unknown"), "id": brand.get("id", "")},
+                    "optimization": {
+                        "title": optimization.get("title", "(Tanpa judul)"),
+                        "activity_type": activity_label,
+                        "status": status_label,
+                    },
+                    "complaint": {
+                        "reason": complaint.get("reason", "(Tidak ada alasan)"),
+                        "priority": priority_label,
+                        "category": complaint.get("category", "other"),
+                        "report_urls": report_urls,
+                    },
+                    "telegram_project_managers": manager_usernames,
+                }
+            )
+            
+            # Fallback to hardcoded if template disabled or failed
+            if not message:
+                message = f"""🚨 <b>SEO OPTIMIZATION COMPLAINT</b>
 
 <b>{creator_name}</b> telah mengajukan komplain
 pada SEO Network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.get('name', 'Unknown')}</b>'.
