@@ -275,6 +275,12 @@ class SeoOptimizationTelegramService:
                 ", ".join(impact_labels) if impact_labels else "(Tidak ditentukan)"
             )
 
+            # Get SEO Leader tag for global oversight
+            seo_leader_tag = await self._get_seo_leader_tag()
+            leader_section = ""
+            if seo_leader_tag:
+                leader_section = f"\n\n👁 <b>CC:</b> {seo_leader_tag}"
+
             # Build message
             message = f"""📘 <b>SEO OPTIMIZATION ACTIVITY</b>
 
@@ -308,7 +314,7 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
 {reports_text}
 
 ━━━━━━━━━━━━━━━━━━━━━━
-<i>⚠️ Catatan: Tidak ada perubahan struktur SEO</i>"""
+<i>⚠️ Catatan: Tidak ada perubahan struktur SEO</i>{leader_section}"""
 
             success = await self._send_telegram_message(
                 message, topic_type="seo_optimization"
