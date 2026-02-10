@@ -158,6 +158,57 @@ export default function MonitoringSettingsPage() {
         }
     };
 
+    const sendTestAlert = async () => {
+        if (!testAlertDomain.trim()) {
+            toast({ title: 'Error', description: 'Please enter a domain name', variant: 'destructive' });
+            return;
+        }
+        
+        setSendingTestAlert(true);
+        try {
+            const response = await forcedMonitoringAPI.sendTestDomainDownAlert({
+                domain: testAlertDomain.trim(),
+                issue_type: testAlertIssueType,
+                reason: testAlertReason,
+                force_severity: testAlertSeverity || null
+            });
+            
+            if (response.data.success) {
+                toast({ 
+                    title: 'Test Alert Sent', 
+                    description: `Test ${testAlertIssueType} alert sent for ${testAlertDomain}`
+                });
+                // Refresh history
+                const historyRes = await forcedMonitoringAPI.getTestAlertHistory(20);
+                setTestAlertHistory(historyRes.data.history || []);
+            } else {
+                toast({ title: 'Warning', description: 'Test alert may not have been sent - check Telegram', variant: 'destructive' });
+            }
+        } catch (error) {
+            toast({ 
+                title: 'Error', 
+                description: error.response?.data?.detail || 'Failed to send test alert', 
+                variant: 'destructive' 
+            });
+        } finally {
+            setSendingTestAlert(false);
+        }
+    };
+
+    const loadDomainSuggestions = async (search) => {
+        if (search.length < 2) {
+            setDomainSuggestions([]);
+            return;
+        }
+        
+        try {
+            const response = await domainsAPI.getAll({ search, limit: 10 });
+            setDomainSuggestions(response.data.map(d => d.domain_name));
+        } catch (e) {
+            console.error('Failed to load domain suggestions:', e);
+        }
+    };
+
     const updateSetting = (category, key, value) => {
         setSettings(prev => ({
             ...prev,
