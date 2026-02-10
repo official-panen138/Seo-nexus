@@ -12,7 +12,7 @@ These engines operate INDEPENDENTLY and send Telegram alerts separately.
 import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import httpx
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from services.timezone_helper import format_to_local_time, format_now_local, get_system_timezone
