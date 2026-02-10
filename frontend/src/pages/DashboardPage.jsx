@@ -25,7 +25,8 @@ import {
     XCircle,
     RefreshCw,
     Settings,
-    Building2
+    Building2,
+    BarChart3
 } from 'lucide-react';
 import { 
     ResponsiveContainer,
