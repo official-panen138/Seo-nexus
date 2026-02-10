@@ -190,6 +190,22 @@ export default function SettingsPage() {
         }
     };
     
+    const handleSendTestExpirationAlert = async () => {
+        if (!selectedTestDomain) {
+            toast.error('Please select a domain');
+            return;
+        }
+        setSendingTestAlert(true);
+        try {
+            const res = await domainMonitoringTelegramAPI.testExpirationAlert(selectedTestDomain, selectedTestDays);
+            toast.success(`Test alert sent for ${res.data.domain_name} (${selectedTestDays} days)`);
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to send test expiration alert');
+        } finally {
+            setSendingTestAlert(false);
+        }
+    };
+    
     // SEO Telegram handlers
     const handleSaveSeo = async () => {
         setSavingSeo(true);
