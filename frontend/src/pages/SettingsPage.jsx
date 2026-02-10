@@ -75,6 +75,21 @@ export default function SettingsPage() {
         timezone_label: 'GMT+7'
     });
     const [savingTimezone, setSavingTimezone] = useState(false);
+    
+    // Email Alerts state
+    const [emailAlertsConfig, setEmailAlertsConfig] = useState({
+        enabled: false,
+        configured: false,
+        global_admin_emails: [],
+        severity_threshold: 'high',
+        include_network_managers: true,
+        sender_email: ''
+    });
+    const [newResendApiKey, setNewResendApiKey] = useState('');
+    const [newAdminEmail, setNewAdminEmail] = useState('');
+    const [testEmailAddress, setTestEmailAddress] = useState('');
+    const [savingEmailAlerts, setSavingEmailAlerts] = useState(false);
+    const [testingEmailAlerts, setTestingEmailAlerts] = useState(false);
 
     useEffect(() => {
         loadSettings();
