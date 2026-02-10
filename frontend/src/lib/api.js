@@ -124,6 +124,8 @@ export const conflictsAPI = {
         params: resolutionNote ? { resolution_note: resolutionNote } : {}
     }),
     getMetrics: (params = {}) => apiV3.get('/conflicts/metrics', { params }),
+    // Create optimization for a specific conflict
+    createOptimization: (conflictId) => apiV3.post(`/conflicts/${conflictId}/create-optimization`),
 };
 
 // Reports API
