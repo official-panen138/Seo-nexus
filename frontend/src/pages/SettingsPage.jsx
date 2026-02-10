@@ -91,6 +91,23 @@ export default function SettingsPage() {
     const [savingEmailAlerts, setSavingEmailAlerts] = useState(false);
     const [testingEmailAlerts, setTestingEmailAlerts] = useState(false);
 
+    // Weekly Digest state
+    const [digestConfig, setDigestConfig] = useState({
+        enabled: false,
+        schedule_day: 'monday',
+        schedule_hour: 9,
+        schedule_minute: 0,
+        include_expiring_domains: true,
+        include_down_domains: true,
+        include_soft_blocked: true,
+        expiring_days_threshold: 30,
+        last_sent_at: null
+    });
+    const [digestPreview, setDigestPreview] = useState(null);
+    const [savingDigest, setSavingDigest] = useState(false);
+    const [sendingDigest, setSendingDigest] = useState(false);
+    const [loadingPreview, setLoadingPreview] = useState(false);
+
     useEffect(() => {
         loadSettings();
     }, []);
