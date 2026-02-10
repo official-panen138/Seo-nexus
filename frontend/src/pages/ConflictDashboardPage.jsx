@@ -21,6 +21,30 @@ import {
     ExternalLink
 } from 'lucide-react';
 
+// Status colors and flow
+const STATUS_FLOW = {
+    detected: { 
+        label: 'Detected', 
+        color: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+        description: 'Conflict detected, optimization task created'
+    },
+    under_review: { 
+        label: 'In Progress', 
+        color: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+        description: 'Being worked on'
+    },
+    resolved: { 
+        label: 'Resolved', 
+        color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+        description: 'Conflict fixed and verified'
+    },
+    ignored: { 
+        label: 'Ignored', 
+        color: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
+        description: 'Marked as acceptable'
+    },
+};
+
 // Conflict type labels
 const CONFLICT_TYPE_LABELS = {
     keyword_cannibalization: "Keyword Cannibalization",
