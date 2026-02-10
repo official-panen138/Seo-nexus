@@ -736,6 +736,281 @@ export default function MonitoringSettingsPage() {
                             </CardContent>
                         </Card>
                     </TabsContent>
+
+                    {/* Test Alerts Tab */}
+                    <TabsContent value="test-alerts">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Send Test Alert Card */}
+                            <Card className="bg-zinc-900 border-zinc-800">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <FlaskConical className="h-5 w-5 text-purple-500" />
+                                        Send Test Alert
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Simulate a domain down alert without affecting real monitoring data.
+                                        Test alerts are marked with 🧪 TEST MODE.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label>Domain Name</Label>
+                                        <Input
+                                            placeholder="example.com"
+                                            value={testAlertDomain}
+                                            onChange={(e) => {
+                                                setTestAlertDomain(e.target.value);
+                                                loadDomainSuggestions(e.target.value);
+                                            }}
+                                            list="domain-suggestions"
+                                            data-testid="test-alert-domain-input"
+                                        />
+                                        {domainSuggestions.length > 0 && (
+                                            <datalist id="domain-suggestions">
+                                                {domainSuggestions.map(d => (
+                                                    <option key={d} value={d} />
+                                                ))}
+                                            </datalist>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Issue Type</Label>
+                                            <Select value={testAlertIssueType} onValueChange={setTestAlertIssueType}>
+                                                <SelectTrigger data-testid="test-alert-issue-type">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="DOWN">DOWN</SelectItem>
+                                                    <SelectItem value="SOFT_BLOCKED">SOFT BLOCKED</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        
+                                        <div className="space-y-2">
+                                            <Label>Reason</Label>
+                                            <Select value={testAlertReason} onValueChange={setTestAlertReason}>
+                                                <SelectTrigger data-testid="test-alert-reason">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Timeout">Timeout</SelectItem>
+                                                    <SelectItem value="Connection Refused">Connection Refused</SelectItem>
+                                                    <SelectItem value="DNS Failure">DNS Failure</SelectItem>
+                                                    <SelectItem value="JS Challenge">JS Challenge</SelectItem>
+                                                    <SelectItem value="Country Block">Country Block</SelectItem>
+                                                    <SelectItem value="CAPTCHA">CAPTCHA</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        <Label>Force Severity (Optional)</Label>
+                                        <Select value={testAlertSeverity} onValueChange={setTestAlertSeverity}>
+                                            <SelectTrigger data-testid="test-alert-severity">
+                                                <SelectValue placeholder="Auto-calculate from SEO context" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="">Auto (from SEO context)</SelectItem>
+                                                <SelectItem value="LOW">🟡 LOW</SelectItem>
+                                                <SelectItem value="MEDIUM">🟠 MEDIUM</SelectItem>
+                                                <SelectItem value="HIGH">🔴 HIGH</SelectItem>
+                                                <SelectItem value="CRITICAL">🚨 CRITICAL</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    
+                                    <div className="bg-blue-950/30 border border-blue-800/50 rounded-lg p-3 text-sm">
+                                        <p className="text-blue-400">ℹ️ This will NOT affect real monitoring data</p>
+                                        <p className="text-zinc-500 mt-1">
+                                            Test alerts use the same formatter and SEO context logic as real alerts.
+                                        </p>
+                                    </div>
+                                    
+                                    <Button 
+                                        onClick={sendTestAlert} 
+                                        disabled={sendingTestAlert || !testAlertDomain.trim()}
+                                        className="w-full"
+                                        data-testid="send-test-alert-btn"
+                                    >
+                                        {sendingTestAlert ? (
+                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        ) : (
+                                            <Send className="h-4 w-4 mr-2" />
+                                        )}
+                                        Send Test Alert
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                            
+                            {/* Test Alert History Card */}
+                            <Card className="bg-zinc-900 border-zinc-800">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <History className="h-5 w-5" />
+                                        Test Alert History
+                                    </CardTitle>
+                                    <CardDescription>Recent test alerts sent from this panel</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {testAlertHistory.length === 0 ? (
+                                        <div className="text-center py-8 text-zinc-500">
+                                            <FlaskConical className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                            <p>No test alerts sent yet</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                                            {testAlertHistory.map((alert, idx) => (
+                                                <div key={idx} className="p-3 bg-zinc-800/50 rounded-lg">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant={alert.issue_type === 'DOWN' ? 'destructive' : 'secondary'}>
+                                                                {alert.issue_type}
+                                                            </Badge>
+                                                            <span className="font-mono text-sm">{alert.domain}</span>
+                                                        </div>
+                                                        {alert.message_sent ? (
+                                                            <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                                        ) : (
+                                                            <XCircle className="h-4 w-4 text-red-500" />
+                                                        )}
+                                                    </div>
+                                                    <div className="text-xs text-zinc-500 mt-1">
+                                                        {alert.reason} • {new Date(alert.timestamp).toLocaleString()}
+                                                        {alert.actor_email && ` • by ${alert.actor_email}`}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </TabsContent>
+
+                    {/* Forced Monitoring / SEO Monitoring Tab */}
+                    <TabsContent value="forced-monitoring">
+                        <div className="space-y-6">
+                            {/* Summary Card */}
+                            {seoMonitoringSummary && (
+                                <Card className={`bg-zinc-900 border-zinc-800 ${seoMonitoringSummary.status === 'critical' ? 'border-red-700' : seoMonitoringSummary.status === 'warning' ? 'border-amber-700' : ''}`}>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <Shield className="h-5 w-5 text-blue-500" />
+                                            SEO Network Monitoring Coverage
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Domains used in SEO networks MUST have monitoring enabled to protect your link structure.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                                                <div className="text-2xl font-bold">{seoMonitoringSummary.total_seo_domains}</div>
+                                                <div className="text-xs text-zinc-500">Domains in SEO</div>
+                                            </div>
+                                            <div className="text-center p-4 bg-emerald-950/30 rounded-lg border border-emerald-800/50">
+                                                <div className="text-2xl font-bold text-emerald-500">{seoMonitoringSummary.monitored}</div>
+                                                <div className="text-xs text-zinc-500">Monitored</div>
+                                            </div>
+                                            <div className={`text-center p-4 rounded-lg ${seoMonitoringSummary.unmonitored > 0 ? 'bg-red-950/30 border border-red-800/50' : 'bg-zinc-800/50'}`}>
+                                                <div className={`text-2xl font-bold ${seoMonitoringSummary.unmonitored > 0 ? 'text-red-500' : ''}`}>
+                                                    {seoMonitoringSummary.unmonitored}
+                                                </div>
+                                                <div className="text-xs text-zinc-500">Unmonitored</div>
+                                            </div>
+                                            <div className="text-center p-4 bg-zinc-800/50 rounded-lg">
+                                                <div className={`text-2xl font-bold ${seoMonitoringSummary.monitoring_coverage >= 100 ? 'text-emerald-500' : seoMonitoringSummary.monitoring_coverage >= 80 ? 'text-amber-500' : 'text-red-500'}`}>
+                                                    {seoMonitoringSummary.monitoring_coverage}%
+                                                </div>
+                                                <div className="text-xs text-zinc-500">Coverage</div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Unmonitored Domains Card */}
+                            <Card className={`bg-zinc-900 ${unmonitoredDomains.length > 0 ? 'border-amber-700' : 'border-zinc-800'}`}>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <AlertTriangle className={`h-5 w-5 ${unmonitoredDomains.length > 0 ? 'text-amber-500' : 'text-zinc-500'}`} />
+                                        Unmonitored Domains in SEO Networks
+                                    </CardTitle>
+                                    <CardDescription>
+                                        These domains are used in SEO networks but don't have monitoring enabled.
+                                        If the root domain goes DOWN, all paths become inaccessible.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {unmonitoredDomains.length === 0 ? (
+                                        <div className="text-center py-8">
+                                            <CheckCircle className="h-12 w-12 mx-auto mb-2 text-emerald-500" />
+                                            <p className="text-emerald-400 font-medium">All SEO domains are monitored</p>
+                                            <p className="text-zinc-500 text-sm mt-1">Your SEO network is fully protected.</p>
+                                        </div>
+                                    ) : (
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Domain</TableHead>
+                                                    <TableHead>Networks</TableHead>
+                                                    <TableHead>Paths Used</TableHead>
+                                                    <TableHead>Entries</TableHead>
+                                                    <TableHead>Action</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {unmonitoredDomains.map(domain => (
+                                                    <TableRow key={domain.domain_id}>
+                                                        <TableCell>
+                                                            <div className="flex items-center gap-2">
+                                                                <XCircle className="h-4 w-4 text-red-500" />
+                                                                <span className="font-mono">{domain.domain_name}</span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {domain.networks_used_in.slice(0, 2).map(n => (
+                                                                    <Badge key={n} variant="outline" className="text-xs">{n}</Badge>
+                                                                ))}
+                                                                {domain.networks_used_in.length > 2 && (
+                                                                    <Badge variant="outline" className="text-xs">+{domain.networks_used_in.length - 2}</Badge>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {domain.paths_used.length > 0 ? (
+                                                                <span className="text-xs text-zinc-500">
+                                                                    {domain.paths_used.slice(0, 2).join(', ')}
+                                                                    {domain.paths_used.length > 2 && ` +${domain.paths_used.length - 2}`}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-zinc-600">-</span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell>{domain.entry_count}</TableCell>
+                                                        <TableCell>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => window.open(`/domains?search=${domain.domain_name}`, '_blank')}
+                                                            >
+                                                                <ExternalLink className="h-3 w-3 mr-1" />
+                                                                View
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </TabsContent>
                 </Tabs>
             </div>
         </Layout>
