@@ -703,6 +703,12 @@ class SeoTelegramService:
                 after_target_label,
             )
 
+            # Get SEO Leader tag for global oversight
+            seo_leader_tag = await self._get_seo_leader_tag()
+            leader_section = ""
+            if seo_leader_tag:
+                leader_section = f"\n\n👁 <b>CC:</b> {seo_leader_tag}"
+
             # Build message
             message = f"""👤 <b>PEMBARUAN OPTIMASI BAGAN SEO</b>
 
@@ -726,7 +732,7 @@ class SeoTelegramService:
 ━━━━━━━━━━━━━━━━━━━━━━
 🧭 <b>STRUKTUR SEO TERKINI</b>
 ━━━━━━━━━━━━━━━━━━━━━━
-{structure_text}"""
+{structure_text}{leader_section}"""
 
             # Send message with topic routing
             success = await self._send_telegram_message(
