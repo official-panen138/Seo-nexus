@@ -1074,6 +1074,56 @@ Tier 2:
                                 </CardContent>
                             </Card>
                             
+                            {/* Manual Trigger Monitoring Card */}
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        <Bell className="h-4 w-4 text-emerald-400" />
+                                        Trigger Monitoring Now
+                                    </CardTitle>
+                                    <CardDescription>Manually run monitoring checks to send any pending alerts immediately</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/20">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="text-red-400 font-medium">Expiration Check</span>
+                                            </div>
+                                            <p className="text-xs text-zinc-400 mb-3">Check all domains for upcoming expirations and send alerts</p>
+                                            <Button 
+                                                onClick={handleTriggerExpirationCheck}
+                                                disabled={triggeringExpiration || !domainMonitoringConfig.configured}
+                                                variant="outline"
+                                                className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10"
+                                                data-testid="trigger-expiration-check-btn"
+                                            >
+                                                {triggeringExpiration && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                                Run Expiration Check
+                                            </Button>
+                                        </div>
+                                        <div className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="text-amber-400 font-medium">Availability Check</span>
+                                            </div>
+                                            <p className="text-xs text-zinc-400 mb-3">Check all monitored domains for availability/ping status</p>
+                                            <Button 
+                                                onClick={handleTriggerAvailabilityCheck}
+                                                disabled={triggeringAvailability || !domainMonitoringConfig.configured}
+                                                variant="outline"
+                                                className="w-full border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                                                data-testid="trigger-availability-check-btn"
+                                            >
+                                                {triggeringAvailability && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                                Run Availability Check
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-zinc-500 text-center">
+                                        Note: These run automatically on schedule. Use these buttons for immediate checks.
+                                    </p>
+                                </CardContent>
+                            </Card>
+                            
                             <Card className="bg-card border-border">
                                 <CardHeader>
                                     <CardTitle className="text-base">Jenis Alert Domain Monitoring</CardTitle>
