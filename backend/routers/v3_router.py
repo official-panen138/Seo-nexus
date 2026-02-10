@@ -8549,11 +8549,3 @@ async def get_metrics_dashboard(
         },
     }
 
-            "30_days": "One-time alert",
-            "14_days": "One-time alert",
-            "7_days": "One-time alert",
-            "less_than_7": "2x daily (09:00 & 18:00 GMT+7)",
-        }
-    }
-
-
