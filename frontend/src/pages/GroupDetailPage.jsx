@@ -968,7 +968,7 @@ export default function GroupDetailPage() {
                             )}
                             
                             {/* Add Node Button */}
-                            {useV3 && (
+                            {useV3 && canEdit && (
                                 <Button 
                                     variant="outline" 
                                     size="sm"
