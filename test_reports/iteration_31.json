@@ -1,0 +1,127 @@
+{
+  "summary": "Completed testing of Domain Monitoring Alerts (Phase 2). All 26 backend tests passed. Frontend UI verified with Domain Monitoring tab separate from SEO Notifications. Features: dedicated Telegram config, SEO context enricher, impact score calculation, soft-block detection.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+
+  "passed_tests": {
+    "backend_api": [
+      "GET /api/v3/settings/telegram-monitoring returns domain monitoring config",
+      "GET /api/v3/settings/telegram-monitoring has configured flag",
+      "PUT /api/v3/settings/telegram-monitoring saves config",
+      "PUT /api/v3/settings/telegram-monitoring preserves token",
+      "PUT /api/v3/settings/telegram-monitoring enables toggle",
+      "PUT /api/v3/settings/telegram-monitoring requires super admin",
+      "POST /api/v3/settings/telegram-monitoring/test endpoint exists",
+      "Domain Monitoring config is separate from SEO Telegram"
+    ],
+    "seo_context_enricher": [
+      "SEOContextEnricher module exists",
+      "Has enrich_domain_with_seo_context method",
+      "Has _build_upstream_chain method",
+      "Has _get_downstream_impact method",
+      "Has _calculate_impact_score method"
+    ],
+    "impact_score_calculation": [
+      "Returns LOW for orphan domains",
+      "Returns MEDIUM for tier 3 with money site chain",
+      "Returns HIGH for tier 1 or many downstream",
+      "Returns CRITICAL for main (money site) nodes",
+      "Returns all required metrics"
+    ],
+    "monitoring_service_integration": [
+      "ExpirationMonitoringService has SEO enricher",
+      "AvailabilityMonitoringService has SEO enricher",
+      "DomainMonitoringTelegramService exists"
+    ],
+    "soft_block_detection": [
+      "Has SOFT_BLOCK_INDICATORS constant",
+      "Has _detect_soft_block method",
+      "Detects Cloudflare challenge",
+      "Detects captcha pages",
+      "Detects geo-block from 403/451 status"
+    ],
+    "frontend_ui": [
+      "Domain Monitoring tab visible in Settings page",
+      "Domain Monitoring tab is SEPARATE from SEO Notifications tab",
+      "Domain Monitoring toggle (data-testid='domain-monitoring-toggle') works",
+      "Bot Token input (data-testid='domain-monitoring-token-input') visible",
+      "Chat ID input (data-testid='domain-monitoring-chatid-input') visible",
+      "Save button (data-testid='save-domain-monitoring-btn') visible",
+      "Test button (data-testid='test-domain-monitoring-btn') visible",
+      "Domain Expiration alert type info card visible",
+      "Domain Availability alert type info card visible",
+      "SEO-Aware Alerts info card visible"
+    ]
+  },
+
+  "features_verified": {
+    "domain_monitoring_telegram_api": {
+      "GET_endpoint": "VERIFIED - Returns dedicated Domain Monitoring config",
+      "PUT_endpoint": "VERIFIED - Saves config without fallback to SEO",
+      "TEST_endpoint": "VERIFIED - Sends test message (returns error if not configured, expected)",
+      "no_fallback": "VERIFIED - Uses separate settings key 'telegram_monitoring'"
+    },
+    "seo_context_enricher": {
+      "upstream_chain": "VERIFIED - BFS traversal to Money Site with loop detection",
+      "downstream_impact": "VERIFIED - Returns direct children nodes",
+      "impact_score": "VERIFIED - Returns LOW/MEDIUM/HIGH/CRITICAL based on tier/downstream/money_site"
+    },
+    "soft_block_detection": {
+      "cloudflare_challenge": "VERIFIED - Detects cf-ray, checking your browser patterns",
+      "captcha": "VERIFIED - Detects captcha, recaptcha, hcaptcha",
+      "geo_blocked": "VERIFIED - Detects 403/451 and geo-block patterns"
+    },
+    "frontend_settings_ui": {
+      "domain_monitoring_tab": "VERIFIED - Separate tab from SEO Notifications",
+      "tab_content": "VERIFIED - Shows dedicated Telegram config, alert types info",
+      "no_seo_fallback_warning": "VERIFIED - Shows 'BUKAN untuk SEO change notifications'"
+    }
+  },
+
+  "test_report_links": [
+    "/app/backend/tests/test_domain_monitoring_telegram.py",
+    "/app/test_reports/pytest/domain_monitoring_telegram_results.xml"
+  ],
+
+  "action_items": [],
+
+  "critical_code_review_comments": [
+    "Good: Domain Monitoring Telegram uses separate settings key 'telegram_monitoring' - no fallback to SEO",
+    "Good: SEO Context Enricher properly calculates upstream chain with loop detection",
+    "Good: Impact score calculation handles all severity levels (LOW/MEDIUM/HIGH/CRITICAL)",
+    "Good: Soft-block detection supports Cloudflare, captcha, geo-block patterns",
+    "Good: Frontend clearly shows Domain Monitoring is SEPARATE from SEO notifications",
+    "Good: All data-testid attributes present for testing"
+  ],
+
+  "updated_files": [
+    "/app/backend/tests/test_domain_monitoring_telegram.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% (26/26 tests passed)",
+    "frontend": "100% (All UI elements verified)"
+  },
+
+  "test_credentials": {
+    "email": "superadmin@seonoc.com",
+    "password": "SuperAdmin123!",
+    "role": "super_admin"
+  },
+
+  "seed_data_creation": "Domain Monitoring Telegram configured with test bot_token and chat_id during API tests",
+
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "Domain Monitoring (Phase 2) is fully implemented. Key points: 1) Domain Monitoring Telegram uses SEPARATE config from SEO - stored in 'telegram_monitoring' settings key. 2) SEO Context Enricher provides: upstream_chain (path to Money Site), downstream_impact (direct children), impact_score (LOW/MEDIUM/HIGH/CRITICAL). 3) Soft-block detection supports Cloudflare challenge, captcha, geo-block. 4) Settings page has 5 tabs: Branding, Timezone, Monitoring Alerts, SEO Notifications, Domain Monitoring. 5) Domain Monitoring tab clearly warns it's NOT for SEO notifications."
+}
