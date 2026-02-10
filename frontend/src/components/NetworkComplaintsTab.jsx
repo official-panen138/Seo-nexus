@@ -201,12 +201,17 @@ export function NetworkComplaintsTab({ networkId, brandId, networkManagers = [] 
 
         setCreating(true);
         try {
+            // Combine network manager IDs (mandatory) with selected additional users (optional)
+            const managerIds = networkManagers.map(m => m.id);
+            const additionalUserIds = selectedUsers.map(u => u.id);
+            const allResponsibleUserIds = [...new Set([...managerIds, ...additionalUserIds])];
+            
             const payload = {
                 reason: form.reason.trim(),
                 priority: form.priority,
                 category: form.category || null,
                 report_urls: form.report_urls.split('\n').filter(url => url.trim()),
-                responsible_user_ids: form.responsible_user_ids
+                responsible_user_ids: allResponsibleUserIds
             };
             
             await projectComplaintsAPI.create(networkId, payload);
