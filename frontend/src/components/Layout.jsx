@@ -62,11 +62,26 @@ export const Layout = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { user, logout } = useAuth();
+    const { branding } = useBranding();
     const { canAccessMenu, isSuperAdmin, loading: permLoading } = useMenuPermissions();
 
     const handleLogout = () => {
         logout();
         navigate('/login');
+    };
+
+    // Render brand logo with styling for // separator
+    const renderBrandLogo = () => {
+        const title = branding.site_title || 'SEO//NOC';
+        if (title.includes('//')) {
+            const parts = title.split('//');
+            return (
+                <>
+                    {parts[0]}<span className="text-blue-500">//</span>{parts[1]}
+                </>
+            );
+        }
+        return title;
     };
 
     // Filter nav items based on menu permissions
@@ -101,7 +116,7 @@ export const Layout = ({ children }) => {
                             <Link to="/dashboard" className="flex items-center gap-2">
                                 <Zap className="h-5 w-5 text-blue-500" />
                                 <span className="font-mono text-lg font-bold text-white tracking-tighter">
-                                    SEO<span className="text-blue-500">//</span>NOC
+                                    {renderBrandLogo()}
                                 </span>
                             </Link>
                         )}
