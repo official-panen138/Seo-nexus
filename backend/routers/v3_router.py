@@ -8173,7 +8173,6 @@ async def update_notification_template(
             action="update",
             changes={"fields_changed": list(body.keys())},
         )
-        })
         
         return template
     except ValueError as e:
@@ -8196,17 +8195,15 @@ async def reset_notification_template(
     try:
         template = await crud.reset_template(channel, event_type)
         
-        # Log the reset
-        await db.activity_logs_v3.insert_one({
-            "id": str(uuid.uuid4()),
-            "entity_type": "notification_template",
-            "entity_id": f"{channel}/{event_type}",
-            "action": "reset",
-            "actor_id": current_user.get("id"),
-            "actor_email": current_user.get("email"),
-            "details": {"channel": channel, "event_type": event_type},
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        })
+        # Log the reset using audit service
+        from services.audit_log_service import get_audit_service
+        audit_service = get_audit_service(db)
+        await audit_service.log_template_change(
+            actor_email=current_user.get("email"),
+            channel=channel,
+            event_type=event_type,
+            action="reset",
+        )
         
         return template
     except ValueError as e:
