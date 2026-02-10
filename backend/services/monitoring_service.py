@@ -715,7 +715,7 @@ class ExpirationMonitoringService:
             "success": sent,
             "domain_name": domain.get("domain_name"),
             "simulated_days": simulated_days,
-            "message_preview": message[:500] + "..." if len(message) > 500 else message,
+            "message_preview": message[:2000] + "..." if len(message) > 2000 else message,
             "seo_used": enriched.get("seo", {}).get("used_in_seo", False),
         }
 
