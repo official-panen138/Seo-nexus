@@ -76,6 +76,7 @@ export default function SettingsPage() {
     const [brandingConfig, setBrandingConfig] = useState({
         site_title: 'SEO//NOC',
         site_description: '',
+        tagline: 'Domain Network Management System',
         logo_url: ''
     });
     const [savingBranding, setSavingBranding] = useState(false);
