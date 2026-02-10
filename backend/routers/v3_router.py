@@ -3460,6 +3460,28 @@ async def update_reminder_config(
     return {"message": "Reminder configuration updated", "enabled": enabled, "interval_days": interval_days}
 
 
+@router.post("/settings/reminder-config/run")
+async def run_reminder_check(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Manually trigger a reminder check for all in-progress optimizations.
+    Super Admin only.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can trigger reminder checks")
+    
+    from services.optimization_reminder_scheduler import OptimizationReminderScheduler
+    
+    scheduler = OptimizationReminderScheduler(db)
+    stats = await scheduler.run_reminder_check()
+    
+    return {
+        "message": "Reminder check completed",
+        "stats": stats
+    }
+
+
 @router.get("/networks/{network_id}/reminder-config")
 async def get_network_reminder_config(
     network_id: str,
