@@ -186,8 +186,25 @@ export default function AlertsPage() {
                     </Card>
                 </div>
 
+                {/* Process Conflicts Button */}
+                <div className="flex justify-end mb-4">
+                    <Button 
+                        onClick={handleProcessConflicts}
+                        disabled={processing || conflicts.length === 0}
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                        data-testid="process-conflicts-btn"
+                    >
+                        {processing ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                            <ClipboardList className="h-4 w-4 mr-2" />
+                        )}
+                        Create Optimization Tasks
+                    </Button>
+                </div>
+
                 {/* Conflicts List */}
-                {conflicts.length === 0 ? (
+                {enhancedConflicts.length === 0 ? (
                     <Card className="bg-card border-border">
                         <CardContent className="py-12 text-center">
                             <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-3" />
@@ -199,9 +216,10 @@ export default function AlertsPage() {
                     </Card>
                 ) : (
                     <div className="space-y-4" data-testid="conflicts-list">
-                        {conflicts.map((conflict, idx) => {
+                        {enhancedConflicts.map((conflict, idx) => {
                             const severityClass = CONFLICT_SEVERITY_CLASSES[conflict.severity] || CONFLICT_SEVERITY_CLASSES.medium;
                             const typeLabel = CONFLICT_TYPE_LABELS[conflict.conflict_type] || conflict.conflict_type;
+                            const hasLinkedOpt = conflict.linked_optimization;
                             
                             return (
                                 <Card 
@@ -217,13 +235,23 @@ export default function AlertsPage() {
                                                     conflict.severity === 'high' ? 'text-amber-400' : 'text-yellow-400'
                                                 }`} />
                                                 <div>
-                                                    <div className="flex items-center gap-2 mb-1">
+                                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                                                         <Badge className={severityClass}>
                                                             {(conflict.severity || 'medium').toUpperCase()}
                                                         </Badge>
                                                         <Badge variant="outline" className="text-xs">
                                                             {typeLabel}
                                                         </Badge>
+                                                        {hasLinkedOpt && (
+                                                            <Badge 
+                                                                className="bg-blue-500/20 text-blue-400 border-blue-500/30 cursor-pointer"
+                                                                onClick={() => window.location.href = `/optimizations/${conflict.linked_optimization.id}`}
+                                                                data-testid={`linked-opt-badge-${idx}`}
+                                                            >
+                                                                <Link2 className="h-3 w-3 mr-1" />
+                                                                Linked Optimization
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                     <p className="text-sm text-white font-medium">
                                                         {conflict.description || conflict.message || 'SEO structure conflict detected'}
@@ -232,6 +260,21 @@ export default function AlertsPage() {
                                                         <p className="text-xs text-zinc-500 mt-1">
                                                             Network: {conflict.network_name}
                                                         </p>
+                                                    )}
+                                                    {hasLinkedOpt && (
+                                                        <div className="mt-2 p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                                                            <div className="flex items-center gap-2">
+                                                                <ClipboardList className="h-4 w-4 text-blue-400" />
+                                                                <div>
+                                                                    <p className="text-xs text-blue-400 font-medium">
+                                                                        {conflict.linked_optimization.title}
+                                                                    </p>
+                                                                    <p className="text-xs text-zinc-500">
+                                                                        Status: {conflict.linked_optimization.status?.toUpperCase()}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     )}
                                                     {conflict.affected_nodes && conflict.affected_nodes.length > 0 && (
                                                         <div className="mt-2 space-y-1">
@@ -253,17 +296,31 @@ export default function AlertsPage() {
                                                     )}
                                                 </div>
                                             </div>
-                                            {conflict.network_id && (
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => window.location.href = `/groups/${conflict.network_id}`}
-                                                    className="text-xs"
-                                                >
-                                                    <ExternalLink className="h-3 w-3 mr-1" />
-                                                    View Network
-                                                </Button>
-                                            )}
+                                            <div className="flex flex-col gap-2">
+                                                {conflict.network_id && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => window.location.href = `/groups/${conflict.network_id}`}
+                                                        className="text-xs"
+                                                    >
+                                                        <ExternalLink className="h-3 w-3 mr-1" />
+                                                        View Network
+                                                    </Button>
+                                                )}
+                                                {hasLinkedOpt && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => window.location.href = `/optimizations/${conflict.linked_optimization.id}`}
+                                                        className="text-xs border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                                                        data-testid={`view-optimization-${idx}`}
+                                                    >
+                                                        <ClipboardList className="h-3 w-3 mr-1" />
+                                                        View Task
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>
