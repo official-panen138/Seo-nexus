@@ -418,15 +418,35 @@ export default function SchedulerDashboardPage() {
                                     Recent scheduler job executions
                                 </CardDescription>
                             </div>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={loadDashboardData}
-                                className="gap-2"
-                            >
-                                <RefreshCw className="h-4 w-4" />
-                                Refresh
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={loadDashboardData}
+                                    className="gap-2"
+                                    data-testid="refresh-logs-btn"
+                                >
+                                    <RefreshCw className="h-4 w-4" />
+                                    Refresh
+                                </Button>
+                                {executionLogs.length > 0 && (
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={handleClearLogs}
+                                        disabled={clearingLogs}
+                                        className="gap-2 text-red-400 border-red-500/30 hover:bg-red-500/10"
+                                        data-testid="clear-logs-btn"
+                                    >
+                                        {clearingLogs ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Trash2 className="h-4 w-4" />
+                                        )}
+                                        Clear
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent>
