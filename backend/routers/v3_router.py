@@ -2496,8 +2496,8 @@ async def create_project_complaint(
         "network_id": network_id,
         "brand_id": network["brand_id"],
         "created_by": {
-            "id": current_user["id"],
-            "name": current_user.get("name") or current_user.get("email"),
+            "user_id": current_user["id"],
+            "display_name": current_user.get("name") or current_user.get("email"),
             "email": current_user.get("email")
         },
         "created_at": datetime.now(timezone.utc).isoformat(),
