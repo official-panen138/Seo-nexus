@@ -651,6 +651,67 @@ class ExpirationMonitoringService:
 
         await self.db.alerts.insert_one(alert)
 
+    async def send_test_expiration_alert(
+        self,
+        domain_id: str,
+        simulated_days: int,
+        triggered_by: str,
+    ) -> Dict[str, Any]:
+        """
+        Send a TEST expiration alert for QA purposes.
+        
+        - Uses same formatting as real alerts
+        - Marked as TEST MODE
+        - Does NOT affect deduplication counters or schedules
+        - Logged with is_test=true
+        
+        Args:
+            domain_id: The domain ID to test
+            simulated_days: Simulated days until expiration (e.g., 30, 14, 7, 3, 0, -1)
+            triggered_by: User email who triggered the test
+            
+        Returns:
+            Dict with success status and message details
+        """
+        import uuid
+        
+        # Get domain
+        domain = await self.db.asset_domains.find_one({"id": domain_id}, {"_id": 0})
+        if not domain:
+            return {"success": False, "error": "Domain not found"}
+        
+        # Enrich with full SEO context
+        enriched = await self._enrich_domain_full(domain)
+        
+        # Format message with TEST marker
+        message = self._format_expiration_alert_seo_aware(enriched, simulated_days, is_test=True)
+        
+        # Send via Telegram
+        sent = await self.telegram.send_alert(message)
+        
+        # Log the test (but don't affect domain tracking)
+        test_log = {
+            "id": str(uuid.uuid4()),
+            "domain_id": domain_id,
+            "domain_name": domain.get("domain_name"),
+            "alert_type": "expiration_test",
+            "simulated_days": simulated_days,
+            "triggered_by": triggered_by,
+            "triggered_at": datetime.now(timezone.utc).isoformat(),
+            "is_test": True,
+            "telegram_sent": sent,
+            "seo_context": enriched.get("seo", {}),
+        }
+        await self.db.monitoring_test_logs.insert_one(test_log)
+        
+        return {
+            "success": sent,
+            "domain_name": domain.get("domain_name"),
+            "simulated_days": simulated_days,
+            "message_preview": message[:500] + "..." if len(message) > 500 else message,
+            "seo_used": enriched.get("seo", {}).get("used_in_seo", False),
+        }
+
 
 # ==================== AVAILABILITY MONITORING ENGINE ====================
 
