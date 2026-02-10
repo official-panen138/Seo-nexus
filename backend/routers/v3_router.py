@@ -5470,6 +5470,51 @@ async def get_v3_dashboard(current_user: dict = Depends(get_current_user_wrapper
     }
 
 
+@router.get("/reports/domains-by-brand")
+async def get_domains_by_brand(current_user: dict = Depends(get_current_user_wrapper)):
+    """Get total domain count grouped by brand"""
+    # Aggregate domains by brand
+    pipeline = [
+        {"$match": {"brand_id": {"$exists": True, "$ne": None}}},
+        {
+            "$group": {
+                "_id": "$brand_id",
+                "count": {"$sum": 1}
+            }
+        }
+    ]
+    
+    brand_counts = {}
+    async for doc in db.asset_domains.aggregate(pipeline):
+        brand_counts[doc["_id"]] = doc["count"]
+    
+    # Get brand names
+    brand_ids = list(brand_counts.keys())
+    brands = await db.brands.find(
+        {"id": {"$in": brand_ids}},
+        {"_id": 0, "id": 1, "name": 1}
+    ).to_list(None)
+    
+    brand_name_map = {b["id"]: b["name"] for b in brands}
+    
+    # Build result sorted by count (descending)
+    result = []
+    for brand_id, count in brand_counts.items():
+        result.append({
+            "brand_id": brand_id,
+            "brand_name": brand_name_map.get(brand_id, "Unknown"),
+            "domain_count": count
+        })
+    
+    result.sort(key=lambda x: x["domain_count"], reverse=True)
+    
+    return {
+        "data": result,
+        "total_brands": len(result),
+        "total_domains": sum(r["domain_count"] for r in result)
+    }
+
+
 @router.get("/reports/conflicts", response_model=None)
 async def get_v3_conflicts(
     network_id: Optional[str] = None,
