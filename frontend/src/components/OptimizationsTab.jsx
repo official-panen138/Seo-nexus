@@ -270,7 +270,9 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
                 toast.success('Optimization created and notification sent');
             }
             setDialogOpen(false);
-            loadOptimizations();
+            // Small delay to ensure backend has processed
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await loadOptimizations();
         } catch (err) {
             toast.error(getErrorMessage(err.response?.data, 'Failed to save optimization'));
         } finally {
@@ -294,7 +296,9 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
             toast.success('Optimization deleted');
             setDeleteDialogOpen(false);
             setSelectedOptimization(null);
-            loadOptimizations();
+            // Small delay to ensure backend has processed
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await loadOptimizations();
         } catch (err) {
             toast.error(getErrorMessage(err.response?.data, 'Failed to delete optimization'));
         } finally {
