@@ -715,6 +715,7 @@ def build_notification_context(
             "severity_emoji": {"LOW": "🟢", "MEDIUM": "🟡", "HIGH": "🟠", "CRITICAL": "🔴"}.get(severity, "⚪"),
             "description": impact.get("description", ""),
             "affected_count": impact.get("affected_count", 0),
+            "affected_children": impact.get("affected_children", "(Tidak ada)"),
         }
     
     if structure:
@@ -723,6 +724,7 @@ def build_notification_context(
             "upstream_chain": structure.get("upstream_chain", ""),
             "downstream_impact": structure.get("downstream_impact", ""),
             "before_deletion": structure.get("before_deletion", "(Tidak ada struktur)"),
+            "chain": structure.get("chain", "(Chain tidak tersedia)"),
         }
     
     if reminder:
