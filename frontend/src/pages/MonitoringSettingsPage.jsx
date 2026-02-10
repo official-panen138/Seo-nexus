@@ -28,6 +28,19 @@ export default function MonitoringSettingsPage() {
     const [expiringDomains, setExpiringDomains] = useState([]);
     const [downDomains, setDownDomains] = useState([]);
     const [runningCheck, setRunningCheck] = useState(null);
+    
+    // Test alerts state
+    const [testAlertDomain, setTestAlertDomain] = useState('');
+    const [testAlertIssueType, setTestAlertIssueType] = useState('DOWN');
+    const [testAlertReason, setTestAlertReason] = useState('Timeout');
+    const [testAlertSeverity, setTestAlertSeverity] = useState('');
+    const [sendingTestAlert, setSendingTestAlert] = useState(false);
+    const [testAlertHistory, setTestAlertHistory] = useState([]);
+    
+    // Forced monitoring state
+    const [unmonitoredDomains, setUnmonitoredDomains] = useState([]);
+    const [seoMonitoringSummary, setSeoMonitoringSummary] = useState(null);
+    const [domainSuggestions, setDomainSuggestions] = useState([]);
 
     useEffect(() => {
         loadData();
