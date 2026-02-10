@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { useBranding } from '../lib/BrandingContext';
 import { useMenuPermissions } from '../lib/menuPermissions';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
