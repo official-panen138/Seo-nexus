@@ -1794,6 +1794,19 @@ async def update_structure_entry(
             before_value=existing,
             after_value=after_snapshot
         )
+    
+    # Return the updated entry
+    updated_entry = await db.seo_structure_entries.find_one({"id": entry_id}, {"_id": 0})
+    if not updated_entry:
+        raise HTTPException(status_code=500, detail="Failed to retrieve updated entry")
+    
+    # Enrich with domain info
+    domain = await db.asset_domains.find_one({"id": updated_entry["asset_domain_id"]}, {"_id": 0, "domain_name": 1, "brand_id": 1})
+    if domain:
+        updated_entry["domain_name"] = domain.get("domain_name")
+        updated_entry["brand_id"] = domain.get("brand_id")
+    
+    return updated_entry
 
 
 # ==================== SEO OPTIMIZATIONS ENDPOINTS ====================
