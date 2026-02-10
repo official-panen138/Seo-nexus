@@ -838,12 +838,13 @@ class SeoTelegramService:
             if len(affected_children) > 5:
                 affected_text += f"\n  ... dan {len(affected_children) - 5} node lainnya"
         
-        # Format structure before deletion
+        # Format structure before deletion with hierarchy
         structure_text = ""
         for entry in structure_before:
             marker = "🗑️ " if entry.get("is_deleted_node") else "   "
             role_emoji = "💰" if entry.get("role") == "main" else "🔗"
-            structure_text += f"{marker}{role_emoji} {entry['label']} [{entry.get('status', '')}]\n"
+            status_tag = f"[{entry.get('status', '')}]" if entry.get('status') else ""
+            structure_text += f"{marker}{role_emoji} {entry['label']} {status_tag}\n"
         
         if not structure_text:
             structure_text = "(Tidak ada struktur)"
@@ -863,11 +864,17 @@ class SeoTelegramService:
                     "domain_role": role_label,
                     "domain_status": status_label,
                     "index_status": index_status,
+                    "target": target_text,
+                    "upstream_chain": upstream_text,
+                    "affected_children": affected_text,
                 },
                 "change": {
                     "action": "delete_node",
                     "action_label": "Menghapus Node",
                     "reason": change_note,
+                },
+                "structure": {
+                    "before_deletion": structure_text.strip(),
                 },
                 "impact": {
                     "severity": "HIGH" if orphan_count > 0 else "MEDIUM",
