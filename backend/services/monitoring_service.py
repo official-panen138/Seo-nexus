@@ -183,25 +183,6 @@ class DomainMonitoringTelegramService:
         except Exception as e:
             logger.error(f"Failed to send Domain Monitoring alert: {e}")
             return False
-            return False
-        
-        try:
-            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-            async with httpx.AsyncClient() as client:
-                response = await client.post(url, json={
-                    "chat_id": chat_id,
-                    "text": message,
-                    "parse_mode": "HTML"
-                }, timeout=10)
-                if response.status_code == 200:
-                    logger.info("Telegram alert sent successfully")
-                    return True
-                else:
-                    logger.error(f"Telegram API error: {response.text}")
-                    return False
-        except Exception as e:
-            logger.error(f"Failed to send Telegram alert: {e}")
-            return False
 
 
 # ==================== EXPIRATION MONITORING ENGINE ====================
