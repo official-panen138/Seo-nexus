@@ -647,6 +647,12 @@ export default function GroupsPage() {
                                                 {managerBadge.userCount !== null && managerBadge.userCount > 0 && (
                                                     <span className="text-xs ml-1">· {managerBadge.userCount} manager{managerBadge.userCount !== 1 ? 's' : ''}</span>
                                                 )}
+                                                {/* Open Complaints Badge */}
+                                                {network.open_complaints_count > 0 && (
+                                                    <span className="text-xs ml-2 text-red-400 font-medium">
+                                                        · {network.open_complaints_count} complaint{network.open_complaints_count !== 1 ? 's' : ''}
+                                                    </span>
+                                                )}
                                                 {managerBadge.userNames && managerBadge.userNames.length > 0 && (
                                                     <div className="text-[10px] opacity-80 truncate">
                                                         {managerBadge.userNames.slice(0, 2).join(', ')}
@@ -654,6 +660,12 @@ export default function GroupsPage() {
                                                     </div>
                                                 )}
                                             </div>
+                                            {/* Complaints Alert Icon */}
+                                            {network.open_complaints_count > 0 && (
+                                                <div className="flex items-center" title={`${network.open_complaints_count} open complaint${network.open_complaints_count !== 1 ? 's' : ''}`}>
+                                                    <AlertCircle className="h-4 w-4 text-red-400" />
+                                                </div>
+                                            )}
                                         </div>
                                         
                                         {/* Main domain indicator */}
