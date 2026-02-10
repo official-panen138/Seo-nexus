@@ -7683,6 +7683,200 @@ async def get_down_domains(current_user: dict = Depends(get_current_user_wrapper
     return {"domains": result, "total": len(result)}
 
 
+# ==================== FORCED MONITORING & TEST ALERTS ====================
+
+
+class TestAlertRequest(BaseModel):
+    """Request model for test domain down alert"""
+    domain: str = Field(..., description="Domain name to simulate alert for")
+    issue_type: str = Field(default="DOWN", description="DOWN or SOFT_BLOCKED")
+    reason: str = Field(default="Timeout", description="Timeout, JS Challenge, Country Block, etc.")
+    force_severity: Optional[str] = Field(default=None, description="LOW, MEDIUM, HIGH, CRITICAL")
+
+
+@router.get("/monitoring/unmonitored-in-seo")
+async def get_unmonitored_domains_in_seo(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get all domains used in SEO networks that don't have monitoring enabled.
+    
+    These domains SHOULD have monitoring enabled because:
+    - If the root domain goes DOWN, all paths become inaccessible
+    - SEO network integrity depends on domain availability
+    """
+    from services.forced_monitoring_service import ForcedMonitoringService
+    
+    service = ForcedMonitoringService(db)
+    unmonitored = await service.get_unmonitored_domains_in_seo()
+    
+    return {
+        "unmonitored_domains": unmonitored,
+        "total": len(unmonitored),
+        "warning": "These domains are used in SEO networks but don't have monitoring enabled."
+    }
+
+
+@router.get("/monitoring/domain-seo-usage/{domain_id}")
+async def check_domain_seo_usage(
+    domain_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Check if a specific domain is used in any SEO network and its monitoring status.
+    
+    Returns:
+    - Whether domain is used in SEO
+    - Whether monitoring is required (true if used in SEO)
+    - List of networks where domain is used
+    """
+    from services.forced_monitoring_service import ForcedMonitoringService
+    
+    service = ForcedMonitoringService(db)
+    usage = await service.check_domain_seo_usage(domain_id)
+    
+    return usage
+
+
+@router.post("/monitoring/send-unmonitored-reminders")
+async def send_unmonitored_reminders(
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Send reminder notifications for unmonitored domains in SEO networks.
+    
+    Rate limited to once per 24 hours to avoid spam.
+    """
+    if current_user.get("role") not in ["super_admin", "admin"]:
+        raise HTTPException(status_code=403, detail="Admin role required")
+    
+    from services.forced_monitoring_service import ForcedMonitoringService
+    
+    service = ForcedMonitoringService(db)
+    
+    async def send_reminders():
+        result = await service.send_unmonitored_reminders()
+        logger.info(f"Unmonitored domain reminder result: {result}")
+    
+    background_tasks.add_task(send_reminders)
+    
+    return {"message": "Reminder check scheduled", "status": "running"}
+
+
+@router.post("/monitoring/domain-down/test")
+async def send_test_domain_down_alert(
+    request: TestAlertRequest,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Send a TEST domain down alert without affecting real monitoring data.
+    
+    Purpose:
+    - Validate Telegram format
+    - Validate SEO context enrichment
+    - Test chain traversal & impact scoring
+    - Train team without real downtime
+    
+    Test alerts:
+    - Do NOT change real domain status
+    - Do NOT affect monitoring schedules
+    - Include 🧪 TEST MODE marker
+    - Are logged separately from real incidents
+    """
+    if current_user.get("role") not in ["super_admin", "admin"]:
+        raise HTTPException(status_code=403, detail="Admin role required")
+    
+    # Validate issue_type
+    if request.issue_type not in ["DOWN", "SOFT_BLOCKED"]:
+        raise HTTPException(status_code=400, detail="issue_type must be DOWN or SOFT_BLOCKED")
+    
+    # Validate force_severity if provided
+    if request.force_severity and request.force_severity.upper() not in ["LOW", "MEDIUM", "HIGH", "CRITICAL"]:
+        raise HTTPException(status_code=400, detail="force_severity must be LOW, MEDIUM, HIGH, or CRITICAL")
+    
+    from services.forced_monitoring_service import TestAlertService
+    
+    service = TestAlertService(db)
+    result = await service.send_test_domain_down_alert(
+        domain_name=request.domain,
+        issue_type=request.issue_type,
+        reason=request.reason,
+        force_severity=request.force_severity,
+        actor_id=current_user.get("id"),
+        actor_email=current_user.get("email")
+    )
+    
+    return result
+
+
+@router.get("/monitoring/test-alerts/history")
+async def get_test_alert_history(
+    limit: int = Query(default=50, le=200),
+    domain: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get history of test alerts."""
+    from services.forced_monitoring_service import TestAlertService
+    
+    service = TestAlertService(db)
+    history = await service.get_test_alert_history(limit=limit, domain=domain)
+    
+    return {"history": history, "total": len(history)}
+
+
+@router.get("/monitoring/seo-domains-summary")
+async def get_seo_domains_monitoring_summary(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get a summary of monitoring status for all domains used in SEO networks.
+    
+    Returns:
+    - Total domains in SEO networks
+    - Monitored count
+    - Unmonitored count (these need attention)
+    - By network breakdown
+    """
+    # Get all unique domain IDs used in SEO
+    pipeline = [
+        {"$match": {"asset_domain_id": {"$exists": True, "$ne": None}}},
+        {"$group": {
+            "_id": "$asset_domain_id",
+            "networks": {"$addToSet": "$network_id"}
+        }}
+    ]
+    
+    seo_domains = await db.seo_structure_entries.aggregate(pipeline).to_list(None)
+    domain_ids = [d["_id"] for d in seo_domains if d["_id"]]
+    
+    if not domain_ids:
+        return {
+            "total_seo_domains": 0,
+            "monitored": 0,
+            "unmonitored": 0,
+            "monitoring_coverage": 100
+        }
+    
+    # Count monitored vs unmonitored
+    monitored_count = await db.asset_domains.count_documents({
+        "id": {"$in": domain_ids},
+        "monitoring_enabled": True
+    })
+    
+    total = len(domain_ids)
+    unmonitored = total - monitored_count
+    coverage = (monitored_count / total * 100) if total > 0 else 100
+    
+    return {
+        "total_seo_domains": total,
+        "monitored": monitored_count,
+        "unmonitored": unmonitored,
+        "monitoring_coverage": round(coverage, 1),
+        "status": "good" if coverage >= 100 else "warning" if coverage >= 80 else "critical"
+    }
+
+
 # ==================== SEO CHANGE LOG ENDPOINTS ====================
 
 
