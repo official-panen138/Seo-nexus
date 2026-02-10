@@ -53,6 +53,10 @@ export default function UsersPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
     const [activateDialogOpen, setActivateDialogOpen] = useState(false);
+    const [menuPermDialogOpen, setMenuPermDialogOpen] = useState(false);
+    const [menuRegistry, setMenuRegistry] = useState([]);
+    const [userMenuPerms, setUserMenuPerms] = useState({ enabled_menus: [], is_default: true });
+    const [savingMenuPerms, setSavingMenuPerms] = useState(false);
 
     const isSuperAdmin = hasRole('super_admin');
 
