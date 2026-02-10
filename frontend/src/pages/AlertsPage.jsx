@@ -160,13 +160,13 @@ export default function AlertsPage() {
         };
     });
 
-    // Conflict stats
+    // Conflict stats - combine dynamic and stored conflicts
     const conflictStats = {
-        total: enhancedConflicts.length,
-        critical: enhancedConflicts.filter(c => c.severity === 'critical').length,
-        high: enhancedConflicts.filter(c => c.severity === 'high').length,
-        linked: enhancedConflicts.filter(c => c.linked_optimization).length,
-        byType: enhancedConflicts.reduce((acc, c) => {
+        total: storedConflicts.length || enhancedConflicts.length,
+        critical: storedConflicts.filter(c => c.severity === 'critical').length || enhancedConflicts.filter(c => c.severity === 'critical').length,
+        high: storedConflicts.filter(c => c.severity === 'high').length || enhancedConflicts.filter(c => c.severity === 'high').length,
+        linked: storedConflicts.filter(c => c.linked_optimization).length || enhancedConflicts.filter(c => c.linked_optimization).length,
+        byType: (storedConflicts.length > 0 ? storedConflicts : enhancedConflicts).reduce((acc, c) => {
             const type = c.conflict_type || 'unknown';
             acc[type] = (acc[type] || 0) + 1;
             return acc;
