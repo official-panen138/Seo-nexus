@@ -2,25 +2,87 @@
 Forced Domain Monitoring & Test Alert Service
 ==============================================
 
+SEO-AWARE DOMAIN MONITORING + STRUCTURED ALERT OUTPUT
+
 Provides:
 1. Forced monitoring enforcement - ensures all domains used in SEO networks are monitored
-2. Unmonitored domain detection and reminders
+2. Unmonitored domain detection and reminders with ⚠️ MONITORING NOT CONFIGURED alerts
 3. Test alert system for safe simulation of domain down alerts
+4. Structured SEO Snapshot (STRUKTUR SEO TERKINI) in all alerts
 
 Key Rules:
 - Any domain/path used in SEO Network MUST have monitoring enabled
 - Path-only usage requires root domain monitoring (if root is down, all paths are down)
 - Daily reminders for unmonitored domains
 - Test alerts use same formatter but don't persist or affect real monitoring
+
+SEVERITY CALCULATION (STRICT):
+- CRITICAL: Domain reaches Money Site OR domain is LP/Primary
+- HIGH: Tier 1 node OR downstream nodes ≥ 3
+- MEDIUM: Tier 2+ indirect impact
+- LOW: Orphan/unused node
+
+TELEGRAM MESSAGE ORDER:
+1. Alert Type (DOWN / EXPIRATION / CONFIG MISSING)
+2. Domain Info
+3. SEO Context Summary
+4. 🧭 STRUKTUR SEO TERKINI (Tier-based)
+5. 🔥 Impact Summary
+6. ⏰ Reminder / Next Action
 """
 
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 import uuid
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 logger = logging.getLogger(__name__)
+
+
+# ==================== SEVERITY CALCULATION ====================
+
+def calculate_strict_severity(
+    is_money_site: bool,
+    reaches_money_site: bool,
+    tier: Optional[int],
+    downstream_count: int,
+    is_orphan: bool
+) -> str:
+    """
+    Calculate severity using STRICT rules:
+    
+    CRITICAL: Domain is Money Site/LP or directly reaches one
+    HIGH: Tier 1 node or has ≥3 downstream nodes
+    MEDIUM: Tier 2+ node with indirect impact
+    LOW: Orphaned/unused node
+    """
+    if is_money_site:
+        return "CRITICAL"
+    
+    if tier is not None and tier == 1 and reaches_money_site:
+        return "CRITICAL"
+    
+    if tier == 1 or downstream_count >= 3:
+        return "HIGH"
+    
+    if tier is not None and tier >= 2 and reaches_money_site:
+        return "MEDIUM"
+    
+    if is_orphan or tier is None or tier >= 99:
+        return "LOW"
+    
+    return "MEDIUM"
+
+
+def get_severity_emoji(severity: str) -> str:
+    """Get emoji for severity level"""
+    return {
+        "CRITICAL": "🚨",
+        "HIGH": "🔴",
+        "MEDIUM": "🟠",
+        "LOW": "🟡"
+    }.get(severity.upper(), "⚪")
 
 
 class ForcedMonitoringService:
