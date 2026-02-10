@@ -550,7 +550,18 @@ export default function SettingsPage() {
                                             placeholder="SEO//NOC"
                                             className="mt-1 bg-black border-border"
                                         />
-                                        <p className="text-xs text-zinc-500 mt-1">Appears in browser tab and header</p>
+                                        <p className="text-xs text-zinc-500 mt-1">Appears in browser tab and sidebar. Use // for styled separator (e.g., SEO//NOC)</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <Label>Tagline</Label>
+                                        <Input
+                                            value={brandingConfig.tagline || ''}
+                                            onChange={(e) => setBrandingConfig(prev => ({ ...prev, tagline: e.target.value }))}
+                                            placeholder="Domain Network Management System"
+                                            className="mt-1 bg-black border-border"
+                                        />
+                                        <p className="text-xs text-zinc-500 mt-1">Short tagline shown below the logo on login page</p>
                                     </div>
                                     
                                     <div>
