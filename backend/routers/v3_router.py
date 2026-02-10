@@ -3133,6 +3133,9 @@ async def delete_optimization(
     Delete an SEO optimization activity.
     CRITICAL: Only Super Admin can delete optimizations.
     Optimizations are audit records - deletion by regular users breaks accountability.
+    
+    If the optimization has a linked conflict, the conflict will be reset to 'detected'
+    status and can have a new optimization created for it.
     """
     # CRITICAL: Only Super Admin can delete optimizations
     if current_user.get("role") != "super_admin":
@@ -3147,6 +3150,21 @@ async def delete_optimization(
     if not optimization:
         raise HTTPException(status_code=404, detail="Optimization not found")
 
+    # Handle linked conflict - reset it back to detected
+    linked_conflict_id = optimization.get("linked_conflict_id")
+    if linked_conflict_id:
+        await db.seo_conflicts.update_one(
+            {"id": linked_conflict_id},
+            {"$set": {
+                "status": "detected",
+                "optimization_id": None,
+                "resolved_at": None,
+                "resolved_by": None,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        logger.info(f"Reset conflict {linked_conflict_id} to 'detected' due to optimization deletion")
+
     await db.seo_optimizations.delete_one({"id": optimization_id})
 
     # Log activity
@@ -3159,10 +3177,11 @@ async def delete_optimization(
             before_value={
                 "title": optimization.get("title"),
                 "deleted_by": "super_admin",
+                "had_linked_conflict": linked_conflict_id is not None,
             },
         )
 
-    return {"message": "Optimization deleted"}
+    return {"message": "Optimization deleted", "conflict_reset": linked_conflict_id is not None}
 
 
 # ==================== OPTIMIZATION COMPLAINTS ====================
