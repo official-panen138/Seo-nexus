@@ -285,6 +285,10 @@ export default function SettingsPage() {
                                 <Network className="h-4 w-4" />
                                 SEO Notifications
                             </TabsTrigger>
+                            <TabsTrigger value="domain-monitoring" className="flex items-center gap-2" data-testid="domain-monitoring-tab">
+                                <Globe className="h-4 w-4" />
+                                Domain Monitoring
+                            </TabsTrigger>
                         </TabsList>
                         
                         {/* Branding Tab */}
