@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 import BrandSwitcher from './BrandSwitcher';
 import { NotificationBell } from './NotificationBell';
+import { OnlineUsers } from './OnlineUsers';
 import { 
     LayoutDashboard, 
     Globe, 
