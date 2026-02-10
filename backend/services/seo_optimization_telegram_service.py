@@ -235,6 +235,7 @@ class SeoOptimizationTelegramService:
                 )
 
         try:
+            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
             payload = {
                 "chat_id": chat_id,
                 "text": message,
@@ -247,11 +248,7 @@ class SeoOptimizationTelegramService:
                 payload["message_thread_id"] = int(message_thread_id)
 
             async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
-                    json=payload,
-                    timeout=30.0,
-                )
+                response = await client.post(url, json=payload, timeout=30.0)
 
                 if response.status_code == 200:
                     topic_info = f" (topic: {topic_type})" if message_thread_id else ""
@@ -260,6 +257,22 @@ class SeoOptimizationTelegramService:
                     )
                     return True
                 else:
+                    # Check if error is due to invalid topic_id
+                    error_text = response.text.lower()
+                    if message_thread_id and ("thread" in error_text or "topic" in error_text or "message_thread_id" in error_text):
+                        logger.warning(
+                            f"Invalid topic_id '{message_thread_id}' for {topic_type}. Retrying without topic routing..."
+                        )
+                        # Retry without message_thread_id
+                        del payload["message_thread_id"]
+                        retry_response = await client.post(url, json=payload, timeout=30.0)
+                        if retry_response.status_code == 200:
+                            logger.info(f"SEO Telegram notification sent (fallback to main chat after invalid topic_id)")
+                            return True
+                        else:
+                            logger.error(f"Telegram API error (retry): {retry_response.status_code} - {retry_response.text}")
+                            return False
+                    
                     logger.error(
                         f"Telegram API error: {response.status_code} - {response.text}"
                     )
