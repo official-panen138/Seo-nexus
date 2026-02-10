@@ -483,6 +483,35 @@ If domain expires, all SEO link flow will be BROKEN.
 👁 <b>CC:</b> {{telegram.leaders}}"""
     },
     
+    # Unmonitored Domain Reminder (Telegram)
+    ("telegram", "monitoring_not_configured"): {
+        "title": "Monitoring Not Configured",
+        "template_body": """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ <b>MONITORING NOT CONFIGURED</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 <b>Found {{domains.count}} domain(s)</b> used in SEO networks without monitoring enabled.
+
+{{domains.list}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔥 <b>IMPACT</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+If any of these root domains go <b>DOWN</b>:
+• All paths on that domain become inaccessible
+• SEO link flow is BROKEN
+• Downstream nodes lose authority
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏰ <b>ACTION REQUIRED</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<b>Enable monitoring</b> for these domains in Asset Domains settings.
+
+<i>This reminder will repeat daily until all SEO domains are monitored.</i>
+
+🕐 <b>Alert Time:</b> {{timestamp.gmt7}}"""
+    },
+    
     # Test notification
     ("telegram", "test"): {
         "title": "Test Notification",
