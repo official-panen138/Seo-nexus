@@ -373,6 +373,12 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
             # Status emoji
             status_emoji = "✅" if new_status == "completed" else "🔄"
 
+            # Get SEO Leader tag for global oversight
+            seo_leader_tag = await self._get_seo_leader_tag()
+            leader_section = ""
+            if seo_leader_tag:
+                leader_section = f"\n\n👁 <b>CC:</b> {seo_leader_tag}"
+
             message = f"""{status_emoji} <b>SEO OPTIMIZATION STATUS UPDATE</b>
 
 <b>{changer_name}</b> telah mengubah status aktivitas optimasi SEO
@@ -389,7 +395,7 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
 🕐 <b>Waktu:</b> {local_time}
 
 ━━━━━━━━━━━━━━━━━━━━━━
-<i>⚠️ Catatan: Tidak ada perubahan struktur SEO</i>"""
+<i>⚠️ Catatan: Tidak ada perubahan struktur SEO</i>{leader_section}"""
 
             success = await self._send_telegram_message(
                 message, topic_type="seo_optimization"
