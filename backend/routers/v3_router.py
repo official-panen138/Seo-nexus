@@ -8304,10 +8304,9 @@ async def send_test_expiration_alert(
     if not isinstance(simulated_days, int):
         raise HTTPException(status_code=400, detail="simulated_days must be an integer")
     
-    from services.monitoring_service import ExpirationMonitoringService, DomainMonitoringTelegramService
+    from services.monitoring_service import ExpirationMonitoringService
     
-    telegram_service = DomainMonitoringTelegramService(db)
-    monitoring_service = ExpirationMonitoringService(db, telegram_service)
+    monitoring_service = ExpirationMonitoringService(db)
     
     result = await monitoring_service.send_test_expiration_alert(
         domain_id=domain_id,
