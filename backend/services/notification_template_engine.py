@@ -697,9 +697,9 @@ def build_notification_context(
     
     # Telegram tagging
     context["telegram"] = {
-        "leaders": " ".join([f"@{l.replace('@', '')}" for l in (telegram_leaders or [])]) or "(tidak ada)",
-        "project_managers": "\n".join([f"  • @{m.replace('@', '')}" for m in (telegram_project_managers or [])]) or "  (tidak ada)",
-        "tagged_users": "\n".join([f"  • @{u.replace('@', '')}" for u in (telegram_tagged_users or [])]) or "  (tidak ada)",
+        "leaders": " ".join([f"@{leader.replace('@', '')}" for leader in (telegram_leaders or [])]) or "(tidak ada)",
+        "project_managers": "\n".join([f"  • @{mgr.replace('@', '')}" for mgr in (telegram_project_managers or [])]) or "  (tidak ada)",
+        "tagged_users": "\n".join([f"  • @{usr.replace('@', '')}" for usr in (telegram_tagged_users or [])]) or "  (tidak ada)",
     }
     
     return context
