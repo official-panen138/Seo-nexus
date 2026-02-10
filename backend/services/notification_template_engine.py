@@ -1026,6 +1026,8 @@ async def render_notification(
         Rendered template string, or None if template is disabled
     """
     try:
+        logger.info(f"Rendering notification template: {channel}/{event_type}")
+        
         crud = get_template_crud(db)
         template = await crud.get_template(channel, event_type)
         
@@ -1035,8 +1037,10 @@ async def render_notification(
         
         # Check if enabled
         if template.get("enabled") is False:
-            logger.debug(f"Template {channel}/{event_type} is disabled")
+            logger.info(f"Template {channel}/{event_type} is disabled, skipping")
             return None
+        
+        logger.info(f"Template found: {template.get('title', 'N/A')}, is_default: {template.get('is_default', False)}")
         
         # Build context from data
         context = build_notification_context(**context_data)
@@ -1045,8 +1049,9 @@ async def render_notification(
         engine = NotificationTemplateEngine(db)
         rendered = engine.render(template.get("template_body", ""), context)
         
+        logger.info(f"Template rendered successfully, length: {len(rendered)} chars")
         return rendered
     except Exception as e:
-        logger.error(f"Failed to render notification {channel}/{event_type}: {e}")
+        logger.error(f"Failed to render notification {channel}/{event_type}: {e}", exc_info=True)
         # Return None to allow services to fall back to hardcoded templates
         return None
