@@ -2584,8 +2584,8 @@ async def respond_to_project_complaint(
     response_entry = {
         "id": str(uuid.uuid4()),
         "created_by": {
-            "id": current_user["id"],
-            "name": current_user.get("name") or current_user.get("email"),
+            "user_id": current_user["id"],
+            "display_name": current_user.get("name") or current_user.get("email"),
             "email": current_user.get("email")
         },
         "created_at": datetime.now(timezone.utc).isoformat(),
