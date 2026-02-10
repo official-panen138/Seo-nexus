@@ -722,6 +722,47 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
 
 ---
 
+### P0 STRICT Permission Refactor (Feb 10, 2026) - COMPLETE
+
+**Requirement:** Only Super Admin OR users explicitly listed in `network.manager_ids` can create/edit/delete SEO structure nodes. ALL other users must be VIEW-ONLY.
+
+**Key Changes:**
+
+1. **Backend Permission Enforcement:**
+   - Added `require_manager_permission()` check to ALL structure endpoints:
+     - `POST /api/v3/structure` (create node) - Line 1700
+     - `PUT /api/v3/structure/{entry_id}` (update node) - Line 1861
+     - `DELETE /api/v3/structure/{entry_id}` (delete node) - Line 4912
+   - Non-managers receive: `403 Forbidden: "You are not assigned as a manager for this SEO Network. Only managers can perform this action."`
+
+2. **Frontend Permission Check:**
+   - `canEdit` in `GroupDetailPage.jsx` now checks:
+     ```javascript
+     const canEdit = (role === 'super_admin' || role === 'admin') || managerIds.includes(userId);
+     ```
+   - **NOT** based on user role - based on `network.manager_ids` membership
+
+3. **API Model Fix (Critical):**
+   - Added `manager_ids: Optional[List[str]] = []` to `SeoNetworkResponse` model in `models_v3.py`
+   - Without this, frontend couldn't get `manager_ids` to check permissions
+
+4. **Telegram Tagging Rules:**
+   - **SEO Notifications** (change, optimization, node update): Tag Global SEO Leader (`seo_leader_telegram_username`)
+   - **Complaint Notifications**: Tag ONLY Network Manager(s) - NOT global users, NOT viewers
+
+5. **New Settings Field:**
+   - Added `seo_leader_telegram_username` to Settings → SEO Notifications
+   - Description: "SEO Leader akan di-tag pada semua notifikasi SEO. Untuk complaint, hanya Network Manager yang di-tag."
+
+**Test Credentials:**
+- Super Admin: `admin@test.com` / `admin123` (can edit ANY network)
+- Network Manager: `manager@test.com` / `manager123` (in `manager_ids` for Test Network V5)
+- Viewer (Not Manager): `notmanager@test.com` / `notmanager123` (gets 403 on all write ops)
+
+**Tests:** 100% pass rate (10/10 backend, 9/9 frontend UI checks) ✅
+
+---
+
 3. Automatic optimization impact score calculation
 
   - Node counts per tier, collapse/expand functionality
