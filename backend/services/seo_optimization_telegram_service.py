@@ -411,7 +411,7 @@ pada SEO Network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{bran
 ⚠️ <b>Action Required:</b>
 <i>Please review and respond to this complaint.</i>"""
             
-            success = await self._send_telegram_message(message)
+            success = await self._send_telegram_message(message, topic_type="seo_complaint")
             
             if success:
                 # Update complaint with notification timestamp
