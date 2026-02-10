@@ -700,6 +700,25 @@ export default function SettingsPage() {
                                         )}
                                     </div>
 
+                                    {/* SEO Leader Tagging Section */}
+                                    <div className="space-y-3 pt-4 border-t border-border">
+                                        <div>
+                                            <Label className="text-amber-400 font-medium">Global SEO Leader</Label>
+                                            <p className="text-xs text-zinc-500 mt-1">Telegram username untuk di-tag pada semua notifikasi SEO (untuk oversight)</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs text-zinc-500">SEO Leader Telegram Username</Label>
+                                            <Input 
+                                                value={seoTelegramConfig.seo_leader_telegram_username || ''} 
+                                                onChange={(e) => setSeoTelegramConfig({...seoTelegramConfig, seo_leader_telegram_username: e.target.value})}
+                                                placeholder="@username (tanpa @)" 
+                                                className="bg-black border-border font-mono text-sm h-9 max-w-xs" 
+                                                data-testid="seo-leader-username-input"
+                                            />
+                                            <p className="text-xs text-zinc-600 mt-1">SEO Leader akan di-tag pada semua notifikasi SEO (change, optimization, node update). Untuk notifikasi complaint, hanya Network Manager yang akan di-tag.</p>
+                                        </div>
+                                    </div>
+
                                     <div className="flex items-center gap-3 pt-2">
                                         <Button onClick={handleSaveSeo} disabled={savingSeo || (!newSeoToken && !newSeoChatId && !seoTelegramConfig.enable_topic_routing)} className="bg-amber-500 text-black hover:bg-amber-400" data-testid="save-seo-telegram-btn">
                                             {savingSeo && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Simpan Pengaturan
