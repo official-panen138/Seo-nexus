@@ -839,6 +839,245 @@ Tier 2:
                                 </CardContent>
                             </Card>
                         </TabsContent>
+
+                        {/* Email Alerts Tab */}
+                        <TabsContent value="email-alerts" className="space-y-6" data-testid="email-alerts-content">
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-blue-500/10">
+                                            <Mail className="h-5 w-5 text-blue-500" />
+                                        </div>
+                                        <div>
+                                            <CardTitle>Email Alert Configuration</CardTitle>
+                                            <CardDescription>
+                                                Redundancy layer for HIGH/CRITICAL domain alerts via email
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    {/* Enable/Disable */}
+                                    <div className="flex items-center justify-between p-4 rounded-lg bg-zinc-900/50 border border-border">
+                                        <div>
+                                            <p className="font-medium text-white">Enable Email Alerts</p>
+                                            <p className="text-xs text-zinc-500">Send email notifications for critical domain issues</p>
+                                        </div>
+                                        <Switch
+                                            checked={emailAlertsConfig.enabled}
+                                            onCheckedChange={(checked) => setEmailAlertsConfig({...emailAlertsConfig, enabled: checked})}
+                                            data-testid="email-alerts-enabled-switch"
+                                        />
+                                    </div>
+
+                                    {/* Status Badge */}
+                                    <div className={`flex items-center gap-2 p-3 rounded-lg ${emailAlertsConfig.configured ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-amber-500/10 border border-amber-500/30'}`}>
+                                        {emailAlertsConfig.configured ? (
+                                            <>
+                                                <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                                <span className="text-sm text-emerald-400">Resend API configured</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <AlertCircle className="h-4 w-4 text-amber-500" />
+                                                <span className="text-sm text-amber-400">Resend API key required</span>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Resend API Key */}
+                                    <div className="space-y-2">
+                                        <Label>Resend API Key</Label>
+                                        <Input 
+                                            type="password"
+                                            value={newResendApiKey} 
+                                            onChange={(e) => setNewResendApiKey(e.target.value)} 
+                                            placeholder={emailAlertsConfig.configured ? '••••••••••••••••' : 'Enter Resend API key'} 
+                                            className="bg-black border-border font-mono text-sm" 
+                                            data-testid="resend-api-key-input"
+                                        />
+                                        <p className="text-xs text-zinc-600">
+                                            Get your API key from <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">resend.com/api-keys</a>
+                                        </p>
+                                    </div>
+
+                                    {/* Sender Email (optional) */}
+                                    <div className="space-y-2">
+                                        <Label>Sender Email (Optional)</Label>
+                                        <Input 
+                                            value={emailAlertsConfig.sender_email || ''} 
+                                            onChange={(e) => setEmailAlertsConfig({...emailAlertsConfig, sender_email: e.target.value})} 
+                                            placeholder="alerts@yourdomain.com (default: onboarding@resend.dev)" 
+                                            className="bg-black border-border font-mono text-sm" 
+                                            data-testid="sender-email-input"
+                                        />
+                                        <p className="text-xs text-zinc-600">Must be a verified domain in Resend</p>
+                                    </div>
+
+                                    {/* Severity Threshold */}
+                                    <div className="space-y-2">
+                                        <Label>Severity Threshold</Label>
+                                        <Select 
+                                            value={emailAlertsConfig.severity_threshold || 'high'}
+                                            onValueChange={(val) => setEmailAlertsConfig({...emailAlertsConfig, severity_threshold: val})}
+                                        >
+                                            <SelectTrigger className="bg-black border-border" data-testid="severity-threshold-select">
+                                                <SelectValue placeholder="Select threshold" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="high">HIGH and above (includes soft blocks)</SelectItem>
+                                                <SelectItem value="critical">CRITICAL only (domain down/expired)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-zinc-600">Only alerts at or above this severity will be sent</p>
+                                    </div>
+
+                                    {/* Include Network Managers */}
+                                    <div className="flex items-center justify-between p-4 rounded-lg bg-zinc-900/50 border border-border">
+                                        <div>
+                                            <p className="font-medium text-white">Include Network Managers</p>
+                                            <p className="text-xs text-zinc-500">Send emails to managers of affected SEO networks</p>
+                                        </div>
+                                        <Switch
+                                            checked={emailAlertsConfig.include_network_managers}
+                                            onCheckedChange={(checked) => setEmailAlertsConfig({...emailAlertsConfig, include_network_managers: checked})}
+                                            data-testid="include-managers-switch"
+                                        />
+                                    </div>
+
+                                    {/* Global Admin Emails */}
+                                    <div className="space-y-3">
+                                        <Label>Global Admin Emails</Label>
+                                        <div className="flex gap-2">
+                                            <Input 
+                                                type="email"
+                                                value={newAdminEmail} 
+                                                onChange={(e) => setNewAdminEmail(e.target.value)} 
+                                                placeholder="admin@company.com" 
+                                                className="bg-black border-border text-sm flex-1" 
+                                                onKeyDown={(e) => e.key === 'Enter' && handleAddAdminEmail()}
+                                                data-testid="add-admin-email-input"
+                                            />
+                                            <Button 
+                                                variant="outline" 
+                                                size="icon"
+                                                onClick={handleAddAdminEmail}
+                                                data-testid="add-admin-email-btn"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <p className="text-xs text-zinc-600">These emails receive ALL alerts regardless of network</p>
+                                        
+                                        {/* Email List */}
+                                        {emailAlertsConfig.global_admin_emails?.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 pt-2">
+                                                {emailAlertsConfig.global_admin_emails.map((email, idx) => (
+                                                    <div 
+                                                        key={idx} 
+                                                        className="flex items-center gap-1 px-2 py-1 rounded bg-zinc-800 border border-zinc-700 text-sm"
+                                                    >
+                                                        <span className="text-zinc-300">{email}</span>
+                                                        <button 
+                                                            onClick={() => handleRemoveAdminEmail(email)}
+                                                            className="text-zinc-500 hover:text-red-400 ml-1"
+                                                            data-testid={`remove-email-${idx}`}
+                                                        >
+                                                            <X className="h-3 w-3" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Save Button */}
+                                    <div className="flex items-center gap-3 pt-2">
+                                        <Button 
+                                            onClick={handleSaveEmailAlerts} 
+                                            disabled={savingEmailAlerts} 
+                                            className="bg-blue-500 text-white hover:bg-blue-400" 
+                                            data-testid="save-email-alerts-btn"
+                                        >
+                                            {savingEmailAlerts && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                            Save Settings
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Test Email Section */}
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <CardTitle className="text-base">Test Email Configuration</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex gap-2">
+                                        <Input 
+                                            type="email"
+                                            value={testEmailAddress} 
+                                            onChange={(e) => setTestEmailAddress(e.target.value)} 
+                                            placeholder="your@email.com" 
+                                            className="bg-black border-border text-sm flex-1" 
+                                            data-testid="test-email-address-input"
+                                        />
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={handleTestEmailAlerts} 
+                                            disabled={testingEmailAlerts || !emailAlertsConfig.configured}
+                                            data-testid="test-email-btn"
+                                        >
+                                            {testingEmailAlerts ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                                            Send Test
+                                        </Button>
+                                    </div>
+                                    {!emailAlertsConfig.configured && (
+                                        <p className="text-xs text-amber-400">Save your Resend API key first to enable testing</p>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Info Card */}
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <CardTitle className="text-base">How Email Alerts Work</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-red-400 font-medium">CRITICAL Alerts</span>
+                                            </div>
+                                            <ul className="text-xs text-zinc-400 space-y-1">
+                                                <li>• Domain DOWN (timeout, DNS error, 5xx)</li>
+                                                <li>• Domain expired or expiring in ≤3 days</li>
+                                                <li>• Always sent via email + Telegram</li>
+                                            </ul>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-amber-400 font-medium">HIGH Alerts</span>
+                                            </div>
+                                            <ul className="text-xs text-zinc-400 space-y-1">
+                                                <li>• Soft blocked (Cloudflare, captcha)</li>
+                                                <li>• Domain expiring in 4-7 days</li>
+                                                <li>• Sent if threshold = HIGH</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-blue-400 font-medium">Recipient Logic</span>
+                                        </div>
+                                        <p className="text-xs text-zinc-400">
+                                            <strong>Global Admins</strong> receive ALL alerts. <strong>Network Managers</strong> receive alerts for domains in their networks. 
+                                            Email acts as a <strong>redundancy layer</strong> alongside Telegram (primary channel).
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
                     </Tabs>
                 </div>
             </div>
