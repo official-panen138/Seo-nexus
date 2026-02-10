@@ -5736,7 +5736,6 @@ async def get_v3_conflicts(
         main_entries = [e for e in entries if e.get("domain_role") == "main"]
         for main_entry in main_entries:
             main_id = main_entry["id"]
-            main_domain_name = domain_name_lookup.get(main_entry["asset_domain_id"], "")
             
             # Find all entries pointing to this main
             sources_to_main = target_sources.get(main_id, [])
@@ -5792,7 +5791,7 @@ async def get_v3_conflicts(
                                 "node_b_id": target_id,
                                 "node_b_path": target.get("optimized_path"),
                                 "node_b_label": node_label(target),
-                                "description": f"Indexed node links to NOINDEX target in higher tier",
+                                "description": "Indexed node links to NOINDEX target in higher tier",
                                 "suggestion": "Index the target or remove the link",
                                 "detected_at": now,
                             })
