@@ -8163,16 +8163,16 @@ async def update_notification_template(
             updated_by=current_user.get("email"),
         )
         
-        # Log the change
-        await db.activity_logs_v3.insert_one({
-            "id": str(uuid.uuid4()),
-            "entity_type": "notification_template",
-            "entity_id": f"{channel}/{event_type}",
-            "action": "update",
-            "actor_id": current_user.get("id"),
-            "actor_email": current_user.get("email"),
-            "details": {"channel": channel, "event_type": event_type, "changes": list(body.keys())},
-            "created_at": datetime.now(timezone.utc).isoformat(),
+        # Log the change using audit service
+        from services.audit_log_service import get_audit_service
+        audit_service = get_audit_service(db)
+        await audit_service.log_template_change(
+            actor_email=current_user.get("email"),
+            channel=channel,
+            event_type=event_type,
+            action="update",
+            changes={"fields_changed": list(body.keys())},
+        )
         })
         
         return template
