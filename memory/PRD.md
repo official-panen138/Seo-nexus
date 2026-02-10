@@ -548,18 +548,27 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
 - White-label option
 
 ## Next Tasks List
-1. **P1: Conflict Detection UI** (Backend API exists at `/api/v3/reports/conflicts`)
+1. ✅ **P0: Access Summary Panel** - COMPLETE (Feb 10, 2026)
+   - Network cards show managers, complaints, last activity
+   - Network detail header shows full access summary
+2. **P1: Manual Project Complaint UI** - Create "Complaints" tab in GroupDetailPage.jsx
+   - Two sub-sections: "Optimization Complaints" and "Project-Level Complaints"
+   - Allow Super Admin to create complaint without associated optimization
+3. **P1: Reminder System Override UI** - Create "Settings" tab in GroupDetailPage.jsx
+   - Per-network reminder interval override (in days)
+   - Toggle to enable/disable reminders per network
+4. **P1: Conflict Detection UI** (Backend API exists at `/api/v3/reports/conflicts`)
    - Alert Center panel for conflicts
    - Node highlighting in D3 diagram
    - Conflict details in node detail panel
-2. **P1: Root vs. Path Main Node Visualization** - Solid vs dashed border in D3 graph
-3. **P1: Milestone Tag on Change Notes** - Optional milestone field
-4. **P1: Network Creation Telegram Notification** - Trigger notification when new SEO network is created
-5. Email notification integration (Resend/SendGrid)
-6. Scheduled conflict alerts (cron)
-7. Domain health check improvements
-8. Alert history and analytics
-9. **BACKLOG: Compare Changes** - Advanced diff viewer (parked)
+5. **P1: Root vs. Path Main Node Visualization** - Solid vs dashed border in D3 graph
+6. **P1: Milestone Tag on Change Notes** - Optional milestone field
+7. **P1: Network Creation Telegram Notification** - Trigger notification when new SEO network is created
+8. Email notification integration (Resend/SendGrid)
+9. Scheduled conflict alerts (cron)
+10. Domain health check improvements
+11. Alert history and analytics
+12. **BACKLOG: Compare Changes** - Advanced diff viewer (parked)
 
 ### P0 SEO Telegram Notification - Full Authority Chains (Feb 9, 2026) - COMPLETE
 **Issue:** Telegram notifications showed ObjectIDs instead of human-readable domain names, and didn't display complete authority chains.
