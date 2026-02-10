@@ -502,7 +502,7 @@ export function NetworkComplaintsTab({ networkId, brandId }) {
                                                                         <div className="flex items-center gap-2 mb-2">
                                                                             <User className="h-3 w-3 text-zinc-500" />
                                                                             <span className="text-xs text-zinc-400">
-                                                                                {resp.created_by?.name || resp.created_by?.email}
+                                                                                {resp.created_by?.display_name || resp.created_by?.email}
                                                                             </span>
                                                                             <Clock className="h-3 w-3 text-zinc-600 ml-2" />
                                                                             <span className="text-xs text-zinc-600">
