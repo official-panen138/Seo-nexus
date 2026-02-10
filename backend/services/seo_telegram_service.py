@@ -860,12 +860,26 @@ class SeoTelegramService:
     async def send_test_notification(self, actor_email: str) -> bool:
         """
         Send a test notification to verify Telegram configuration.
-        Clearly labeled as TEST.
+        Clearly labeled as TEST. Uses template system.
         """
+        from services.notification_template_engine import render_notification
+        
         user_display_name = actor_email.split("@")[0].title()
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-
-        message = f"""🔔 <b>PESAN TEST - TIDAK ADA PERUBAHAN SEO</b>
+        
+        # Try to use template system
+        message = await render_notification(
+            db=self.db,
+            channel="telegram",
+            event_type="test",
+            context_data={
+                "user": {"display_name": user_display_name, "email": actor_email},
+            }
+        )
+        
+        # Fallback to hardcoded if template disabled or not found
+        if not message:
+            timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+            message = f"""🔔 <b>PESAN TEST - TIDAK ADA PERUBAHAN SEO</b>
 
 Ini adalah pesan test dari sistem notifikasi SEO.
 
