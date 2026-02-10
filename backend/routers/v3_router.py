@@ -2632,8 +2632,8 @@ async def resolve_project_complaint(
             "status": "resolved",
             "resolved_at": datetime.now(timezone.utc).isoformat(),
             "resolved_by": {
-                "id": current_user["id"],
-                "name": current_user.get("name") or current_user.get("email"),
+                "user_id": current_user["id"],
+                "display_name": current_user.get("name") or current_user.get("email"),
                 "email": current_user.get("email")
             },
             "resolution_note": data.resolution_note.strip()
