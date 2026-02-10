@@ -1773,3 +1773,52 @@ if message_thread_id and ("thread" in error_text or "topic" in error_text):
 
 ---
 
+
+### Alerts Page - Enhanced Detailed View (Feb 10, 2026) - COMPLETE
+
+**Issue:** User reported the "View All" button on the Conflict Resolution Dashboard was working but the destination (Alerts page) didn't show detailed enough information.
+
+**Solution:** Enhanced the Alerts page (`/alerts`) to show comprehensive, detailed conflict data matching the Conflict Resolution Dashboard's level of detail.
+
+**Changes Implemented:**
+
+**1. New "Tracked Conflicts" Section:**
+- Dedicated section showing all persisted conflicts from `stored_seo_conflicts` collection
+- Detailed table with columns: Type, Severity, Status, Node, Network (clickable), Detected Date, Resolved Date, Action
+- Status filtering tabs: All, Detected, In Progress, Resolved (with counts)
+- "Create Task" button for detected conflicts without linked optimizations
+- "View Task" button to navigate to linked optimization
+
+**2. View Mode Toggle:**
+- Added Table/Cards view toggle buttons
+- Table view: Compact, scannable format for quick overview
+- Cards view: Expanded cards with more detail (original format preserved)
+
+**3. Active Conflicts Section:**
+- Shows real-time detected conflicts (dynamic)
+- Supports both table and card view modes
+- Shows linked optimization status and action buttons
+
+**4. Additional Features:**
+- Clickable network links (navigate to network detail)
+- Color-coded severity badges (Critical=red, High=amber, Medium=yellow, Low=blue)
+- Color-coded status badges (Detected=amber, In Progress=blue, Resolved=green)
+- Responsive table design with proper overflow handling
+
+**Files Modified:**
+- `/app/frontend/src/pages/AlertsPage.jsx` - Complete enhancement with tabs, table view, stored conflicts
+
+**Tests:** Visual verification via screenshot - Alerts page now shows 6 tracked conflicts with full detail
+
+---
+
+## Prioritized Backlog
+
+### P1 - Next Up
+- **Verify "Unknown" in Test Mode Alerts:** Confirm test alerts for SEO network domains don't show "Unknown" for upstream/downstream chains
+
+### P2 - Future
+- **Email Notifications:** Optional email notifications for conflict detection/resolution
+- **Advanced Auto-Assign:** Complex assignment rules by tier, workload, or expertise
+- **v3_router.py Refactoring:** Break down the 3000+ line file into smaller domain-specific routers
+
