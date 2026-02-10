@@ -813,7 +813,7 @@ export default function MonitoringSettingsPage() {
                                                 <SelectValue placeholder="Auto-calculate from SEO context" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="">Auto (from SEO context)</SelectItem>
+                                                <SelectItem value="AUTO">Auto (from SEO context)</SelectItem>
                                                 <SelectItem value="LOW">🟡 LOW</SelectItem>
                                                 <SelectItem value="MEDIUM">🟠 MEDIUM</SelectItem>
                                                 <SelectItem value="HIGH">🔴 HIGH</SelectItem>
