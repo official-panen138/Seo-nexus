@@ -33,7 +33,7 @@ export default function MonitoringSettingsPage() {
     const [testAlertDomain, setTestAlertDomain] = useState('');
     const [testAlertIssueType, setTestAlertIssueType] = useState('DOWN');
     const [testAlertReason, setTestAlertReason] = useState('Timeout');
-    const [testAlertSeverity, setTestAlertSeverity] = useState('');
+    const [testAlertSeverity, setTestAlertSeverity] = useState('AUTO');
     const [sendingTestAlert, setSendingTestAlert] = useState(false);
     const [testAlertHistory, setTestAlertHistory] = useState([]);
     
