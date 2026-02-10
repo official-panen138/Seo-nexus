@@ -130,7 +130,14 @@ export default function SettingsPage() {
     const handleSaveSeo = async () => {
         setSavingSeo(true);
         try {
-            const data = { enabled: seoTelegramConfig.enabled };
+            const data = { 
+                enabled: seoTelegramConfig.enabled,
+                enable_topic_routing: seoTelegramConfig.enable_topic_routing,
+                seo_change_topic_id: seoTelegramConfig.seo_change_topic_id || null,
+                seo_optimization_topic_id: seoTelegramConfig.seo_optimization_topic_id || null,
+                seo_complaint_topic_id: seoTelegramConfig.seo_complaint_topic_id || null,
+                seo_reminder_topic_id: seoTelegramConfig.seo_reminder_topic_id || null
+            };
             if (newSeoToken) data.bot_token = newSeoToken;
             if (newSeoChatId) data.chat_id = newSeoChatId;
             
