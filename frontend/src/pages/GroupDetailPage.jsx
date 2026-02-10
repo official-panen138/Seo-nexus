@@ -1076,6 +1076,15 @@ export default function GroupDetailPage() {
                                 </span>
                             )}
                         </TabsTrigger>
+                        <TabsTrigger value="complaints" data-testid="complaints-tab" className="flex items-center gap-2 relative">
+                            <AlertCircle className="h-4 w-4" />
+                            Complaints
+                            {network?.open_complaints_count > 0 && (
+                                <span className="ml-1 px-1.5 py-0.5 text-[10px] font-medium bg-red-500/20 text-red-400 rounded-full">
+                                    {network.open_complaints_count}
+                                </span>
+                            )}
+                        </TabsTrigger>
                         <TabsTrigger value="access" data-testid="managers-tab" className="flex items-center gap-2">
                             <Shield className="h-4 w-4" />
                             Managers
