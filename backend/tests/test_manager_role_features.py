@@ -32,7 +32,7 @@ class TestManagerRoleFeatures:
         assert response.status_code == 200, f"Manager login failed: {response.text}"
         data = response.json()
         assert data.get("user", {}).get("role") == "manager", "User is not manager role"
-        return data["token"]
+        return data["access_token"]
     
     @pytest.fixture(scope="class")
     def viewer_token(self):
@@ -44,7 +44,7 @@ class TestManagerRoleFeatures:
         assert response.status_code == 200, f"Viewer login failed: {response.text}"
         data = response.json()
         assert data.get("user", {}).get("role") == "viewer", "User is not viewer role"
-        return data["token"]
+        return data["access_token"]
     
     @pytest.fixture(scope="class")
     def admin_token(self):
@@ -54,7 +54,7 @@ class TestManagerRoleFeatures:
             "password": "admin123"
         })
         assert response.status_code == 200, f"Admin login failed: {response.text}"
-        return response.json()["token"]
+        return response.json()["access_token"]
     
     @pytest.fixture(scope="class")
     def test_network_id(self):
@@ -478,7 +478,7 @@ class TestManagerNetworkPermissions:
             "password": "manager123"
         })
         assert response.status_code == 200
-        return response.json()["token"]
+        return response.json()["access_token"]
     
     def test_manager_access_to_assigned_network(self, manager_token):
         """TEST: Manager can access network they are assigned to"""
