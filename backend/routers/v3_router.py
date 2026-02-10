@@ -1855,6 +1855,13 @@ async def update_structure_entry(
     if not existing:
         raise HTTPException(status_code=404, detail="Structure entry not found")
 
+    # PERMISSION CHECK: Only super_admin or network managers can update nodes
+    network = await db.seo_networks.find_one({"id": existing.get("network_id")}, {"_id": 0})
+    if network:
+        await require_manager_permission(network, current_user)
+    else:
+        raise HTTPException(status_code=404, detail="Network not found for this entry")
+
     # Extract and remove change_note from update_dict
     change_note = data.change_note
 
