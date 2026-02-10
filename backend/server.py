@@ -995,6 +995,7 @@ async def register(user_data: UserCreate):
         "role": role.value if isinstance(role, UserRole) else role,
         "status": status.value if isinstance(status, UserStatus) else status,
         "brand_scope_ids": brand_scope_ids,
+        "telegram_username": user_data.telegram_username,
         "approved_by": None,
         "approved_at": None,
         "created_at": now,
