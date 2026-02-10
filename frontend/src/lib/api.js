@@ -113,7 +113,17 @@ export const monitoringAPI = {
 export const conflictsAPI = {
     detect: (networkId = null) => apiV3.get('/reports/conflicts', { 
         params: networkId ? { network_id: networkId } : {} 
-    })
+    }),
+    // Stored conflicts with linked optimizations
+    getStored: (params = {}) => apiV3.get('/conflicts/stored', { params }),
+    getStoredById: (conflictId) => apiV3.get(`/conflicts/stored/${conflictId}`),
+    process: (networkId = null) => apiV3.post('/conflicts/process', null, { 
+        params: networkId ? { network_id: networkId } : {} 
+    }),
+    resolve: (conflictId, resolutionNote = null) => apiV3.post(`/conflicts/${conflictId}/resolve`, null, {
+        params: resolutionNote ? { resolution_note: resolutionNote } : {}
+    }),
+    getMetrics: (params = {}) => apiV3.get('/conflicts/metrics', { params }),
 };
 
 // Reports API
