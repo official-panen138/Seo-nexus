@@ -8451,6 +8451,22 @@ async def get_audit_event_types(
     }
 
 
+@router.delete("/audit-logs")
+async def clear_audit_logs(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """Clear all audit logs (super_admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only super admins can clear audit logs")
+    
+    result = await db.audit_logs.delete_many({})
+    
+    return {
+        "message": "Audit logs cleared",
+        "deleted_count": result.deleted_count
+    }
+
+
 # ==================== METRICS & ANALYTICS API ====================
 
 
