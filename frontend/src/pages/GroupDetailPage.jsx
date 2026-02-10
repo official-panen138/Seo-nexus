@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../lib/auth';
 import { groupsAPI, networksAPI, structureAPI, assetDomainsAPI, exportAPI, importAPI, changeLogsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { NetworkGraph } from '../components/NetworkGraph';
