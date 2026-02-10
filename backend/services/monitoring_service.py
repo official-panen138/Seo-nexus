@@ -1129,7 +1129,6 @@ class AvailabilityMonitoringService:
         reaches_money = impact_score.get("reaches_money_site", False)
         tier = impact_score.get("highest_tier_impacted")
         downstream_count = impact_score.get("downstream_nodes_count", 0)
-        is_orphan = tier is None or tier >= 99
         
         # DOWN alerts use strict severity but minimum is HIGH for SEO domains
         if seo.get("used_in_seo"):
