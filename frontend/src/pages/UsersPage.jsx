@@ -21,6 +21,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 const ROLE_LABELS = {
     'super_admin': 'Super Admin',
     'admin': 'Admin',
+    'manager': 'Manager',
     'viewer': 'Viewer'
 };
 
