@@ -1675,3 +1675,63 @@ if message_thread_id and ("thread" in error_text or "topic" in error_text):
 ---
 
 
+
+
+
+---
+
+### Menu-Level Access Control System (Feb 10, 2026) - COMPLETE
+
+**Feature Request:** Implement a menu-level access control system where Super Admin can explicitly define which menus are accessible by Admin and User roles.
+
+**Implementation:**
+
+**1. Role Behavior:**
+- **Super Admin:** Full access to ALL 17 menus. Cannot be restricted.
+- **Admin:** All menus enabled by default. Can be restricted by Super Admin.
+- **User/Viewer:** NO menus enabled by default. Must be explicitly assigned by Super Admin.
+
+**2. Master Menu Registry (17 menus):**
+- Dashboard, Asset Domains, SEO Networks, Alert Center, Reports
+- Team Evaluation, Brands, Categories, Registrars, Users
+- Audit Logs, Metrics, V3 Activity, Activity Types, Scheduler
+- Monitoring, Settings
+
+**3. Backend API Endpoints:**
+- `GET /api/v3/menu-registry` - Get all available menus
+- `GET /api/v3/my-menu-permissions` - Get current user's permissions
+- `GET /api/v3/admin/menu-permissions/{user_id}` - Get user permissions (Super Admin only)
+- `PUT /api/v3/admin/menu-permissions/{user_id}` - Update user permissions (Super Admin only)
+- `DELETE /api/v3/admin/menu-permissions/{user_id}` - Reset to defaults (Super Admin only)
+
+**4. Frontend Implementation:**
+- `MenuPermissionsProvider` context for global permission state
+- Sidebar filtering via `canAccessMenu()` in Layout.jsx
+- Route guards via `MenuProtectedRoute` in App.js
+- Access Denied page for unauthorized access
+- Menu Access dialog in Users page with:
+  - Checkbox toggles for each menu
+  - Select All / Clear All buttons
+  - Reset to Default button
+  - Save Changes button
+
+**5. Security Features:**
+- Super Admin permissions cannot be modified (API returns 400)
+- Direct URL access blocked via MenuProtectedRoute
+- API endpoints protected with role checks (403 for non-super-admin)
+- Audit logging for permission changes
+
+**Files Modified/Created:**
+- `/app/backend/models_v3.py` - MASTER_MENU_REGISTRY, DEFAULT_ADMIN_MENUS, DEFAULT_USER_MENUS
+- `/app/backend/routers/v3_router.py` - Menu permission endpoints (lines 589-810)
+- `/app/frontend/src/lib/api.js` - menuPermissionsAPI
+- `/app/frontend/src/lib/menuPermissions.jsx` - MenuPermissionsProvider (NEW)
+- `/app/frontend/src/components/Layout.jsx` - Sidebar filtering
+- `/app/frontend/src/App.js` - MenuProtectedRoute, MenuPermissionsProvider
+- `/app/frontend/src/pages/UsersPage.jsx` - Menu Access dialog
+- `/app/frontend/src/pages/AccessDeniedPage.jsx` - Access Denied page (NEW)
+
+**Tests:** 100% pass rate (12/12 backend, 14/14 frontend) - `/app/test_reports/iteration_42.json`
+
+---
+
