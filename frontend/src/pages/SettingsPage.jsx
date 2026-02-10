@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../lib/auth';
+import { useBranding } from '../lib/BrandingContext';
 import { settingsAPI, domainMonitoringTelegramAPI, emailAlertsAPI, weeklyDigestAPI, assetDomainsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/ui/button';
