@@ -569,6 +569,25 @@ export default function UsersPage() {
                     </Button>
                 </div>
 
+                {/* Bulk action bar */}
+                {isSuperAdmin && selectedUserIds.length > 0 && (
+                    <div className="bg-blue-950/30 border border-blue-800/50 rounded-lg p-3 mb-4 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Checkbox checked={true} disabled />
+                            <span className="text-sm">{selectedUserIds.length} user{selectedUserIds.length > 1 ? 's' : ''} selected</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={openBulkMenuDialog}>
+                                <Key className="h-4 w-4 mr-2" />
+                                Set Menu Access
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => setSelectedUserIds([])}>
+                                Clear Selection
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
                 <Tabs defaultValue="all" className="w-full">
                     <TabsList className="mb-4">
                         <TabsTrigger value="all" className="flex items-center gap-2">
