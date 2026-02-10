@@ -41,7 +41,8 @@ export default function SettingsPage() {
         seo_change_topic_id: '',
         seo_optimization_topic_id: '',
         seo_complaint_topic_id: '',
-        seo_reminder_topic_id: ''
+        seo_reminder_topic_id: '',
+        seo_leader_telegram_username: ''  // Global SEO Leader for oversight tagging
     });
     const [newSeoToken, setNewSeoToken] = useState('');
     const [newSeoChatId, setNewSeoChatId] = useState('');
