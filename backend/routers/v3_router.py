@@ -5003,6 +5003,7 @@ async def delete_structure_entry(
     await db.seo_structure_entries.delete_one({"id": entry_id})
 
     # ATOMIC: Log + Telegram notification
+    # Skip rate limit for DELETE actions - critical notifications must always be sent
     notification_success, change_log_id, error_msg = (
         await atomic_seo_change_with_notification(
             db=db,
@@ -5018,6 +5019,7 @@ async def delete_structure_entry(
             before_snapshot=existing,
             after_snapshot=None,
             entry_id=entry_id,
+            skip_rate_limit=True,  # DELETE actions bypass rate limit
         )
     )
 
