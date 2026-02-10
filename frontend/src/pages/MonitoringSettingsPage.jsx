@@ -79,6 +79,21 @@ export default function MonitoringSettingsPage() {
                 const data = await downRes.json();
                 setDownDomains(data.domains || []);
             }
+            
+            // Load forced monitoring data
+            try {
+                const [unmonitoredRes, summaryRes, historyRes] = await Promise.all([
+                    forcedMonitoringAPI.getUnmonitoredInSeo(),
+                    forcedMonitoringAPI.getSeoDomainsMonitoringSummary(),
+                    forcedMonitoringAPI.getTestAlertHistory(20)
+                ]);
+                
+                setUnmonitoredDomains(unmonitoredRes.data.unmonitored_domains || []);
+                setSeoMonitoringSummary(summaryRes.data);
+                setTestAlertHistory(historyRes.data.history || []);
+            } catch (e) {
+                console.error('Failed to load forced monitoring data:', e);
+            }
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to load monitoring data', variant: 'destructive' });
         } finally {
