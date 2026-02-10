@@ -2138,16 +2138,33 @@ async def detect_seo_conflicts(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/reports/dashboard-stats")
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
-    total_domains = await db.domains.count_documents({})
-    total_groups = await db.groups.count_documents({})
-    total_brands = await db.brands.count_documents({})
-    indexed_count = await db.domains.count_documents({"index_status": "index"})
-    noindex_count = await db.domains.count_documents({"index_status": "noindex"})
+    # Apply brand filtering for non-super-admin users
+    brand_filter = {}
+    brand_scope_ids = current_user.get("brand_scope_ids")
+    if current_user.get("role") != "super_admin" and brand_scope_ids:
+        brand_filter = {"brand_id": {"$in": brand_scope_ids}}
+    
+    # Domain filters
+    domain_base_filter = brand_filter.copy()
+    domain_indexed_filter = {**domain_base_filter, "index_status": "index"}
+    domain_noindex_filter = {**domain_base_filter, "index_status": "noindex"}
+    domain_monitored_filter = {**domain_base_filter, "monitoring_enabled": True}
+    domain_up_filter = {**domain_base_filter, "monitoring_enabled": True, "ping_status": "up"}
+    domain_down_filter = {**domain_base_filter, "monitoring_enabled": True, "ping_status": "down"}
+    
+    # Group/brand filter
+    group_filter = brand_filter.copy()
+    
+    total_domains = await db.domains.count_documents(domain_base_filter)
+    total_groups = await db.groups.count_documents(group_filter)
+    total_brands = await db.brands.count_documents({} if not brand_scope_ids or current_user.get("role") == "super_admin" else {"id": {"$in": brand_scope_ids}})
+    indexed_count = await db.domains.count_documents(domain_indexed_filter)
+    noindex_count = await db.domains.count_documents(domain_noindex_filter)
     
     # Monitoring stats
-    monitored = await db.domains.count_documents({"monitoring_enabled": True})
-    up = await db.domains.count_documents({"monitoring_enabled": True, "ping_status": "up"})
-    down = await db.domains.count_documents({"monitoring_enabled": True, "ping_status": "down"})
+    monitored = await db.domains.count_documents(domain_monitored_filter)
+    up = await db.domains.count_documents(domain_up_filter)
+    down = await db.domains.count_documents(domain_down_filter)
     
     # Active alerts
     active_alerts = await db.alerts.count_documents({"acknowledged": False})
