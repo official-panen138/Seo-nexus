@@ -108,111 +108,118 @@ function AppRoutes() {
                 </PublicRoute>
             } />
             
-            {/* Protected routes */}
-            <Route path="/dashboard" element={
+            {/* Access Denied page */}
+            <Route path="/access-denied" element={
                 <ProtectedRoute>
-                    <DashboardPage />
+                    <AccessDeniedPage />
                 </ProtectedRoute>
+            } />
+            
+            {/* Protected routes with menu permissions */}
+            <Route path="/dashboard" element={
+                <MenuProtectedRoute menuKey="dashboard">
+                    <DashboardPage />
+                </MenuProtectedRoute>
             } />
             <Route path="/domains" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="asset_domains">
                     <DomainsPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/groups" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="seo_networks">
                     <GroupsPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/groups/:groupId" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="seo_networks">
                     <GroupDetailPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/networks/:groupId" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="seo_networks">
                     <GroupDetailPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/networks" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="seo_networks">
                     <GroupsPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/optimizations/:optimizationId" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="reports">
                     <OptimizationDetailPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/alerts" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="alert_center">
                     <AlertsPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/reports" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="reports">
                     <ReportsPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/reports/team-evaluation" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="team_evaluation">
                     <TeamEvaluationPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/brands" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="brands">
                     <BrandsPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/categories" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="categories">
                     <CategoriesPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/users" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="users">
                     <UsersPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/audit-logs" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="audit_logs">
                     <AuditLogsPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/activity-logs" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="v3_activity">
                     <ActivityLogsPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/settings" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="settings">
                     <SettingsPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/registrars" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="registrars">
                     <RegistrarsPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/settings/monitoring" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="monitoring">
                     <MonitoringSettingsPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/settings/activity-types" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="activity_types">
                     <ActivityTypesPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/settings/scheduler" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="scheduler">
                     <SchedulerDashboardPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             <Route path="/metrics" element={
-                <ProtectedRoute>
+                <MenuProtectedRoute menuKey="metrics">
                     <MetricsDashboardPage />
-                </ProtectedRoute>
+                </MenuProtectedRoute>
             } />
             
             {/* Default redirect */}
