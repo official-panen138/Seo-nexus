@@ -45,6 +45,7 @@ const navItems = [
     { path: '/registrars', label: 'Registrars', icon: Building, roles: ['super_admin'] },
     { path: '/users', label: 'Users', icon: Users, roles: ['super_admin'] },
     { path: '/audit-logs', label: 'Audit Logs', icon: Activity, roles: ['super_admin'] },
+    { path: '/metrics', label: 'Metrics', icon: BarChart3, roles: ['super_admin', 'manager'] },
     { path: '/activity-logs', label: 'V3 Activity', icon: History, roles: ['super_admin', 'admin'] },
     { path: '/settings/monitoring', label: 'Monitoring', icon: Radio, roles: ['super_admin', 'admin'] },
     { path: '/settings/activity-types', label: 'Activity Types', icon: Zap, roles: ['super_admin'] },
