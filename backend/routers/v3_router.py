@@ -4294,6 +4294,22 @@ async def get_scheduler_execution_logs(
     return {"logs": logs, "total": len(logs)}
 
 
+@router.delete("/scheduler/execution-logs")
+async def clear_scheduler_execution_logs(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """Clear all scheduler execution logs (super_admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only super admins can clear execution logs")
+    
+    result = await db.scheduler_execution_logs.delete_many({})
+    
+    return {
+        "message": "Execution logs cleared",
+        "deleted_count": result.deleted_count
+    }
+
+
 # ==================== ACTIVITY TYPE MANAGEMENT ====================
 
 
