@@ -397,6 +397,17 @@ export default function MonitoringSettingsPage() {
                             <XCircle className="h-4 w-4 mr-2" />
                             Down Domains ({downDomains.length})
                         </TabsTrigger>
+                        <TabsTrigger value="test-alerts" data-testid="test-alerts-tab">
+                            <FlaskConical className="h-4 w-4 mr-2" />
+                            Test Alerts
+                        </TabsTrigger>
+                        <TabsTrigger value="forced-monitoring" data-testid="forced-monitoring-tab">
+                            <Shield className="h-4 w-4 mr-2 text-amber-500" />
+                            SEO Monitoring
+                            {unmonitoredDomains.length > 0 && (
+                                <Badge className="ml-2 bg-amber-500 text-black">{unmonitoredDomains.length}</Badge>
+                            )}
+                        </TabsTrigger>
                     </TabsList>
 
                     {/* Expiration Settings */}
