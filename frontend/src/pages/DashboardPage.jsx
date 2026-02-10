@@ -434,9 +434,8 @@ export default function DashboardPage() {
                     </Card>
                 </div>
 
-                {/* Recent Alerts & Conflicts */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    {/* Recent Alerts */}
+                {/* Recent Alerts */}
+                <div className="grid grid-cols-1 gap-6 mb-6">
                     <Card className="bg-card border-border">
                         <CardHeader className="pb-2">
                             <div className="flex items-center justify-between">
@@ -453,8 +452,8 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent>
                             {recentAlerts.length > 0 ? (
-                                <div className="space-y-2">
-                                    {recentAlerts.slice(0, 4).map(alert => (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {recentAlerts.slice(0, 6).map(alert => (
                                         <div key={alert.id} className="p-3 bg-black/50 rounded-lg border border-border">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="flex-1 min-w-0">
@@ -478,50 +477,6 @@ export default function DashboardPage() {
                                 <div className="text-center py-8">
                                     <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
                                     <p className="text-sm text-zinc-400">No active alerts</p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* SEO Conflicts */}
-                    <Card className={`bg-card border-border ${conflicts.length > 0 ? 'border-red-900/50' : ''}`}>
-                        <CardHeader className="pb-2">
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-base flex items-center gap-2">
-                                    <AlertTriangle className={`h-4 w-4 ${conflicts.length > 0 ? 'text-red-500' : 'text-zinc-500'}`} />
-                                    SEO Conflicts
-                                </CardTitle>
-                                <Link to="/reports">
-                                    <Button variant="ghost" size="sm" className="text-xs">
-                                        Details <ArrowRight className="h-3 w-3 ml-1" />
-                                    </Button>
-                                </Link>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            {conflicts.length > 0 ? (
-                                <div className="space-y-2">
-                                    {conflicts.slice(0, 4).map((conflict, idx) => (
-                                        <div key={idx} className="p-3 bg-red-950/20 rounded-lg border border-red-900/30">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <Badge variant="outline" className={`text-[10px] ${getSeverityBadgeClass(conflict.severity)}`}>
-                                                            {conflict.severity}
-                                                        </Badge>
-                                                        <span className="text-xs text-zinc-500">{(conflict.conflict_type || conflict.type || '').replace(/_/g, ' ')}</span>
-                                                    </div>
-                                                    <p className="font-mono text-sm truncate">{conflict.node_a_label || conflict.domain_name}</p>
-                                                    <p className="text-xs text-red-400/70 mt-1">{conflict.description || conflict.message}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-8">
-                                    <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
-                                    <p className="text-sm text-zinc-400">No conflicts detected</p>
                                 </div>
                             )}
                         </CardContent>
