@@ -32,7 +32,7 @@ def super_admin_token():
     """Get super_admin authentication token"""
     response = requests.post(f"{BASE_URL}/api/auth/login", json=SUPER_ADMIN)
     if response.status_code == 200:
-        return response.json().get("token")
+        return response.json().get("access_token")
     pytest.skip("Super admin authentication failed")
 
 
@@ -41,7 +41,7 @@ def manager_token():
     """Get manager authentication token"""
     response = requests.post(f"{BASE_URL}/api/auth/login", json=MANAGER)
     if response.status_code == 200:
-        return response.json().get("token")
+        return response.json().get("access_token")
     return None
 
 
@@ -50,7 +50,7 @@ def viewer_token():
     """Get viewer authentication token"""
     response = requests.post(f"{BASE_URL}/api/auth/login", json=VIEWER)
     if response.status_code == 200:
-        return response.json().get("token")
+        return response.json().get("access_token")
     return None
 
 
