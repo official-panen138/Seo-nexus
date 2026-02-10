@@ -3610,6 +3610,47 @@ async def get_optimization_detail(
     if is_blocked:
         blocked_reason = f"⚠ Blocked by Complaint #{len([c for c in complaints if c.get('status') != 'resolved'])} – resolve before closing"
 
+    # Get linked conflict info if this is a conflict resolution optimization
+    linked_conflict = None
+    linked_conflict_id = optimization.get("linked_conflict_id")
+    if linked_conflict_id:
+        conflict = await db.seo_conflicts.find_one(
+            {"id": linked_conflict_id},
+            {"_id": 0}
+        )
+        if conflict:
+            linked_conflict = {
+                "id": conflict.get("id"),
+                "conflict_type": conflict.get("conflict_type"),
+                "severity": conflict.get("severity"),
+                "status": conflict.get("status"),
+                "detected_at": conflict.get("detected_at"),
+                "domain_name": conflict.get("domain_name"),
+                "node_a_label": conflict.get("node_a_label"),
+                "node_b_label": conflict.get("node_b_label"),
+                "description": conflict.get("description"),
+                "affected_nodes": conflict.get("affected_nodes", []),
+                "recurrence_count": conflict.get("recurrence_count", 0),
+            }
+
+    # Permission check - only managers can edit conflict resolution
+    user_role = current_user.get("role", "user")
+    is_manager = user_role in ["super_admin", "admin"]
+    
+    # Check if user is network manager
+    if not is_manager and network:
+        network_full = await db.seo_networks.find_one(
+            {"id": optimization["network_id"]},
+            {"_id": 0, "access_control": 1}
+        )
+        if network_full:
+            access_control = network_full.get("access_control", {})
+            manager_ids = access_control.get("manager_ids", [])
+            if current_user.get("id") in manager_ids:
+                is_manager = True
+    
+    can_edit = is_manager  # Non-managers can only view
+
     return SeoOptimizationDetailResponse(
         id=optimization["id"],
         network_id=optimization["network_id"],
@@ -3633,6 +3674,8 @@ async def get_optimization_detail(
         observed_impact=optimization.get("observed_impact"),
         status=optimization["status"],
         complaint_status=optimization.get("complaint_status", "none"),
+        linked_conflict_id=linked_conflict_id,
+        linked_conflict=linked_conflict,
         network_name=network.get("name") if network else None,
         brand_name=brand.get("name") if brand else None,
         complaints=complaints,
@@ -3642,6 +3685,7 @@ async def get_optimization_detail(
         has_repeated_issue=len(complaints) >= 2,
         is_blocked=is_blocked,
         blocked_reason=blocked_reason,
+        can_edit=can_edit,
     )
 
 
