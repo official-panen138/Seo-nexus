@@ -22,25 +22,23 @@ logger = logging.getLogger(__name__)
 class SeoContextEnricher:
     """
     Enriches domain alerts with SEO context information.
-    
+
     Provides:
     - Full SEO network context for a domain
     - Upstream chain traversal to Money Site
     - Downstream impact (direct children)
     - Impact score calculation
     """
-    
+
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
-    
+
     async def enrich_domain_with_seo_context(
-        self, 
-        domain_name: str,
-        domain_id: Optional[str] = None
+        self, domain_name: str, domain_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Enrich a domain with full SEO context.
-        
+
         Returns dict with:
         - seo_context: List of networks/nodes where domain is used
         - upstream_chain: Full chain to Money Site
@@ -60,54 +58,54 @@ class SeoContextEnricher:
                 "reaches_money_site": False,
                 "highest_tier_impacted": None,
                 "node_role": None,
-                "index_status": None
-            }
+                "index_status": None,
+            },
         }
-        
+
         # Find all SEO structure entries for this domain
         query = {"domain": domain_name}
         if domain_id:
             query = {"$or": [{"domain": domain_name}, {"asset_domain_id": domain_id}]}
-        
-        entries = await self.db.seo_structure_entries.find(query, {"_id": 0}).to_list(100)
-        
+
+        entries = await self.db.seo_structure_entries.find(query, {"_id": 0}).to_list(
+            100
+        )
+
         if not entries:
             return result
-        
+
         result["used_in_seo"] = True
-        
+
         # Process each entry (domain may be in multiple networks)
         networks_processed = set()
         all_downstream = []
         reaches_money_site = False
         highest_tier = 99
-        
+
         for entry in entries[:3]:  # Max 3 networks in detail
             network_id = entry.get("network_id")
             if network_id in networks_processed:
                 continue
             networks_processed.add(network_id)
-            
+
             # Get network info
             network = await self.db.seo_networks.find_one(
-                {"id": network_id},
-                {"_id": 0, "name": 1, "brand_id": 1}
+                {"id": network_id}, {"_id": 0, "name": 1, "brand_id": 1}
             )
-            
+
             if not network:
                 continue
-            
+
             # Get brand info
             brand = await self.db.brands.find_one(
-                {"id": network.get("brand_id")},
-                {"_id": 0, "name": 1}
+                {"id": network.get("brand_id")}, {"_id": 0, "name": 1}
             )
-            
+
             # Calculate tier
             tier, tier_label = await self._calculate_entry_tier(entry, network_id)
             if tier < highest_tier:
                 highest_tier = tier
-            
+
             # Build SEO context for this entry
             seo_ctx = {
                 "network_id": network_id,
@@ -115,41 +113,49 @@ class SeoContextEnricher:
                 "brand_name": brand.get("name", "Unknown") if brand else "Unknown",
                 "entry_id": entry.get("id"),
                 "node": f"{entry.get('domain', '')}{entry.get('optimized_path', '')}",
-                "role": "LP / Money Site" if entry.get("domain_role") == "main" else "Supporting",
+                "role": (
+                    "LP / Money Site"
+                    if entry.get("domain_role") == "main"
+                    else "Supporting"
+                ),
                 "domain_role": entry.get("domain_role", "supporting"),
                 "tier": tier,
                 "tier_label": tier_label,
                 "domain_status": entry.get("domain_status", "canonical"),
                 "target_node": None,
-                "index_status": entry.get("index_status", "unknown")
+                "index_status": entry.get("index_status", "unknown"),
             }
-            
+
             # Get target node
             if entry.get("target_entry_id"):
                 target_entry = await self.db.seo_structure_entries.find_one(
                     {"id": entry["target_entry_id"]},
-                    {"_id": 0, "domain": 1, "optimized_path": 1}
+                    {"_id": 0, "domain": 1, "optimized_path": 1},
                 )
                 if target_entry:
-                    seo_ctx["target_node"] = f"{target_entry.get('domain', '')}{target_entry.get('optimized_path', '')}"
-            
+                    seo_ctx["target_node"] = (
+                        f"{target_entry.get('domain', '')}{target_entry.get('optimized_path', '')}"
+                    )
+
             result["seo_context"].append(seo_ctx)
-            
+
             # Calculate upstream chain
-            chain, chain_reaches_money = await self._build_upstream_chain(entry, network_id)
+            chain, chain_reaches_money = await self._build_upstream_chain(
+                entry, network_id
+            )
             if chain:
                 result["upstream_chain"] = chain  # Use the first chain
             if chain_reaches_money:
                 reaches_money_site = True
-            
+
             # Get downstream impact
             downstream = await self._get_downstream_impact(entry, network_id)
             all_downstream.extend(downstream)
-        
+
         # Count additional networks
         total_networks = len(entries)
         additional_networks = total_networks - len(networks_processed)
-        
+
         # Deduplicate downstream
         seen_nodes = set()
         unique_downstream = []
@@ -158,46 +164,52 @@ class SeoContextEnricher:
             if node_key not in seen_nodes:
                 seen_nodes.add(node_key)
                 unique_downstream.append(d)
-        
+
         result["downstream_impact"] = unique_downstream[:10]  # Max 10
         if len(unique_downstream) > 10:
             result["downstream_impact_more"] = len(unique_downstream) - 10
-        
+
         # Calculate impact score
         result["impact_score"] = self._calculate_impact_score(
             networks_affected=total_networks,
             downstream_count=len(unique_downstream),
             reaches_money_site=reaches_money_site,
             highest_tier=highest_tier if highest_tier < 99 else None,
-            node_role=result["seo_context"][0].get("domain_role") if result["seo_context"] else None,
-            index_status=result["seo_context"][0].get("index_status") if result["seo_context"] else None
+            node_role=(
+                result["seo_context"][0].get("domain_role")
+                if result["seo_context"]
+                else None
+            ),
+            index_status=(
+                result["seo_context"][0].get("index_status")
+                if result["seo_context"]
+                else None
+            ),
         )
-        
+
         # Add additional networks count
         if additional_networks > 0:
             result["additional_networks_count"] = additional_networks
-        
+
         return result
-    
+
     async def _calculate_entry_tier(
-        self, 
-        entry: Dict[str, Any], 
-        network_id: str
+        self, entry: Dict[str, Any], network_id: str
     ) -> Tuple[int, str]:
         """Calculate tier for an entry using BFS from main nodes"""
         if entry.get("domain_role") == "main":
             return 0, "LP / Money Site"
-        
+
         # Get all entries for this network
         entries = await self.db.seo_structure_entries.find(
             {"network_id": network_id},
-            {"_id": 0, "id": 1, "target_entry_id": 1, "domain_role": 1}
+            {"_id": 0, "id": 1, "target_entry_id": 1, "domain_role": 1},
         ).to_list(1000)
-        
+
         # Build reverse lookup
         target_to_sources = {}
         main_ids = set()
-        
+
         for e in entries:
             if e.get("domain_role") == "main":
                 main_ids.add(e["id"])
@@ -205,16 +217,16 @@ class SeoContextEnricher:
                 if e["target_entry_id"] not in target_to_sources:
                     target_to_sources[e["target_entry_id"]] = []
                 target_to_sources[e["target_entry_id"]].append(e["id"])
-        
+
         if not main_ids:
             return 99, "Orphan"
-        
+
         # BFS from main nodes
         entry_id = entry.get("id")
         tiers = {mid: 0 for mid in main_ids}
         queue = list(main_ids)
         tier = 0
-        
+
         while queue:
             next_queue = []
             tier += 1
@@ -224,21 +236,19 @@ class SeoContextEnricher:
                         tiers[source_id] = tier
                         next_queue.append(source_id)
             queue = next_queue
-        
+
         entry_tier = tiers.get(entry_id, 99)
         tier_label = f"Tier {entry_tier}" if entry_tier < 99 else "Orphan"
-        
+
         return entry_tier, tier_label
-    
+
     async def _build_upstream_chain(
-        self, 
-        entry: Dict[str, Any], 
-        network_id: str
+        self, entry: Dict[str, Any], network_id: str
     ) -> Tuple[List[Dict[str, Any]], bool]:
         """
         Build upstream chain from entry to Money Site.
         Uses BFS with loop detection.
-        
+
         Returns (chain, reaches_money_site)
         """
         chain = []
@@ -246,81 +256,96 @@ class SeoContextEnricher:
         current = entry
         reaches_money = False
         max_hops = 20  # Safety limit
-        
+
         for _ in range(max_hops):
             current_id = current.get("id")
-            
+
             if current_id in visited:
                 # Loop detected
-                chain.append({
-                    "node": f"{current.get('domain', '')}{current.get('optimized_path', '')}",
-                    "relation": "LOOP DETECTED",
-                    "target": None,
-                    "is_end": True,
-                    "end_reason": "Loop detected"
-                })
+                chain.append(
+                    {
+                        "node": f"{current.get('domain', '')}{current.get('optimized_path', '')}",
+                        "relation": "LOOP DETECTED",
+                        "target": None,
+                        "is_end": True,
+                        "end_reason": "Loop detected",
+                    }
+                )
                 break
-            
+
             visited.add(current_id)
-            
+
             node = f"{current.get('domain', '')}{current.get('optimized_path', '')}"
-            relation = self._get_relation_type(current.get("domain_status", "canonical"))
-            
+            relation = self._get_relation_type(
+                current.get("domain_status", "canonical")
+            )
+
             # Check if this is a main node (Money Site)
             if current.get("domain_role") == "main":
-                chain.append({
-                    "node": node,
-                    "relation": "MAIN",
-                    "target": None,
-                    "is_end": True,
-                    "end_reason": "Money Site reached"
-                })
+                chain.append(
+                    {
+                        "node": node,
+                        "relation": "MAIN",
+                        "target": None,
+                        "is_end": True,
+                        "end_reason": "Money Site reached",
+                    }
+                )
                 reaches_money = True
                 break
-            
+
             # Get target
             target_id = current.get("target_entry_id")
             if not target_id:
-                chain.append({
-                    "node": node,
-                    "relation": relation,
-                    "target": None,
-                    "is_end": True,
-                    "end_reason": "Orphan (no target)"
-                })
+                chain.append(
+                    {
+                        "node": node,
+                        "relation": relation,
+                        "target": None,
+                        "is_end": True,
+                        "end_reason": "Orphan (no target)",
+                    }
+                )
                 break
-            
+
             # Get target entry
             target = await self.db.seo_structure_entries.find_one(
-                {"id": target_id, "network_id": network_id},
-                {"_id": 0}
+                {"id": target_id, "network_id": network_id}, {"_id": 0}
             )
-            
+
             if not target:
-                chain.append({
+                chain.append(
+                    {
+                        "node": node,
+                        "relation": relation,
+                        "target": None,
+                        "is_end": True,
+                        "end_reason": "Target not found",
+                    }
+                )
+                break
+
+            target_node = (
+                f"{target.get('domain', '')}{target.get('optimized_path', '')}"
+            )
+            target_relation = self._get_relation_type(
+                target.get("domain_status", "canonical")
+            )
+
+            chain.append(
+                {
                     "node": node,
                     "relation": relation,
-                    "target": None,
-                    "is_end": True,
-                    "end_reason": "Target not found"
-                })
-                break
-            
-            target_node = f"{target.get('domain', '')}{target.get('optimized_path', '')}"
-            target_relation = self._get_relation_type(target.get("domain_status", "canonical"))
-            
-            chain.append({
-                "node": node,
-                "relation": relation,
-                "target": target_node,
-                "target_relation": target_relation,
-                "is_end": False
-            })
-            
+                    "target": target_node,
+                    "target_relation": target_relation,
+                    "is_end": False,
+                }
+            )
+
             current = target
-        
+
         return chain, reaches_money
-    
+
     def _get_relation_type(self, domain_status: str) -> str:
         """Convert domain_status to relation type"""
         relation_map = {
@@ -328,35 +353,37 @@ class SeoContextEnricher:
             "301_redirect": "301 Redirect",
             "302_redirect": "302 Redirect",
             "restore": "Restore",
-            "main": "MAIN"
+            "main": "MAIN",
         }
         return relation_map.get(domain_status, domain_status.replace("_", " ").title())
-    
+
     async def _get_downstream_impact(
-        self, 
-        entry: Dict[str, Any], 
-        network_id: str
+        self, entry: Dict[str, Any], network_id: str
     ) -> List[Dict[str, Any]]:
         """
         Get direct children (nodes that point to this entry).
         """
         entry_id = entry.get("id")
-        
+
         children = await self.db.seo_structure_entries.find(
             {"network_id": network_id, "target_entry_id": entry_id},
-            {"_id": 0, "domain": 1, "optimized_path": 1, "domain_status": 1}
+            {"_id": 0, "domain": 1, "optimized_path": 1, "domain_status": 1},
         ).to_list(50)
-        
+
         result = []
         for child in children:
-            result.append({
-                "node": f"{child.get('domain', '')}{child.get('optimized_path', '')}",
-                "relation": self._get_relation_type(child.get("domain_status", "canonical")),
-                "target": f"{entry.get('domain', '')}{entry.get('optimized_path', '')}"
-            })
-        
+            result.append(
+                {
+                    "node": f"{child.get('domain', '')}{child.get('optimized_path', '')}",
+                    "relation": self._get_relation_type(
+                        child.get("domain_status", "canonical")
+                    ),
+                    "target": f"{entry.get('domain', '')}{entry.get('optimized_path', '')}",
+                }
+            )
+
         return result
-    
+
     def _calculate_impact_score(
         self,
         networks_affected: int,
@@ -364,11 +391,11 @@ class SeoContextEnricher:
         reaches_money_site: bool,
         highest_tier: Optional[int],
         node_role: Optional[str],
-        index_status: Optional[str]
+        index_status: Optional[str],
     ) -> Dict[str, Any]:
         """
         Calculate impact score and severity.
-        
+
         Severity levels:
         - LOW: No Money Site chain, low tier only
         - MEDIUM: Tier 2+, Money Site indirect
@@ -382,9 +409,9 @@ class SeoContextEnricher:
             "reaches_money_site": reaches_money_site,
             "highest_tier_impacted": highest_tier,
             "node_role": node_role,
-            "index_status": index_status
+            "index_status": index_status,
         }
-        
+
         # Determine severity
         if node_role == "main":
             score["severity"] = "CRITICAL"
@@ -396,7 +423,7 @@ class SeoContextEnricher:
             score["severity"] = "HIGH"
         elif reaches_money_site or (highest_tier is not None and highest_tier <= 3):
             score["severity"] = "MEDIUM"
-        
+
         return score
 
 

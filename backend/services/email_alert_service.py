@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 # Check if resend is available
 try:
     import resend
+
     RESEND_AVAILABLE = True
 except ImportError:
     RESEND_AVAILABLE = False
@@ -38,86 +39,94 @@ class EmailAlertService:
     Email notification service for domain monitoring alerts.
     Only sends for HIGH/CRITICAL severity.
     """
-    
+
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
         self._initialized = False
         self._api_key = None
         self._sender_email = None
-    
+
     async def _init_resend(self) -> bool:
         """Initialize Resend SDK with API key from environment or settings"""
         if not RESEND_AVAILABLE:
             logger.warning("Resend package not available")
             return False
-        
+
         # Try environment variable first
         api_key = os.environ.get("RESEND_API_KEY")
         sender_email = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
-        
+
         # Fallback to database settings
         if not api_key:
-            settings = await self.db.settings.find_one({"key": "email_alerts"}, {"_id": 0})
+            settings = await self.db.settings.find_one(
+                {"key": "email_alerts"}, {"_id": 0}
+            )
             if settings:
                 api_key = settings.get("resend_api_key")
                 sender_email = settings.get("sender_email", sender_email)
-        
+
         if not api_key:
             logger.warning("Resend API key not configured")
             return False
-        
+
         resend.api_key = api_key
         self._api_key = api_key
         self._sender_email = sender_email
         self._initialized = True
         return True
-    
+
     async def get_email_settings(self) -> Dict[str, Any]:
         """Get email alert configuration"""
         settings = await self.db.settings.find_one({"key": "email_alerts"}, {"_id": 0})
-        
+
         if not settings:
             return {
                 "enabled": False,
                 "configured": False,
                 "global_admin_emails": [],
                 "severity_threshold": "high",
-                "include_network_managers": True
+                "include_network_managers": True,
             }
-        
+
         return {
             "enabled": settings.get("enabled", False),
             "configured": bool(settings.get("resend_api_key")),
             "global_admin_emails": settings.get("global_admin_emails", []),
             "severity_threshold": settings.get("severity_threshold", "high"),
             "include_network_managers": settings.get("include_network_managers", True),
-            "sender_email": settings.get("sender_email", "onboarding@resend.dev")
+            "sender_email": settings.get("sender_email", "onboarding@resend.dev"),
         }
-    
+
     async def update_email_settings(self, updates: Dict[str, Any]) -> Dict[str, Any]:
         """Update email alert configuration"""
         current = await self.get_email_settings()
-        
+
         # Merge updates
         for key, value in updates.items():
-            if key in ["enabled", "resend_api_key", "global_admin_emails", 
-                       "severity_threshold", "include_network_managers", "sender_email"]:
+            if key in [
+                "enabled",
+                "resend_api_key",
+                "global_admin_emails",
+                "severity_threshold",
+                "include_network_managers",
+                "sender_email",
+            ]:
                 current[key] = value
-        
+
         current["updated_at"] = datetime.now(timezone.utc).isoformat()
-        
+
         await self.db.settings.update_one(
             {"key": "email_alerts"},
             {"$set": {**current, "key": "email_alerts"}},
-            upsert=True
+            upsert=True,
         )
-        
+
         # Re-initialize if API key changed
         if "resend_api_key" in updates:
             self._initialized = False
-        
+
         return await self.get_email_settings()
-    
+
     async def _get_recipients(self, network_id: Optional[str] = None) -> List[str]:
         """
         Get email recipients for an alert.
@@ -125,59 +134,59 @@ class EmailAlertService:
         """
         settings = await self.get_email_settings()
         recipients = set()
-        
+
         # Add global admin emails
         global_emails = settings.get("global_admin_emails", [])
         for email in global_emails:
             if email and "@" in email:
                 recipients.add(email.strip().lower())
-        
+
         # Add network manager emails if enabled and network_id provided
         if settings.get("include_network_managers", True) and network_id:
             network = await self.db.seo_networks.find_one(
-                {"id": network_id}, 
-                {"_id": 0, "manager_ids": 1}
+                {"id": network_id}, {"_id": 0, "manager_ids": 1}
             )
             if network and network.get("manager_ids"):
                 # Get manager emails
                 managers = await self.db.users.find(
-                    {"id": {"$in": network["manager_ids"]}},
-                    {"_id": 0, "email": 1}
+                    {"id": {"$in": network["manager_ids"]}}, {"_id": 0, "email": 1}
                 ).to_list(100)
                 for manager in managers:
                     if manager.get("email"):
                         recipients.add(manager["email"].strip().lower())
-        
+
         return list(recipients)
-    
+
     def _should_send_email(self, severity: str, settings: Dict[str, Any]) -> bool:
         """Check if email should be sent based on severity threshold"""
         if not settings.get("enabled", False):
             return False
-        
+
         severity_levels = {"low": 1, "medium": 2, "high": 3, "critical": 4}
         threshold = settings.get("severity_threshold", "high")
-        
+
         alert_level = severity_levels.get(severity.lower(), 0)
         threshold_level = severity_levels.get(threshold.lower(), 3)
-        
+
         return alert_level >= threshold_level
-    
-    def _format_expiration_email(self, domain: Dict[str, Any], days_remaining: int) -> tuple:
+
+    def _format_expiration_email(
+        self, domain: Dict[str, Any], days_remaining: int
+    ) -> tuple:
         """Format expiration alert email (subject, html_content)"""
         severity = "CRITICAL" if days_remaining <= 3 else "HIGH"
         domain_name = domain.get("domain_name", "Unknown")
         brand_name = domain.get("brand_name", "N/A")
-        
+
         if days_remaining < 0:
             status = f"EXPIRED ({abs(days_remaining)} days ago)"
         elif days_remaining == 0:
             status = "EXPIRES TODAY"
         else:
             status = f"Expires in {days_remaining} days"
-        
+
         subject = f"[{severity}] Domain Expiration Alert: {domain_name}"
-        
+
         # SEO context
         seo = domain.get("seo", {})
         seo_section = ""
@@ -192,7 +201,7 @@ class EmailAlertService:
                     <td style="padding: 8px; border-bottom: 1px solid #333;">{ctx.get('tier_label', 'N/A')}</td>
                 </tr>
                 """
-            
+
             impact = seo.get("impact_score", {})
             seo_section = f"""
             <div style="margin-top: 20px;">
@@ -214,7 +223,7 @@ class EmailAlertService:
                 </div>
             </div>
             """
-        
+
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -265,14 +274,16 @@ class EmailAlertService:
         </body>
         </html>
         """
-        
+
         return subject, html_content
-    
-    def _format_availability_email(self, domain: Dict[str, Any], error_message: str, alert_type: str) -> tuple:
+
+    def _format_availability_email(
+        self, domain: Dict[str, Any], error_message: str, alert_type: str
+    ) -> tuple:
         """Format availability alert email (subject, html_content)"""
         domain_name = domain.get("domain_name", "Unknown")
         brand_name = domain.get("brand_name", "N/A")
-        
+
         if alert_type == "down":
             severity = "CRITICAL"
             status = "DOWN"
@@ -281,9 +292,9 @@ class EmailAlertService:
             severity = "HIGH"
             status = "SOFT BLOCKED"
             status_color = "#f59e0b"
-        
+
         subject = f"[{severity}] Domain {status}: {domain_name}"
-        
+
         # SEO context
         seo = domain.get("seo", {})
         seo_section = ""
@@ -298,7 +309,7 @@ class EmailAlertService:
                     <td style="padding: 8px; border-bottom: 1px solid #333;">{ctx.get('tier_label', 'N/A')}</td>
                 </tr>
                 """
-            
+
             impact = seo.get("impact_score", {})
             seo_section = f"""
             <div style="margin-top: 20px;">
@@ -320,7 +331,7 @@ class EmailAlertService:
                 </div>
             </div>
             """
-        
+
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -371,103 +382,118 @@ class EmailAlertService:
         </body>
         </html>
         """
-        
+
         return subject, html_content
-    
+
     async def send_expiration_alert(
-        self, 
-        domain: Dict[str, Any], 
+        self,
+        domain: Dict[str, Any],
         days_remaining: int,
-        network_id: Optional[str] = None
+        network_id: Optional[str] = None,
     ) -> bool:
         """
         Send email alert for domain expiration.
         Only sends for HIGH/CRITICAL severity (≤7 days).
         """
         settings = await self.get_email_settings()
-        
+
         # Determine severity
-        severity = "critical" if days_remaining <= 3 else "high" if days_remaining <= 7 else "medium"
-        
+        severity = (
+            "critical"
+            if days_remaining <= 3
+            else "high" if days_remaining <= 7 else "medium"
+        )
+
         if not self._should_send_email(severity, settings):
-            logger.debug(f"Email alert skipped for {domain.get('domain_name')} - severity {severity} below threshold")
+            logger.debug(
+                f"Email alert skipped for {domain.get('domain_name')} - severity {severity} below threshold"
+            )
             return False
-        
+
         if not self._initialized:
             if not await self._init_resend():
                 return False
-        
+
         recipients = await self._get_recipients(network_id)
         if not recipients:
             logger.warning("No email recipients configured for expiration alert")
             return False
-        
+
         subject, html_content = self._format_expiration_email(domain, days_remaining)
-        
+
         return await self._send_email(recipients, subject, html_content)
-    
+
     async def send_availability_alert(
         self,
         domain: Dict[str, Any],
         error_message: str,
         alert_type: str,  # "down" or "soft_blocked"
-        network_id: Optional[str] = None
+        network_id: Optional[str] = None,
     ) -> bool:
         """
         Send email alert for domain availability issues.
         DOWN = CRITICAL, SOFT_BLOCKED = HIGH
         """
         settings = await self.get_email_settings()
-        
+
         # Determine severity
         severity = "critical" if alert_type == "down" else "high"
-        
+
         if not self._should_send_email(severity, settings):
-            logger.debug(f"Email alert skipped for {domain.get('domain_name')} - severity {severity} below threshold")
+            logger.debug(
+                f"Email alert skipped for {domain.get('domain_name')} - severity {severity} below threshold"
+            )
             return False
-        
+
         if not self._initialized:
             if not await self._init_resend():
                 return False
-        
+
         recipients = await self._get_recipients(network_id)
         if not recipients:
             logger.warning("No email recipients configured for availability alert")
             return False
-        
-        subject, html_content = self._format_availability_email(domain, error_message, alert_type)
-        
+
+        subject, html_content = self._format_availability_email(
+            domain, error_message, alert_type
+        )
+
         return await self._send_email(recipients, subject, html_content)
-    
-    async def _send_email(self, recipients: List[str], subject: str, html_content: str) -> bool:
+
+    async def _send_email(
+        self, recipients: List[str], subject: str, html_content: str
+    ) -> bool:
         """Send email via Resend API (non-blocking)"""
         if not RESEND_AVAILABLE or not self._initialized:
             return False
-        
+
         try:
             params = {
                 "from": self._sender_email,
                 "to": recipients,
                 "subject": subject,
-                "html": html_content
+                "html": html_content,
             }
-            
+
             # Run sync SDK in thread to keep FastAPI non-blocking
             await asyncio.to_thread(resend.Emails.send, params)
-            
+
             logger.info(f"Email sent to {recipients}: {subject}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to send email: {e}")
             return False
-    
+
     async def send_test_email(self, recipient: str) -> Dict[str, Any]:
         """Send a test email to verify configuration"""
         if not self._initialized:
             if not await self._init_resend():
-                return {"success": False, "error": "Resend not configured. Add API key first."}
-        
+                return {
+                    "success": False,
+                    "error": "Resend not configured. Add API key first.",
+                }
+
         subject = "[TEST] SEO-NOC Email Alert System"
         html_content = """
         <!DOCTYPE html>
@@ -497,13 +523,16 @@ class EmailAlertService:
         </body>
         </html>
         """
-        
+
         success = await self._send_email([recipient], subject, html_content)
-        
+
         if success:
             return {"success": True, "message": f"Test email sent to {recipient}"}
         else:
-            return {"success": False, "error": "Failed to send test email. Check API key and recipient."}
+            return {
+                "success": False,
+                "error": "Failed to send test email. Check API key and recipient.",
+            }
 
 
 # Singleton instance

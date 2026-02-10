@@ -29,7 +29,7 @@ ACTIVITY_TYPE_LABELS = {
     "schema": "Schema Markup",
     "internal-link": "Internal Linking",
     "experiment": "SEO Experiment",
-    "other": "Lainnya"
+    "other": "Lainnya",
 }
 
 # Status labels in Bahasa Indonesia
@@ -37,7 +37,7 @@ STATUS_LABELS = {
     "planned": "Direncanakan",
     "in_progress": "Sedang Berjalan",
     "completed": "Selesai",
-    "reverted": "Dibatalkan"
+    "reverted": "Dibatalkan",
 }
 
 # Impact labels in Bahasa Indonesia
@@ -45,7 +45,7 @@ IMPACT_LABELS = {
     "ranking": "Ranking",
     "authority": "Authority",
     "crawl": "Crawl",
-    "conversion": "Conversion"
+    "conversion": "Conversion",
 }
 
 # Scope labels
@@ -53,16 +53,16 @@ SCOPE_LABELS = {
     "money_site": "Money Site",
     "domain": "Domain",
     "path": "Path",
-    "whole_network": "Seluruh Network"
+    "whole_network": "Seluruh Network",
 }
 
 
 class SeoOptimizationTelegramService:
     """Service for sending SEO Optimization notifications to Telegram"""
-    
+
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
-    
+
     async def _get_telegram_config(self) -> Optional[Dict[str, Any]]:
         """
         Get Telegram configuration for SEO Optimizations.
@@ -70,27 +70,33 @@ class SeoOptimizationTelegramService:
         Falls back to main monitoring channel if not configured.
         """
         # Try SEO-specific Telegram config first
-        seo_config = await self.db.settings.find_one({"key": "telegram_seo"}, {"_id": 0})
+        seo_config = await self.db.settings.find_one(
+            {"key": "telegram_seo"}, {"_id": 0}
+        )
         if seo_config and seo_config.get("bot_token") and seo_config.get("chat_id"):
             if seo_config.get("enabled", True):
                 return seo_config
             else:
                 logger.info("SEO Telegram notifications are disabled")
                 return None
-        
+
         # Fallback to main monitoring channel
-        logger.warning("SEO Telegram not configured, falling back to main monitoring channel")
+        logger.warning(
+            "SEO Telegram not configured, falling back to main monitoring channel"
+        )
         main_config = await self.db.settings.find_one({"key": "telegram"}, {"_id": 0})
         if main_config and main_config.get("bot_token") and main_config.get("chat_id"):
             return main_config
-        
+
         logger.warning("No Telegram configuration found for SEO Optimizations")
         return None
-    
-    async def _send_telegram_message(self, message: str, topic_type: str = None) -> bool:
+
+    async def _send_telegram_message(
+        self, message: str, topic_type: str = None
+    ) -> bool:
         """
         Send message to Telegram with optional forum topic routing.
-        
+
         topic_type can be:
         - "seo_change" → Uses seo_change_topic_id
         - "seo_optimization" → Uses seo_optimization_topic_id
@@ -101,57 +107,63 @@ class SeoOptimizationTelegramService:
         config = await self._get_telegram_config()
         if not config:
             return False
-        
+
         bot_token = config.get("bot_token")
         chat_id = config.get("chat_id")
-        
+
         if not bot_token or not chat_id:
             logger.warning("Telegram bot_token or chat_id not configured")
             return False
-        
+
         # Determine message_thread_id for forum topic routing
         message_thread_id = None
         if config.get("enable_topic_routing") and topic_type:
             topic_id_field = f"{topic_type}_topic_id"
             message_thread_id = config.get(topic_id_field)
             if not message_thread_id:
-                logger.warning(f"Topic routing enabled but {topic_id_field} not configured, sending to General")
-        
+                logger.warning(
+                    f"Topic routing enabled but {topic_id_field} not configured, sending to General"
+                )
+
         try:
             payload = {
                 "chat_id": chat_id,
                 "text": message,
                 "parse_mode": "HTML",
-                "disable_web_page_preview": True
+                "disable_web_page_preview": True,
             }
-            
+
             # Add message_thread_id for forum topic
             if message_thread_id:
                 payload["message_thread_id"] = int(message_thread_id)
-            
+
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"https://api.telegram.org/bot{bot_token}/sendMessage",
                     json=payload,
-                    timeout=30.0
+                    timeout=30.0,
                 )
-                
+
                 if response.status_code == 200:
                     topic_info = f" (topic: {topic_type})" if message_thread_id else ""
-                    logger.info(f"SEO Telegram notification sent successfully{topic_info}")
+                    logger.info(
+                        f"SEO Telegram notification sent successfully{topic_info}"
+                    )
                     return True
                 else:
-                    logger.error(f"Telegram API error: {response.status_code} - {response.text}")
+                    logger.error(
+                        f"Telegram API error: {response.status_code} - {response.text}"
+                    )
                     return False
         except Exception as e:
             logger.error(f"Failed to send Telegram notification: {e}")
             return False
-    
+
     async def send_optimization_created_notification(
         self,
         optimization: Dict[str, Any],
         network: Dict[str, Any],
-        brand: Dict[str, Any]
+        brand: Dict[str, Any],
     ) -> bool:
         """
         Send notification when a new optimization is created.
@@ -161,30 +173,37 @@ class SeoOptimizationTelegramService:
             tz_str, tz_label = await get_system_timezone(self.db)
             local_time = format_to_local_time(
                 optimization.get("created_at", datetime.now(timezone.utc).isoformat()),
-                tz_str, tz_label
+                tz_str,
+                tz_label,
             )
-            
+
             # Get creator info
             created_by = optimization.get("created_by", {})
             creator_name = created_by.get("display_name", "Unknown")
             creator_email = created_by.get("email", "")
-            
+
             # Format activity type
             activity_type = optimization.get("activity_type", "other")
-            activity_label = ACTIVITY_TYPE_LABELS.get(activity_type, activity_type.replace("_", " ").title())
-            
+            activity_label = ACTIVITY_TYPE_LABELS.get(
+                activity_type, activity_type.replace("_", " ").title()
+            )
+
             # Format status
             status = optimization.get("status", "completed")
             status_label = STATUS_LABELS.get(status, status.replace("_", " ").title())
-            
+
             # Format affected targets
             targets = optimization.get("affected_targets", [])
-            targets_text = "\n".join([f"  • {t}" for t in targets]) if targets else "  (Tidak ada target spesifik)"
-            
+            targets_text = (
+                "\n".join([f"  • {t}" for t in targets])
+                if targets
+                else "  (Tidak ada target spesifik)"
+            )
+
             # Format keywords
             keywords = optimization.get("keywords", [])
             keywords_text = ", ".join(keywords) if keywords else "(Tidak ada)"
-            
+
             # Format report URLs with dates
             report_urls = optimization.get("report_urls", [])
             reports_text_lines = []
@@ -193,18 +212,24 @@ class SeoOptimizationTelegramService:
                     url = r.get("url", "")
                     start_date = r.get("start_date", "")
                     if start_date:
-                        reports_text_lines.append(f"  • {url}\n    📅 Tanggal: {start_date}")
+                        reports_text_lines.append(
+                            f"  • {url}\n    📅 Tanggal: {start_date}"
+                        )
                     else:
                         reports_text_lines.append(f"  • {url}")
                 else:
                     reports_text_lines.append(f"  • {r}")
-            reports_text = "\n".join(reports_text_lines) if reports_text_lines else "  (Tidak ada)"
-            
+            reports_text = (
+                "\n".join(reports_text_lines) if reports_text_lines else "  (Tidak ada)"
+            )
+
             # Format expected impact
             impacts = optimization.get("expected_impact", [])
             impact_labels = [IMPACT_LABELS.get(i, i) for i in impacts]
-            impact_text = ", ".join(impact_labels) if impact_labels else "(Tidak ditentukan)"
-            
+            impact_text = (
+                ", ".join(impact_labels) if impact_labels else "(Tidak ditentukan)"
+            )
+
             # Build message
             message = f"""📘 <b>SEO OPTIMIZATION ACTIVITY</b>
 
@@ -239,22 +264,30 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
 
 ━━━━━━━━━━━━━━━━━━━━━━
 <i>⚠️ Catatan: Tidak ada perubahan struktur SEO</i>"""
-            
-            success = await self._send_telegram_message(message, topic_type="seo_optimization")
-            
+
+            success = await self._send_telegram_message(
+                message, topic_type="seo_optimization"
+            )
+
             if success:
                 # Update optimization with notification timestamp
                 await self.db.seo_optimizations.update_one(
                     {"id": optimization["id"]},
-                    {"$set": {"telegram_notified_at": datetime.now(timezone.utc).isoformat()}}
+                    {
+                        "$set": {
+                            "telegram_notified_at": datetime.now(
+                                timezone.utc
+                            ).isoformat()
+                        }
+                    },
                 )
-            
+
             return success
-            
+
         except Exception as e:
             logger.error(f"Failed to send optimization created notification: {e}")
             return False
-    
+
     async def send_status_change_notification(
         self,
         optimization: Dict[str, Any],
@@ -262,7 +295,7 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
         brand: Dict[str, Any],
         old_status: str,
         new_status: str,
-        changed_by: Dict[str, Any]
+        changed_by: Dict[str, Any],
     ) -> bool:
         """
         Send notification when optimization status changes to COMPLETED or REVERTED.
@@ -270,26 +303,25 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
         # Only notify for completed or reverted
         if new_status not in ["completed", "reverted"]:
             return True  # Not an error, just not notifying
-        
+
         try:
             # Get timezone settings
             tz_str, tz_label = await get_system_timezone(self.db)
             local_time = format_to_local_time(
-                datetime.now(timezone.utc).isoformat(),
-                tz_str, tz_label
+                datetime.now(timezone.utc).isoformat(), tz_str, tz_label
             )
-            
+
             # Get user info
             changer_name = changed_by.get("name", changed_by.get("email", "Unknown"))
             changer_email = changed_by.get("email", "")
-            
+
             # Format status
             old_status_label = STATUS_LABELS.get(old_status, old_status)
             new_status_label = STATUS_LABELS.get(new_status, new_status)
-            
+
             # Status emoji
             status_emoji = "✅" if new_status == "completed" else "🔄"
-            
+
             message = f"""{status_emoji} <b>SEO OPTIMIZATION STATUS UPDATE</b>
 
 <b>{changer_name}</b> telah mengubah status aktivitas optimasi SEO
@@ -307,29 +339,37 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
 
 ━━━━━━━━━━━━━━━━━━━━━━
 <i>⚠️ Catatan: Tidak ada perubahan struktur SEO</i>"""
-            
-            success = await self._send_telegram_message(message, topic_type="seo_optimization")
-            
+
+            success = await self._send_telegram_message(
+                message, topic_type="seo_optimization"
+            )
+
             if success:
                 # Update optimization with notification timestamp
                 await self.db.seo_optimizations.update_one(
                     {"id": optimization["id"]},
-                    {"$set": {"telegram_notified_at": datetime.now(timezone.utc).isoformat()}}
+                    {
+                        "$set": {
+                            "telegram_notified_at": datetime.now(
+                                timezone.utc
+                            ).isoformat()
+                        }
+                    },
                 )
-            
+
             return success
-            
+
         except Exception as e:
             logger.error(f"Failed to send status change notification: {e}")
             return False
-    
+
     async def send_complaint_notification(
         self,
         complaint: Dict[str, Any],
         optimization: Dict[str, Any],
         network: Dict[str, Any],
         brand: Dict[str, Any],
-        responsible_users: List[Dict[str, Any]]
+        responsible_users: List[Dict[str, Any]],
     ) -> bool:
         """
         Send notification when Super Admin creates a complaint on an optimization.
@@ -340,13 +380,14 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
             tz_str, tz_label = await get_system_timezone(self.db)
             local_time = format_to_local_time(
                 complaint.get("created_at", datetime.now(timezone.utc).isoformat()),
-                tz_str, tz_label
+                tz_str,
+                tz_label,
             )
-            
+
             # Get creator info
             created_by = complaint.get("created_by", {})
             creator_name = created_by.get("display_name", "Unknown")
-            
+
             # Format tagged users
             tagged_users_text = ""
             if responsible_users:
@@ -356,32 +397,46 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
                         tags.append(f"@{user['telegram_username']}")
                     else:
                         # Fallback to email if no Telegram username
-                        tags.append(f"{user.get('name', user.get('email', 'Unknown'))} (no Telegram)")
+                        tags.append(
+                            f"{user.get('name', user.get('email', 'Unknown'))} (no Telegram)"
+                        )
                 tagged_users_text = "\n".join([f"  • {tag}" for tag in tags])
             else:
                 tagged_users_text = "  (Tidak ada pengguna yang ditag)"
-            
+
             # Format activity type
             activity_type = optimization.get("activity_type", "other")
-            activity_label = ACTIVITY_TYPE_LABELS.get(activity_type, activity_type.replace("_", " ").title())
-            
+            activity_label = ACTIVITY_TYPE_LABELS.get(
+                activity_type, activity_type.replace("_", " ").title()
+            )
+
             # Format status
             status = optimization.get("status", "unknown")
             status_label = STATUS_LABELS.get(status, status.replace("_", " ").title())
-            
+
             # Format scope
             scope = optimization.get("affected_scope", "domain")
             scope_label = SCOPE_LABELS.get(scope, scope.replace("_", " ").title())
-            
+
             # Format priority
             priority = complaint.get("priority", "medium")
-            priority_emoji = {"low": "🔵", "medium": "🟡", "high": "🔴"}.get(priority, "🟡")
-            priority_label = {"low": "Rendah", "medium": "Sedang", "high": "Tinggi"}.get(priority, "Sedang")
-            
+            priority_emoji = {"low": "🔵", "medium": "🟡", "high": "🔴"}.get(
+                priority, "🟡"
+            )
+            priority_label = {
+                "low": "Rendah",
+                "medium": "Sedang",
+                "high": "Tinggi",
+            }.get(priority, "Sedang")
+
             # Format report URLs
             report_urls = complaint.get("report_urls", [])
-            reports_text = "\n".join([f"  • {url}" for url in report_urls]) if report_urls else "  (Tidak ada)"
-            
+            reports_text = (
+                "\n".join([f"  • {url}" for url in report_urls])
+                if report_urls
+                else "  (Tidak ada)"
+            )
+
             message = f"""🚨 <b>SEO OPTIMIZATION COMPLAINT</b>
 
 <b>{creator_name}</b> telah mengajukan komplain
@@ -410,29 +465,37 @@ pada SEO Network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{bran
 ━━━━━━━━━━━━━━━━━━━━━━
 ⚠️ <b>Action Required:</b>
 <i>Please review and respond to this complaint.</i>"""
-            
-            success = await self._send_telegram_message(message, topic_type="seo_complaint")
-            
+
+            success = await self._send_telegram_message(
+                message, topic_type="seo_complaint"
+            )
+
             if success:
                 # Update complaint with notification timestamp
                 await self.db.optimization_complaints.update_one(
                     {"id": complaint["id"]},
-                    {"$set": {"telegram_notified_at": datetime.now(timezone.utc).isoformat()}}
+                    {
+                        "$set": {
+                            "telegram_notified_at": datetime.now(
+                                timezone.utc
+                            ).isoformat()
+                        }
+                    },
                 )
-            
+
             return success
-            
+
         except Exception as e:
             logger.error(f"Failed to send complaint notification: {e}")
             return False
-    
+
     async def send_in_progress_reminder(
         self,
         optimization: Dict[str, Any],
         network: Dict[str, Any],
         brand: Dict[str, Any],
         users: List[Dict[str, Any]],
-        days_in_progress: int
+        days_in_progress: int,
     ) -> bool:
         """
         Send reminder notification for optimizations that have been in_progress for too long.
@@ -442,20 +505,25 @@ pada SEO Network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{bran
             # Get timezone settings
             tz_str, tz_label = await get_system_timezone(self.db)
             local_time = format_to_local_time(
-                datetime.now(timezone.utc).isoformat(),
-                tz_str, tz_label
+                datetime.now(timezone.utc).isoformat(), tz_str, tz_label
             )
-            
+
             # Build user tags
             tags = []
             for user in users:
                 if user.get("telegram_username"):
                     tags.append(f"@{user['telegram_username']}")
                 else:
-                    tags.append(f"{user.get('name', user.get('email', 'Unknown'))} (no Telegram)")
-            
-            tags_text = "\n".join([f"  • {tag}" for tag in tags]) if tags else "  (Tidak ada pengguna yang ditag)"
-            
+                    tags.append(
+                        f"{user.get('name', user.get('email', 'Unknown'))} (no Telegram)"
+                    )
+
+            tags_text = (
+                "\n".join([f"  • {tag}" for tag in tags])
+                if tags
+                else "  (Tidak ada pengguna yang ditag)"
+            )
+
             message = f"""⏰ <b>SEO OPTIMIZATION REMINDER</b>
 
 <b>Aktivitas optimasi masih berstatus IN PROGRESS</b>
@@ -477,19 +545,21 @@ selama <b>{days_in_progress} hari</b>.
 ━━━━━━━━━━━━━━━━━━━━━━
 <i>⚠️ Mohon segera update status optimasi ini.</i>
 <i>Reminder akan terus dikirim sampai status diubah.</i>"""
-            
-            success = await self._send_telegram_message(message, topic_type="seo_reminder")
+
+            success = await self._send_telegram_message(
+                message, topic_type="seo_reminder"
+            )
             return success
-            
+
         except Exception as e:
             logger.error(f"Failed to send in-progress reminder notification: {e}")
             return False
-    
+
     async def send_message(self, message: str, topic_type: str = None) -> bool:
         """
         Public method to send a custom Telegram message.
         Used by other parts of the system to send notifications.
-        
+
         topic_type: Optional forum topic routing (seo_change, seo_optimization, seo_complaint, seo_reminder)
         """
         return await self._send_telegram_message(message, topic_type=topic_type)
@@ -498,7 +568,7 @@ selama <b>{days_in_progress} hari</b>.
         self,
         complaint: Dict[str, Any],
         network_name: str,
-        responsible_users: List[Dict[str, Any]]
+        responsible_users: List[Dict[str, Any]],
     ) -> bool:
         """
         Send notification when Super Admin creates a project-level complaint.
@@ -509,13 +579,14 @@ selama <b>{days_in_progress} hari</b>.
             tz_str, tz_label = await get_system_timezone(self.db)
             local_time = format_to_local_time(
                 complaint.get("created_at", datetime.now(timezone.utc).isoformat()),
-                tz_str, tz_label
+                tz_str,
+                tz_label,
             )
-            
+
             # Get creator info
             created_by = complaint.get("created_by", {})
             creator_name = created_by.get("name", created_by.get("email", "Unknown"))
-            
+
             # Format tagged users
             tagged_users_text = ""
             if responsible_users:
@@ -524,29 +595,41 @@ selama <b>{days_in_progress} hari</b>.
                     if user.get("telegram_username"):
                         tags.append(f"@{user['telegram_username']}")
                     else:
-                        tags.append(f"{user.get('name', user.get('email', 'Unknown'))} (no Telegram)")
+                        tags.append(
+                            f"{user.get('name', user.get('email', 'Unknown'))} (no Telegram)"
+                        )
                 tagged_users_text = "\n".join([f"  • {tag}" for tag in tags])
             else:
                 tagged_users_text = "  (Tidak ada pengguna yang ditag)"
-            
+
             # Format priority
             priority = complaint.get("priority", "medium")
-            priority_emoji = {"low": "🔵", "medium": "🟡", "high": "🔴"}.get(priority, "🟡")
-            priority_label = {"low": "Rendah", "medium": "Sedang", "high": "Tinggi"}.get(priority, "Sedang")
-            
+            priority_emoji = {"low": "🔵", "medium": "🟡", "high": "🔴"}.get(
+                priority, "🟡"
+            )
+            priority_label = {
+                "low": "Rendah",
+                "medium": "Sedang",
+                "high": "Tinggi",
+            }.get(priority, "Sedang")
+
             # Format category
             category = complaint.get("category") or "Umum"
             category_label = {
                 "communication": "Komunikasi",
                 "deadline": "Deadline",
                 "quality": "Kualitas",
-                "process": "Proses"
+                "process": "Proses",
             }.get(category, category.title())
-            
+
             # Format report URLs
             report_urls = complaint.get("report_urls", [])
-            reports_text = "\n".join([f"  • {url}" for url in report_urls]) if report_urls else "  (Tidak ada)"
-            
+            reports_text = (
+                "\n".join([f"  • {url}" for url in report_urls])
+                if report_urls
+                else "  (Tidak ada)"
+            )
+
             message = f"""🚨 <b>PROJECT-LEVEL COMPLAINT</b>
 
 <b>{creator_name}</b> telah mengajukan komplain
@@ -574,18 +657,26 @@ tetapi menyangkut pengelolaan proyek secara keseluruhan.</i>
 ━━━━━━━━━━━━━━━━━━━━━━
 ⚠️ <b>Action Required:</b>
 <i>Please review and respond to this complaint.</i>"""
-            
-            success = await self._send_telegram_message(message, topic_type="seo_complaint")
-            
+
+            success = await self._send_telegram_message(
+                message, topic_type="seo_complaint"
+            )
+
             if success:
                 # Update complaint with notification timestamp
                 await self.db.project_complaints.update_one(
                     {"id": complaint["id"]},
-                    {"$set": {"telegram_notified_at": datetime.now(timezone.utc).isoformat()}}
+                    {
+                        "$set": {
+                            "telegram_notified_at": datetime.now(
+                                timezone.utc
+                            ).isoformat()
+                        }
+                    },
                 )
-            
+
             return success
-            
+
         except Exception as e:
             logger.error(f"Failed to send project complaint notification: {e}")
             return False

@@ -1,168 +1,210 @@
-<analysis>**original_problem_statement:**
-The user wants to enhance an SEO monitoring application with several new features. The initial request was to build an Access Summary Panel to display key information like manager count, open complaints, and last optimization date on network cards and detail pages. This was followed by a series of feature requests, including:
-- A UI for manually creating and managing project-level complaints.
-- An enhancement to the Telegram notification system to support topic-based routing for different event types (SEO changes, optimizations, complaints, reminders).
-- A cron-based scheduler to send reminders for optimizations that are in-progress for too long.
-- A complete overhaul of the domain monitoring system to make it SEO-aware, including showing the full SEO structure chain, downstream impact, and a calculated impact score for each alert. This new system was to use a separate, dedicated Telegram group.
-- Several smaller P1 tasks: a UI for per-network reminder overrides, a conflict detection UI in an Alert Center, and a Telegram notification for new network creation.
-- Finally, a request to completely remove the old, now-redundant, legacy Monitoring Alerts feature.
+<analysis>original_problem_statement:
+The user initially requested the removal of legacy monitoring features. The scope then expanded to include several new features and bug fixes:
+1.  **Feature**: Implement Email Notifications for critical domain alerts using the Resend service.
+2.  **Feature**: Implement a Weekly Digest Email for admins, summarizing domain health.
+3.  **Feature**: Add a  field to the user registration and management UI.
+4.  **Bug/Feature**: Implement and correct Role-Based Access Control (RBAC):
+    *    role should only see and manage projects/networks for their assigned brands.
+    *    role should have read-only access to the SEO network menu (no adding/editing nodes or optimizations).
+5.  **Bug**: Fix an issue where saving a new domain was failing.
+6.  **Bug**: Fix an issue where dashboard statistics were not filtered by brand for non-super\_admin users.
+7.  **Bug**: Investigate and fix an error occurring when updating an SEO network.
+
+PRODUCT REQUIREMENTS:
+-   **Email Notifications (Domain Monitoring)**:
+    -   **Recipient**: Global admin emails + per-network managers.
+    -   **Provider**: Resend.
+    -   **Trigger**: HIGH/CRITICAL severity alerts only.
+-   **Weekly Digest Email**:
+    -   **Recipients**: Global admins only.
+    -   **Schedule**: Weekly, configurable.
+    -   **Content**: Domains expiring soon, down domains, soft-blocked domains, SEO impact summary.
+-   **SEO Network Permissions**:
+    -    role cannot add/edit nodes or optimizations.  and  can.
+-   **User Management**:
+    -   The  should be part of the user model and manageable in the UI.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The project is a full-stack web application with a FastAPI backend and a React frontend. It's designed for managing SEO networks, which consist of interconnected domain nodes. Key functionalities include:
-- Creating/viewing SEO networks and their graphical structure.
-- Managing SEO optimizations and a multi-level complaint system (both optimization-level and project-level).
-- A sophisticated, two-channel Telegram notification system: one for SEO-related events (with topic routing) and another for SEO-aware domain monitoring alerts.
-- A global settings page for configuring Telegram bots and a per-network settings page for behavior overrides (e.g., reminder intervals).
-- An alert center that displays network configuration conflicts.
+The application is an SEO and domain monitoring tool. It features a FastAPI backend and a React frontend. Key functionalities include:
+-   Management of Brands, Asset Domains, and SEO Networks.
+-   A role-based access system with , , and  roles.
+-   Dashboard with stats on domains and networks.
+-   Notification system via Telegram for real-time alerts.
+-   Email notification system (via Resend) for critical alerts and a weekly digest summary.
+-   An Alert Center for viewing SEO conflicts.
 
 **Last working item**:
-    - Last item agent was working: The agent was executing the user's request to remove the legacy Monitoring Alerts feature, which has been made redundant by the new Domain Monitoring system. The agent started by removing the UI elements from the frontend  file, including the tab, content panel, and was in the process of removing the associated state and handler functions.
-    - Status: IN PROGRESS
-    - Agent Testing Done: N
-    - Which testing method agent to use? both
-    - User Testing Done: N
+-   Last item agent was working: The agent was debugging an issue reported by the user: In the SEO network project menu, there is still an error or it failed to update. The agent fixed a bug in the  update endpoint which was causing an internal server error. The agent then moved on to test adding a new node as a manager and was investigating a potential issue with the  API endpoint response or domain access permissions for the manager role.
+-   Status: IN PROGRESS
+-   Agent Testing Done: N
+-   Which testing method agent to use? The agent should first use  to manually test the  endpoint as the manager user to verify the response format and data. After fixing the issue, the frontend testing agent should be used to perform a full test of adding/editing/deleting nodes in the SEO Network UI as a manager.
+-   User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1:  (description with priority order)
-      - A pre-existing linter warning for an unused variable in an exception block in the backend code keeps appearing.
-  
-  Issues Detail:
-  - Issue 1: 
-     - **Description**: The backend linter () consistently flags an unused  variable in a  block within . The agent has correctly identified this as a pre-existing, low-priority issue.
-     - **Attempted fixes**: None. The agent has acknowledged and bypassed it in each run.
-     - **Next debug checklist**: 
-       1. Locate the line flagged by the linter in .
-       2. Rename the variable to  or  to signal to the linter that it is intentionally unused.
-     - **Why fix this issue and what will be achieved with the fix?**: To clean up the linter output so that it only reports new and relevant issues, improving the signal-to-noise ratio during development.
-     - **Status**:  NOT STARTED
-     - **Is recurring issue?**: Y
-     - **Should Test frontend/backend/both after fix?**: backend
-     - **Blocked on other issue**: None
+-   Issue 1: SEO Network node creation/editing might be broken for manager roles. (P0)
+-   Issue 2: Full regression test for the  role is pending. (P1)
+-   Issue 3: Pre-existing linter warnings in backend files. (P2)
+
+Issues Detail:
+-   Issue 1: SEO Network node creation/editing might be broken for manager roles.
+    -   Attempted fixes: The agent identified and fixed a bug in the  endpoint that was returning  and causing a response validation error. However, the overall user flow of editing/adding nodes in the UI for a manager is not fully validated. The agent saw an issue when trying to add a new node, suspecting the domain list fetched by  was not being handled correctly.
+    -   Next debug checklist:
+        1.  Log in as the  user ().
+        2.  Use  to call the  endpoint with the manager's auth token.
+        3.  Inspect the JSON response. The agent noted the response might be  instead of  which the frontend might expect.
+        4.  If the format is wrong, check the frontend code in  or related components to see how the domain list for the Add Node modal is fetched and parsed.
+        5.  Adjust either the backend () to change the response key, or the frontend to parse the correct key.
+        6.  Once fixed, re-run the UI test of adding a node as a manager.
+    -   Why fix this issue and what will be achieved with the fix? This is a core functionality for  users. Fixing it will allow managers to properly manage their assigned SEO networks.
+    -   Status: IN PROGRESS
+    -   Is recurring issue? N
+    -   Should Test frontend/backend/both after fix? Both.
+    -   Blocked on other issue: None.
+
+-   Issue 2: Full regression test for the  role is pending.
+    -   Attempted fixes: N/A.
+    -   Next debug checklist: After fixing Issue 1, the agent should perform a comprehensive test of all features accessible to the  role to ensure no other regressions exist. This includes dashboard, asset domains, SEO networks, and settings.
+    -   Why fix this issue and what will be achieved with the fix? The user explicitly requested to check other features according to the role manager, make sure they are all working. This will ensure the  role is fully functional as per requirements.
+    -   Status: NOT STARTED
+    -   Is recurring issue? N
+    -   Should Test frontend/backend/both after fix? Both.
+    -   Blocked on other issue: Issue 1.
+
+-   Issue 3: Pre-existing linter warnings in backend files.
+    -   Attempted fixes: None in this session for the remaining warnings.
+    -   Next debug checklist: Run  in  and  and manually fix any outstanding issues.
+    -   Why fix this issue and what will be achieved with the fix? Improves code quality and maintainability.
+    -   Status: NOT STARTED
+    -   Is recurring issue? Y
+    -   Should Test frontend/backend/both after fix? Backend.
+    -   Blocked on other issue: None.
 
 **In progress Task List**:
-  - Task 1:  (description with priority order)
-      - Complete the full removal of the legacy Monitoring Alerts feature.
-  
-  Task Detail:
-  - Task 1: 
-     - **Description**: The user has mandated the complete removal of the old Monitoring Alerts system. The agent has only partially completed the frontend removal.
-     - **Where to resume**: 
-       1. **Frontend**: Continue cleaning  by removing all remaining state, handlers, and effects for legacy monitoring (Chat Message 574 onwards). Then, remove the Alerts tab and its logic from , leaving only the SEO Conflicts functionality. Finally, remove the legacy monitoring API functions from .
-       2. **Backend**: Remove the legacy monitoring API endpoints from . Then, remove or disable the legacy scheduler and associated functions from .
-     - **What will be achieved with this?**: This will finalize the transition to the new Domain Monitoring system, reduce code complexity, eliminate redundancy, and prevent user confusion.
-     - **Status**:  IN PROGRESS
-     - **Should Test frontend/backend/both after fix?**: both
-     - **Blocked on something**: No.
+There are no multi-step tasks in progress, the main focus is on resolving the pending issues.
 
 **Upcoming and Future Tasks**
-  **Future Tasks:**
-  - **P1: Reminder effectiveness metric:** Implement tracking for how many reminders are sent for an optimization before it is marked as resolved.
-  - **P1: Conflict aging metric:** Implement tracking for how long SEO conflicts remain unresolved in the Alert Center.
+Upcoming Tasks:
+-   P0: Implement Reminder Effectiveness Metric as requested by the user.
+-   P1: Implement Conflict Aging Metric.
 
 **Completed work in this session**
-- **P0: Access Summary Panel**: Implemented a panel on network cards () and detail pages () showing open complaints and last activity date.
-- **P1: Manual Project Complaint UI**: Added a Complaints tab to  with a full UI to create, view, and manage project-level complaints, including Telegram notifications.
-- **P2: SEO Telegram Notifications (Phase 1)**: Enhanced the Telegram service to support topic-based routing and implemented a cron-based reminder scheduler () for in-progress optimizations.
-- **P2: Domain Monitoring Alerts (Phase 2)**: Built a new, SEO-aware domain monitoring system that provides deep context (structure chain, impact score) for alerts and uses a separate Telegram channel. This involved significant enhancements to  and the creation of .
-- **P1: Reminder System Override UI**: Created a Settings tab in  allowing per-network configuration of reminder intervals.
-- **P1: Conflict Detection UI**: Added an SEO Conflicts tab to  to display network configuration issues.
-- **P1: Network Creation Telegram Notification**: Integrated a Telegram notification trigger into the network creation endpoint in .
+-   Legacy Monitoring Removal: Removed Alerts tab from  and legacy Monitoring Alerts settings from .
+-   Email Notification Feature: Implemented email alerts for critical domain monitoring issues using Resend.
+    -   Created .
+    -   Added endpoints to .
+    -   Added Email Alerts tab and configuration UI to .
+-   Weekly Digest Email Feature: Implemented a scheduled weekly email digest.
+    -   Created .
+    -   Updated  to handle the weekly job.
+    -   Added UI for configuration and preview in .
+-   Telegram Username in User Mgmt: Added  field to the user model, registration page (), and user management page ().
+-   Role-Based Access Control (RBAC):
+    -   Fixed  role by adding it to the  enum in .
+    -   Implemented brand-scoping for  and  roles across the app.
+    -   Fixed dashboard stats ( and ) to be brand-scoped.
+    -   Implemented read-only restrictions for the  role on the SEO Network details page ( and ).
+-   Bug Fixes:
+    -   Fixed domain saving functionality in .
+    -   Fixed the SEO network structure update endpoint () in  to return the updated object.
 
 **Earlier issues found/mentioned but not fixed**
-   - Issue 1:
-     - **Description**: A pre-existing linter warning for an unused variable in an exception block in the backend code keeps appearing.
-     - **Debug checklist**: 
-       1. Locate the line flagged by the linter in .
-       2. Rename the variable to  or  to signal to the linter that it is intentionally unused.
-     - **Why to solve this issue and what will be achieved with this?**: To clean up the linter output so that it only reports new and relevant issues, improving the signal-to-noise ratio during development.
-     - **Should Test frontend/backend/both after fix**: backend
-     - **Is recurring issue?**: Y
+None that are not already listed in the All Pending/In progress Issue list.
 
 **Known issue recurrence from previous fork**
-  - Not applicable, as there is no previous fork summary.
+-   Issue recurrence in previous fork: Linter warnings in backend python files.
+-   Recurrence count: 2+
+-   Status: NOT STARTED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Backend**: FastAPI, Pydantic, MongoDB (using  for async operations), APScheduler for cron jobs.
-- **Frontend**: React, Vite, TanStack Query for data fetching and caching, , TailwindCSS, and Shadcn UI components.
-- **Architecture**: A standard monorepo with separate  and  directories. Communication is via a RESTful API.
-- **DevOps**: Development relies on  for running the backend and Vite's dev server for the frontend. Linting is done via  and .
+-   **Backend**: FastAPI, Python
+-   **Frontend**: React, Vite, Mantine UI
+-   **Database**: MongoDB
+-   **Notifications**: Telegram (real-time), Resend (email)
+-   **Scheduled Jobs**: APScheduler
+-   **Architecture**: Monorepo with distinct , , and  directories. API is versioned with legacy routes and a  prefix for newer features.
 
 **key DB schema**
-  - **seo_networks**: 
-  - **seo_optimizations**: 
-  - **project_complaints**: 
-  - **settings**:  where  can be , , etc., and  is a JSON object with configuration details.
+-   : 
+-   : 
+-   : 
+-   : 
+-   : Stores various system settings like Telegram/Email configs.
 
 **changes in tech stack**
-  - No fundamental changes to the tech stack.
+-   : Added as a Python dependency for sending emails.
 
 **All files of reference**
-- : Central hub for all API logic. Modified for nearly every feature.
-- : Contains all Pydantic data models. Modified for every feature requiring new data structures.
-- : Core service for all Telegram notifications; heavily updated for topic routing.
-- : Overhauled to implement the new SEO-aware domain monitoring.
-- : New helper service created to provide SEO context for domain monitoring alerts.
-- : New service created to house the APScheduler for sending optimization reminders.
-- : UI for global Telegram settings. Currently being simplified as part of the legacy feature removal.
-- : Detail view for networks. Heavily modified to include new Complaints and Settings tabs.
-- : UI for alerts. Refactored to a tabbed view to include SEO Conflicts. Needs further cleanup.
-- : The single source for frontend API call definitions. Updated for every new endpoint.
-- : The Product Requirements Document, updated by the agent after completing major features.
+-   **Created Files**:
+    -   : Service to send email notifications using Resend.
+    -   : Service to generate data for the weekly email digest.
+-   **Updated Files**:
+    -   : Added endpoints for email settings, weekly digest, and fixed structure update endpoint.
+    -   : Added  to  enum, added  to models, and fixed dashboard stats endpoint.
+    -   : Integrated the weekly digest job.
+    -   : Integrated calls to the email alert service.
+    -   : Major refactor to add tabs/sections for Email Alerts and Weekly Digest.
+    -   : Added RBAC to hide edit/add controls for  role.
+    -   : Added Telegram column and field to create/edit user modals.
+    -   : Added Telegram field to the registration form.
+    -   : Added API functions for new email and digest features.
 
 **Areas that need refactoring**:
-- The main API router file, , has grown very large. It would benefit from being split into multiple, smaller  instances based on functionality (e.g., networks, complaints, settings) to improve maintainability.
-- The  component has a large number of state variables and handlers. Breaking it down into smaller, more focused components for each settings section (e.g., , ) would improve readability.
+-   The main dashboard () still relies on some legacy API endpoints (). These could be migrated to use the V3 API structure for consistency and to avoid maintaining two separate stats calculation logics in  and .
 
 **key api endpoints**
-- : Retrieves all SEO networks, now enriched with summary data.
-- : Retrieves a single SEO network, also enriched.
-- : Creates a new project-level complaint.
-- : Fetches a specific settings object (e.g., ).
-- : Updates a settings object.
-- : Fetches a report of all network configuration conflicts.
-- : Manually triggers the optimization reminder check.
+-   : User registration (updated to include ).
+-   : Get user list (updated to return ).
+-   : Manage email alert settings.
+-   : Manage weekly digest settings.
+-   : Get a preview of the weekly digest email.
+-   : Update an SEO network structure entry (Bug fixed).
+-   : Get details for a single SEO network.
+-   : Get stats for the dashboard (fixed brand-scoping).
 
 **Critical Info for New Agent**
-- **Priority Task**: Your immediate priority is to complete the removal of the legacy Monitoring Alerts feature. This is a multi-step process involving cleanup on both the frontend and backend. Refer to the **In progress Task List** for a detailed plan.
-- **Two Telegram Channels**: Be aware that there are two distinct Telegram configurations ( and ). SEO-related events go to one channel, while domain monitoring alerts go to a completely separate channel. Do not mix them.
-- **Timezone**: All user-facing timestamps (UI, Telegram) MUST be presented in GMT+7 (Asia/Jakarta).
-- **Code Structure**: The backend is becoming monolithic in . While refactoring isn't the primary task, be mindful of this and keep new code organized.
+-   The application now has three user roles with distinct permissions:  (full access),  (brand-scoped edit access), and  (brand-scoped read-only access). All new features and fixes must be tested against these roles.
+-   The user has a clear priority for the next tasks: 1) Reminder Effectiveness Metric, 2) Conflict Aging Metric. Do not start them until all current bugs are resolved and confirmed by the user.
+-   The current highest priority is fixing the SEO network editing/creation flow for the  role. Start debugging from the  endpoint as called by the Add Node modal.
 
 **documents and test reports created in this job**
-  - /app/PRD.md
+-    (updated multiple times)
+-   Multiple test reports generated by the testing agent under .
 
-**Last 10 User Messages and any pending HUMAN messages** 
- -  Sequential concise summary along with completion status. 
-  1.  **User Request**: confirm continue followed by a list of next action items (Reminder Override UI, Conflict Detection UI, Network Creation Notification). (COMPLETED)
-  2.  **User Decision**: Provided specific implementation directions for the three action items: Reminder UI in a new 'Settings' tab, Conflict UI plan approved, and Network Creation Notification plan approved. (COMPLETED)
-  3.  **User Request**: DECISION: REMOVE LEGACY MONITORING ALERTS - A clear directive to remove the old monitoring feature entirely, as it's been superseded by the new Domain Monitoring system. (IN PROGRESS)
-  4.  The user's last instruction is the one currently being worked on. There are no other pending user messages.
+**Last 10 User Messages and any pending HUMAN messages**
+1.  : In the SEO network project menu, there is still an error or it failed to update. Also check other features according to the role manager, make sure they are all working, there are no more errors, and notifications on Telegram are running smoothly. (PENDING - Manager role features not fully fixed/tested).
+2.  : (Summary of work done)
+3.  : In the SEO network menu, you should not be able to add nodes or edit nodes, add optimization, if you are not a manager or super admin you can only view it. Apart from that, fix it on the user, there is no list of Telegram accounts that have been entered, also add the Telegram user to the registration menu (COMPLETED).
+4.  : (Updated PRD and finished task)
+5.  : try to do a test on the domain list, can't save, also do a test other than super admin, and the manager can only see the project (COMPLETED - bugs were found and fixed).
+6.  : (Updated PRD and finished task)
+7.  : yes confirm next Next Action Items (COMPLETED).
+8.  : Thanks for the proposal — confirmed 👍 I’d like to proceed with the Weekly Digest Email as the next feature... (COMPLETED).
+9.  : (Implemented Weekly Digest Email).
+10. : yes i need, confirm (COMPLETED).
 
 **Project Health Check:**
-- **Broken**: The application is in a transient state. The legacy Monitoring Alerts feature has been partially removed from the frontend UI (), but the backend services, API endpoints, and other related UI parts () are still present, leading to an inconsistent state.
-- **Mocked**: No mocked components are currently in use.
+-   **Broken**: The functionality for a  to add or edit nodes in an SEO Network is currently broken and under investigation.
+-   **Mocked**: No features are currently mocked.
 
 **3rd Party Integrations**
-- **MongoDB**: The primary database for the application.
-- **Telegram API**: Used for sending notifications. The integration is handled via direct HTTP requests in a custom backend service.
+-   **Resend**: Used for sending email notifications (critical alerts and weekly digest). Requires a User API Key ().
+-   **Telegram**: Used for sending real-time notifications. Requires user-provided bot token and chat IDs.
 
 **Testing status**
-  - Testing agent used after significant changes: YES
-  - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: []
-  - Known regressions: None identified, but the incomplete removal of the legacy monitoring feature poses a risk.
+-   Testing agent used after significant changes: YES
+-   Troubleshoot agent used after agent stuck in loop: NO
+-   Test files created: Yes, the testing agent created multiple test files in .
+-   Known regressions: A bug was introduced and found by the testing agent where dashboard stats were not brand-scoped for managers. This has since been fixed. The current bug with node editing for managers is the primary focus.
 
 **Credentials to test flow:**
-Standard user role can view most data. Actions like creating complaints, editing settings, or viewing the Alert Center require an admin role. Use  for testing admin-level functionality.
+-   **Super Admin**:  / 
+-   **Manager**:  /  (Assigned to 'Panen138' brand)
+-   **Viewer**:  /  (Assigned to 'Panen138' brand)
 
 **What agent forgot to execute**
-The agent has started the task of removing the legacy Monitoring Alerts feature but has not fully executed it. The following parts are still pending:
-- Finishing the code removal (state, handlers, API calls) from .
-- Removing the legacy Alerts tab and its associated logic from .
-- Deleting the corresponding API endpoints from .
-- Disabling or deleting the old scheduler and functions from .</analysis>
+The agent was in the middle of a debugging session for the manager role's inability to correctly add/edit SEO network nodes. The user's request to check other features according to the role manager, make sure they are all working has not been fully completed, as it is blocked by the current bug. A full regression test for the manager role is pending.</analysis>

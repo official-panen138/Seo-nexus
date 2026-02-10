@@ -2,12 +2,15 @@
 Test Suite: P1 Manual Project Complaint API
 Tests project-level complaints that are not tied to specific optimizations.
 """
+
 import pytest
 import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://seo-alerts-overhaul.preview.emergentagent.com')
+BASE_URL = os.environ.get(
+    "REACT_APP_BACKEND_URL", "https://seo-monitoring-hub.preview.emergentagent.com"
+)
 
 # Test credentials
 TEST_EMAIL = "superadmin@seonoc.com"
@@ -23,13 +26,13 @@ class TestProjectComplaintsAPI:
         """Setup: login and get token"""
         response = requests.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
+            json={"email": TEST_EMAIL, "password": TEST_PASSWORD},
         )
         assert response.status_code == 200, f"Login failed: {response.text}"
         self.token = response.json()["access_token"]
         self.headers = {
             "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
         self.created_complaint_ids = []
 
@@ -39,20 +42,20 @@ class TestProjectComplaintsAPI:
         pass
 
     # ==================== GET PROJECT COMPLAINTS ====================
-    
+
     def test_get_project_complaints_success(self):
         """Test GET /api/v3/networks/{id}/complaints returns project complaints"""
         response = requests.get(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
-            headers=self.headers
+            headers=self.headers,
         )
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list), "Response should be a list"
-        
+
         # Should have at least some complaints (existing test data)
         assert len(data) >= 1, "Should have at least 1 project complaint"
-        
+
         # Verify complaint structure
         complaint = data[0]
         assert "id" in complaint
@@ -69,22 +72,31 @@ class TestProjectComplaintsAPI:
         """Test complaint response contains all required fields"""
         response = requests.get(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
-            headers=self.headers
+            headers=self.headers,
         )
         assert response.status_code == 200
         data = response.json()
-        
+
         if len(data) > 0:
             complaint = data[0]
             # Required fields
             required_fields = [
-                "id", "network_id", "brand_id", "created_by", "created_at",
-                "reason", "responsible_user_ids", "responsible_users",
-                "priority", "status", "report_urls", "responses"
+                "id",
+                "network_id",
+                "brand_id",
+                "created_by",
+                "created_at",
+                "reason",
+                "responsible_user_ids",
+                "responsible_users",
+                "priority",
+                "status",
+                "report_urls",
+                "responses",
             ]
             for field in required_fields:
                 assert field in complaint, f"Missing field: {field}"
-            
+
             # created_by structure
             assert "user_id" in complaint["created_by"]
             assert "display_name" in complaint["created_by"]
@@ -96,7 +108,7 @@ class TestProjectComplaintsAPI:
         fake_network_id = str(uuid.uuid4())
         response = requests.get(
             f"{BASE_URL}/api/v3/networks/{fake_network_id}/complaints",
-            headers=self.headers
+            headers=self.headers,
         )
         assert response.status_code == 404
         print("✓ GET complaints for non-existent network returns 404")
@@ -109,16 +121,16 @@ class TestProjectComplaintsAPI:
             "reason": "TEST_COMPLAINT: Testing the create project complaint API endpoint functionality.",
             "priority": "medium",
             "category": "quality",
-            "report_urls": ["https://example.com/test-report"]
+            "report_urls": ["https://example.com/test-report"],
         }
         response = requests.post(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
             headers=self.headers,
-            json=payload
+            json=payload,
         )
         assert response.status_code == 200, f"Create failed: {response.text}"
         data = response.json()
-        
+
         # Verify response
         assert data["reason"] == payload["reason"]
         assert data["priority"] == "medium"
@@ -126,7 +138,7 @@ class TestProjectComplaintsAPI:
         assert data["status"] == "open"
         assert data["network_id"] == TEST_NETWORK_ID
         assert "id" in data
-        
+
         self.created_complaint_ids.append(data["id"])
         print(f"✓ Created project complaint with ID: {data['id']}")
 
@@ -135,12 +147,12 @@ class TestProjectComplaintsAPI:
         payload = {
             "reason": "TEST_COMPLAINT: High priority project complaint for urgent issue testing.",
             "priority": "high",
-            "category": "deadline"
+            "category": "deadline",
         }
         response = requests.post(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
             headers=self.headers,
-            json=payload
+            json=payload,
         )
         assert response.status_code == 200
         data = response.json()
@@ -150,14 +162,11 @@ class TestProjectComplaintsAPI:
 
     def test_create_project_complaint_short_reason_fails(self):
         """Test creating complaint with short reason fails"""
-        payload = {
-            "reason": "Short",  # Less than 10 characters
-            "priority": "medium"
-        }
+        payload = {"reason": "Short", "priority": "medium"}  # Less than 10 characters
         response = requests.post(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
             headers=self.headers,
-            json=payload
+            json=payload,
         )
         assert response.status_code == 400
         assert "10 characters" in response.json().get("detail", "")
@@ -168,12 +177,12 @@ class TestProjectComplaintsAPI:
         fake_network_id = str(uuid.uuid4())
         payload = {
             "reason": "TEST_COMPLAINT: Testing with non-existent network.",
-            "priority": "medium"
+            "priority": "medium",
         }
         response = requests.post(
             f"{BASE_URL}/api/v3/networks/{fake_network_id}/complaints",
             headers=self.headers,
-            json=payload
+            json=payload,
         )
         assert response.status_code == 404
         print("✓ Create complaint for non-existent network returns 404")
@@ -185,20 +194,20 @@ class TestProjectComplaintsAPI:
         # First, get existing complaint
         get_response = requests.get(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
-            headers=self.headers
+            headers=self.headers,
         )
         complaints = get_response.json()
         assert len(complaints) > 0, "Need at least one complaint to test respond"
-        
+
         complaint_id = complaints[0]["id"]
-        
+
         payload = {
             "note": "TEST_RESPONSE: This is a test response to the project complaint with sufficient length."
         }
         response = requests.post(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints/{complaint_id}/respond",
             headers=self.headers,
-            json=payload
+            json=payload,
         )
         assert response.status_code == 200, f"Respond failed: {response.text}"
         data = response.json()
@@ -211,18 +220,18 @@ class TestProjectComplaintsAPI:
         # Create a new complaint to ensure it's open
         create_payload = {
             "reason": "TEST_COMPLAINT: Testing status update on respond functionality.",
-            "priority": "low"
+            "priority": "low",
         }
         create_response = requests.post(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
             headers=self.headers,
-            json=create_payload
+            json=create_payload,
         )
         assert create_response.status_code == 200
         complaint_id = create_response.json()["id"]
         initial_status = create_response.json()["status"]
         assert initial_status == "open"
-        
+
         # Add response
         respond_payload = {
             "note": "TEST_RESPONSE: Adding response to check status change to under_review."
@@ -230,36 +239,38 @@ class TestProjectComplaintsAPI:
         respond_response = requests.post(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints/{complaint_id}/respond",
             headers=self.headers,
-            json=respond_payload
+            json=respond_payload,
         )
         assert respond_response.status_code == 200
-        
+
         # Verify status changed
         get_response = requests.get(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
-            headers=self.headers
+            headers=self.headers,
         )
-        updated_complaint = next((c for c in get_response.json() if c["id"] == complaint_id), None)
+        updated_complaint = next(
+            (c for c in get_response.json() if c["id"] == complaint_id), None
+        )
         assert updated_complaint is not None
-        assert updated_complaint["status"] == "under_review", f"Expected under_review, got {updated_complaint['status']}"
+        assert (
+            updated_complaint["status"] == "under_review"
+        ), f"Expected under_review, got {updated_complaint['status']}"
         print("✓ Responding to open complaint updates status to under_review")
 
     def test_respond_short_note_fails(self):
         """Test responding with short note fails"""
         get_response = requests.get(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
-            headers=self.headers
+            headers=self.headers,
         )
         complaints = get_response.json()
         complaint_id = complaints[0]["id"]
-        
-        payload = {
-            "note": "Short"  # Less than 20 characters
-        }
+
+        payload = {"note": "Short"}  # Less than 20 characters
         response = requests.post(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints/{complaint_id}/respond",
             headers=self.headers,
-            json=payload
+            json=payload,
         )
         assert response.status_code == 400
         assert "20 characters" in response.json().get("detail", "")
@@ -274,7 +285,7 @@ class TestProjectComplaintsAPI:
         response = requests.post(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints/{fake_complaint_id}/respond",
             headers=self.headers,
-            json=payload
+            json=payload,
         )
         assert response.status_code == 404
         print("✓ Respond to non-existent complaint returns 404")
@@ -286,16 +297,16 @@ class TestProjectComplaintsAPI:
         # Create a complaint to resolve
         create_payload = {
             "reason": "TEST_COMPLAINT: Created for testing resolve functionality.",
-            "priority": "low"
+            "priority": "low",
         }
         create_response = requests.post(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
             headers=self.headers,
-            json=create_payload
+            json=create_payload,
         )
         assert create_response.status_code == 200
         complaint_id = create_response.json()["id"]
-        
+
         # Resolve complaint
         resolve_payload = {
             "resolution_note": "TEST_RESOLUTION: This complaint has been resolved after investigation."
@@ -303,42 +314,46 @@ class TestProjectComplaintsAPI:
         resolve_response = requests.patch(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints/{complaint_id}/resolve",
             headers=self.headers,
-            json=resolve_payload
+            json=resolve_payload,
         )
-        assert resolve_response.status_code == 200, f"Resolve failed: {resolve_response.text}"
-        
+        assert (
+            resolve_response.status_code == 200
+        ), f"Resolve failed: {resolve_response.text}"
+
         # Verify resolved status
         get_response = requests.get(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
-            headers=self.headers
+            headers=self.headers,
         )
-        resolved_complaint = next((c for c in get_response.json() if c["id"] == complaint_id), None)
+        resolved_complaint = next(
+            (c for c in get_response.json() if c["id"] == complaint_id), None
+        )
         assert resolved_complaint is not None
         assert resolved_complaint["status"] == "resolved"
         assert resolved_complaint["resolved_at"] is not None
         assert resolved_complaint["resolved_by"] is not None
-        assert resolved_complaint["resolution_note"] == resolve_payload["resolution_note"]
+        assert (
+            resolved_complaint["resolution_note"] == resolve_payload["resolution_note"]
+        )
         print(f"✓ Resolved complaint {complaint_id} successfully")
 
     def test_resolve_short_note_fails(self):
         """Test resolving with short note fails"""
         get_response = requests.get(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints?status=open",
-            headers=self.headers
+            headers=self.headers,
         )
         complaints = [c for c in get_response.json() if c["status"] != "resolved"]
         if len(complaints) == 0:
             pytest.skip("No open complaints to test resolve")
-        
+
         complaint_id = complaints[0]["id"]
-        
-        payload = {
-            "resolution_note": "Short"  # Less than 10 characters
-        }
+
+        payload = {"resolution_note": "Short"}  # Less than 10 characters
         response = requests.patch(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints/{complaint_id}/resolve",
             headers=self.headers,
-            json=payload
+            json=payload,
         )
         assert response.status_code == 400
         assert "10 characters" in response.json().get("detail", "")
@@ -353,7 +368,7 @@ class TestProjectComplaintsAPI:
         response = requests.patch(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints/{fake_complaint_id}/resolve",
             headers=self.headers,
-            json=payload
+            json=payload,
         )
         assert response.status_code == 404
         print("✓ Resolve non-existent complaint returns 404")
@@ -365,12 +380,16 @@ class TestProjectComplaintsAPI:
         # Login as a non-super_admin user (if exists)
         # For now, we verify the authorization check exists in the code
         # by testing that the endpoint exists and requires super_admin
-        print("✓ Authorization check verified in code: Only Super Admin can create project complaints")
+        print(
+            "✓ Authorization check verified in code: Only Super Admin can create project complaints"
+        )
 
     def test_non_super_admin_cannot_resolve_complaint(self):
         """Test non-super_admin users cannot resolve project complaints"""
         # Similar to above - verified in code
-        print("✓ Authorization check verified in code: Only Super Admin can resolve project complaints")
+        print(
+            "✓ Authorization check verified in code: Only Super Admin can resolve project complaints"
+        )
 
 
 class TestProjectComplaintsIntegration:
@@ -381,13 +400,13 @@ class TestProjectComplaintsIntegration:
         """Setup: login and get token"""
         response = requests.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": TEST_EMAIL, "password": TEST_PASSWORD}
+            json={"email": TEST_EMAIL, "password": TEST_PASSWORD},
         )
         assert response.status_code == 200
         self.token = response.json()["access_token"]
         self.headers = {
             "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     def test_full_complaint_lifecycle(self):
@@ -396,19 +415,19 @@ class TestProjectComplaintsIntegration:
         create_payload = {
             "reason": "TEST_LIFECYCLE: Testing complete complaint lifecycle from create to resolve.",
             "priority": "high",
-            "category": "communication"
+            "category": "communication",
         }
         create_response = requests.post(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
             headers=self.headers,
-            json=create_payload
+            json=create_payload,
         )
         assert create_response.status_code == 200
         complaint = create_response.json()
         complaint_id = complaint["id"]
         assert complaint["status"] == "open"
         print(f"  Step 1: Created complaint {complaint_id} with status 'open'")
-        
+
         # 2. Add response
         respond_payload = {
             "note": "TEST_LIFECYCLE_RESPONSE: Investigating this issue and will provide update soon."
@@ -416,19 +435,21 @@ class TestProjectComplaintsIntegration:
         respond_response = requests.post(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints/{complaint_id}/respond",
             headers=self.headers,
-            json=respond_payload
+            json=respond_payload,
         )
         assert respond_response.status_code == 200
-        
+
         # Verify status changed to under_review
         get_response = requests.get(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
-            headers=self.headers
+            headers=self.headers,
         )
-        updated = next((c for c in get_response.json() if c["id"] == complaint_id), None)
+        updated = next(
+            (c for c in get_response.json() if c["id"] == complaint_id), None
+        )
         assert updated["status"] == "under_review"
         print(f"  Step 2: Added response, status changed to 'under_review'")
-        
+
         # 3. Resolve complaint
         resolve_payload = {
             "resolution_note": "TEST_LIFECYCLE_RESOLUTION: Issue has been investigated and resolved satisfactorily."
@@ -436,14 +457,14 @@ class TestProjectComplaintsIntegration:
         resolve_response = requests.patch(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints/{complaint_id}/resolve",
             headers=self.headers,
-            json=resolve_payload
+            json=resolve_payload,
         )
         assert resolve_response.status_code == 200
-        
+
         # Verify final state
         get_final = requests.get(
             f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}/complaints",
-            headers=self.headers
+            headers=self.headers,
         )
         final = next((c for c in get_final.json() if c["id"] == complaint_id), None)
         assert final["status"] == "resolved"
@@ -452,22 +473,23 @@ class TestProjectComplaintsIntegration:
         assert final["resolution_note"] == resolve_payload["resolution_note"]
         assert len(final["responses"]) >= 1
         print(f"  Step 3: Resolved complaint, final status 'resolved'")
-        
+
         print("✓ Complete complaint lifecycle test passed")
 
     def test_network_complaint_count_in_summary(self):
         """Test that network summary includes open complaints count"""
         # Get network detail
         response = requests.get(
-            f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}",
-            headers=self.headers
+            f"{BASE_URL}/api/v3/networks/{TEST_NETWORK_ID}", headers=self.headers
         )
         assert response.status_code == 200
         network = response.json()
-        
+
         # Check open_complaints_count field exists
         assert "open_complaints_count" in network
-        print(f"✓ Network detail includes open_complaints_count: {network['open_complaints_count']}")
+        print(
+            f"✓ Network detail includes open_complaints_count: {network['open_complaints_count']}"
+        )
 
 
 if __name__ == "__main__":
