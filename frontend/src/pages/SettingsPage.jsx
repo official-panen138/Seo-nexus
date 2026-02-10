@@ -82,14 +82,14 @@ export default function SettingsPage() {
 
     const loadSettings = async () => {
         try {
-            const [mainRes, seoRes, brandingRes, timezoneRes, domainMonitoringRes] = await Promise.all([
-                settingsAPI.getTelegram(),
+    const loadSettings = async () => {
+        try {
+            const [seoRes, brandingRes, timezoneRes, domainMonitoringRes] = await Promise.all([
                 settingsAPI.getSeoTelegram().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } })),
                 settingsAPI.getBranding().catch(() => ({ data: { site_title: 'SEO//NOC', site_description: '', logo_url: '' } })),
                 settingsAPI.getTimezone().catch(() => ({ data: { default_timezone: 'Asia/Jakarta', timezone_label: 'GMT+7' } })),
                 domainMonitoringTelegramAPI.getSettings().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } }))
             ]);
-            setTelegramConfig(mainRes.data);
             setSeoTelegramConfig(seoRes.data);
             setBrandingConfig(brandingRes.data);
             setTimezoneConfig(timezoneRes.data);
@@ -130,37 +130,6 @@ export default function SettingsPage() {
             toast.error(err.response?.data?.detail || 'Failed to send test message. Configure bot_token and chat_id first.');
         } finally {
             setTestingDomainMonitoring(false);
-        }
-    };
-
-    const handleSave = async () => {
-        setSaving(true);
-        try {
-            const data = {};
-            if (newToken) data.bot_token = newToken;
-            if (newChatId) data.chat_id = newChatId;
-            
-            await settingsAPI.updateTelegram(data);
-            toast.success('Telegram settings updated');
-            setNewToken('');
-            setNewChatId('');
-            loadSettings();
-        } catch (err) {
-            toast.error('Failed to save settings');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleTest = async () => {
-        setTesting(true);
-        try {
-            await settingsAPI.testTelegram();
-            toast.success('Test message sent! Check your Telegram.');
-        } catch (err) {
-            toast.error(err.response?.data?.detail || 'Failed to send test message');
-        } finally {
-            setTesting(false);
         }
     };
     
