@@ -645,11 +645,16 @@ export default function UsersPage() {
                                         <Input type="email" value={createForm.email} onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))} placeholder="john@example.com" data-testid="create-user-email" />
                                     </div>
                                     <div className="space-y-2">
+                                        <Label>Telegram Username <span className="text-zinc-500 text-xs">(optional)</span></Label>
+                                        <Input value={createForm.telegram_username} onChange={(e) => setCreateForm(prev => ({ ...prev, telegram_username: e.target.value.replace('@', '') }))} placeholder="username (without @)" data-testid="create-user-telegram" />
+                                    </div>
+                                    <div className="space-y-2">
                                         <Label>Role</Label>
                                         <Select value={createForm.role} onValueChange={(value) => setCreateForm(prev => ({ ...prev, role: value }))}>
                                             <SelectTrigger data-testid="create-user-role"><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="admin">Admin</SelectItem>
+                                                <SelectItem value="manager">Manager</SelectItem>
                                                 <SelectItem value="viewer">Viewer</SelectItem>
                                             </SelectContent>
                                         </Select>
