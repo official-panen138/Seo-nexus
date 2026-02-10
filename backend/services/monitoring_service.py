@@ -281,25 +281,48 @@ class ExpirationMonitoringService:
             expiration = datetime.fromisoformat(expiration_str.replace("Z", "+00:00"))
             days_remaining = (expiration.date() - now.date()).days
 
-            # Check if we should alert at this threshold
+            # Get settings
+            settings = await self.settings_service.get_settings()
+            exp_settings = settings.get("expiration", {})
+            alert_thresholds = exp_settings.get("alert_thresholds", [30, 14, 7])
+            critical_threshold = exp_settings.get("critical_threshold", 7)
+            critical_hours = exp_settings.get("critical_alert_hours", [9, 18])
+            
+            # Check if we should alert
             should_alert = False
-
-            # < 7 days: alert daily
-            if days_remaining < 7:
+            alert_reason = ""
+            
+            # Get current hour in GMT+7
+            gmt7_offset = timedelta(hours=7)
+            current_hour_gmt7 = (now + gmt7_offset).hour
+            
+            if days_remaining < 0:
+                # Already expired - alert immediately
                 should_alert = True
-            else:
-                # Check specific thresholds
-                for threshold in sorted(alert_thresholds, reverse=True):
-                    if days_remaining <= threshold:
+                alert_reason = "expired"
+            elif days_remaining < critical_threshold:
+                # < 7 days: Send 2x daily at 09:00 and 18:00 GMT+7
+                # Check if current hour is within 1 hour of alert times
+                for alert_hour in critical_hours:
+                    if abs(current_hour_gmt7 - alert_hour) <= 1:
                         should_alert = True
+                        alert_reason = f"critical_{alert_hour}h"
+                        break
+            else:
+                # Check specific thresholds (30, 14, 7 days)
+                for threshold in sorted(alert_thresholds, reverse=True):
+                    if days_remaining == threshold:
+                        should_alert = True
+                        alert_reason = f"threshold_{threshold}"
                         break
 
             if not should_alert:
                 return "not_due"
 
-            # Check deduplication (max 1 alert/domain/24h, except < 7 days)
+            # Check deduplication
             last_alert_str = domain.get("expiration_alert_sent_at")
             last_threshold = domain.get("last_expiration_threshold")
+            last_alert_reason = domain.get("last_alert_reason", "")
 
             if last_alert_str:
                 last_alert = datetime.fromisoformat(
@@ -307,12 +330,16 @@ class ExpirationMonitoringService:
                 )
                 hours_since_alert = (now - last_alert).total_seconds() / 3600
 
-                # For < 7 days, allow daily alerts
-                if days_remaining >= 7:
-                    if hours_since_alert < 24 and last_threshold == days_remaining:
+                if days_remaining < critical_threshold:
+                    # For critical (<7 days): allow alerts every 10 hours (2x/day)
+                    if hours_since_alert < 10:
                         return "skipped"
                 else:
-                    if hours_since_alert < 24:
+                    # For threshold alerts (30, 14, 7): only once per threshold
+                    if last_alert_reason == alert_reason:
+                        return "skipped"
+                    # Also skip if alerted within 20 hours for same day count
+                    if hours_since_alert < 20 and last_threshold == days_remaining:
                         return "skipped"
 
             # Enrich with brand/registrar and SEO context
