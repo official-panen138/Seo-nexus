@@ -253,6 +253,7 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     model_config = ConfigDict(extra="ignore")
     id: str
+    telegram_username: Optional[str] = None
     created_at: str
     updated_at: str
     approved_by: Optional[str] = None
