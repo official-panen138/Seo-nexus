@@ -35,10 +35,14 @@ ALLOWED_VARIABLES = {
     
     # Node/Structure variables
     "node.domain",
+    "node.domain_name",
     "node.full_path",
     "node.role",
+    "node.domain_role",
     "node.tier",
     "node.status",
+    "node.domain_status",
+    "node.index_status",
     "node.id",
     
     # Change/Action variables
