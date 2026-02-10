@@ -191,6 +191,14 @@ class SeoContextEnricher:
         if additional_networks > 0:
             result["additional_networks_count"] = additional_networks
 
+        # Add full network structure formatted (for first network only)
+        if result["seo_context"]:
+            first_network_id = result["seo_context"][0].get("network_id")
+            if first_network_id:
+                result["full_structure_lines"] = await self.get_full_network_structure_formatted(
+                    first_network_id
+                )
+
         return result
 
     async def _calculate_entry_tier(
