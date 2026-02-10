@@ -7,7 +7,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://manager-execution.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://seo-alerts-overhaul.preview.emergentagent.com')
 
 # Test credentials
 TEST_EMAIL = "superadmin@seonoc.com"
