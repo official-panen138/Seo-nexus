@@ -7217,6 +7217,16 @@ async def update_telegram_seo_settings(
         elif existing and existing.get(field):
             update_data[field] = existing[field]
 
+    # SEO Leader Telegram username (for global tagging on all SEO notifications)
+    if "seo_leader_telegram_username" in settings:
+        update_data["seo_leader_telegram_username"] = (
+            settings["seo_leader_telegram_username"]
+            if settings["seo_leader_telegram_username"]
+            else None
+        )
+    elif existing and existing.get("seo_leader_telegram_username"):
+        update_data["seo_leader_telegram_username"] = existing["seo_leader_telegram_username"]
+
     await db.settings.update_one(
         {"key": "telegram_seo"}, {"$set": update_data}, upsert=True
     )
