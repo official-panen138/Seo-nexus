@@ -70,15 +70,17 @@ export default function UsersPage() {
             const token = localStorage.getItem('seo_nexus_token');
             const headers = { 'Authorization': `Bearer ${token}` };
 
-            const [usersRes, pendingRes, brandsRes] = await Promise.all([
+            const [usersRes, pendingRes, brandsRes, menuRegistryRes] = await Promise.all([
                 fetch(`${API_URL}/api/users`, { headers }),
                 fetch(`${API_URL}/api/users/pending`, { headers }),
-                fetch(`${API_URL}/api/brands?include_archived=false`, { headers })
+                fetch(`${API_URL}/api/brands?include_archived=false`, { headers }),
+                menuPermissionsAPI.getMenuRegistry()
             ]);
 
             if (usersRes.ok) setUsers(await usersRes.json());
             if (pendingRes.ok) setPendingUsers(await pendingRes.json());
             if (brandsRes.ok) setBrands(await brandsRes.json());
+            if (menuRegistryRes.data) setMenuRegistry(menuRegistryRes.data.menus || []);
         } catch (err) {
             toast.error('Failed to load data');
         } finally {
