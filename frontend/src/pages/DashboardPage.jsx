@@ -298,7 +298,7 @@ export default function DashboardPage() {
                                     )}
                                 </div>
                             </div>
-                            <Link to="/alerts">
+                            <Link to="/settings/monitoring">
                                 <Button size="sm" className="bg-red-600 hover:bg-red-700">
                                     View Alerts
                                 </Button>
