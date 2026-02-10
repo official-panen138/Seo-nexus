@@ -1,7 +1,8 @@
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./lib/auth";
 import { BrandProvider } from "./contexts/BrandContext";
+import { MenuPermissionsProvider, useMenuPermissions } from "./lib/menuPermissions";
 import { Toaster } from "./components/ui/sonner";
 
 // Pages
@@ -26,6 +27,7 @@ import RegistrarsPage from "./pages/RegistrarsPage";
 import MonitoringSettingsPage from "./pages/MonitoringSettingsPage";
 import SchedulerDashboardPage from "./pages/SchedulerDashboardPage";
 import MetricsDashboardPage from "./pages/MetricsDashboardPage";
+import AccessDeniedPage from "./pages/AccessDeniedPage";
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -41,6 +43,32 @@ const ProtectedRoute = ({ children }) => {
     
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
+    }
+    
+    return children;
+};
+
+// Menu Protected Route - checks both auth and menu permissions
+const MenuProtectedRoute = ({ children, menuKey }) => {
+    const { isAuthenticated, loading: authLoading } = useAuth();
+    const { canAccessMenu, loading: permLoading, isSuperAdmin } = useMenuPermissions();
+    const location = useLocation();
+    
+    if (authLoading || permLoading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+            </div>
+        );
+    }
+    
+    if (!isAuthenticated) {
+        return <Navigate to="/login" replace />;
+    }
+    
+    // Check menu permission
+    if (!isSuperAdmin && menuKey && !canAccessMenu(menuKey)) {
+        return <Navigate to="/access-denied" state={{ from: location.pathname, menuKey }} replace />;
     }
     
     return children;
