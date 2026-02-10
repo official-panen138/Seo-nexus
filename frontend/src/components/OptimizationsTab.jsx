@@ -15,6 +15,30 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 import { toast } from 'sonner';
 import { formatDate } from '../lib/utils';
 import OptimizationDetailDrawer from './OptimizationDetailDrawer';
+
+// Helper to extract error message from API response (handles Pydantic validation errors)
+const getErrorMessage = (error, fallback = 'An error occurred') => {
+    if (!error) return fallback;
+    
+    // If error.detail is a string, return it
+    if (typeof error.detail === 'string') return error.detail;
+    
+    // If error.detail is an array (Pydantic validation errors), extract messages
+    if (Array.isArray(error.detail)) {
+        return error.detail.map(e => e.msg || e.message || JSON.stringify(e)).join('; ');
+    }
+    
+    // If error.detail is an object with msg property
+    if (error.detail && typeof error.detail === 'object' && error.detail.msg) {
+        return error.detail.msg;
+    }
+    
+    // If error itself has a message
+    if (typeof error.message === 'string') return error.message;
+    
+    return fallback;
+};
+
 import { 
     Plus, 
     Loader2, 
