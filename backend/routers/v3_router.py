@@ -3006,7 +3006,8 @@ async def update_optimization(
     update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
 
     if data.activity_type is not None:
-        update_data["activity_type"] = data.activity_type.value
+        # Handle both string and Enum types
+        update_data["activity_type"] = data.activity_type.value if hasattr(data.activity_type, 'value') else data.activity_type
     if data.title is not None:
         if not data.title.strip():
             raise HTTPException(status_code=400, detail="Title cannot be empty")
@@ -3016,7 +3017,8 @@ async def update_optimization(
             raise HTTPException(status_code=400, detail="Description cannot be empty")
         update_data["description"] = data.description.strip()
     if data.affected_scope is not None:
-        update_data["affected_scope"] = data.affected_scope.value
+        # Handle both string and Enum types
+        update_data["affected_scope"] = data.affected_scope.value if hasattr(data.affected_scope, 'value') else data.affected_scope
     if data.affected_targets is not None:
         update_data["affected_targets"] = data.affected_targets
     if data.keywords is not None:
@@ -3024,9 +3026,11 @@ async def update_optimization(
     if data.report_urls is not None:
         update_data["report_urls"] = data.report_urls
     if data.expected_impact is not None:
-        update_data["expected_impact"] = [i.value for i in data.expected_impact]
+        # Handle both string and Enum types in list
+        update_data["expected_impact"] = [i.value if hasattr(i, 'value') else i for i in data.expected_impact]
     if data.status is not None:
-        update_data["status"] = data.status.value
+        # Handle both string and Enum types
+        update_data["status"] = data.status.value if hasattr(data.status, 'value') else data.status
 
     await db.seo_optimizations.update_one(
         {"id": optimization_id}, {"$set": update_data}
