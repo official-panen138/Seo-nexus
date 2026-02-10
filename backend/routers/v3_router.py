@@ -8348,6 +8348,86 @@ async def get_expiration_test_options(
             {"value": 3, "label": "3 days (urgent)"},
             {"value": 1, "label": "1 day (expires tomorrow)"},
             {"value": 0, "label": "0 days (expires today)"},
+
+
+# ==================== AUDIT LOGS API ====================
+
+
+@router.get("/audit-logs")
+async def get_audit_logs(
+    event_type: Optional[str] = Query(None),
+    actor_email: Optional[str] = Query(None),
+    resource_type: Optional[str] = Query(None),
+    severity: Optional[str] = Query(None),
+    success: Optional[bool] = Query(None),
+    limit: int = Query(50, le=200),
+    skip: int = Query(0),
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """Get audit logs (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can view audit logs")
+    
+    from services.audit_log_service import get_audit_service
+    audit_service = get_audit_service(db)
+    
+    logs = await audit_service.get_logs(
+        event_type=event_type,
+        actor_email=actor_email,
+        resource_type=resource_type,
+        severity=severity,
+        success=success,
+        limit=limit,
+        skip=skip,
+    )
+    
+    return {"logs": logs, "count": len(logs)}
+
+
+@router.get("/audit-logs/stats")
+async def get_audit_stats(
+    days: int = Query(7, ge=1, le=90),
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """Get audit log statistics (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can view audit stats")
+    
+    from services.audit_log_service import get_audit_service
+    audit_service = get_audit_service(db)
+    
+    stats = await audit_service.get_stats(days=days)
+    return stats
+
+
+@router.get("/audit-logs/event-types")
+async def get_audit_event_types(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """Get available audit event types"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can view audit logs")
+    
+    from services.audit_log_service import AuditLogService
+    
+    return {
+        "event_types": [
+            {"value": AuditLogService.EVENT_TEMPLATE_CHANGE, "label": "Template Change"},
+            {"value": AuditLogService.EVENT_TEMPLATE_RESET, "label": "Template Reset"},
+            {"value": AuditLogService.EVENT_PERMISSION_VIOLATION, "label": "Permission Violation"},
+            {"value": AuditLogService.EVENT_NOTIFICATION_FAILED, "label": "Notification Failed"},
+            {"value": AuditLogService.EVENT_NOTIFICATION_SENT, "label": "Notification Sent"},
+            {"value": AuditLogService.EVENT_SETTINGS_CHANGE, "label": "Settings Change"},
+            {"value": AuditLogService.EVENT_SEO_CHANGE, "label": "SEO Change"},
+        ],
+        "severities": [
+            {"value": AuditLogService.SEVERITY_INFO, "label": "Info"},
+            {"value": AuditLogService.SEVERITY_WARNING, "label": "Warning"},
+            {"value": AuditLogService.SEVERITY_ERROR, "label": "Error"},
+            {"value": AuditLogService.SEVERITY_CRITICAL, "label": "Critical"},
+        ],
+    }
+
             {"value": -1, "label": "-1 day (already expired)"},
         ],
         "reminder_schedule": {
