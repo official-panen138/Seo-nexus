@@ -238,6 +238,18 @@ class AuditLogService:
         
         start_date = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         
+        # Count total
+        total = await self.collection.count_documents({"created_at": {"$gte": start_date}})
+        
+        if total == 0:
+            return {
+                "total_events": 0,
+                "by_event_type": {},
+                "failures": 0,
+                "permission_violations": 0,
+                "notification_failures": 0,
+            }
+        
         pipeline = [
             {"$match": {"created_at": {"$gte": start_date}}},
             {"$group": {
@@ -252,7 +264,7 @@ class AuditLogService:
         results = await self.collection.aggregate(pipeline).to_list(100)
         
         stats = {
-            "total_events": 0,
+            "total_events": total,
             "by_event_type": {},
             "failures": 0,
             "permission_violations": 0,
@@ -260,11 +272,13 @@ class AuditLogService:
         }
         
         for r in results:
-            event_type = r["_id"]["event_type"]
-            success = r["_id"]["success"]
-            count = r["count"]
+            id_obj = r.get("_id", {})
+            if not id_obj:
+                continue
             
-            stats["total_events"] += count
+            event_type = id_obj.get("event_type", "unknown")
+            success = id_obj.get("success", True)
+            count = r.get("count", 0)
             
             if event_type not in stats["by_event_type"]:
                 stats["by_event_type"][event_type] = {"success": 0, "failed": 0}
