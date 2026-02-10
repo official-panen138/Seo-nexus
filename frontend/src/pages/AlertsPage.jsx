@@ -224,11 +224,6 @@ export default function AlertsPage() {
                         </Button>
                     )}
                 </div>
-                            <ClipboardList className="h-4 w-4 mr-2" />
-                        )}
-                        Create Optimization Tasks
-                    </Button>
-                </div>
 
                 {/* Conflicts List */}
                 {enhancedConflicts.length === 0 ? (
