@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { reportsAPI, seedAPI, brandsAPI, monitoringAPI, alertsAPI, conflictsAPI, dashboardSettingsAPI } from '../lib/api';
+import { reportsAPI, seedAPI, brandsAPI, monitoringAPI, alertsAPI, dashboardSettingsAPI, v3ReportsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
