@@ -67,8 +67,6 @@ class ForcedMonitoringService:
             ]
         }, {"_id": 0, "id": 1, "domain_name": 1, "brand_id": 1}).to_list(None)
         
-        unmonitored_ids = {d["id"] for d in unmonitored}
-        
         # Build result with SEO usage info
         result = []
         for domain in unmonitored:
