@@ -251,6 +251,22 @@ class SeoTelegramService:
                     logger.info(f"SEO Telegram notification sent{topic_info}")
                     return True
                 else:
+                    # Check if error is due to invalid topic_id
+                    error_text = response.text.lower()
+                    if message_thread_id and ("thread" in error_text or "topic" in error_text or "message_thread_id" in error_text):
+                        logger.warning(
+                            f"Invalid topic_id '{message_thread_id}' for {topic_type}. Retrying without topic routing..."
+                        )
+                        # Retry without message_thread_id
+                        del payload["message_thread_id"]
+                        retry_response = await client.post(url, json=payload, timeout=15)
+                        if retry_response.status_code == 200:
+                            logger.info(f"SEO Telegram notification sent (fallback to main chat after invalid topic_id)")
+                            return True
+                        else:
+                            logger.error(f"Telegram API error (retry): {retry_response.status_code} - {retry_response.text}")
+                            return False
+                    
                     logger.error(
                         f"Telegram API error: {response.status_code} - {response.text}"
                     )
