@@ -3,12 +3,13 @@ Optimization Reminder Scheduler
 ===============================
 
 Integrates APScheduler with FastAPI to run automatic reminders for
-"In Progress" optimizations.
+"In Progress" optimizations and weekly digest emails.
 
 Features:
 - Runs at configurable intervals (default: every 2 days)
 - Reads interval from global settings
 - Supports manual trigger via API
+- Weekly digest email scheduler
 - Graceful shutdown on app termination
 """
 
@@ -16,6 +17,7 @@ import logging
 from datetime import datetime, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import Optional
 
