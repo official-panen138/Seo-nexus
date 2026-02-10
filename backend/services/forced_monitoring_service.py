@@ -214,7 +214,7 @@ class ForcedMonitoringService:
         REQUIRED BEHAVIOR (per spec):
         - If a domain is used in ANY SEO Network AND monitoring is NOT enabled:
           - Send Telegram reminder to Monitoring Channel
-          - Message type: ⚠️ MONITORING NOT CONFIGURED
+          - Message type: ⚠️ DOMAIN MONITORING NOT ENABLED
           - Repeat: Once per day
           - Stop only when: monitoring_enabled = true OR domain removed from all SEO Networks
         
@@ -249,98 +249,42 @@ class ForcedMonitoringService:
         from services.seo_context_enricher import SeoContextEnricher
         seo_enricher = SeoContextEnricher(self.db)
         
-        # Build STRUCTURED reminder message per the spec
-        message_lines = [
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            "⚠️ <b>MONITORING NOT CONFIGURED</b>",
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            "",
-            f"📋 <b>Found {len(unmonitored)} domain(s)</b> used in SEO networks without monitoring enabled.",
-            ""
-        ]
+        reminders_sent = 0
+        domains_notified = []
         
-        # Process each unmonitored domain with SEO context
-        for d in unmonitored[:5]:  # Limit to 5 domains per message for readability
+        # Send individual alert for each unmonitored domain
+        for d in unmonitored:
             domain_name = d['domain_name']
+            
+            # Get brand name
+            brand_name = "N/A"
+            if d.get("brand_id"):
+                brand = await self.db.brands.find_one({"id": d["brand_id"]}, {"_id": 0, "name": 1})
+                if brand:
+                    brand_name = brand["name"]
             
             # Get SEO context for this domain
             seo_context = await seo_enricher.enrich_domain_with_seo_context(
                 domain_name, d.get('domain_id')
             )
             
-            impact_score = seo_context.get("impact_score", {})
-            reaches_money = impact_score.get("reaches_money_site", False)
-            tier = impact_score.get("highest_tier_impacted")
-            
-            # Calculate severity
-            severity = calculate_strict_severity(
-                is_money_site=(impact_score.get("node_role") == "main"),
-                reaches_money_site=reaches_money,
-                tier=tier,
-                downstream_count=impact_score.get("downstream_nodes_count", 0),
-                is_orphan=(tier is None or tier >= 99)
+            # Build message for this domain
+            message = await self._build_unmonitored_alert_message(
+                domain_name=domain_name,
+                brand_name=brand_name,
+                domain_info=d,
+                seo_context=seo_context
             )
-            severity_emoji = get_severity_emoji(severity)
             
-            message_lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-            message_lines.append(f"{severity_emoji} <b>{severity}</b> | <code>{domain_name}</code>")
-            message_lines.append("")
+            # Send via telegram
+            success = await telegram.send_alert(message)
             
-            # SEO Context Summary
-            if seo_context.get("used_in_seo"):
-                ctx_list = seo_context.get("seo_context", [])
-                if ctx_list:
-                    first_ctx = ctx_list[0]
-                    message_lines.append(f"• <b>Network:</b> {first_ctx.get('network_name', 'N/A')}")
-                    message_lines.append(f"• <b>Tier:</b> {first_ctx.get('tier_label', 'N/A')}")
-                    message_lines.append(f"• <b>Role:</b> {first_ctx.get('role', 'N/A')}")
-                    message_lines.append(f"• <b>Reaches Money Site:</b> {'✅ YES' if reaches_money else '❌ NO'}")
-                    message_lines.append("")
-                
-                # Add structured SEO snapshot (abbreviated)
-                full_structure = seo_context.get("full_structure_lines", [])
-                if full_structure and len(full_structure) > 0:
-                    message_lines.append("🧭 <b>STRUKTUR SEO:</b>")
-                    for line in full_structure[:6]:  # First 6 lines
-                        message_lines.append(f"  {line}")
-                    if len(full_structure) > 6:
-                        message_lines.append(f"  <i>... +{len(full_structure) - 6} more</i>")
-                    message_lines.append("")
-            
-            message_lines.append(f"• <b>Paths Used:</b> {', '.join(d['paths_used'][:3]) if d['paths_used'] else '(root domain)'}")
-            message_lines.append(f"• <b>Networks:</b> {', '.join(d['networks_used_in'][:2])}")
-            if len(d['networks_used_in']) > 2:
-                message_lines.append(f"  <i>+{len(d['networks_used_in']) - 2} more networks</i>")
-            message_lines.append("")
+            if success:
+                reminders_sent += 1
+                domains_notified.append(domain_name)
+                logger.info(f"Sent unmonitored domain reminder for {domain_name}")
         
-        if len(unmonitored) > 5:
-            message_lines.append(f"<i>... and {len(unmonitored) - 5} more unmonitored domains</i>")
-            message_lines.append("")
-        
-        # Impact Summary
-        message_lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        message_lines.append("🔥 <b>IMPACT</b>")
-        message_lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        message_lines.append("If any of these root domains go <b>DOWN</b>:")
-        message_lines.append("• All paths on that domain become inaccessible")
-        message_lines.append("• SEO link flow is BROKEN")
-        message_lines.append("• Downstream nodes lose authority")
-        message_lines.append("")
-        
-        # Next Action
-        message_lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        message_lines.append("⏰ <b>ACTION REQUIRED</b>")
-        message_lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        message_lines.append("<b>Enable monitoring</b> for these domains in Asset Domains settings.")
-        message_lines.append("")
-        message_lines.append("<i>This reminder will repeat daily until all SEO domains are monitored.</i>")
-        
-        message = "\n".join(message_lines)
-        
-        # Send via telegram
-        success = await telegram.send_alert(message)
-        
-        if success:
+        if reminders_sent > 0:
             # Update last reminder time
             await self.db.scheduler_state.update_one(
                 {"key": reminder_key},
@@ -348,14 +292,95 @@ class ForcedMonitoringService:
                 upsert=True
             )
             
-            logger.info(f"Sent unmonitored domain reminder for {len(unmonitored)} domains")
-            return {
-                "reminders_sent": 1,
-                "domains_count": len(unmonitored),
-                "domains": [d["domain_name"] for d in unmonitored]
-            }
+            logger.info(f"Sent unmonitored domain reminders for {reminders_sent} domains")
         
-        return {"reminders_sent": 0, "error": "telegram_failed", "domains": []}
+        return {
+            "reminders_sent": reminders_sent,
+            "domains_count": len(unmonitored),
+            "domains": domains_notified
+        }
+    
+    async def _build_unmonitored_alert_message(
+        self,
+        domain_name: str,
+        brand_name: str,
+        domain_info: Dict[str, Any],
+        seo_context: Dict[str, Any]
+    ) -> str:
+        """
+        Build alert message for unmonitored domain using exact format spec.
+        
+        Format:
+        - Header: ⚠️ DOMAIN MONITORING NOT ENABLED
+        - Domain Info: Domain, Brand, Used In SEO, Monitoring status
+        - SEO CONTEXT: Network, Node Used, Role, Tier, Target
+        - 🧭 STRUKTUR SEO TERKINI
+        - ⚠️ RISK section
+        """
+        lines = []
+        
+        # Header
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("⚠️ DOMAIN MONITORING NOT ENABLED")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("")
+        
+        # Domain Info
+        lines.append(f"Domain        : {domain_name}")
+        lines.append(f"Brand         : {brand_name}")
+        lines.append(f"Used In SEO   : YES")
+        lines.append(f"Monitoring    : ❌ Disabled")
+        lines.append("")
+        
+        # SEO CONTEXT
+        ctx_list = seo_context.get("seo_context", [])
+        if ctx_list:
+            first_ctx = ctx_list[0]
+            network_name = first_ctx.get("network_name", "N/A")
+            node_path = first_ctx.get("node") or domain_name
+            role = first_ctx.get("role", "N/A")
+            tier_label = first_ctx.get("tier_label", "N/A")
+            target_node = first_ctx.get("target_node", "N/A")
+            
+            lines.append("SEO CONTEXT:")
+            lines.append(f"Network       : {network_name}")
+            lines.append(f"Node Used     : {node_path}")
+            lines.append(f"Role          : {role}")
+            lines.append(f"Tier          : {tier_label}")
+            lines.append(f"Target        : {target_node}")
+        else:
+            lines.append("SEO CONTEXT:")
+            lines.append(f"Network       : {', '.join(domain_info.get('networks_used_in', ['N/A']))}")
+            lines.append(f"Node Used     : {domain_name}")
+            lines.append(f"Role          : N/A")
+            lines.append(f"Tier          : N/A")
+            lines.append(f"Target        : N/A")
+        lines.append("")
+        
+        # STRUKTUR SEO TERKINI
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("🧭 STRUKTUR SEO TERKINI")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        
+        full_structure = seo_context.get("full_structure_lines", [])
+        if full_structure:
+            for line in full_structure:
+                # Remove HTML tags for plain text
+                clean_line = line.replace("<b>", "").replace("</b>", "")
+                lines.append(clean_line)
+        else:
+            lines.append("(Structure data unavailable)")
+        lines.append("")
+        
+        # RISK section
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("⚠️ RISK:")
+        lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        lines.append("Domain ini aktif digunakan dalam struktur SEO")
+        lines.append("tetapi pemantauan TIDAK diaktifkan.")
+        lines.append("Jika domain DOWN, alur otoritas SEO akan TERPUTUS.")
+        
+        return "\n".join(lines)
 
 
 class TestAlertService:
