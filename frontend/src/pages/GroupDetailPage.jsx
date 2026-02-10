@@ -203,7 +203,17 @@ export default function GroupDetailPage() {
     const [networkManagers, setNetworkManagers] = useState([]);
     
     // Active tab state (for coordinating between alerts and change history)
-    const [activeTab, setActiveTab] = useState('graph');
+    // Read initial tab from URL query param
+    const initialTab = searchParams.get('tab') || 'graph';
+    const [activeTab, setActiveTab] = useState(initialTab);
+    
+    // Update activeTab when URL changes (e.g., from notification click)
+    useEffect(() => {
+        const tabFromUrl = searchParams.get('tab');
+        if (tabFromUrl && tabFromUrl !== activeTab) {
+            setActiveTab(tabFromUrl);
+        }
+    }, [searchParams]);
     
     // Edit dialog state
     const [editDialogOpen, setEditDialogOpen] = useState(false);
