@@ -637,10 +637,17 @@ def build_notification_context(
     if node:
         context["node"] = {
             "domain": node.get("domain_name") or node.get("domain", ""),
+            "domain_name": node.get("domain_name") or node.get("domain", ""),
             "full_path": node.get("full_path") or node.get("optimized_path", "/"),
             "role": node.get("domain_role", ""),
+            "domain_role": node.get("domain_role", ""),
             "tier": node.get("tier", ""),
             "status": node.get("domain_status", ""),
+            "domain_status": node.get("domain_status", ""),
+            "index_status": node.get("index_status", ""),
+            "target": node.get("target", "(Tidak ada target)"),
+            "upstream_chain": node.get("upstream_chain", ""),
+            "affected_children": node.get("affected_children", ""),
             "id": node.get("id", ""),
         }
     
