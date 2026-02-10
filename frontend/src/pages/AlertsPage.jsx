@@ -96,7 +96,7 @@ export default function AlertsPage() {
     const loadConflicts = async () => {
         setLoadingConflicts(true);
         try {
-            const res = await reportsAPI.getConflicts();
+            const res = await v3ReportsAPI.getConflicts();
             // API returns {conflicts: [], total: 0, by_type: {}, by_severity: {}}
             setConflicts(res.data?.conflicts || []);
             setConflictsLoaded(true);
