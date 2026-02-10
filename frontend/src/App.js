@@ -181,6 +181,11 @@ function AppRoutes() {
                     <SchedulerDashboardPage />
                 </ProtectedRoute>
             } />
+            <Route path="/metrics" element={
+                <ProtectedRoute>
+                    <MetricsDashboardPage />
+                </ProtectedRoute>
+            } />
             
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
