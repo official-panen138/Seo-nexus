@@ -93,17 +93,33 @@ class SeoOptimizationTelegramService:
 
     async def _get_seo_leader_tag(self) -> str:
         """
-        Get the SEO Leader's Telegram tag for global notification tagging.
-        Returns @username format or empty string if not configured.
+        Get the SEO Leader's Telegram tags for global notification tagging.
+        Supports multiple leaders. Returns @username format or empty string if not configured.
         """
         settings = await self.db.settings.find_one({"key": "telegram_seo"}, {"_id": 0})
-        if settings and settings.get("seo_leader_telegram_username"):
-            username = settings["seo_leader_telegram_username"]
-            # Ensure @ prefix
-            if not username.startswith("@"):
-                username = f"@{username}"
-            return username
-        return ""
+        if not settings:
+            return ""
+        
+        # Try multiple leaders first (new format)
+        leaders = settings.get("seo_leader_telegram_usernames", [])
+        if not leaders:
+            # Fallback to legacy single leader
+            single = settings.get("seo_leader_telegram_username")
+            if single:
+                leaders = [single]
+        
+        if not leaders:
+            return ""
+        
+        tags = []
+        for username in leaders:
+            if username:
+                # Ensure @ prefix
+                if not username.startswith("@"):
+                    username = f"@{username}"
+                tags.append(username)
+        
+        return " ".join(tags) if tags else ""
 
     async def _get_network_manager_tags(self, network_id: str) -> List[str]:
         """
