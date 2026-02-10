@@ -11,6 +11,7 @@ New API endpoints for V3 architecture:
 
 from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone, timedelta
 import uuid
