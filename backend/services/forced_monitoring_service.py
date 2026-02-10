@@ -90,6 +90,7 @@ class ForcedMonitoringService:
     Service to enforce monitoring on all domains used in SEO networks.
     
     Detects unmonitored domains and sends reminder notifications.
+    Implements the ⚠️ MONITORING NOT CONFIGURED alert system.
     """
     
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -134,14 +135,16 @@ class ForcedMonitoringService:
         for domain in unmonitored:
             usage = next((u for u in seo_domain_usage if u["_id"] == domain["id"]), None)
             if usage:
-                # Get network names
+                # Get network names and IDs
                 network_names = []
+                network_ids = []
                 if usage["networks"]:
                     networks = await self.db.seo_networks.find(
                         {"id": {"$in": usage["networks"]}},
                         {"_id": 0, "id": 1, "name": 1}
                     ).to_list(None)
                     network_names = [n["name"] for n in networks]
+                    network_ids = [n["id"] for n in networks]
                 
                 result.append({
                     "domain_id": domain["id"],
@@ -149,6 +152,7 @@ class ForcedMonitoringService:
                     "brand_id": domain.get("brand_id"),
                     "monitoring_enabled": False,
                     "networks_used_in": network_names,
+                    "network_ids": network_ids,
                     "network_count": len(usage["networks"]),
                     "paths_used": [p for p in usage["paths"] if p],
                     "entry_count": usage["entry_count"]
