@@ -789,6 +789,7 @@ class SeoNetworkResponse(SeoNetworkBase):
 
     # SEO Network Management fields
     visibility_mode: Optional[str] = "brand_based"  # brand_based, restricted, public
+    manager_ids: Optional[List[str]] = []  # List of user IDs who can execute actions
     manager_summary_cache: Optional[Dict[str, Any]] = None  # {count: int, names: [str]}
 
     # Access Summary Panel fields (P0)
