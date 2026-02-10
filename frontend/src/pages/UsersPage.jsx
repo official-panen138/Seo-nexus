@@ -586,6 +586,14 @@ export default function UsersPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        {isSuperAdmin && (
+                                            <TableHead className="w-10">
+                                                <Checkbox 
+                                                    checked={selectedUserIds.length > 0 && selectedUserIds.length === users.filter(u => u.role !== 'super_admin').length}
+                                                    onCheckedChange={handleSelectAllUsers}
+                                                />
+                                            </TableHead>
+                                        )}
                                         <TableHead>User</TableHead>
                                         <TableHead>Email</TableHead>
                                         <TableHead>Telegram</TableHead>
@@ -598,9 +606,19 @@ export default function UsersPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {users.length === 0 ? (
-                                        <TableRow><TableCell colSpan={8} className="h-32 text-center"><div className="empty-state py-8"><Users className="empty-state-icon mx-auto" /><p className="empty-state-title">No users yet</p></div></TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={isSuperAdmin ? 9 : 8} className="h-32 text-center"><div className="empty-state py-8"><Users className="empty-state-icon mx-auto" /><p className="empty-state-title">No users yet</p></div></TableCell></TableRow>
                                     ) : users.map((user) => (
                                         <TableRow key={user.id} className="table-row-hover" data-testid={`user-row-${user.id}`}>
+                                            {isSuperAdmin && (
+                                                <TableCell className="w-10">
+                                                    {user.role !== 'super_admin' && (
+                                                        <Checkbox 
+                                                            checked={selectedUserIds.includes(user.id)}
+                                                            onCheckedChange={() => handleSelectUser(user.id)}
+                                                        />
+                                                    )}
+                                                </TableCell>
+                                            )}
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium text-sm">{user.name?.charAt(0).toUpperCase()}</div>
