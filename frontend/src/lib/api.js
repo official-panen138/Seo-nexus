@@ -301,6 +301,13 @@ export const seoTelegramAPI = {
     testAlert: () => apiV3.post('/settings/telegram-seo/test')
 };
 
+// V3 Domain Monitoring Telegram Settings API (SEPARATE from SEO)
+export const domainMonitoringTelegramAPI = {
+    getSettings: () => apiV3.get('/settings/telegram-monitoring'),
+    updateSettings: (data) => apiV3.put('/settings/telegram-monitoring', data),
+    testAlert: () => apiV3.post('/settings/telegram-monitoring/test')
+};
+
 // V3 Activity Logs API
 export const activityLogsAPI = {
     getAll: (params) => apiV3.get('/activity-logs', { params }),
