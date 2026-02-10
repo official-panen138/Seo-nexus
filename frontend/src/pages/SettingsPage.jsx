@@ -215,7 +215,7 @@ export default function SettingsPage() {
         setTriggeringExpiration(true);
         try {
             const res = await domainMonitoringTelegramAPI.triggerExpirationCheck();
-            toast.success(`Expiration check completed: ${res.data.checked} domains checked, ${res.data.alerts_sent} alerts sent`);
+            toast.success(res.data.message || 'Expiration check scheduled. Alerts will be sent for any expiring domains.');
         } catch (err) {
             toast.error(err.response?.data?.detail || 'Failed to trigger expiration check');
         } finally {
@@ -227,7 +227,7 @@ export default function SettingsPage() {
         setTriggeringAvailability(true);
         try {
             const res = await domainMonitoringTelegramAPI.triggerAvailabilityCheck();
-            toast.success(`Availability check completed: ${res.data.checked} domains checked, ${res.data.alerts_sent} alerts sent`);
+            toast.success(res.data.message || 'Availability check scheduled. Alerts will be sent for any down domains.');
         } catch (err) {
             toast.error(err.response?.data?.detail || 'Failed to trigger availability check');
         } finally {
