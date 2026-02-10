@@ -39,11 +39,16 @@ export default function SettingsPage() {
     const [newToken, setNewToken] = useState('');
     const [newChatId, setNewChatId] = useState('');
     
-    // SEO Telegram state
+    // SEO Telegram state with topic routing support
     const [seoTelegramConfig, setSeoTelegramConfig] = useState({
         bot_token: '',
         chat_id: '',
-        enabled: true
+        enabled: true,
+        enable_topic_routing: false,
+        seo_change_topic_id: '',
+        seo_optimization_topic_id: '',
+        seo_complaint_topic_id: '',
+        seo_reminder_topic_id: ''
     });
     const [newSeoToken, setNewSeoToken] = useState('');
     const [newSeoChatId, setNewSeoChatId] = useState('');
