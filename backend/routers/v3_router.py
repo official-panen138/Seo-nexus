@@ -586,6 +586,229 @@ async def enrich_structure_entry(
     return entry
 
 
+# ==================== MENU ACCESS CONTROL ENDPOINTS ====================
+
+
+@router.get("/menu-registry")
+async def get_menu_registry(current_user: dict = Depends(get_current_user_wrapper)):
+    """Get the master menu registry with all available menus"""
+    return {
+        "menus": MASTER_MENU_REGISTRY,
+        "total": len(MASTER_MENU_REGISTRY)
+    }
+
+
+@router.get("/my-menu-permissions")
+async def get_my_menu_permissions(current_user: dict = Depends(get_current_user_wrapper)):
+    """Get menu permissions for the current user"""
+    user_role = current_user.get("role", "viewer")
+    user_id = current_user.get("id")
+    
+    # Super Admin has full access
+    if user_role == "super_admin":
+        return {
+            "user_id": user_id,
+            "role": user_role,
+            "enabled_menus": [m["key"] for m in MASTER_MENU_REGISTRY],
+            "is_super_admin": True
+        }
+    
+    # Check if user has custom menu permissions
+    user_permissions = await db.menu_permissions.find_one({"user_id": user_id})
+    
+    if user_permissions:
+        enabled_menus = user_permissions.get("enabled_menus", [])
+    else:
+        # Apply defaults based on role
+        if user_role == "admin":
+            enabled_menus = DEFAULT_ADMIN_MENUS.copy()
+        else:
+            enabled_menus = DEFAULT_USER_MENUS.copy()
+    
+    return {
+        "user_id": user_id,
+        "role": user_role,
+        "enabled_menus": enabled_menus,
+        "is_super_admin": False
+    }
+
+
+@router.get("/admin/menu-permissions/{user_id}")
+async def get_user_menu_permissions(
+    user_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Get menu permissions for a specific user (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can view user menu permissions")
+    
+    # Get target user
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    target_role = target_user.get("role", "viewer")
+    
+    # Super Admin users cannot have their permissions modified
+    if target_role == "super_admin":
+        return {
+            "user_id": user_id,
+            "user_name": target_user.get("name", ""),
+            "user_email": target_user.get("email", ""),
+            "role": target_role,
+            "enabled_menus": [m["key"] for m in MASTER_MENU_REGISTRY],
+            "is_super_admin": True,
+            "is_default": True
+        }
+    
+    # Check for custom permissions
+    user_permissions = await db.menu_permissions.find_one({"user_id": user_id})
+    
+    if user_permissions:
+        enabled_menus = user_permissions.get("enabled_menus", [])
+        is_default = False
+    else:
+        # Apply defaults
+        if target_role == "admin":
+            enabled_menus = DEFAULT_ADMIN_MENUS.copy()
+        else:
+            enabled_menus = DEFAULT_USER_MENUS.copy()
+        is_default = True
+    
+    return {
+        "user_id": user_id,
+        "user_name": target_user.get("name", ""),
+        "user_email": target_user.get("email", ""),
+        "role": target_role,
+        "enabled_menus": enabled_menus,
+        "is_super_admin": False,
+        "is_default": is_default
+    }
+
+
+@router.put("/admin/menu-permissions/{user_id}")
+async def update_user_menu_permissions(
+    user_id: str,
+    permissions: MenuPermissionUpdate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Update menu permissions for a specific user (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can modify menu permissions")
+    
+    # Get target user
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    target_role = target_user.get("role", "viewer")
+    
+    # Cannot modify Super Admin permissions
+    if target_role == "super_admin":
+        raise HTTPException(status_code=400, detail="Cannot modify Super Admin menu permissions")
+    
+    # Validate menu keys
+    valid_keys = {m["key"] for m in MASTER_MENU_REGISTRY}
+    invalid_keys = set(permissions.enabled_menus) - valid_keys
+    if invalid_keys:
+        raise HTTPException(status_code=400, detail=f"Invalid menu keys: {invalid_keys}")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Upsert permissions
+    await db.menu_permissions.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {
+                "user_id": user_id,
+                "enabled_menus": permissions.enabled_menus,
+                "updated_at": now,
+                "updated_by": current_user.get("id")
+            },
+            "$setOnInsert": {
+                "created_at": now
+            }
+        },
+        upsert=True
+    )
+    
+    # Log the action
+    await db.audit_logs.insert_one({
+        "id": str(uuid.uuid4()),
+        "event_type": "menu_permissions_updated",
+        "actor": current_user.get("email"),
+        "actor_id": current_user.get("id"),
+        "resource": f"user:{user_id}",
+        "details": {
+            "target_user": target_user.get("email"),
+            "target_role": target_role,
+            "enabled_menus": permissions.enabled_menus
+        },
+        "severity": "info",
+        "status": "success",
+        "timestamp": now
+    })
+    
+    return {
+        "message": "Menu permissions updated successfully",
+        "user_id": user_id,
+        "enabled_menus": permissions.enabled_menus
+    }
+
+
+@router.delete("/admin/menu-permissions/{user_id}")
+async def reset_user_menu_permissions(
+    user_id: str,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Reset menu permissions to default for a user (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can reset menu permissions")
+    
+    # Get target user
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    target_role = target_user.get("role", "viewer")
+    
+    if target_role == "super_admin":
+        raise HTTPException(status_code=400, detail="Cannot modify Super Admin menu permissions")
+    
+    # Delete custom permissions (will fall back to defaults)
+    await db.menu_permissions.delete_one({"user_id": user_id})
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Log the action
+    await db.audit_logs.insert_one({
+        "id": str(uuid.uuid4()),
+        "event_type": "menu_permissions_reset",
+        "actor": current_user.get("email"),
+        "actor_id": current_user.get("id"),
+        "resource": f"user:{user_id}",
+        "details": {
+            "target_user": target_user.get("email"),
+            "target_role": target_role
+        },
+        "severity": "info",
+        "status": "success",
+        "timestamp": now
+    })
+    
+    # Return defaults
+    if target_role == "admin":
+        default_menus = DEFAULT_ADMIN_MENUS
+    else:
+        default_menus = DEFAULT_USER_MENUS
+    
+    return {
+        "message": "Menu permissions reset to default",
+        "user_id": user_id,
+        "enabled_menus": default_menus
+    }
+
+
 # ==================== REGISTRAR ENDPOINTS (MASTER DATA) ====================
 
 
