@@ -240,21 +240,23 @@ function App() {
     return (
         <BrowserRouter>
             <AuthProvider>
-                <MenuPermissionsProvider>
-                    <BrandProvider>
-                        <AppRoutes />
-                        <Toaster 
-                            position="top-right"
-                            toastOptions={{
-                                style: {
-                                    background: '#0A0A0A',
-                                    border: '1px solid #27272A',
-                                    color: '#FAFAFA'
-                                }
-                            }}
-                        />
-                    </BrandProvider>
-                </MenuPermissionsProvider>
+                <BrandingProvider>
+                    <MenuPermissionsProvider>
+                        <BrandProvider>
+                            <AppRoutes />
+                            <Toaster 
+                                position="top-right"
+                                toastOptions={{
+                                    style: {
+                                        background: '#0A0A0A',
+                                        border: '1px solid #27272A',
+                                        color: '#FAFAFA'
+                                    }
+                                }}
+                            />
+                        </BrandProvider>
+                    </MenuPermissionsProvider>
+                </BrandingProvider>
             </AuthProvider>
         </BrowserRouter>
     );
