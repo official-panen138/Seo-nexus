@@ -973,25 +973,37 @@ class SeoTelegramService:
             before_target_label,
             after_target_label,
         )
-                        "action_label": action_label,
-                        "reason": change_note,
-                        "details": change_details,
-                        "before": before_target_label or "",
-                        "after": after_target_label or "",
-                    },
-                    "structure": {"current": structure_text},
-                    "telegram_leaders": seo_leaders,
-                }
-            )
+        
+        # Try to use template system
+        message = await render_notification(
+            db=self.db,
+            channel="telegram",
+            event_type="seo_change",
+            context_data={
+                "user": {"display_name": user_display_name, "email": actor_email, "id": actor_user_id},
+                "network": {"name": network_name, "id": network_id},
+                "brand": {"name": brand_name},
+                "change": {
+                    "action": action_type,
+                    "action_label": action_label,
+                    "reason": change_note,
+                    "details": change_details,
+                    "before": before_target_label or "",
+                    "after": after_target_label or "",
+                },
+                "structure": {"current": structure_text},
+                "telegram_leaders": seo_leaders,
+            }
+        )
 
-            # Fallback to hardcoded if template disabled or failed
-            if not message:
-                logger.warning("Template returned None, using fallback hardcoded message")
-                leader_section = ""
-                if seo_leader_tag:
-                    leader_section = f"\n\n👁 <b>CC:</b> {seo_leader_tag}"
+        # Fallback to hardcoded if template disabled or failed
+        if not message:
+            logger.warning("Template returned None, using fallback hardcoded message")
+            leader_section = ""
+            if seo_leader_tag:
+                leader_section = f"\n\n👁 <b>CC:</b> {seo_leader_tag}"
 
-                message = f"""👤 <b>PEMBARUAN OPTIMASI BAGAN SEO</b>
+            message = f"""👤 <b>PEMBARUAN OPTIMASI BAGAN SEO</b>
 
 {user_display_name} telah melakukan perubahan optimasi bagan SEO pada network '<b>{network_name}</b>' untuk brand '<b>{brand_name}</b>', dengan detail sebagai berikut:
 
@@ -1014,37 +1026,10 @@ class SeoTelegramService:
 🧭 <b>STRUKTUR SEO TERKINI</b>
 ━━━━━━━━━━━━━━━━━━━━━━
 {structure_text}{leader_section}"""
-            else:
-                logger.info("Using template-rendered message")
+        else:
+            logger.info("Using template-rendered message")
 
-            # Send message with topic routing
-            success = await self._send_telegram_message(
-                message, topic_type="seo_change"
-            )
-
-            if success:
-                # Update rate limit tracker
-                self._update_rate_limit(network_id)
-
-                # Update change log with notification info
-                if change_log_id:
-                    await self.db.seo_change_logs.update_one(
-                        {"id": change_log_id},
-                        {
-                            "$set": {
-                                "notified_at": datetime.now(timezone.utc).isoformat(),
-                                "notification_channel": "seo_telegram",
-                            }
-                        },
-                    )
-
-                logger.info(f"SEO notification sent for network {network_id}")
-
-            return success
-
-        except Exception as e:
-            logger.error(f"Failed to send SEO change notification: {e}")
-            return False
+        return message
 
     async def send_network_creation_notification(
         self,
