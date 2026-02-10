@@ -152,10 +152,10 @@ class OptimizationReminderScheduler:
             # Send the reminder
             success = await self.telegram_service.send_in_progress_reminder(
                 optimization=optimization,
-                network_name=network.get("name", "Unknown"),
-                brand_name=brand.get("name", "Unknown") if brand else "Unknown",
-                responsible_users=managers,
-                days_since_update=days_since_update
+                network={"name": network.get("name", "Unknown")},
+                brand={"name": brand.get("name", "Unknown") if brand else "Unknown"},
+                users=managers,
+                days_in_progress=days_since_update
             )
             
             if success:
