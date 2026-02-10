@@ -6498,3 +6498,92 @@ Ini adalah pesan test dari sistem Domain Monitoring.
             detail="Failed to send test message. Check Domain Monitoring Telegram configuration (bot_token and chat_id required)."
         )
 
+
+
+# ==================== EMAIL ALERT SETTINGS ====================
+
+from pydantic import EmailStr
+
+class EmailAlertSettingsUpdate(BaseModel):
+    enabled: Optional[bool] = None
+    resend_api_key: Optional[str] = None
+    sender_email: Optional[str] = None
+    global_admin_emails: Optional[List[str]] = None
+    severity_threshold: Optional[str] = None  # "high" or "critical"
+    include_network_managers: Optional[bool] = None
+
+
+@router.get("/settings/email-alerts")
+async def get_email_alert_settings(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get email alert configuration for domain monitoring.
+    Super Admin only.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    
+    from services.email_alert_service import get_email_alert_service
+    email_service = get_email_alert_service(db)
+    
+    settings = await email_service.get_email_settings()
+    return settings
+
+
+@router.put("/settings/email-alerts")
+async def update_email_alert_settings(
+    data: EmailAlertSettingsUpdate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Update email alert configuration for domain monitoring.
+    Super Admin only.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    
+    # Validate severity threshold
+    if data.severity_threshold and data.severity_threshold not in ["high", "critical"]:
+        raise HTTPException(status_code=400, detail="severity_threshold must be 'high' or 'critical'")
+    
+    # Validate emails format
+    if data.global_admin_emails:
+        for email in data.global_admin_emails:
+            if email and "@" not in email:
+                raise HTTPException(status_code=400, detail=f"Invalid email format: {email}")
+    
+    from services.email_alert_service import get_email_alert_service
+    email_service = get_email_alert_service(db)
+    
+    updates = {k: v for k, v in data.model_dump().items() if v is not None}
+    settings = await email_service.update_email_settings(updates)
+    
+    return settings
+
+
+@router.post("/settings/email-alerts/test")
+async def test_email_alert(
+    recipient_email: str = Query(..., description="Email address to send test to"),
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Send a test email to verify email alert configuration.
+    Super Admin only.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    
+    if "@" not in recipient_email:
+        raise HTTPException(status_code=400, detail="Invalid email address")
+    
+    from services.email_alert_service import get_email_alert_service
+    email_service = get_email_alert_service(db)
+    
+    result = await email_service.send_test_email(recipient_email)
+    
+    if result.get("success"):
+        return {"message": result.get("message", "Test email sent successfully")}
+    else:
+        raise HTTPException(status_code=500, detail=result.get("error", "Failed to send test email"))
+
