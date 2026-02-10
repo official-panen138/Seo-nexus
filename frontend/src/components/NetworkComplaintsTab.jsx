@@ -28,7 +28,9 @@ import {
     ChevronDown,
     ChevronUp,
     Send,
-    Search
+    Search,
+    RefreshCw,
+    Bell
 } from 'lucide-react';
 import axios from 'axios';
 
