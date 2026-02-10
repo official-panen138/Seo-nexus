@@ -416,6 +416,44 @@ class ComplaintResolveRequest(BaseModel):
     mark_optimization_complete: bool = False  # Optionally mark complete
 
 
+# ==================== PROJECT-LEVEL COMPLAINT MODELS ====================
+
+class ProjectComplaintCreate(BaseModel):
+    """Create a project-level complaint (not tied to optimization)"""
+    reason: str  # Required complaint text, min 10 chars
+    responsible_user_ids: List[str] = []  # Users to tag (managers)
+    priority: Optional[ComplaintPriority] = ComplaintPriority.MEDIUM
+    report_urls: List[str] = []  # Evidence URLs
+    category: Optional[str] = None  # e.g., "communication", "deadline", "quality", "process"
+
+
+class ProjectComplaintResponse(BaseModel):
+    """Response model for project-level complaint"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: str
+    network_id: str
+    brand_id: str
+    created_by: OptimizationCreatedBy
+    created_at: str
+    resolved_at: Optional[str] = None
+    resolved_by: Optional[OptimizationCreatedBy] = None
+    reason: str
+    responsible_user_ids: List[str] = []
+    responsible_users: List[Dict[str, Any]] = []  # Enriched user info
+    priority: str = "medium"
+    status: str = "open"  # open, under_review, resolved, dismissed
+    resolution_note: Optional[str] = None
+    report_urls: List[str] = []
+    category: Optional[str] = None
+    responses: List[Dict[str, Any]] = []  # Team responses
+
+
+class ProjectComplaintResolveRequest(BaseModel):
+    """Request to resolve a project-level complaint"""
+    resolution_note: str  # Required, min 10 chars
+
+
 class OptimizationCloseRequest(BaseModel):
     """Request to close/complete an optimization (Super Admin only)"""
     final_note: Optional[str] = None
