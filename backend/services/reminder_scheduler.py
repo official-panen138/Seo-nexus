@@ -30,6 +30,7 @@ class ReminderScheduler:
     DEFAULT_INTERVAL_HOURS = 24  # Check daily, but only send if interval_days passed
     JOB_ID = "optimization_reminder_job"
     DIGEST_JOB_ID = "weekly_digest_job"
+    UNMONITORED_DOMAIN_JOB_ID = "unmonitored_domain_reminder_job"
 
     # Day name to APScheduler day_of_week mapping
     DAY_MAP = {
@@ -48,6 +49,7 @@ class ReminderScheduler:
         self.scheduler: Optional[AsyncIOScheduler] = None
         self._reminder_service = None
         self._digest_service = None
+        self._forced_monitoring_service = None
 
     @property
     def reminder_service(self):
