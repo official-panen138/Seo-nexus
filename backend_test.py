@@ -5,7 +5,7 @@ import sys
 from datetime import datetime, timezone, timedelta
 
 class SEONOCAPITester:
-    def __init__(self, base_url="https://eval-metrics-2.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://manager-execution.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
