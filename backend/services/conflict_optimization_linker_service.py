@@ -277,17 +277,17 @@ class ConflictOptimizationLinkerService:
         
         # Build description
         description_parts = [
-            f"**Auto-generated from detected SEO conflict**",
+            "**Auto-generated from detected SEO conflict**",
             "",
             f"**Conflict Type:** {type_label}",
             f"**Severity:** {severity.upper()}",
             f"**Network:** {network_name}",
             f"**Domain:** {conflict.get('domain_name', 'N/A')}",
             "",
-            f"**Description:**",
+            "**Description:**",
             conflict.get("description", "No description provided."),
             "",
-            f"**Affected Nodes:**",
+            "**Affected Nodes:**",
             f"- {conflict.get('node_a_label', 'Node A')}",
         ]
         
@@ -297,7 +297,7 @@ class ConflictOptimizationLinkerService:
         if conflict.get("suggestion"):
             description_parts.extend([
                 "",
-                f"**Suggested Fix:**",
+                "**Suggested Fix:**",
                 conflict.get("suggestion"),
             ])
         

@@ -6724,7 +6724,7 @@ async def _detect_network_conflicts(network_id: str) -> List[Dict[str, Any]]:
                     "node_b_id": None,
                     "node_b_path": None,
                     "node_b_label": None,
-                    "description": f"Node is not connected to the main hierarchy",
+                    "description": "Node is not connected to the main hierarchy",
                     "suggestion": "Connect this node to the network structure or remove it",
                     "detected_at": now_str,
                 })
