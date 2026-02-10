@@ -559,10 +559,10 @@ export default function DashboardPage() {
                                                         <Badge variant="outline" className={`text-[10px] ${getSeverityBadgeClass(conflict.severity)}`}>
                                                             {conflict.severity}
                                                         </Badge>
-                                                        <span className="text-xs text-zinc-500">{conflict.type.replace(/_/g, ' ')}</span>
+                                                        <span className="text-xs text-zinc-500">{(conflict.conflict_type || conflict.type || '').replace(/_/g, ' ')}</span>
                                                     </div>
-                                                    <p className="font-mono text-sm truncate">{conflict.domain_name}</p>
-                                                    <p className="text-xs text-red-400/70 mt-1">{conflict.message}</p>
+                                                    <p className="font-mono text-sm truncate">{conflict.node_a_label || conflict.domain_name}</p>
+                                                    <p className="text-xs text-red-400/70 mt-1">{conflict.description || conflict.message}</p>
                                                 </div>
                                             </div>
                                         </div>
