@@ -40,7 +40,7 @@ def format_to_local_time(
                 dt_input = dt_input.replace("Z", "+00:00")
             try:
                 dt = datetime.fromisoformat(dt_input)
-            except:
+            except (ValueError, TypeError):
                 dt = datetime.strptime(dt_input[:19], "%Y-%m-%d %H:%M:%S")
                 dt = dt.replace(tzinfo=timezone.utc)
         else:
