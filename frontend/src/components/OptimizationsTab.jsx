@@ -342,7 +342,7 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
                 loadOptimizations();
             } else {
                 const error = await response.json();
-                toast.error(error.detail || 'Failed to create complaint');
+                toast.error(getErrorMessage(error, 'Failed to create complaint'));
             }
         } catch (err) {
             toast.error('Failed to create complaint');
