@@ -1249,6 +1249,21 @@ async def get_network(
     network["domain_count"] = len(entries)
     network["entries"] = enriched_entries
     
+    # Access Summary Panel: Open complaints count and last optimization
+    open_complaints = await db.seo_optimizations.count_documents({
+        "network_id": network_id,
+        "complaint_status": {"$in": ["complained", "under_review"]}
+    })
+    network["open_complaints_count"] = open_complaints
+    
+    # Get most recent optimization date
+    last_opt = await db.seo_optimizations.find_one(
+        {"network_id": network_id},
+        {"_id": 0, "created_at": 1},
+        sort=[("created_at", -1)]
+    )
+    network["last_optimization_at"] = last_opt["created_at"] if last_opt else None
+    
     return SeoNetworkDetail(**network)
 
 
