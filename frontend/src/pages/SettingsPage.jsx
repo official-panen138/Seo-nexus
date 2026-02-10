@@ -128,7 +128,7 @@ export default function SettingsPage() {
     
     const loadTestDomains = async () => {
         try {
-            const res = await assetDomainsAPI.list({ page: 1, limit: 100 });
+            const res = await assetDomainsAPI.getAll({ page: 1, limit: 100 });
             const domains = res.data?.data || res.data?.domains || [];
             setTestDomains(domains);
             if (domains.length > 0) {
