@@ -513,19 +513,33 @@ class ExpirationMonitoringService:
 
 class AvailabilityMonitoringService:
     """
-    Domain Availability (Ping/HTTP) Monitoring Engine
+    Domain Availability (Ping/HTTP) Monitoring Engine (SEO-Aware)
     
     - Runs at configurable intervals (e.g., every 5 min)
     - Only checks domains with monitoring_enabled=True
-    - Alerts ONLY on UP → DOWN transition
+    - Detects: UP, DOWN (timeout, DNS, 5xx), SOFT_BLOCKED (Cloudflare, captcha, geo-block)
+    - Alerts on UP → DOWN transition (CRITICAL)
+    - Alerts on SOFT_BLOCKED (WARNING)
     - Optional recovery alert on DOWN → UP
-    - Includes SEO context if domain is part of SEO Network
+    - Includes full SEO context, upstream chain, downstream impact
+    - Uses dedicated Domain Monitoring Telegram channel
     """
+    
+    # Soft block detection patterns
+    SOFT_BLOCK_INDICATORS = {
+        "cloudflare_challenge": ["cf-ray", "checking your browser", "challenge-platform"],
+        "captcha": ["captcha", "recaptcha", "hcaptcha"],
+        "geo_blocked": ["access denied", "not available in your country", "region blocked"],
+        "bot_protection": ["bot detected", "automated access", "please verify"]
+    }
     
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
-        self.telegram = TelegramAlertService(db)
+        self.telegram = DomainMonitoringTelegramService(db)
         self.settings_service = MonitoringSettingsService(db)
+        # Import SEO context enricher
+        from services.seo_context_enricher import SeoContextEnricher
+        self.seo_enricher = SeoContextEnricher(db)
     
     async def check_all_domains(self) -> Dict[str, Any]:
         """Check all monitored domains for availability"""
@@ -534,7 +548,7 @@ class AvailabilityMonitoringService:
         
         if not avail_settings.get("enabled", True):
             logger.info("Availability monitoring is disabled")
-            return {"checked": 0, "up": 0, "down": 0, "alerts_sent": 0}
+            return {"checked": 0, "up": 0, "down": 0, "soft_blocked": 0, "alerts_sent": 0}
         
         # Get domains with monitoring enabled
         domains = await self.db.asset_domains.find(
@@ -546,6 +560,7 @@ class AvailabilityMonitoringService:
         checked = 0
         up_count = 0
         down_count = 0
+        soft_blocked_count = 0
         alerts_sent = 0
         
         for domain in domains:
@@ -560,12 +575,14 @@ class AvailabilityMonitoringService:
                 up_count += 1
             elif result["status"] == "down":
                 down_count += 1
+            elif result["status"] == "soft_blocked":
+                soft_blocked_count += 1
             
             if result.get("alert_sent"):
                 alerts_sent += 1
         
-        logger.info(f"Availability check complete: {checked} checked, {up_count} up, {down_count} down, {alerts_sent} alerts")
-        return {"checked": checked, "up": up_count, "down": down_count, "alerts_sent": alerts_sent}
+        logger.info(f"Availability check complete: {checked} checked, {up_count} up, {down_count} down, {soft_blocked_count} soft_blocked, {alerts_sent} alerts")
+        return {"checked": checked, "up": up_count, "down": down_count, "soft_blocked": soft_blocked_count, "alerts_sent": alerts_sent}
     
     def _should_check_now(self, domain: Dict[str, Any], now: datetime) -> bool:
         """Determine if domain should be checked based on interval"""
@@ -590,12 +607,28 @@ class AvailabilityMonitoringService:
         except (ValueError, TypeError):
             return True
     
+    def _detect_soft_block(self, response_text: str, status_code: int) -> Optional[str]:
+        """Detect soft block from response content and status code"""
+        # 403/451 may indicate geo-blocking
+        if status_code in [403, 451]:
+            return "geo_blocked"
+        
+        # Check response content for patterns
+        if response_text:
+            text_lower = response_text.lower()
+            for block_type, patterns in self.SOFT_BLOCK_INDICATORS.items():
+                for pattern in patterns:
+                    if pattern in text_lower:
+                        return block_type
+        
+        return None
+    
     async def _check_domain_availability(
         self, 
         domain: Dict[str, Any],
         settings: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Check single domain availability and send alerts on transition"""
+        """Check single domain availability with soft-block detection"""
         domain_name = domain.get("domain_name", "")
         if not domain_name:
             return {"status": "error", "alert_sent": False}
@@ -611,14 +644,40 @@ class AvailabilityMonitoringService:
         new_status = "down"
         new_http_code = None
         error_message = None
+        soft_block_type = None
+        response_text = ""
         
         try:
             async with httpx.AsyncClient(follow_redirects=follow_redirects, timeout=timeout) as client:
                 response = await client.get(url)
                 new_http_code = response.status_code
                 
+                # Get partial response text for soft-block detection (max 5KB)
+                try:
+                    response_text = response.text[:5000] if response.text else ""
+                except:
+                    response_text = ""
+                
                 if 200 <= response.status_code < 400:
-                    new_status = "up"
+                    # Check for soft-block even on 200
+                    soft_block_type = self._detect_soft_block(response_text, response.status_code)
+                    if soft_block_type:
+                        new_status = "soft_blocked"
+                        error_message = f"Soft Blocked: {soft_block_type.replace('_', ' ').title()}"
+                    else:
+                        new_status = "up"
+                elif response.status_code in [403, 451]:
+                    # Check for soft-block
+                    soft_block_type = self._detect_soft_block(response_text, response.status_code)
+                    if soft_block_type:
+                        new_status = "soft_blocked"
+                        error_message = f"Soft Blocked: {soft_block_type.replace('_', ' ').title()} (HTTP {response.status_code})"
+                    else:
+                        new_status = "down"
+                        error_message = f"HTTP {response.status_code}"
+                elif response.status_code >= 500:
+                    new_status = "down"
+                    error_message = f"Server Error: HTTP {response.status_code}"
                 else:
                     new_status = "down"
                     error_message = f"HTTP {response.status_code}"
@@ -626,9 +685,12 @@ class AvailabilityMonitoringService:
         except httpx.TimeoutException:
             new_status = "down"
             error_message = "Connection Timeout"
-        except httpx.ConnectError:
+        except httpx.ConnectError as e:
             new_status = "down"
-            error_message = "Connection Failed"
+            if "DNS" in str(e) or "getaddrinfo" in str(e):
+                error_message = "DNS Error"
+            else:
+                error_message = "Connection Failed"
         except Exception as e:
             new_status = "down"
             error_message = str(e)[:100]
@@ -646,6 +708,9 @@ class AvailabilityMonitoringService:
             "updated_at": now.isoformat()
         }
         
+        if soft_block_type:
+            update_data["soft_block_type"] = soft_block_type
+        
         await self.db.asset_domains.update_one(
             {"id": domain["id"]},
             {"$set": update_data}
@@ -654,21 +719,35 @@ class AvailabilityMonitoringService:
         alert_sent = False
         
         # Check for status transitions
-        if new_status == "down" and previous_status in ["up", "unknown"]:
-            # UP → DOWN transition
+        if new_status == "down" and previous_status in ["up", "unknown", "soft_blocked"]:
+            # Transition to DOWN - CRITICAL
             if alert_on_down:
-                enriched = await self._enrich_domain_with_seo_context(domain)
-                message = self._format_down_alert(enriched, error_message, previous_status)
+                # Check rate limit (max 1 alert/domain/24h)
+                if await self._can_send_alert(domain, "down"):
+                    enriched = await self._enrich_domain_full(domain)
+                    message = self._format_down_alert_seo_aware(enriched, error_message, previous_status)
+                    sent = await self.telegram.send_alert(message)
+                    if sent:
+                        await self._update_alert_timestamp(domain, "down")
+                        await self._create_alert_record(enriched, "down", error_message, previous_status)
+                        alert_sent = True
+        
+        elif new_status == "soft_blocked" and previous_status in ["up", "unknown"]:
+            # Transition to SOFT_BLOCKED - WARNING
+            if await self._can_send_alert(domain, "soft_blocked"):
+                enriched = await self._enrich_domain_full(domain)
+                message = self._format_soft_block_alert_seo_aware(enriched, error_message, soft_block_type)
                 sent = await self.telegram.send_alert(message)
                 if sent:
-                    await self._create_alert_record(enriched, "down", error_message, previous_status)
+                    await self._update_alert_timestamp(domain, "soft_blocked")
+                    await self._create_alert_record(enriched, "soft_blocked", error_message, previous_status)
                     alert_sent = True
         
-        elif new_status == "up" and previous_status == "down":
-            # DOWN → UP transition (recovery)
+        elif new_status == "up" and previous_status in ["down", "soft_blocked"]:
+            # Recovery
             if alert_on_recovery:
-                enriched = await self._enrich_domain_with_seo_context(domain)
-                message = self._format_recovery_alert(enriched)
+                enriched = await self._enrich_domain_full(domain)
+                message = self._format_recovery_alert_seo_aware(enriched, previous_status)
                 sent = await self.telegram.send_alert(message)
                 if sent:
                     await self._create_alert_record(enriched, "recovery", None, previous_status)
@@ -678,8 +757,30 @@ class AvailabilityMonitoringService:
         
         return {"status": new_status, "http_code": new_http_code, "alert_sent": alert_sent}
     
-    async def _enrich_domain_with_seo_context(self, domain: Dict[str, Any]) -> Dict[str, Any]:
-        """Enrich domain with brand and SEO network context"""
+    async def _can_send_alert(self, domain: Dict[str, Any], alert_type: str) -> bool:
+        """Check rate limit - max 1 alert/domain/24h per alert type"""
+        last_alert_key = f"last_{alert_type}_alert_at"
+        last_alert_str = domain.get(last_alert_key)
+        
+        if not last_alert_str:
+            return True
+        
+        try:
+            last_alert = datetime.fromisoformat(last_alert_str.replace("Z", "+00:00"))
+            hours_since = (datetime.now(timezone.utc) - last_alert).total_seconds() / 3600
+            return hours_since >= 24
+        except:
+            return True
+    
+    async def _update_alert_timestamp(self, domain: Dict[str, Any], alert_type: str):
+        """Update last alert timestamp for rate limiting"""
+        await self.db.asset_domains.update_one(
+            {"id": domain["id"]},
+            {"$set": {f"last_{alert_type}_alert_at": datetime.now(timezone.utc).isoformat()}}
+        )
+    
+    async def _enrich_domain_full(self, domain: Dict[str, Any]) -> Dict[str, Any]:
+        """Enrich domain with brand, category, and full SEO context"""
         enriched = {**domain}
         
         # Brand
@@ -696,90 +797,94 @@ class AvailabilityMonitoringService:
         else:
             enriched["category_name"] = "N/A"
         
-        # Add timezone settings for alert formatting
+        # Timezone
         tz_str, tz_label = await get_system_timezone(self.db)
         enriched["_timezone_str"] = tz_str
         enriched["_timezone_label"] = tz_label
         
-        # SEO Network context
-        structure_entry = await self.db.seo_structure_entries.find_one(
-            {"asset_domain_id": domain["id"]},
-            {"_id": 0}
+        # SEO context enrichment
+        seo_context = await self.seo_enricher.enrich_domain_with_seo_context(
+            domain.get("domain_name", ""),
+            domain.get("id")
         )
-        
-        if structure_entry:
-            network = await self.db.seo_networks.find_one(
-                {"id": structure_entry["network_id"]},
-                {"_id": 0, "name": 1}
-            )
-            enriched["network_name"] = network["name"] if network else "N/A"
-            enriched["domain_role"] = structure_entry.get("domain_role", "N/A")
-            enriched["in_seo_network"] = True
-            
-            # Get tier info
-            from services.tier_service import init_tier_service
-            try:
-                tier_service = init_tier_service(self.db)
-                tiers = await tier_service.calculate_tiers(structure_entry["network_id"])
-                tier_info = tiers.get(structure_entry["id"])
-                if tier_info:
-                    enriched["tier"] = tier_info.get("tier", "N/A")
-                    enriched["tier_label"] = tier_info.get("tier_label", "N/A")
-            except Exception:
-                enriched["tier"] = "N/A"
-                enriched["tier_label"] = "N/A"
-        else:
-            enriched["in_seo_network"] = False
-            enriched["network_name"] = "Not in network"
+        enriched["seo"] = seo_context
         
         return enriched
     
-    def _format_down_alert(self, domain: Dict[str, Any], error_message: str, previous_status: str) -> str:
-        """Format DOWN alert for Telegram"""
-        # Determine severity based on SEO context
-        severity = "LOW"
-        if domain.get("in_seo_network"):
-            role = domain.get("domain_role", "").lower()
-            tier = domain.get("tier", 99)
-            if role == "main" or tier == 0:
-                severity = "CRITICAL"
-            elif tier <= 2:
-                severity = "HIGH"
-            elif tier <= 4:
-                severity = "MEDIUM"
+    def _format_down_alert_seo_aware(self, domain: Dict[str, Any], error_message: str, previous_status: str) -> str:
+        """Format SEO-aware DOWN alert for Telegram"""
+        seo = domain.get("seo", {})
+        impact_score = seo.get("impact_score", {})
+        severity = impact_score.get("severity", "LOW")
+        
+        # DOWN is always at least HIGH severity
+        if severity == "LOW":
+            severity = "MEDIUM"
+        elif severity == "MEDIUM":
+            severity = "HIGH"
+        elif severity in ["HIGH", "CRITICAL"]:
+            severity = "CRITICAL"
         
         severity_emoji = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🔵"}.get(severity, "⚪")
         
-        seo_context = ""
-        if domain.get("in_seo_network"):
-            seo_context = f"""
-<b>SEO Context:</b>
-  Network: {domain.get('network_name', 'N/A')}
-  Role: {domain.get('domain_role', 'N/A').title()}
-  Tier: {domain.get('tier_label', 'N/A')}
-"""
-        
-        # Use configured timezone for display
+        # Timezone
         tz_str = domain.get('_timezone_str', 'Asia/Jakarta')
         tz_label = domain.get('_timezone_label', 'GMT+7')
         local_time = format_now_local(tz_str, tz_label)
         
-        return f"""{severity_emoji} <b>DOMAIN DOWN ALERT</b>
-
-<b>Domain:</b> <code>{domain.get('domain_name', 'Unknown')}</code>
-<b>Brand:</b> {domain.get('brand_name', 'N/A')}
-<b>Category:</b> {domain.get('category_name', 'N/A')}
-
-<b>Issue:</b> {error_message or 'Unreachable'}
-<b>Previous Status:</b> {previous_status.upper()} → <b>DOWN</b>
-<b>HTTP Code:</b> {domain.get('last_http_code', 'N/A')}
-{seo_context}
-<b>Severity:</b> <b>{severity}</b>
-<b>Checked:</b> {local_time}"""
+        lines = [
+            f"{severity_emoji} <b>DOMAIN MONITORING ALERT</b>",
+            "",
+            f"<b>Domain:</b> <code>{domain.get('domain_name', 'Unknown')}</code>",
+            f"<b>Brand:</b> {domain.get('brand_name', 'N/A')}",
+            f"<b>Issue:</b> Domain Down - {error_message or 'Unreachable'}",
+            f"<b>Checked At:</b> {local_time}",
+        ]
+        
+        # SEO Context
+        lines.extend(self._format_seo_context_section(seo))
+        
+        return "\n".join(lines)
     
-    def _format_recovery_alert(self, domain: Dict[str, Any]) -> str:
-        """Format recovery alert for Telegram"""
-        # Use configured timezone for display
+    def _format_soft_block_alert_seo_aware(self, domain: Dict[str, Any], error_message: str, block_type: str) -> str:
+        """Format SEO-aware SOFT BLOCK alert (WARNING level)"""
+        seo = domain.get("seo", {})
+        
+        # Soft blocks are warnings, not critical
+        severity = "MEDIUM"
+        severity_emoji = "🟡"
+        
+        # Timezone
+        tz_str = domain.get('_timezone_str', 'Asia/Jakarta')
+        tz_label = domain.get('_timezone_label', 'GMT+7')
+        local_time = format_now_local(tz_str, tz_label)
+        
+        block_descriptions = {
+            "cloudflare_challenge": "Cloudflare JS Challenge",
+            "captcha": "Captcha/Bot Protection",
+            "geo_blocked": "Geographic/Access Restriction",
+            "bot_protection": "Bot Protection Active"
+        }
+        
+        lines = [
+            f"{severity_emoji} <b>DOMAIN MONITORING ALERT</b>",
+            "",
+            f"<b>Domain:</b> <code>{domain.get('domain_name', 'Unknown')}</code>",
+            f"<b>Brand:</b> {domain.get('brand_name', 'N/A')}",
+            f"<b>Issue:</b> Soft Blocked - {block_descriptions.get(block_type, block_type)}",
+            f"<b>Checked At:</b> {local_time}",
+            "",
+            "⚠️ <i>This is a WARNING. The domain may still be accessible to real users.</i>",
+        ]
+        
+        # SEO Context
+        lines.extend(self._format_seo_context_section(seo))
+        
+        return "\n".join(lines)
+    
+    def _format_recovery_alert_seo_aware(self, domain: Dict[str, Any], previous_status: str) -> str:
+        """Format recovery alert"""
+        # Timezone
         tz_str = domain.get('_timezone_str', 'Asia/Jakarta')
         tz_label = domain.get('_timezone_label', 'GMT+7')
         local_time = format_now_local(tz_str, tz_label)
@@ -789,10 +894,70 @@ class AvailabilityMonitoringService:
 <b>Domain:</b> <code>{domain.get('domain_name', 'Unknown')}</code>
 <b>Brand:</b> {domain.get('brand_name', 'N/A')}
 
-<b>Status:</b> DOWN → <b>UP</b>
+<b>Status:</b> {previous_status.upper()} → <b>UP</b>
 <b>HTTP Code:</b> {domain.get('last_http_code', 'N/A')}
 
 <b>Recovered:</b> {local_time}"""
+    
+    def _format_seo_context_section(self, seo: Dict[str, Any]) -> List[str]:
+        """Format SEO context section for Telegram message"""
+        lines = []
+        impact_score = seo.get("impact_score", {})
+        
+        if seo.get("used_in_seo"):
+            lines.append("")
+            lines.append("🧩 <b>SEO CONTEXT</b>")
+            
+            for ctx in seo.get("seo_context", [])[:3]:
+                lines.append(f"<b>Network:</b> {ctx.get('network_name', 'N/A')}")
+                lines.append(f"<b>Node:</b> {ctx.get('node', 'N/A')}")
+                lines.append(f"<b>Role:</b> {ctx.get('role', 'N/A')}")
+                lines.append(f"<b>Tier:</b> {ctx.get('tier_label', 'N/A')}")
+                lines.append(f"<b>Status:</b> {ctx.get('domain_status', 'N/A').replace('_', ' ').title()}")
+                if ctx.get("target_node"):
+                    lines.append(f"<b>Target:</b> {ctx.get('target_node')}")
+                lines.append("")
+            
+            if seo.get("additional_networks_count", 0) > 0:
+                lines.append(f"<i>Used in +{seo['additional_networks_count']} other networks (see UI)</i>")
+                lines.append("")
+            
+            # Structure Chain
+            chain = seo.get("upstream_chain", [])
+            if chain:
+                lines.append("🧭 <b>SEO STRUCTURE CHAIN (To Final Target)</b>")
+                for i, hop in enumerate(chain, 1):
+                    if hop.get("is_end"):
+                        lines.append(f"{i}) {hop['node']} [{hop['relation']}]")
+                        lines.append(f"END: {hop.get('end_reason', 'Reached')}")
+                    else:
+                        lines.append(f"{i}) {hop['node']} [{hop['relation']}] → {hop['target']} [{hop.get('target_relation', '')}]")
+                lines.append("")
+            
+            # Downstream Impact
+            downstream = seo.get("downstream_impact", [])
+            if downstream:
+                lines.append("📌 <b>DOWNSTREAM IMPACT (Direct Children)</b>")
+                for d in downstream[:5]:
+                    lines.append(f"• {d['node']} [{d['relation']}] → {d['target']}")
+                if len(downstream) > 5:
+                    lines.append(f"(+{len(downstream) - 5} more...)")
+                lines.append("")
+            
+            # Impact Score
+            lines.append("🔥 <b>IMPACT SCORE</b>")
+            lines.append(f"• <b>Severity:</b> {impact_score.get('severity', 'LOW')}")
+            lines.append(f"• <b>Networks Affected:</b> {impact_score.get('networks_affected', 0)}")
+            lines.append(f"• <b>Downstream Nodes:</b> {impact_score.get('downstream_nodes_count', 0)}")
+            lines.append(f"• <b>Reaches Money Site:</b> {'YES' if impact_score.get('reaches_money_site') else 'NO'}")
+            if impact_score.get("highest_tier_impacted") is not None:
+                lines.append(f"• <b>Highest Tier:</b> Tier {impact_score.get('highest_tier_impacted')}")
+        else:
+            lines.append("")
+            lines.append("🧩 <b>SEO CONTEXT</b>")
+            lines.append("<i>Not used in any SEO Network</i>")
+        
+        return lines
     
     async def _create_alert_record(
         self, 
@@ -804,19 +969,23 @@ class AvailabilityMonitoringService:
         """Create alert record in database"""
         import uuid
         
-        # Determine severity
-        severity = "low"
-        if domain.get("in_seo_network"):
-            role = domain.get("domain_role", "").lower()
-            tier = domain.get("tier", 99)
-            if role == "main" or tier == 0:
-                severity = "critical"
-            elif tier <= 2:
-                severity = "high"
-            elif tier <= 4:
-                severity = "medium"
+        seo = domain.get("seo", {})
+        impact_score = seo.get("impact_score", {})
+        severity = impact_score.get("severity", "low").lower()
         
-        title = "Domain Down" if alert_type == "down" else "Domain Recovered"
+        if alert_type == "down":
+            if severity in ["low", "medium"]:
+                severity = "high"
+        elif alert_type == "soft_blocked":
+            severity = "medium"
+        elif alert_type == "recovery":
+            severity = "low"
+        
+        title_map = {
+            "down": "Domain Down",
+            "soft_blocked": "Domain Soft Blocked",
+            "recovery": "Domain Recovered"
+        }
         
         alert = {
             "id": str(uuid.uuid4()),
@@ -825,17 +994,15 @@ class AvailabilityMonitoringService:
             "brand_name": domain.get("brand_name"),
             "category_name": domain.get("category_name"),
             "alert_type": "monitoring",
-            "severity": severity if alert_type == "down" else "low",
-            "title": title,
+            "severity": severity,
+            "title": title_map.get(alert_type, "Domain Alert"),
             "message": f"Domain {domain['domain_name']} is {alert_type}",
             "details": {
                 "previous_status": previous_status,
-                "new_status": "down" if alert_type == "down" else "up",
+                "new_status": alert_type,
                 "error_message": error_message,
                 "http_code": domain.get("last_http_code"),
-                "network_name": domain.get("network_name"),
-                "domain_role": domain.get("domain_role"),
-                "tier": domain.get("tier")
+                "seo_context": seo
             },
             "acknowledged": False,
             "created_at": datetime.now(timezone.utc).isoformat()
