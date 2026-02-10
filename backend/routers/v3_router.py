@@ -3675,6 +3675,28 @@ async def search_users_for_access_control(
     return {"results": results, "total": len(results), "query": search_term}
 
 
+@router.get("/users/by-ids")
+async def get_users_by_ids(
+    ids: str = Query(..., description="Comma-separated list of user IDs"),
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get user details by IDs.
+    Returns user info including telegram_username for notification tagging.
+    """
+    user_ids = [id.strip() for id in ids.split(",") if id.strip()]
+    
+    if not user_ids:
+        return {"users": []}
+    
+    users = await db.users.find(
+        {"id": {"$in": user_ids}},
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "telegram_username": 1, "role": 1}
+    ).to_list(100)
+    
+    return {"users": users}
+
+
 # ==================== SEO NETWORK MANAGEMENT (MANAGERS) ====================
 
 
