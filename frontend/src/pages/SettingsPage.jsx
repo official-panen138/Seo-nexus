@@ -518,8 +518,71 @@ export default function SettingsPage() {
                                         <p className="text-xs text-zinc-600">Disarankan membuat grup/channel terpisah untuk tim SEO</p>
                                     </div>
 
+                                    {/* Forum Topic Routing Section */}
+                                    <div className="mt-6 p-4 rounded-lg border border-amber-500/20 bg-amber-500/5">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div>
+                                                <Label className="text-amber-400 font-medium">Forum Topic Routing</Label>
+                                                <p className="text-xs text-zinc-500 mt-1">Route different notification types to specific forum topics</p>
+                                            </div>
+                                            <Switch 
+                                                checked={seoTelegramConfig.enable_topic_routing} 
+                                                onCheckedChange={(checked) => setSeoTelegramConfig({...seoTelegramConfig, enable_topic_routing: checked})}
+                                                data-testid="topic-routing-toggle" 
+                                            />
+                                        </div>
+                                        
+                                        {seoTelegramConfig.enable_topic_routing && (
+                                            <div className="space-y-4 pt-2">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-1">
+                                                        <Label className="text-xs text-zinc-500">SEO Change Topic ID</Label>
+                                                        <Input 
+                                                            value={seoTelegramConfig.seo_change_topic_id || ''} 
+                                                            onChange={(e) => setSeoTelegramConfig({...seoTelegramConfig, seo_change_topic_id: e.target.value})}
+                                                            placeholder="e.g., 123" 
+                                                            className="bg-black border-border font-mono text-sm h-9" 
+                                                            data-testid="seo-change-topic-input"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label className="text-xs text-zinc-500">Optimization Topic ID</Label>
+                                                        <Input 
+                                                            value={seoTelegramConfig.seo_optimization_topic_id || ''} 
+                                                            onChange={(e) => setSeoTelegramConfig({...seoTelegramConfig, seo_optimization_topic_id: e.target.value})}
+                                                            placeholder="e.g., 124" 
+                                                            className="bg-black border-border font-mono text-sm h-9" 
+                                                            data-testid="seo-optimization-topic-input"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label className="text-xs text-zinc-500">Complaint Topic ID</Label>
+                                                        <Input 
+                                                            value={seoTelegramConfig.seo_complaint_topic_id || ''} 
+                                                            onChange={(e) => setSeoTelegramConfig({...seoTelegramConfig, seo_complaint_topic_id: e.target.value})}
+                                                            placeholder="e.g., 125" 
+                                                            className="bg-black border-border font-mono text-sm h-9" 
+                                                            data-testid="seo-complaint-topic-input"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Label className="text-xs text-zinc-500">Reminder Topic ID</Label>
+                                                        <Input 
+                                                            value={seoTelegramConfig.seo_reminder_topic_id || ''} 
+                                                            onChange={(e) => setSeoTelegramConfig({...seoTelegramConfig, seo_reminder_topic_id: e.target.value})}
+                                                            placeholder="e.g., 126" 
+                                                            className="bg-black border-border font-mono text-sm h-9" 
+                                                            data-testid="seo-reminder-topic-input"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-zinc-600">Get topic IDs from your Telegram forum group. If a topic ID is missing, messages will go to General.</p>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <div className="flex items-center gap-3 pt-2">
-                                        <Button onClick={handleSaveSeo} disabled={savingSeo || (!newSeoToken && !newSeoChatId)} className="bg-amber-500 text-black hover:bg-amber-400" data-testid="save-seo-telegram-btn">
+                                        <Button onClick={handleSaveSeo} disabled={savingSeo || (!newSeoToken && !newSeoChatId && !seoTelegramConfig.enable_topic_routing)} className="bg-amber-500 text-black hover:bg-amber-400" data-testid="save-seo-telegram-btn">
                                             {savingSeo && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Simpan Pengaturan
                                         </Button>
                                         <Button variant="outline" onClick={handleTestSeo} disabled={testingSeo} data-testid="test-seo-telegram-btn">
