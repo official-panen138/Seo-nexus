@@ -40,7 +40,8 @@ from models_v3 import (
     TeamResponseCreate, TeamResponseEntry, ComplaintResolveRequest, OptimizationCloseRequest,
     NetworkAccessControl, NetworkVisibilityMode, UserTelegramSettings, NetworkManagersUpdate,
     OptimizationActivityTypeCreate, OptimizationActivityTypeResponse,
-    UserSeoScore, TeamEvaluationSummary
+    UserSeoScore, TeamEvaluationSummary,
+    ProjectComplaintCreate, ProjectComplaintResponse, ProjectComplaintResolveRequest
 )
 from services.seo_optimization_telegram_service import SeoOptimizationTelegramService
 
