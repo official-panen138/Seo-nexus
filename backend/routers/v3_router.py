@@ -52,6 +52,11 @@ from models_v3 import (
     SeoConflict,
     ConflictType,
     ConflictSeverity,
+    ConflictStatus,
+    StoredConflict,
+    ConflictResolutionCreate,
+    ConflictResolutionResponse,
+    LinkedConflictInfo,
     MonitoringSettings,
     MonitoringSettingsUpdate,
     AssetStatus,
@@ -95,6 +100,7 @@ from models_v3 import (
     ProjectComplaintResolveRequest,
 )
 from services.seo_optimization_telegram_service import SeoOptimizationTelegramService
+from services.conflict_optimization_linker_service import get_conflict_linker_service
 
 logger = logging.getLogger(__name__)
 
