@@ -1830,6 +1830,7 @@ export default function GroupDetailPage() {
                         <NetworkComplaintsTab 
                             networkId={network.id}
                             brandId={network.brand_id}
+                            networkManagers={networkManagers}
                         />
                     </TabsContent>
 
