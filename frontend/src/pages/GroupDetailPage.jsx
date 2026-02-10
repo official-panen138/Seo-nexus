@@ -1756,6 +1756,14 @@ export default function GroupDetailPage() {
                         </Card>
                     </TabsContent>
 
+                    {/* Complaints Tab */}
+                    <TabsContent value="complaints" className="mt-0">
+                        <NetworkComplaintsTab 
+                            networkId={network.id}
+                            brandId={network.brand_id}
+                        />
+                    </TabsContent>
+
                     {/* Access Tab */}
                     <TabsContent value="access">
                         <div className="space-y-6">
