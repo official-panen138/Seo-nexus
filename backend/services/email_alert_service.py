@@ -453,7 +453,7 @@ class EmailAlertService:
             }
             
             # Run sync SDK in thread to keep FastAPI non-blocking
-            result = await asyncio.to_thread(resend.Emails.send, params)
+            await asyncio.to_thread(resend.Emails.send, params)
             
             logger.info(f"Email sent to {recipients}: {subject}")
             return True
