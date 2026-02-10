@@ -1563,3 +1563,37 @@ Fixed login endpoint to handle missing `created_at`/`updated_at` fields graceful
 - Modified: `/app/frontend/src/lib/api.js` (added metricsAPI, enhanced auditAPI)
 - Modified: `/app/frontend/src/App.js` (added metrics route)
 - Modified: `/app/frontend/src/components/Layout.jsx` (added Metrics nav item)
+
+---
+
+### Handle Invalid Telegram topic_id Gracefully (Feb 10, 2026) - COMPLETE
+
+**Issue:** Telegram notifications failed silently when an invalid `topic_id` (message_thread_id) was configured.
+
+**Fix Applied:**
+Updated `_send_telegram_message()` in both Telegram services to:
+
+1. **Detect topic_id errors** - Check if Telegram API error contains "thread", "topic", or "message_thread_id"
+2. **Log warning** - Inform admin about the invalid topic_id
+3. **Automatic fallback** - Retry sending without topic_id to main chat
+4. **Success logging** - Log that fallback was used
+
+**Code Pattern:**
+```python
+if message_thread_id and ("thread" in error_text or "topic" in error_text):
+    logger.warning(f"Invalid topic_id '{message_thread_id}' for {topic_type}. Retrying...")
+    del payload["message_thread_id"]
+    retry_response = await client.post(url, json=payload, timeout=30.0)
+    if retry_response.status_code == 200:
+        logger.info("SEO Telegram notification sent (fallback to main chat)")
+        return True
+```
+
+**Files Modified:**
+- `/app/backend/services/seo_telegram_service.py`
+- `/app/backend/services/seo_optimization_telegram_service.py`
+
+**Behavior:**
+- If topic_id is valid → Message sent to specific topic ✅
+- If topic_id is invalid → Warning logged, message sent to main chat ✅
+- If both fail → Error logged, returns False ❌
