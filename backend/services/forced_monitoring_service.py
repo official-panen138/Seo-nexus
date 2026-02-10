@@ -587,7 +587,7 @@ class TestAlertService:
                                 if hop.get("is_end"):
                                     end_reason = hop.get("end_reason", "END")
                                     if "money" in end_reason.lower():
-                                        lines.append(f"  → END: 💰 MONEY SITE")
+                                        lines.append("  → END: 💰 MONEY SITE")
                                     else:
                                         lines.append(f"  → END: {end_reason}")
                                     break
