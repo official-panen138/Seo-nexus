@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, Activity, RefreshCw, AlertTriangle, CheckCircle2, XCircle, Info, AlertCircle } from 'lucide-react';
+import { Loader2, Activity, RefreshCw, AlertTriangle, CheckCircle2, XCircle, Info, AlertCircle, Trash2 } from 'lucide-react';
 import { formatDateTime } from '../lib/utils';
 
 export default function AuditLogsPage() {
@@ -17,6 +17,7 @@ export default function AuditLogsPage() {
     const [stats, setStats] = useState(null);
     const [eventTypes, setEventTypes] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [clearing, setClearing] = useState(false);
     const [eventFilter, setEventFilter] = useState('all');
     const [severityFilter, setSeverityFilter] = useState('all');
     const [successFilter, setSuccessFilter] = useState('all');
@@ -56,6 +57,24 @@ export default function AuditLogsPage() {
             setLogs([]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleClearLogs = async () => {
+        if (!window.confirm('Are you sure you want to clear all audit logs? This cannot be undone.')) {
+            return;
+        }
+        setClearing(true);
+        try {
+            await auditAPI.clearLogs();
+            setLogs([]);
+            setStats(null);
+            toast.success('Audit logs cleared');
+            await loadInitialData();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to clear audit logs');
+        } finally {
+            setClearing(false);
         }
     };
 
