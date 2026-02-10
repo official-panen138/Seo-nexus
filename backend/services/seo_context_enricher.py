@@ -426,6 +426,112 @@ class SeoContextEnricher:
 
         return score
 
+    async def get_full_network_structure_formatted(
+        self, network_id: str
+    ) -> List[str]:
+        """
+        Get the full network structure formatted by tiers.
+        
+        Returns formatted lines like:
+        LP / Money Site:
+        • moneysite.com [Primary]
+        
+        Tier 1:
+        • tier1-site1.com [301 Redirect] → moneysite.com [Primary]
+        """
+        lines = []
+        
+        # Get all entries for this network
+        entries = await self.db.seo_structure_entries.find(
+            {"network_id": network_id},
+            {"_id": 0, "id": 1, "domain": 1, "optimized_path": 1, "domain_status": 1, 
+             "domain_role": 1, "target_entry_id": 1}
+        ).to_list(200)
+        
+        if not entries:
+            return ["<i>No structure data available</i>"]
+        
+        # Build entry lookup
+        entry_by_id = {e["id"]: e for e in entries}
+        
+        # Build target to sources lookup
+        target_to_sources = {}
+        main_entries = []
+        
+        for e in entries:
+            if e.get("domain_role") == "main":
+                main_entries.append(e)
+            if e.get("target_entry_id"):
+                if e["target_entry_id"] not in target_to_sources:
+                    target_to_sources[e["target_entry_id"]] = []
+                target_to_sources[e["target_entry_id"]].append(e)
+        
+        # Calculate tiers using BFS
+        main_ids = {e["id"] for e in main_entries}
+        entry_tiers = {mid: 0 for mid in main_ids}
+        queue = list(main_ids)
+        tier = 0
+        
+        while queue:
+            next_queue = []
+            tier += 1
+            for current_id in queue:
+                for source in target_to_sources.get(current_id, []):
+                    source_id = source["id"]
+                    if source_id not in entry_tiers:
+                        entry_tiers[source_id] = tier
+                        next_queue.append(source_id)
+            queue = next_queue
+        
+        # Group entries by tier
+        tiers_dict = {}
+        for e in entries:
+            t = entry_tiers.get(e["id"], 99)
+            if t not in tiers_dict:
+                tiers_dict[t] = []
+            tiers_dict[t].append(e)
+        
+        # Format output
+        for t in sorted(tiers_dict.keys()):
+            tier_entries = tiers_dict[t]
+            
+            # Tier header
+            if t == 0:
+                lines.append("<b>LP / Money Site:</b>")
+            elif t == 99:
+                lines.append("")
+                lines.append("<b>Orphan:</b>")
+            else:
+                lines.append("")
+                lines.append(f"<b>Tier {t}:</b>")
+            
+            # Entries in this tier
+            for entry in tier_entries:
+                domain = entry.get("domain", "")
+                path = entry.get("optimized_path", "")
+                node = f"{domain}{path}"
+                status = self._get_relation_type(entry.get("domain_status", "canonical"))
+                
+                if t == 0:
+                    # Money site - just show the domain
+                    lines.append(f"  • {node} [Primary]")
+                else:
+                    # Supporting tiers - show relationship to target
+                    target_id = entry.get("target_entry_id")
+                    if target_id and target_id in entry_by_id:
+                        target = entry_by_id[target_id]
+                        target_domain = target.get("domain", "")
+                        target_path = target.get("optimized_path", "")
+                        target_node = f"{target_domain}{target_path}"
+                        target_status = self._get_relation_type(target.get("domain_status", "canonical"))
+                        if target.get("domain_role") == "main":
+                            target_status = "Primary"
+                        lines.append(f"  • {node} [{status}] → {target_node} [{target_status}]")
+                    else:
+                        lines.append(f"  • {node} [{status}]")
+        
+        return lines
+
 
 def init_seo_context_enricher(db: AsyncIOMotorDatabase) -> SeoContextEnricher:
     """Initialize SEO context enricher"""
