@@ -594,7 +594,7 @@ export default function GroupDetailPage() {
             setImportData([]);
             loadNetwork();
         } catch (err) {
-            toast.error(err.response?.data?.detail || 'Import failed');
+            toast.error(getErrorMessage(err.response?.data, 'Import failed'));
         } finally {
             setImporting(false);
         }
@@ -687,7 +687,7 @@ export default function GroupDetailPage() {
             setEditDialogOpen(false);
             loadNetwork(); // Refresh data
         } catch (err) {
-            toast.error(err.response?.data?.detail || 'Failed to update entry');
+            toast.error(getErrorMessage(err.response?.data, 'Failed to update entry'));
         } finally {
             setSaving(false);
         }
@@ -726,7 +726,7 @@ export default function GroupDetailPage() {
             setEntryToDelete(null);
             loadNetwork(); // Refresh data
         } catch (err) {
-            toast.error(err.response?.data?.detail || 'Failed to delete node');
+            toast.error(getErrorMessage(err.response?.data, 'Failed to delete node'));
         } finally {
             setDeleting(false);
         }
@@ -777,7 +777,7 @@ export default function GroupDetailPage() {
             loadChangeHistory();
             loadNotifications();
         } catch (err) {
-            toast.error(err.response?.data?.detail || 'Failed to switch main target');
+            toast.error(getErrorMessage(err.response?.data, 'Failed to switch main target'));
         } finally {
             setSwitching(false);
         }
@@ -821,7 +821,7 @@ export default function GroupDetailPage() {
             });
             loadNetwork();
         } catch (err) {
-            toast.error(err.response?.data?.detail || 'Failed to add node');
+            toast.error(getErrorMessage(err.response?.data, 'Failed to add node'));
         } finally {
             setSaving(false);
         }
