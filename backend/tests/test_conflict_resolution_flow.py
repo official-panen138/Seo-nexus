@@ -418,22 +418,31 @@ class TestConflictStatusFlowAPI:
     # Test 11: Verify optimization update endpoint accepts status
     def test_optimization_update_accepts_status(self, auth_headers):
         """Test that optimization update endpoint accepts status field"""
-        # Get an optimization
+        # Get an optimization from linked conflicts
         response = requests.get(
-            f"{BASE_URL}/api/v3/optimizations",
-            headers=auth_headers,
-            params={"limit": 1}
+            f"{BASE_URL}/api/v3/conflicts/stored",
+            headers=auth_headers
         )
         
         assert response.status_code == 200
         data = response.json()
         
-        if not data.get("optimizations"):
-            pytest.skip("No optimizations to test")
+        # Find a conflict with linked optimization
+        linked = [c for c in data.get("conflicts", []) if c.get("optimization_id")]
         
-        opt = data["optimizations"][0]
-        opt_id = opt["id"]
-        current_status = opt.get("status")
+        if not linked:
+            pytest.skip("No conflict-linked optimizations to test")
+        
+        opt_id = linked[0]["optimization_id"]
+        
+        # Get current optimization status
+        response = requests.get(
+            f"{BASE_URL}/api/v3/optimizations/{opt_id}",
+            headers=auth_headers
+        )
+        
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+        current_status = response.json().get("status", "pending")
         
         # Try to update to the same status (no-op but validates endpoint)
         response = requests.put(
