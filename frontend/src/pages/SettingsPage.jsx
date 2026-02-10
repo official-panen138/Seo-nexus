@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../components/ui/switch';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Settings, Send, MessageCircle, CheckCircle, AlertCircle, Network, Bell, Palette, Clock, Upload, Image, Globe, Shield, Mail, Plus, X, Calendar, Eye } from 'lucide-react';
+import { Loader2, Settings, Send, MessageCircle, CheckCircle, AlertCircle, Network, Bell, Palette, Clock, Upload, Image, Globe, Shield, Mail, Plus, X, Calendar, Eye, FileText } from 'lucide-react';
+import NotificationTemplatesTab from '../components/NotificationTemplatesTab';
 
 
 // Timezone options
