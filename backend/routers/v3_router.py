@@ -901,6 +901,113 @@ async def bulk_update_menu_permissions(
         "enabled_menus": bulk_update.enabled_menus
     }
 
+
+class BulkBrandAccessUpdate(BaseModel):
+    """Model for bulk updating brand access"""
+    user_ids: List[str] = Field(..., description="List of user IDs to update")
+    brand_scope_ids: List[str] = Field(..., description="List of brand IDs to assign")
+    mode: str = Field(default="replace", description="'replace' to overwrite, 'add' to append")
+
+
+@router.put("/admin/brand-access/bulk")
+async def bulk_update_brand_access(
+    bulk_update: BulkBrandAccessUpdate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Bulk update brand access for multiple users (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can modify brand access")
+    
+    # Validate brand IDs exist
+    valid_brands = await db.brands.find(
+        {"id": {"$in": bulk_update.brand_scope_ids}},
+        {"_id": 0, "id": 1, "name": 1}
+    ).to_list(None)
+    valid_brand_ids = {b["id"] for b in valid_brands}
+    
+    invalid_brand_ids = set(bulk_update.brand_scope_ids) - valid_brand_ids
+    if invalid_brand_ids:
+        raise HTTPException(status_code=400, detail=f"Invalid brand IDs: {invalid_brand_ids}")
+    
+    # Get all target users
+    target_users = await db.users.find(
+        {"id": {"$in": bulk_update.user_ids}},
+        {"_id": 0, "id": 1, "email": 1, "role": 1, "brand_scope_ids": 1}
+    ).to_list(None)
+    
+    if not target_users:
+        raise HTTPException(status_code=404, detail="No users found")
+    
+    user_map = {u["id"]: u for u in target_users}
+    
+    now = datetime.now(timezone.utc).isoformat()
+    results = {
+        "updated": [],
+        "skipped_super_admin": [],
+        "not_found": []
+    }
+    
+    for user_id in bulk_update.user_ids:
+        user = user_map.get(user_id)
+        
+        if not user:
+            results["not_found"].append(user_id)
+            continue
+        
+        # Super admins have access to all brands, no need to update
+        if user.get("role") == "super_admin":
+            results["skipped_super_admin"].append(user_id)
+            continue
+        
+        # Determine new brand_scope_ids based on mode
+        if bulk_update.mode == "add":
+            current_brands = set(user.get("brand_scope_ids", []))
+            new_brands = list(current_brands | set(bulk_update.brand_scope_ids))
+        else:  # replace
+            new_brands = bulk_update.brand_scope_ids
+        
+        # Update user's brand_scope_ids
+        await db.users.update_one(
+            {"id": user_id},
+            {
+                "$set": {
+                    "brand_scope_ids": new_brands,
+                    "updated_at": now
+                }
+            }
+        )
+        results["updated"].append({
+            "user_id": user_id, 
+            "email": user.get("email"),
+            "brand_count": len(new_brands)
+        })
+    
+    # Log the bulk action
+    await db.audit_logs.insert_one({
+        "id": str(uuid.uuid4()),
+        "event_type": "brand_access_bulk_updated",
+        "actor": current_user.get("email"),
+        "actor_id": current_user.get("id"),
+        "resource": "bulk_users",
+        "details": {
+            "user_count": len(results["updated"]),
+            "brand_ids": bulk_update.brand_scope_ids,
+            "mode": bulk_update.mode,
+            "skipped_super_admin": len(results["skipped_super_admin"])
+        },
+        "severity": "info",
+        "status": "success",
+        "timestamp": now
+    })
+    
+    return {
+        "message": f"Brand access updated for {len(results['updated'])} users",
+        "results": results,
+        "brand_scope_ids": bulk_update.brand_scope_ids,
+        "mode": bulk_update.mode
+    }
+
+
 # ==================== REGISTRAR ENDPOINTS (MASTER DATA) ====================
 
 
