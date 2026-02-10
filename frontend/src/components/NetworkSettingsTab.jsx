@@ -63,14 +63,19 @@ export function NetworkSettingsTab({ networkId, networkName }) {
             const res = await apiV3.get(`/networks/${networkId}/reminder-config`);
             const data = res.data;
             
+            // API returns: { global_default: {...}, network_override: {...}, effective_interval_days: N }
+            const globalConfig = data.global_default || {};
+            const networkOverride = data.network_override || {};
+            const hasNetworkOverride = networkOverride && Object.keys(networkOverride).length > 0 && networkOverride.interval_days;
+            
             setReminderConfig({
-                enabled: data.enabled !== false,
-                interval_days: data.interval_days,
-                use_global: data.use_global !== false,
-                global_interval_days: data.global_interval_days || 2
+                enabled: globalConfig.enabled !== false,
+                interval_days: networkOverride.interval_days || null,
+                use_global: !hasNetworkOverride,  // Use global if no network override
+                global_interval_days: globalConfig.interval_days || 2
             });
             
-            setLocalInterval(data.interval_days ? String(data.interval_days) : '');
+            setLocalInterval(networkOverride.interval_days ? String(networkOverride.interval_days) : '');
         } catch (err) {
             console.error('Failed to load network settings:', err);
             toast.error('Failed to load settings');
