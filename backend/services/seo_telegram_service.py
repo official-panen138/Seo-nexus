@@ -950,13 +950,11 @@ class SeoTelegramService:
 • <b>Role:</b> {role_label}
 • <b>Status:</b> {status_label}
 • <b>Index:</b> {index_status}
-• <b>Target:</b> {target_text}
 
 ━━━━━━━━━━━━━━━━━━━━━━
 🔗 <b>UPSTREAM CHAIN (KE MONEY SITE)</b>
 ━━━━━━━━━━━━━━━━━━━━━━
-{node_label}
-{upstream_text}
+{chain_text}
 
 ━━━━━━━━━━━━━━━━━━━━━━
 📝 <b>ALASAN PENGHAPUSAN</b>
@@ -973,7 +971,7 @@ class SeoTelegramService:
 ━━━━━━━━━━━━━━━━━━━━━━
 🧭 <b>STRUKTUR SEO (SEBELUM PENGHAPUSAN)</b>
 ━━━━━━━━━━━━━━━━━━━━━━
-{structure_text}
+{full_structure_text}
 ━━━━━━━━━━━━━━━━━━━━━━
 🕐 <b>Waktu:</b> {timestamp}
 👤 <b>Oleh:</b> {user_display_name} ({actor_email}){leader_section}"""
