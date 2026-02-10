@@ -237,7 +237,7 @@ export const Layout = ({ children }) => {
                         </Button>
                         <span className="font-mono text-lg font-bold text-white tracking-tighter flex items-center gap-2">
                             <Zap className="h-5 w-5 text-blue-500" />
-                            SEO<span className="text-blue-500">//</span>NOC
+                            {renderBrandLogo()}
                         </span>
                         <NotificationBell />
                     </div>
