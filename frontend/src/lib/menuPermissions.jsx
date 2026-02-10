@@ -13,9 +13,23 @@ export const MenuPermissionsProvider = ({ children }) => {
         error: null
     });
 
+    // Check if user is super admin from auth context
+    const userIsSuperAdmin = user?.role === 'super_admin';
+
     const loadPermissions = useCallback(async () => {
         if (!isAuthenticated || !user) {
             setPermissions(prev => ({ ...prev, loading: false }));
+            return;
+        }
+
+        // If user is super_admin, grant all access immediately without API call
+        if (user.role === 'super_admin') {
+            setPermissions({
+                enabledMenus: [], // Not needed for super admin
+                isSuperAdmin: true,
+                loading: false,
+                error: null
+            });
             return;
         }
 
@@ -29,11 +43,16 @@ export const MenuPermissionsProvider = ({ children }) => {
             });
         } catch (error) {
             console.error('Failed to load menu permissions:', error);
-            setPermissions(prev => ({
-                ...prev,
+            // On error, use defaults based on role
+            const defaultMenus = user.role === 'admin' 
+                ? ['dashboard', 'asset_domains', 'seo_networks', 'alert_center', 'reports', 'team_evaluation', 'brands', 'categories', 'registrars', 'users', 'audit_logs', 'metrics', 'v3_activity', 'monitoring', 'activity_types', 'scheduler', 'settings']
+                : [];
+            setPermissions({
+                enabledMenus: defaultMenus,
+                isSuperAdmin: false,
                 loading: false,
                 error: 'Failed to load permissions'
-            }));
+            });
         }
     }, [isAuthenticated, user]);
 
@@ -43,13 +62,14 @@ export const MenuPermissionsProvider = ({ children }) => {
 
     // Check if a menu key is accessible
     const canAccessMenu = useCallback((menuKey) => {
-        if (permissions.isSuperAdmin) return true;
+        // Super admin check from both sources
+        if (permissions.isSuperAdmin || userIsSuperAdmin) return true;
         return permissions.enabledMenus.includes(menuKey);
-    }, [permissions]);
+    }, [permissions, userIsSuperAdmin]);
 
     // Check if a path is accessible
     const canAccessPath = useCallback((path) => {
-        if (permissions.isSuperAdmin) return true;
+        if (permissions.isSuperAdmin || userIsSuperAdmin) return true;
         
         // Map paths to menu keys
         const pathToKeyMap = {
@@ -76,7 +96,7 @@ export const MenuPermissionsProvider = ({ children }) => {
         if (!menuKey) return true; // Unknown paths are allowed by default
         
         return permissions.enabledMenus.includes(menuKey);
-    }, [permissions]);
+    }, [permissions, userIsSuperAdmin]);
 
     // Refresh permissions (call after role change or permission update)
     const refreshPermissions = useCallback(() => {
@@ -86,6 +106,7 @@ export const MenuPermissionsProvider = ({ children }) => {
     return (
         <MenuPermissionsContext.Provider value={{
             ...permissions,
+            isSuperAdmin: permissions.isSuperAdmin || userIsSuperAdmin,
             canAccessMenu,
             canAccessPath,
             refreshPermissions
