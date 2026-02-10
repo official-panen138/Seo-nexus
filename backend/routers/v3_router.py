@@ -1691,15 +1691,18 @@ async def create_structure_entry(
     current_user: dict = Depends(get_current_user_wrapper),
 ):
     """Create a new SEO structure entry (node-based) with mandatory change note"""
-    # Validate asset domain exists
-    asset = await db.asset_domains.find_one({"id": data.asset_domain_id})
-    if not asset:
-        raise HTTPException(status_code=400, detail="Asset domain not found")
-
     # Validate network exists
     network = await db.seo_networks.find_one({"id": data.network_id})
     if not network:
         raise HTTPException(status_code=400, detail="Network not found")
+
+    # PERMISSION CHECK: Only super_admin or network managers can create nodes
+    await require_manager_permission(network, current_user)
+
+    # Validate asset domain exists
+    asset = await db.asset_domains.find_one({"id": data.asset_domain_id})
+    if not asset:
+        raise HTTPException(status_code=400, detail="Asset domain not found")
 
     # BRAND SCOPING: Validate domain belongs to the same brand as the network
     if asset.get("brand_id") != network.get("brand_id"):
