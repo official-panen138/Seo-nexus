@@ -985,6 +985,68 @@ Tier 2:
                             {/* Alert Types Info */}
                             <Card className="bg-card border-border">
                                 <CardHeader>
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        <FlaskConical className="h-4 w-4 text-purple-400" />
+                                        Test Expiration Alert
+                                    </CardTitle>
+                                    <CardDescription>Send a test expiration alert to verify formatting and SEO context</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Select Domain</Label>
+                                            <Select value={selectedTestDomain} onValueChange={setSelectedTestDomain}>
+                                                <SelectTrigger data-testid="test-domain-select">
+                                                    <SelectValue placeholder="Select a domain..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {testDomains.map(d => (
+                                                        <SelectItem key={d.id} value={d.id}>
+                                                            {d.domain_name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Simulate Days Until Expiry</Label>
+                                            <Select value={String(selectedTestDays)} onValueChange={(v) => setSelectedTestDays(parseInt(v))}>
+                                                <SelectTrigger data-testid="test-days-select">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="30">30 days (first warning)</SelectItem>
+                                                    <SelectItem value="14">14 days</SelectItem>
+                                                    <SelectItem value="7">7 days (critical threshold)</SelectItem>
+                                                    <SelectItem value="3">3 days (urgent)</SelectItem>
+                                                    <SelectItem value="1">1 day (expires tomorrow)</SelectItem>
+                                                    <SelectItem value="0">0 days (expires today)</SelectItem>
+                                                    <SelectItem value="-1">-1 day (already expired)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 pt-2">
+                                        <Button 
+                                            onClick={handleSendTestExpirationAlert} 
+                                            disabled={sendingTestAlert || !selectedTestDomain}
+                                            variant="outline"
+                                            className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                                            data-testid="send-test-expiration-btn"
+                                        >
+                                            {sendingTestAlert && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                            <FlaskConical className="h-4 w-4 mr-2" />
+                                            Send Test Alert
+                                        </Button>
+                                        <span className="text-xs text-zinc-500">
+                                            Test alerts are marked as TEST MODE and don't affect real schedules
+                                        </span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            
+                            <Card className="bg-card border-border">
+                                <CardHeader>
                                     <CardTitle className="text-base">Jenis Alert Domain Monitoring</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
