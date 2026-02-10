@@ -468,6 +468,102 @@ selama <b>{days_in_progress} hari</b>.
         """
         return await self._send_telegram_message(message)
 
+    async def send_project_complaint_notification(
+        self,
+        complaint: Dict[str, Any],
+        network_name: str,
+        responsible_users: List[Dict[str, Any]]
+    ) -> bool:
+        """
+        Send notification when Super Admin creates a project-level complaint.
+        Tags responsible users via @telegram_username.
+        """
+        try:
+            # Get timezone settings
+            tz_str, tz_label = await get_system_timezone(self.db)
+            local_time = format_to_local_time(
+                complaint.get("created_at", datetime.now(timezone.utc).isoformat()),
+                tz_str, tz_label
+            )
+            
+            # Get creator info
+            created_by = complaint.get("created_by", {})
+            creator_name = created_by.get("name", created_by.get("email", "Unknown"))
+            
+            # Format tagged users
+            tagged_users_text = ""
+            if responsible_users:
+                tags = []
+                for user in responsible_users:
+                    if user.get("telegram_username"):
+                        tags.append(f"@{user['telegram_username']}")
+                    else:
+                        tags.append(f"{user.get('name', user.get('email', 'Unknown'))} (no Telegram)")
+                tagged_users_text = "\n".join([f"  • {tag}" for tag in tags])
+            else:
+                tagged_users_text = "  (Tidak ada pengguna yang ditag)"
+            
+            # Format priority
+            priority = complaint.get("priority", "medium")
+            priority_emoji = {"low": "🔵", "medium": "🟡", "high": "🔴"}.get(priority, "🟡")
+            priority_label = {"low": "Rendah", "medium": "Sedang", "high": "Tinggi"}.get(priority, "Sedang")
+            
+            # Format category
+            category = complaint.get("category") or "Umum"
+            category_label = {
+                "communication": "Komunikasi",
+                "deadline": "Deadline",
+                "quality": "Kualitas",
+                "process": "Proses"
+            }.get(category, category.title())
+            
+            # Format report URLs
+            report_urls = complaint.get("report_urls", [])
+            reports_text = "\n".join([f"  • {url}" for url in report_urls]) if report_urls else "  (Tidak ada)"
+            
+            message = f"""🚨 <b>PROJECT-LEVEL COMPLAINT</b>
+
+<b>{creator_name}</b> telah mengajukan komplain
+pada SEO Network '<b>{network_name}</b>'.
+
+<i>Komplain ini tidak terkait dengan optimasi tertentu,
+tetapi menyangkut pengelolaan proyek secara keseluruhan.</i>
+
+━━━━━━━━━━━━━━━━━━━━━━
+👥 <b>Tagged Users:</b>
+{tagged_users_text}
+
+📁 <b>Kategori:</b> {category_label}
+{priority_emoji} <b>Prioritas:</b> {priority_label}
+
+━━━━━━━━━━━━━━━━━━━━━━
+📝 <b>Alasan Komplain:</b>
+"{complaint.get('reason', '(Tidak ada alasan)')}"
+
+📎 <b>Related Reports:</b>
+{reports_text}
+
+🕐 <b>Waktu:</b> {local_time}
+
+━━━━━━━━━━━━━━━━━━━━━━
+⚠️ <b>Action Required:</b>
+<i>Please review and respond to this complaint.</i>"""
+            
+            success = await self._send_telegram_message(message)
+            
+            if success:
+                # Update complaint with notification timestamp
+                await self.db.project_complaints.update_one(
+                    {"id": complaint["id"]},
+                    {"$set": {"telegram_notified_at": datetime.now(timezone.utc).isoformat()}}
+                )
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Failed to send project complaint notification: {e}")
+            return False
+
 
 # Global instance for use across the application
 seo_optimization_telegram_service: Optional[SeoOptimizationTelegramService] = None
