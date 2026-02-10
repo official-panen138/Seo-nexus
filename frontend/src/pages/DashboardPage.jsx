@@ -348,79 +348,48 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Charts Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                    {/* Tier Distribution */}
+                {/* Charts Row - Domains by Brand & Monitoring */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    {/* Domains by Brand */}
                     <Card className="bg-card border-border">
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base flex items-center gap-2">
-                                <BarChart3 className="h-4 w-4 text-blue-500" />
-                                Tier Distribution
+                                <Building2 className="h-4 w-4 text-blue-500" />
+                                Domains by Brand
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {tierData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={200}>
-                                    <BarChart data={tierData} layout="vertical">
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
-                                        <XAxis type="number" tick={{ fill: '#A1A1AA', fontSize: 10 }} />
-                                        <YAxis 
-                                            type="category" 
-                                            dataKey="name" 
-                                            tick={{ fill: '#A1A1AA', fontSize: 9 }} 
-                                            width={80}
-                                        />
-                                        <Tooltip 
-                                            contentStyle={{ backgroundColor: '#0A0A0A', border: '1px solid #27272A', borderRadius: '6px' }}
-                                        />
-                                        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                                            {tierData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="h-[200px] flex items-center justify-center text-zinc-500 text-sm">
-                                    No data available
+                            {brandDomainCounts.length > 0 ? (
+                                <div className="space-y-3">
+                                    {brandDomainCounts.map((brand, idx) => {
+                                        const maxCount = Math.max(...brandDomainCounts.map(b => b.domain_count));
+                                        const percentage = maxCount > 0 ? (brand.domain_count / maxCount) * 100 : 0;
+                                        return (
+                                            <div key={brand.brand_id} className="space-y-1">
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="font-medium truncate max-w-[200px]">{brand.brand_name}</span>
+                                                    <span className="text-zinc-400 font-mono">{brand.domain_count}</span>
+                                                </div>
+                                                <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className="h-full rounded-full transition-all duration-300"
+                                                        style={{ 
+                                                            width: `${percentage}%`,
+                                                            backgroundColor: BRAND_COLORS[idx % BRAND_COLORS.length]
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    <div className="pt-2 mt-2 border-t border-zinc-800 flex justify-between text-sm">
+                                        <span className="text-zinc-500">Total Domains</span>
+                                        <span className="font-semibold">{brandDomainCounts.reduce((sum, b) => sum + b.domain_count, 0)}</span>
+                                    </div>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Index Status */}
-                    <Card className="bg-card border-border">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-base flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4 text-emerald-500" />
-                                Index Status
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {indexData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={200}>
-                                    <PieChart>
-                                        <Pie
-                                            data={indexData}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={50}
-                                            outerRadius={75}
-                                            paddingAngle={3}
-                                            dataKey="value"
-                                            label={({ name, value }) => `${name}: ${value}`}
-                                            labelLine={{ stroke: '#52525B' }}
-                                        >
-                                            {indexData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={PIE_COLORS[index]} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip contentStyle={{ backgroundColor: '#0A0A0A', border: '1px solid #27272A', borderRadius: '6px' }} />
-                                    </PieChart>
-                                </ResponsiveContainer>
                             ) : (
                                 <div className="h-[200px] flex items-center justify-center text-zinc-500 text-sm">
-                                    No data available
+                                    No brand data available
                                 </div>
                             )}
                         </CardContent>
