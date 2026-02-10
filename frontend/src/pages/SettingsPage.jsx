@@ -210,6 +210,31 @@ export default function SettingsPage() {
         }
     };
     
+    // Manual Monitoring Trigger handlers
+    const handleTriggerExpirationCheck = async () => {
+        setTriggeringExpiration(true);
+        try {
+            const res = await domainMonitoringTelegramAPI.triggerExpirationCheck();
+            toast.success(`Expiration check completed: ${res.data.checked} domains checked, ${res.data.alerts_sent} alerts sent`);
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to trigger expiration check');
+        } finally {
+            setTriggeringExpiration(false);
+        }
+    };
+    
+    const handleTriggerAvailabilityCheck = async () => {
+        setTriggeringAvailability(true);
+        try {
+            const res = await domainMonitoringTelegramAPI.triggerAvailabilityCheck();
+            toast.success(`Availability check completed: ${res.data.checked} domains checked, ${res.data.alerts_sent} alerts sent`);
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to trigger availability check');
+        } finally {
+            setTriggeringAvailability(false);
+        }
+    };
+    
     // SEO Telegram handlers
     const handleSaveSeo = async () => {
         setSavingSeo(true);
