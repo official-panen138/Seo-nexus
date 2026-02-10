@@ -526,11 +526,15 @@ class ExpirationMonitoringService:
             else:
                 # Fallback to old chain display
                 chain = seo.get("upstream_chain", [])
+                first_ctx = seo.get("seo_context", [{}])[0] if seo.get("seo_context") else {}
+                
+                # Get FULL node label (domain + path) - NEVER just the root domain
+                node_label = first_ctx.get("node") or domain.get("domain_name", "Unknown")
+                status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
+                
                 if chain:
-                    # Start with the domain
-                    first_ctx = seo.get("seo_context", [{}])[0]
-                    status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
-                    lines.append(f"🗑️ {domain.get('domain_name', 'Unknown')} [{status_label}]")
+                    # Start with the domain + path
+                    lines.append(f"🗑️ {node_label} [{status_label}]")
                     
                     for hop in chain:
                         target = hop.get("target", hop.get("node", ""))
@@ -557,13 +561,11 @@ class ExpirationMonitoringService:
                                 lines.append("   → END: (chain incomplete)")
                 else:
                     # No chain - check if it's orphan or main
-                    first_ctx = seo.get("seo_context", [{}])[0] if seo.get("seo_context") else {}
-                    if first_ctx.get("role") == "main":
-                        lines.append(f"💰 {domain.get('domain_name', 'Unknown')} [Primary]")
+                    if first_ctx.get("role") == "main" or first_ctx.get("domain_role") == "main":
+                        lines.append(f"💰 {node_label} [Primary]")
                         lines.append("   → END: 💰 THIS IS MONEY SITE")
                     else:
-                        status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
-                        lines.append(f"⚠️ {domain.get('domain_name', 'Unknown')} [{status_label}]")
+                        lines.append(f"⚠️ {node_label} [{status_label}]")
                         lines.append("   → END: ⚠️ ORPHAN NODE (no target)")
 
             # Downstream Impact
