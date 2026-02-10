@@ -208,18 +208,21 @@ class DomainMonitoringTelegramService:
 
 class ExpirationMonitoringService:
     """
-    Domain Expiration Monitoring Engine
+    Domain Expiration Monitoring Engine (SEO-Aware)
     
     - Runs daily
-    - Alerts when expiration_date <= today + alert_window_days
-    - Tracks expiration_alert_sent_at to avoid spam
-    - Sends Telegram alert with domain, brand, registrar, expiration, auto-renew
+    - Alerts at thresholds: 30, 14, 7 days, then daily when < 7
+    - Includes full SEO context, upstream chain, downstream impact
+    - Uses dedicated Domain Monitoring Telegram channel
     """
     
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
-        self.telegram = TelegramAlertService(db)
+        self.telegram = DomainMonitoringTelegramService(db)
         self.settings_service = MonitoringSettingsService(db)
+        # Import SEO context enricher
+        from services.seo_context_enricher import SeoContextEnricher
+        self.seo_enricher = SeoContextEnricher(db)
     
     async def check_all_domains(self) -> Dict[str, Any]:
         """Check all domains for expiration alerts"""
@@ -230,9 +233,8 @@ class ExpirationMonitoringService:
             logger.info("Expiration monitoring is disabled")
             return {"checked": 0, "alerts_sent": 0, "skipped": 0}
         
-        alert_window_days = exp_settings.get("alert_window_days", 7)
-        include_auto_renew = exp_settings.get("include_auto_renew", False)
         alert_thresholds = exp_settings.get("alert_thresholds", [30, 14, 7, 3, 1, 0])
+        include_auto_renew = exp_settings.get("include_auto_renew", False)
         
         # Build query for domains with expiration dates
         query = {
@@ -255,7 +257,7 @@ class ExpirationMonitoringService:
         
         for domain in domains:
             checked += 1
-            result = await self._check_domain_expiration(domain, now, alert_window_days, alert_thresholds)
+            result = await self._check_domain_expiration(domain, now, alert_thresholds)
             if result == "sent":
                 alerts_sent += 1
             elif result == "skipped":
@@ -268,10 +270,9 @@ class ExpirationMonitoringService:
         self, 
         domain: Dict[str, Any], 
         now: datetime,
-        alert_window_days: int,
         alert_thresholds: list
     ) -> str:
-        """Check single domain expiration and send alert if needed"""
+        """Check single domain expiration and send SEO-aware alert if needed"""
         expiration_str = domain.get("expiration_date")
         if not expiration_str:
             return "no_date"
@@ -281,42 +282,52 @@ class ExpirationMonitoringService:
             expiration = datetime.fromisoformat(expiration_str.replace("Z", "+00:00"))
             days_remaining = (expiration.date() - now.date()).days
             
-            # Check if within alert window
-            if days_remaining > alert_window_days:
-                return "not_due"
-            
             # Check if we should alert at this threshold
             should_alert = False
-            for threshold in sorted(alert_thresholds, reverse=True):
-                if days_remaining <= threshold:
-                    should_alert = True
-                    break
+            
+            # < 7 days: alert daily
+            if days_remaining < 7:
+                should_alert = True
+            else:
+                # Check specific thresholds
+                for threshold in sorted(alert_thresholds, reverse=True):
+                    if days_remaining <= threshold:
+                        should_alert = True
+                        break
             
             if not should_alert:
-                return "no_threshold"
+                return "not_due"
             
-            # Check if we already sent an alert recently (within 24 hours for same threshold)
+            # Check deduplication (max 1 alert/domain/24h, except < 7 days)
             last_alert_str = domain.get("expiration_alert_sent_at")
+            last_threshold = domain.get("last_expiration_threshold")
+            
             if last_alert_str:
                 last_alert = datetime.fromisoformat(last_alert_str.replace("Z", "+00:00"))
                 hours_since_alert = (now - last_alert).total_seconds() / 3600
-                if hours_since_alert < 24:
-                    return "skipped"
+                
+                # For < 7 days, allow daily alerts
+                if days_remaining >= 7:
+                    if hours_since_alert < 24 and last_threshold == days_remaining:
+                        return "skipped"
+                else:
+                    if hours_since_alert < 24:
+                        return "skipped"
             
-            # Enrich domain with brand/registrar names
-            enriched = await self._enrich_domain(domain)
+            # Enrich with brand/registrar and SEO context
+            enriched = await self._enrich_domain_full(domain)
             
             # Format and send alert
-            message = self._format_expiration_alert(enriched, days_remaining)
+            message = self._format_expiration_alert_seo_aware(enriched, days_remaining)
             sent = await self.telegram.send_alert(message)
             
             if sent:
-                # Update expiration_alert_sent_at
+                # Update tracking
                 await self.db.asset_domains.update_one(
                     {"id": domain["id"]},
                     {"$set": {
                         "expiration_alert_sent_at": now.isoformat(),
-                        "last_expiration_days": days_remaining
+                        "last_expiration_threshold": days_remaining
                     }}
                 )
                 
@@ -331,62 +342,149 @@ class ExpirationMonitoringService:
             logger.error(f"Error checking expiration for {domain.get('domain_name')}: {e}")
             return "error"
     
-    async def _enrich_domain(self, domain: Dict[str, Any]) -> Dict[str, Any]:
-        """Enrich domain with brand and registrar names, and timezone settings"""
+    async def _enrich_domain_full(self, domain: Dict[str, Any]) -> Dict[str, Any]:
+        """Enrich domain with brand, registrar, and full SEO context"""
         enriched = {**domain}
         
+        # Brand
         if domain.get("brand_id"):
             brand = await self.db.brands.find_one({"id": domain["brand_id"]}, {"_id": 0, "name": 1})
             enriched["brand_name"] = brand["name"] if brand else "Unknown"
         else:
             enriched["brand_name"] = "N/A"
         
+        # Registrar
         if domain.get("registrar_id"):
             registrar = await self.db.registrars.find_one({"id": domain["registrar_id"]}, {"_id": 0, "name": 1})
             enriched["registrar_name"] = registrar["name"] if registrar else domain.get("registrar", "N/A")
         else:
             enriched["registrar_name"] = domain.get("registrar", "N/A")
         
-        # Add timezone settings for alert formatting
+        # Timezone
         tz_str, tz_label = await get_system_timezone(self.db)
         enriched["_timezone_str"] = tz_str
         enriched["_timezone_label"] = tz_label
         
+        # SEO context enrichment
+        seo_context = await self.seo_enricher.enrich_domain_with_seo_context(
+            domain.get("domain_name", ""),
+            domain.get("id")
+        )
+        enriched["seo"] = seo_context
+        
         return enriched
     
-    def _format_expiration_alert(self, domain: Dict[str, Any], days_remaining: int) -> str:
-        """Format expiration alert for Telegram"""
-        severity = "CRITICAL" if days_remaining <= 0 else ("HIGH" if days_remaining <= 3 else ("MEDIUM" if days_remaining <= 7 else "LOW"))
+    def _format_expiration_alert_seo_aware(self, domain: Dict[str, Any], days_remaining: int) -> str:
+        """Format SEO-aware expiration alert for Telegram"""
+        seo = domain.get("seo", {})
+        impact_score = seo.get("impact_score", {})
         
-        status_emoji = "🔴" if days_remaining <= 0 else ("🟠" if days_remaining <= 3 else ("🟡" if days_remaining <= 7 else "🔵"))
+        # Determine severity based on SEO impact
+        base_severity = impact_score.get("severity", "LOW")
+        if days_remaining <= 0:
+            severity = "CRITICAL"
+        elif days_remaining <= 3:
+            severity = "CRITICAL" if base_severity in ["CRITICAL", "HIGH"] else "HIGH"
+        elif days_remaining <= 7:
+            severity = base_severity if base_severity in ["CRITICAL", "HIGH"] else "MEDIUM"
+        else:
+            severity = base_severity
         
-        expired_text = "EXPIRED" if days_remaining < 0 else ("EXPIRES TODAY" if days_remaining == 0 else f"Expires in {days_remaining} days")
+        severity_emoji = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🔵"}.get(severity, "⚪")
         
-        auto_renew_status = "✅ Yes" if domain.get("auto_renew") else "❌ No"
+        # Issue text
+        if days_remaining < 0:
+            issue = f"EXPIRED ({abs(days_remaining)} days ago)"
+        elif days_remaining == 0:
+            issue = "EXPIRES TODAY"
+        else:
+            issue = f"Expires in {days_remaining} days"
         
-        # Use configured timezone for display
+        # Timezone
         tz_str = domain.get('_timezone_str', 'Asia/Jakarta')
         tz_label = domain.get('_timezone_label', 'GMT+7')
         local_time = format_now_local(tz_str, tz_label)
         
-        return f"""{status_emoji} <b>DOMAIN EXPIRATION ALERT</b>
-
-<b>Domain:</b> <code>{domain.get('domain_name', 'Unknown')}</code>
-<b>Brand:</b> {domain.get('brand_name', 'N/A')}
-<b>Registrar:</b> {domain.get('registrar_name', 'N/A')}
-
-<b>Status:</b> {expired_text}
-<b>Expiration Date:</b> {domain.get('expiration_date', 'N/A')[:10]}
-<b>Auto-Renew:</b> {auto_renew_status}
-
-<b>Severity:</b> <b>{severity}</b>
-<b>Checked:</b> {local_time}"""
+        # Build message
+        lines = [
+            f"{severity_emoji} <b>DOMAIN MONITORING ALERT</b>",
+            "",
+            f"<b>Domain:</b> <code>{domain.get('domain_name', 'Unknown')}</code>",
+            f"<b>Brand:</b> {domain.get('brand_name', 'N/A')}",
+            f"<b>Issue:</b> Domain Expiration - {issue}",
+            f"<b>Checked At:</b> {local_time}",
+        ]
+        
+        # SEO Context section
+        if seo.get("used_in_seo"):
+            lines.append("")
+            lines.append("🧩 <b>SEO CONTEXT</b>")
+            
+            for ctx in seo.get("seo_context", [])[:3]:
+                lines.append(f"<b>Network:</b> {ctx.get('network_name', 'N/A')}")
+                lines.append(f"<b>Node:</b> {ctx.get('node', 'N/A')}")
+                lines.append(f"<b>Role:</b> {ctx.get('role', 'N/A')}")
+                lines.append(f"<b>Tier:</b> {ctx.get('tier_label', 'N/A')}")
+                lines.append(f"<b>Status:</b> {ctx.get('domain_status', 'N/A').replace('_', ' ').title()}")
+                if ctx.get("target_node"):
+                    lines.append(f"<b>Target:</b> {ctx.get('target_node')}")
+                lines.append("")
+            
+            if seo.get("additional_networks_count", 0) > 0:
+                lines.append(f"<i>Used in +{seo['additional_networks_count']} other networks (see UI)</i>")
+                lines.append("")
+            
+            # Structure Chain
+            chain = seo.get("upstream_chain", [])
+            if chain:
+                lines.append("🧭 <b>SEO STRUCTURE CHAIN (To Final Target)</b>")
+                for i, hop in enumerate(chain, 1):
+                    if hop.get("is_end"):
+                        lines.append(f"{i}) {hop['node']} [{hop['relation']}]")
+                        lines.append(f"END: {hop.get('end_reason', 'Reached')}")
+                    else:
+                        lines.append(f"{i}) {hop['node']} [{hop['relation']}] → {hop['target']} [{hop.get('target_relation', '')}]")
+                lines.append("")
+            
+            # Downstream Impact
+            downstream = seo.get("downstream_impact", [])
+            if downstream:
+                lines.append("📌 <b>DOWNSTREAM IMPACT (Direct Children)</b>")
+                for d in downstream[:5]:
+                    lines.append(f"• {d['node']} [{d['relation']}] → {d['target']}")
+                if len(downstream) > 5:
+                    lines.append(f"(+{len(downstream) - 5} more...)")
+                if seo.get("downstream_impact_more", 0) > 0:
+                    lines.append(f"(+{seo['downstream_impact_more']} more...)")
+                lines.append("")
+            
+            # Impact Score
+            lines.append("🔥 <b>IMPACT SCORE</b>")
+            lines.append(f"• <b>Severity:</b> {impact_score.get('severity', 'LOW')}")
+            lines.append(f"• <b>Networks Affected:</b> {impact_score.get('networks_affected', 0)}")
+            lines.append(f"• <b>Downstream Nodes:</b> {impact_score.get('downstream_nodes_count', 0)}")
+            lines.append(f"• <b>Reaches Money Site:</b> {'YES' if impact_score.get('reaches_money_site') else 'NO'}")
+            if impact_score.get("highest_tier_impacted") is not None:
+                lines.append(f"• <b>Highest Tier:</b> Tier {impact_score.get('highest_tier_impacted')}")
+        else:
+            lines.append("")
+            lines.append("🧩 <b>SEO CONTEXT</b>")
+            lines.append("<i>Not used in any SEO Network</i>")
+        
+        return "\n".join(lines)
     
     async def _create_alert_record(self, domain: Dict[str, Any], days_remaining: int):
         """Create alert record in database"""
         import uuid
         
-        severity = "critical" if days_remaining <= 0 else ("high" if days_remaining <= 3 else ("medium" if days_remaining <= 7 else "low"))
+        seo = domain.get("seo", {})
+        impact_score = seo.get("impact_score", {})
+        severity = impact_score.get("severity", "low").lower()
+        
+        if days_remaining <= 0:
+            severity = "critical"
+        elif days_remaining <= 3 and severity not in ["critical"]:
+            severity = "high"
         
         alert = {
             "id": str(uuid.uuid4()),
@@ -401,7 +499,8 @@ class ExpirationMonitoringService:
                 "days_remaining": days_remaining,
                 "expiration_date": domain.get("expiration_date"),
                 "auto_renew": domain.get("auto_renew", False),
-                "registrar": domain.get("registrar_name")
+                "registrar": domain.get("registrar_name"),
+                "seo_context": seo
             },
             "acknowledged": False,
             "created_at": datetime.now(timezone.utc).isoformat()
