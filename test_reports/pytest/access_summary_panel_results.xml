@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="8" time="2.731" timestamp="2026-02-10T05:53:52.419113+00:00" hostname="agent-env-cdf70e1d-6bc6-4f1a-8ab7-cbe31a5669de"><testcase classname="backend.tests.test_access_summary_panel.TestAccessSummaryPanelAPI" name="test_networks_list_returns_open_complaints_count" time="0.384"><failure message="AssertionError: API failed: {&quot;detail&quot;:&quot;Invalid token&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_access_summary_panel.py:42: in test_networks_list_returns_open_complaints_count
+    assert response.status_code == 200, f"API failed: {response.text}"
+E   AssertionError: API failed: {"detail":"Invalid token"}
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_access_summary_panel.TestAccessSummaryPanelAPI" name="test_networks_list_returns_last_optimization_at" time="0.305"><failure message="AssertionError: API failed: {&quot;detail&quot;:&quot;Invalid token&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_access_summary_panel.py:58: in test_networks_list_returns_last_optimization_at
+    assert response.status_code == 200, f"API failed: {response.text}"
+E   AssertionError: API failed: {"detail":"Invalid token"}
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_access_summary_panel.TestAccessSummaryPanelAPI" name="test_network_detail_returns_open_complaints_count" time="0.347"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_access_summary_panel.py:75: in test_network_detail_returns_open_complaints_count
+    assert list_response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_access_summary_panel.TestAccessSummaryPanelAPI" name="test_network_detail_returns_last_optimization_at" time="0.302"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_access_summary_panel.py:94: in test_network_detail_returns_last_optimization_at
+    assert list_response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_access_summary_panel.TestAccessSummaryPanelAPI" name="test_network_with_open_complaint_shows_count" time="0.305"><failure message="Failed: Unexpected status code: 401">backend/tests/test_access_summary_panel.py:124: in test_network_with_open_complaint_shows_count
+    pytest.fail(f"Unexpected status code: {response.status_code}")
+E   Failed: Unexpected status code: 401</failure></testcase><testcase classname="backend.tests.test_access_summary_panel.TestAccessSummaryPanelAPI" name="test_networks_list_includes_manager_summary_cache" time="0.316"><failure message="AssertionError: API failed: {&quot;detail&quot;:&quot;Invalid token&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_access_summary_panel.py:130: in test_networks_list_includes_manager_summary_cache
+    assert response.status_code == 200, f"API failed: {response.text}"
+E   AssertionError: API failed: {"detail":"Invalid token"}
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_access_summary_panel.TestAccessSummaryPanelAPI" name="test_networks_list_includes_visibility_mode" time="0.302"><failure message="AssertionError: API failed: {&quot;detail&quot;:&quot;Invalid token&quot;}&#10;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_access_summary_panel.py:152: in test_networks_list_includes_visibility_mode
+    assert response.status_code == 200, f"API failed: {response.text}"
+E   AssertionError: API failed: {"detail":"Invalid token"}
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_access_summary_panel.TestNetworkDetailHeaderAccessSummary" name="test_network_detail_has_all_access_summary_fields" time="0.300"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_access_summary_panel.py:187: in test_network_detail_has_all_access_summary_fields
+    assert list_response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase></testsuite></testsuites>
