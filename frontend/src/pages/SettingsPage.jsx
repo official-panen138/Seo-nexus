@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../lib/auth';
-import { settingsAPI, domainMonitoringTelegramAPI } from '../lib/api';
+import { settingsAPI, domainMonitoringTelegramAPI, emailAlertsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
 import { toast } from 'sonner';
-import { Loader2, Settings, Send, MessageCircle, CheckCircle, AlertCircle, Network, Bell, Palette, Clock, Upload, Image, Globe, Shield } from 'lucide-react';
+import { Loader2, Settings, Send, MessageCircle, CheckCircle, AlertCircle, Network, Bell, Palette, Clock, Upload, Image, Globe, Shield, Mail, Plus, X } from 'lucide-react';
 
 
 // Timezone options
