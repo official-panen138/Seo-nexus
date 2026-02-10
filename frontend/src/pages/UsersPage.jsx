@@ -209,7 +209,8 @@ export default function UsersPage() {
                 email: createForm.email,
                 name: createForm.name,
                 role: createForm.role,
-                brand_scope_ids: createForm.brand_scope_ids
+                brand_scope_ids: createForm.brand_scope_ids,
+                telegram_username: createForm.telegram_username || null
             };
             
             // Only include password if manual password is enabled
