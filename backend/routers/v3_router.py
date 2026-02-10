@@ -8270,3 +8270,87 @@ async def validate_template_body(
     }
 
 
+
+# ==================== DOMAIN EXPIRATION TEST ALERTS ====================
+
+
+@router.post("/monitoring/expiration/test")
+async def send_test_expiration_alert(
+    body: dict,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Send a TEST domain expiration alert for QA purposes.
+    
+    Body:
+    - domain_id: str (required) - The domain to test
+    - simulated_days: int (required) - Days until expiration to simulate (30, 14, 7, 3, 0, -1)
+    
+    Test alerts:
+    - Use same formatting as real alerts
+    - Marked as TEST MODE
+    - Do NOT affect deduplication or schedules
+    - Logged with is_test=true
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can send test alerts")
+    
+    domain_id = body.get("domain_id")
+    simulated_days = body.get("simulated_days", 7)
+    
+    if not domain_id:
+        raise HTTPException(status_code=400, detail="domain_id is required")
+    
+    if not isinstance(simulated_days, int):
+        raise HTTPException(status_code=400, detail="simulated_days must be an integer")
+    
+    from services.monitoring_service import ExpirationMonitoringService
+    from services.domain_telegram_service import DomainMonitoringTelegramService
+    
+    telegram_service = DomainMonitoringTelegramService(db)
+    monitoring_service = ExpirationMonitoringService(db, telegram_service)
+    
+    result = await monitoring_service.send_test_expiration_alert(
+        domain_id=domain_id,
+        simulated_days=simulated_days,
+        triggered_by=current_user.get("email", "unknown"),
+    )
+    
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=500, 
+            detail=result.get("error", "Failed to send test alert")
+        )
+    
+    return result
+
+
+@router.get("/monitoring/expiration/test-options")
+async def get_expiration_test_options(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get available test options for expiration alerts.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can access test options")
+    
+    return {
+        "thresholds": [
+            {"value": 30, "label": "30 days (first warning)"},
+            {"value": 14, "label": "14 days"},
+            {"value": 7, "label": "7 days (critical threshold)"},
+            {"value": 3, "label": "3 days (urgent)"},
+            {"value": 1, "label": "1 day (expires tomorrow)"},
+            {"value": 0, "label": "0 days (expires today)"},
+            {"value": -1, "label": "-1 day (already expired)"},
+        ],
+        "reminder_schedule": {
+            "30_days": "One-time alert",
+            "14_days": "One-time alert",
+            "7_days": "One-time alert",
+            "less_than_7": "2x daily (09:00 & 18:00 GMT+7)",
+        }
+    }
+
+
