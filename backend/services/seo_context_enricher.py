@@ -453,11 +453,31 @@ class SeoContextEnricher:
         entries = await self.db.seo_structure_entries.find(
             {"network_id": network_id},
             {"_id": 0, "id": 1, "domain": 1, "optimized_path": 1, "domain_status": 1, 
-             "domain_role": 1, "target_entry_id": 1}
+             "domain_role": 1, "target_entry_id": 1, "asset_domain_id": 1}
         ).to_list(200)
         
         if not entries:
             return ["<i>No structure data available</i>"]
+        
+        # Get domain names for all asset_domain_ids
+        asset_domain_ids = list(set(e.get("asset_domain_id") for e in entries if e.get("asset_domain_id")))
+        asset_domains = {}
+        if asset_domain_ids:
+            domains_cursor = await self.db.asset_domains.find(
+                {"id": {"$in": asset_domain_ids}},
+                {"_id": 0, "id": 1, "domain_name": 1}
+            ).to_list(200)
+            asset_domains = {d["id"]: d.get("domain_name", "") for d in domains_cursor}
+        
+        # Helper function to get node display name
+        def get_node_name(entry):
+            domain = entry.get("domain") or ""
+            if not domain and entry.get("asset_domain_id"):
+                domain = asset_domains.get(entry["asset_domain_id"], "")
+            path = entry.get("optimized_path") or ""
+            if domain and path:
+                return f"{domain}{path}"
+            return domain or path or "Unknown"
         
         # Build entry lookup
         entry_by_id = {e["id"]: e for e in entries}
@@ -507,17 +527,16 @@ class SeoContextEnricher:
             if t == 0:
                 lines.append("<b>LP / Money Site:</b>")
             elif t == 99:
-                lines.append("")
-                lines.append("<b>Orphan:</b>")
+                if tier_entries:
+                    lines.append("")
+                    lines.append("<b>Orphan:</b>")
             else:
                 lines.append("")
                 lines.append(f"<b>Tier {t}:</b>")
             
             # Entries in this tier
             for entry in tier_entries:
-                domain = entry.get("domain", "")
-                path = entry.get("optimized_path", "")
-                node = f"{domain}{path}"
+                node = get_node_name(entry)
                 status = self._get_relation_type(entry.get("domain_status", "canonical"))
                 
                 if t == 0:
@@ -528,6 +547,15 @@ class SeoContextEnricher:
                     target_id = entry.get("target_entry_id")
                     if target_id and target_id in entry_by_id:
                         target = entry_by_id[target_id]
+                        target_node = get_node_name(target)
+                        target_status = self._get_relation_type(target.get("domain_status", "canonical"))
+                        if target.get("domain_role") == "main":
+                            target_status = "Primary"
+                        lines.append(f"  • {node} [{status}] → {target_node} [{target_status}]")
+                    else:
+                        lines.append(f"  • {node} [{status}]")
+        
+        return lines
                         target_domain = target.get("domain", "")
                         target_path = target.get("optimized_path", "")
                         target_node = f"{target_domain}{target_path}"
