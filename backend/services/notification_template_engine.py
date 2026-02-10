@@ -127,6 +127,8 @@ ALLOWED_VARIABLES = {
     # Domain monitoring additional
     "domain.error_message",  # Error reason for down alerts
     "domain.category",  # Domain category
+    "domain.used_in_seo",  # YES/NO
+    "domain.monitoring_status",  # ✅ Enabled / ❌ Disabled
     
     # Domains list for unmonitored reminder
     "domains.count",
