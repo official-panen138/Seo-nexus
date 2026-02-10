@@ -120,6 +120,13 @@ export const Layout = ({ children }) => {
                     </div>
                 )}
 
+                {/* Online Users */}
+                {!collapsed && (
+                    <div className="px-3 mb-3">
+                        <OnlineUsers />
+                    </div>
+                )}
+
                 {/* Navigation */}
                 <ScrollArea className="sidebar-nav">
                     <nav className="px-3 space-y-1">
