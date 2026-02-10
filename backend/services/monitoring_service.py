@@ -80,7 +80,7 @@ class MonitoringSettingsService:
 
 
 class TelegramAlertService:
-    """Service for sending Telegram alerts"""
+    """Service for sending Telegram alerts to the general monitoring channel"""
     
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
@@ -98,6 +98,91 @@ class TelegramAlertService:
         
         if not bot_token or not chat_id:
             logger.warning("Telegram not configured, skipping alert")
+            return False
+        
+        try:
+            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            async with httpx.AsyncClient() as client:
+                response = await client.post(url, json={
+                    "chat_id": chat_id,
+                    "text": message,
+                    "parse_mode": "HTML"
+                }, timeout=10)
+                if response.status_code == 200:
+                    logger.info("Telegram alert sent successfully")
+                    return True
+                else:
+                    logger.error(f"Telegram API error: {response.text}")
+                    return False
+        except Exception as e:
+            logger.error(f"Failed to send Telegram alert: {e}")
+            return False
+
+
+class DomainMonitoringTelegramService:
+    """
+    Dedicated Telegram service for Domain Monitoring alerts.
+    Uses SEPARATE configuration from SEO notifications.
+    NO fallback to other channels - if not configured, alerts are logged but not sent.
+    """
+    
+    def __init__(self, db: AsyncIOMotorDatabase):
+        self.db = db
+    
+    async def get_telegram_config(self) -> Optional[Dict[str, Any]]:
+        """
+        Get dedicated Domain Monitoring Telegram configuration.
+        Returns None if not configured (NO fallback).
+        """
+        settings = await self.db.settings.find_one({"key": "telegram_monitoring"}, {"_id": 0})
+        
+        if not settings:
+            logger.warning("Domain Monitoring Telegram not configured")
+            return None
+        
+        if not settings.get("enabled", True):
+            logger.info("Domain Monitoring Telegram notifications disabled")
+            return None
+        
+        bot_token = settings.get("bot_token")
+        chat_id = settings.get("chat_id")
+        
+        if not bot_token or not chat_id:
+            logger.warning("Domain Monitoring Telegram missing bot_token or chat_id")
+            return None
+        
+        return settings
+    
+    async def send_alert(self, message: str) -> bool:
+        """
+        Send alert to dedicated Domain Monitoring Telegram channel.
+        NO fallback - if not configured, returns False.
+        """
+        config = await self.get_telegram_config()
+        
+        if not config:
+            logger.warning("Domain Monitoring alert not sent - Telegram not configured")
+            return False
+        
+        try:
+            url = f"https://api.telegram.org/bot{config['bot_token']}/sendMessage"
+            async with httpx.AsyncClient() as client:
+                response = await client.post(url, json={
+                    "chat_id": config["chat_id"],
+                    "text": message,
+                    "parse_mode": "HTML",
+                    "disable_web_page_preview": True
+                }, timeout=15)
+                
+                if response.status_code == 200:
+                    logger.info("Domain Monitoring Telegram alert sent successfully")
+                    return True
+                else:
+                    logger.error(f"Domain Monitoring Telegram API error: {response.text}")
+                    return False
+        except Exception as e:
+            logger.error(f"Failed to send Domain Monitoring alert: {e}")
+            return False
             return False
         
         try:
