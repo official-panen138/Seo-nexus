@@ -501,29 +501,34 @@ If domain expires, all SEO link flow will be BROKEN.
     ("telegram", "monitoring_not_configured"): {
         "title": "Monitoring Not Configured",
         "template_body": """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️ <b>MONITORING NOT CONFIGURED</b>
+⚠️ DOMAIN MONITORING NOT ENABLED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📋 <b>Found {{domains.count}} domain(s)</b> used in SEO networks without monitoring enabled.
+Domain        : {{domain.name}}
+Brand         : {{brand.name}}
+Used In SEO   : {{domain.used_in_seo}}
+Monitoring    : {{domain.monitoring_status}}
 
-{{domains.list}}
+SEO CONTEXT:
+Network       : {{network.name}}
+Node Used     : {{node.full_path}}
+Role          : {{node.role}}
+Tier          : {{node.tier_label}}
+Target        : {{node.target}}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔥 <b>IMPACT</b>
+🧭 STRUKTUR SEO TERKINI
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-If any of these root domains go <b>DOWN</b>:
-• All paths on that domain become inaccessible
-• SEO link flow is BROKEN
-• Downstream nodes lose authority
+{{structure.full_structure}}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⏰ <b>ACTION REQUIRED</b>
+⚠️ RISK:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-<b>Enable monitoring</b> for these domains in Asset Domains settings.
+Domain ini aktif digunakan dalam struktur SEO
+tetapi pemantauan TIDAK diaktifkan.
+Jika domain DOWN, alur otoritas SEO akan TERPUTUS.
 
-<i>This reminder will repeat daily until all SEO domains are monitored.</i>
-
-🕐 <b>Alert Time:</b> {{timestamp.gmt7}}"""
+🕐 Alert Time: {{timestamp.gmt7}}"""
     },
     
     # Test notification
