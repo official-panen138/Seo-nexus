@@ -25,7 +25,8 @@ import {
     Loader2,
     ChevronRight,
     Users,
-    MessageSquare
+    MessageSquare,
+    Trash2
 } from 'lucide-react';
 import axios from 'axios';
 
