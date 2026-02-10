@@ -252,6 +252,57 @@ export default function UsersPage() {
         }
     };
 
+    // Bulk brand access handlers
+    const openBulkBrandDialog = () => {
+        setBulkBrandSelection([]);
+        setBulkBrandMode('replace');
+        setBulkBrandDialogOpen(true);
+    };
+
+    const handleBulkBrandToggle = (brandId) => {
+        setBulkBrandSelection(prev => 
+            prev.includes(brandId) 
+                ? prev.filter(id => id !== brandId)
+                : [...prev, brandId]
+        );
+    };
+
+    const handleBulkSelectAllBrands = () => {
+        setBulkBrandSelection(brands.map(b => b.id));
+    };
+
+    const handleBulkDeselectAllBrands = () => {
+        setBulkBrandSelection([]);
+    };
+
+    const handleBulkBrandUpdate = async () => {
+        if (selectedUserIds.length === 0) return;
+        if (bulkBrandSelection.length === 0 && bulkBrandMode === 'replace') {
+            toast.error('Please select at least one brand');
+            return;
+        }
+        
+        setSaving(true);
+        try {
+            const response = await menuPermissionsAPI.bulkUpdateBrandAccess(
+                selectedUserIds, 
+                bulkBrandSelection, 
+                bulkBrandMode
+            );
+            toast.success(`Brand access updated for ${response.data.results.updated.length} users`);
+            if (response.data.results.skipped_super_admin.length > 0) {
+                toast.info(`Skipped ${response.data.results.skipped_super_admin.length} Super Admin users`);
+            }
+            setBulkBrandDialogOpen(false);
+            setSelectedUserIds([]);
+            loadData(); // Refresh to show updated brand access
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to update bulk brand access');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const handleUpdateUser = async () => {
         if (!selectedUser) return;
         if (editForm.role !== 'super_admin' && editForm.brand_scope_ids.length === 0) {
