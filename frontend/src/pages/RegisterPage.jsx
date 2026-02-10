@@ -143,6 +143,22 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-2">
+                        <Label htmlFor="telegram" className="text-zinc-400 text-sm">
+                            Telegram Username <span className="text-zinc-600">(optional)</span>
+                        </Label>
+                        <Input
+                            id="telegram"
+                            type="text"
+                            value={telegramUsername}
+                            onChange={(e) => setTelegramUsername(e.target.value.replace('@', ''))}
+                            placeholder="username (without @)"
+                            className="bg-black border-zinc-800 focus:border-blue-500 h-11"
+                            data-testid="register-telegram-input"
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
                         <Label htmlFor="password" className="text-zinc-400 text-sm">
                             Password
                         </Label>
