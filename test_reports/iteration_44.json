@@ -1,0 +1,114 @@
+{
+  "summary": "Unmonitored Domain Reminder Alert Format - Backend Testing Complete. All 9 tests passed (100%). Verified that each unmonitored domain gets individual alert with correct format containing all required sections.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+
+  "passed_tests": {
+    "backend_api": [
+      "GET /api/v3/monitoring/unmonitored-in-seo - Returns 6 expected domains (moneysite.com, tier1-site1.com, tier1-site3.com, tier2-site1-1.com, tier2-site1-2.com, orphan-domain.com)",
+      "POST /api/v3/monitoring/send-unmonitored-reminders - Sends individual alerts per domain (not batch)",
+      "Alert format contains ⚠️ DOMAIN MONITORING NOT ENABLED header",
+      "Alert format contains Domain, Brand, Used In SEO, Monitoring fields",
+      "Alert format contains SEO CONTEXT section with Network, Node Used, Role, Tier, Target",
+      "Alert format contains 🧭 STRUKTUR SEO TERKINI section with tier-based structure",
+      "Alert format contains ⚠️ RISK section with Indonesian warning text",
+      "Rate limiting works with 24h cooldown (scheduler_state collection)",
+      "Test alert also contains STRUKTUR SEO TERKINI section"
+    ]
+  },
+
+  "features_verified": {
+    "individual_alerts_per_domain": {
+      "status": "VERIFIED",
+      "code_location": "forced_monitoring_service.py:255-284",
+      "notes": "Loop iterates through each unmonitored domain and sends separate message via telegram.send_alert()"
+    },
+    "alert_format_header": {
+      "status": "VERIFIED",
+      "code_location": "forced_monitoring_service.py:322-326",
+      "notes": "Header line: ⚠️ DOMAIN MONITORING NOT ENABLED"
+    },
+    "alert_format_domain_info": {
+      "status": "VERIFIED",
+      "code_location": "forced_monitoring_service.py:328-333",
+      "notes": "Contains Domain, Brand, Used In SEO: YES, Monitoring: ❌ Disabled"
+    },
+    "alert_format_seo_context": {
+      "status": "VERIFIED",
+      "code_location": "forced_monitoring_service.py:335-358",
+      "notes": "Contains Network, Node Used, Role, Tier, Target fields"
+    },
+    "alert_format_struktur_seo_terkini": {
+      "status": "VERIFIED",
+      "code_location": "forced_monitoring_service.py:360-373",
+      "notes": "🧭 STRUKTUR SEO TERKINI section with full_structure_lines from seo_context_enricher"
+    },
+    "alert_format_risk_section": {
+      "status": "VERIFIED",
+      "code_location": "forced_monitoring_service.py:375-381",
+      "notes": "⚠️ RISK section with Indonesian warning about SEO authority flow"
+    },
+    "rate_limiting_24h": {
+      "status": "VERIFIED",
+      "code_location": "forced_monitoring_service.py:229-242",
+      "notes": "Uses scheduler_state collection with 86400 seconds (24h) check"
+    },
+    "test_alert_struktur": {
+      "status": "VERIFIED",
+      "code_location": "forced_monitoring_service.py:576-621",
+      "notes": "Test alerts include 🧭 STRUKTUR SEO TERKINI section with full_structure_lines"
+    }
+  },
+
+  "alert_format_spec": {
+    "header": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ DOMAIN MONITORING NOT ENABLED\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    "domain_info": "Domain: {domain}\nBrand: {brand}\nUsed In SEO: YES\nMonitoring: ❌ Disabled",
+    "seo_context": "SEO CONTEXT:\nNetwork: {network}\nNode Used: {node}\nRole: {role}\nTier: {tier}\nTarget: {target}",
+    "struktur_seo_terkini": "🧭 STRUKTUR SEO TERKINI\n{tier-based-structure-lines}",
+    "risk_section": "⚠️ RISK:\nDomain ini aktif digunakan dalam struktur SEO\ntetapi pemantauan TIDAK diaktifkan.\nJika domain DOWN, alur otoritas SEO akan TERPUTUS."
+  },
+
+  "test_report_links": [
+    "/app/backend/tests/test_unmonitored_domain_alert_format.py",
+    "/app/test_reports/pytest/unmonitored_alert_format_results.xml"
+  ],
+
+  "action_items": [],
+
+  "critical_code_review_comments": [
+    "GOOD: Individual alerts sent per domain via loop in send_unmonitored_reminders()",
+    "GOOD: Alert format matches spec with all 6 required sections",
+    "GOOD: 24h rate limiting implemented via scheduler_state collection",
+    "GOOD: Test alerts also include STRUKTUR SEO TERKINI section",
+    "GOOD: Plain text (no HTML) used for unmonitored alerts vs HTML for test alerts"
+  ],
+
+  "updated_files": [
+    "/app/backend/tests/test_unmonitored_domain_alert_format.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "N/A (backend only testing requested)"
+  },
+
+  "test_credentials": {
+    "super_admin": {"email": "testadmin@test.com", "password": "test"}
+  },
+
+  "seed_data_creation": "None - using existing data",
+
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "Unmonitored domain reminder alert format verified. Key files: /app/backend/services/forced_monitoring_service.py (_build_unmonitored_alert_message at lines 303-383, send_unmonitored_reminders at lines 210-301). 6 unmonitored domains in SEO: moneysite.com, tier1-site1.com, tier1-site3.com, tier2-site1-1.com, tier2-site1-2.com, orphan-domain.com. Alert format uses plain text (not HTML) with all required sections."
+}
