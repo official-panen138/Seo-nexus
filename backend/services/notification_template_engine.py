@@ -396,6 +396,7 @@ Domain <b>{{domain.name}}</b> tidak dapat diakses!
 • <b>Role:</b> {{node.domain_role}}
 • <b>Status:</b> {{node.domain_status}}
 • <b>Index:</b> {{node.index_status}}
+• <b>Target:</b> {{node.target}}
 
 ━━━━━━━━━━━━━━━━━━━━━━
 📝 <b>ALASAN PENGHAPUSAN</b>
@@ -408,6 +409,11 @@ Domain <b>{{domain.name}}</b> tidak dapat diakses!
 • <b>Authority Flow:</b> TERPUTUS
 • <b>Severity:</b> {{impact.severity}}
 • <b>Node Terdampak:</b> {{impact.affected_count}}
+
+━━━━━━━━━━━━━━━━━━━━━━
+🧭 <b>STRUKTUR SEO (SEBELUM PENGHAPUSAN)</b>
+━━━━━━━━━━━━━━━━━━━━━━
+{{structure.before_deletion}}
 
 ━━━━━━━━━━━━━━━━━━━━━━
 🕐 <b>Waktu:</b> {{timestamp.gmt7}}
