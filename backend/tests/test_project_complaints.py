@@ -9,7 +9,7 @@ import os
 import uuid
 
 BASE_URL = os.environ.get(
-    "REACT_APP_BACKEND_URL", "https://seo-conflict-fix.preview.emergentagent.com"
+    "REACT_APP_BACKEND_URL", "https://domain-alert-hub.preview.emergentagent.com"
 )
 
 # Test credentials
