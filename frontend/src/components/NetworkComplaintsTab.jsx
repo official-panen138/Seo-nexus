@@ -88,8 +88,17 @@ export function NetworkComplaintsTab({ networkId, brandId, networkManagers = [] 
     // User search state
     const [userSearchQuery, setUserSearchQuery] = useState('');
     const [userSearchResults, setUserSearchResults] = useState([]);
-    const [selectedUsers, setSelectedUsers] = useState([]);
+    const [selectedUsers, setSelectedUsers] = useState([]); // Additional users (optional)
     const [isSearching, setIsSearching] = useState(false);
+    
+    // Initialize selected users with network managers when dialog opens
+    useEffect(() => {
+        if (createDialogOpen && networkManagers.length > 0) {
+            // Network managers are NOT added to selectedUsers - they are shown separately
+            // and their IDs are automatically included in the complaint
+            setSelectedUsers([]);
+        }
+    }, [createDialogOpen, networkManagers]);
     
     // Response dialog state
     const [respondDialogOpen, setRespondDialogOpen] = useState(false);
