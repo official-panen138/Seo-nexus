@@ -62,6 +62,12 @@ export default function SettingsPage() {
     const [savingDomainMonitoring, setSavingDomainMonitoring] = useState(false);
     const [testingDomainMonitoring, setTestingDomainMonitoring] = useState(false);
     
+    // Test Expiration Alert state
+    const [testDomains, setTestDomains] = useState([]);
+    const [selectedTestDomain, setSelectedTestDomain] = useState('');
+    const [selectedTestDays, setSelectedTestDays] = useState(7);
+    const [sendingTestAlert, setSendingTestAlert] = useState(false);
+    
     // Branding state
     const [brandingConfig, setBrandingConfig] = useState({
         site_title: 'SEO//NOC',
