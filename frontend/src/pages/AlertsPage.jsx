@@ -4,8 +4,9 @@ import { v3ReportsAPI, conflictsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Card, CardContent } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
 import { 
     AlertTriangle,
@@ -16,7 +17,11 @@ import {
     RefreshCw,
     Link2,
     ClipboardList,
-    BarChart3
+    BarChart3,
+    Plus,
+    Clock,
+    Table,
+    LayoutGrid
 } from 'lucide-react';
 
 // Conflict severity badge colors
