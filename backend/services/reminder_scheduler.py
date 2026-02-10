@@ -232,12 +232,25 @@ class ReminderScheduler:
             replace_existing=True,
         )
 
+        # Add unmonitored domain reminder job - runs daily at 8:00 AM
+        # Sends ⚠️ MONITORING NOT CONFIGURED alerts for domains in SEO networks without monitoring
+        self.scheduler.add_job(
+            self._run_unmonitored_domain_reminder_job,
+            trigger=CronTrigger(hour=8, minute=0),
+            id=self.UNMONITORED_DOMAIN_JOB_ID,
+            name="Unmonitored Domain SEO Network Reminders",
+            replace_existing=True,
+        )
+
         self.scheduler.start()
         logger.info(
             f"[SCHEDULER] Started reminder scheduler (runs every {self.DEFAULT_INTERVAL_HOURS} hours)"
         )
         logger.info(
             "[SCHEDULER] Started weekly digest scheduler (Monday 9:00 AM default)"
+        )
+        logger.info(
+            "[SCHEDULER] Started unmonitored domain reminder scheduler (daily 8:00 AM)"
         )
 
         # Update digest schedule from settings asynchronously
