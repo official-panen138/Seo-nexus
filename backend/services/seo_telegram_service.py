@@ -535,7 +535,7 @@ class SeoTelegramService:
                 )
                 lines.append(f"• Role (sebelum dihapus): {role}")
                 lines.append(f"• Status (sebelum dihapus): {status}")
-            lines.append(f"• Status Sekarang: <b>DIHAPUS</b>")
+            lines.append("• Status Sekarang: <b>DIHAPUS</b>")
 
         elif action_type == "relink_node":
             # Target changed
