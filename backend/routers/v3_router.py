@@ -6587,3 +6587,108 @@ async def test_email_alert(
     else:
         raise HTTPException(status_code=500, detail=result.get("error", "Failed to send test email"))
 
+
+
+# ==================== WEEKLY DIGEST SETTINGS ====================
+
+class WeeklyDigestSettingsUpdate(BaseModel):
+    enabled: Optional[bool] = None
+    schedule_day: Optional[str] = None  # monday, tuesday, etc.
+    schedule_hour: Optional[int] = None  # 0-23
+    schedule_minute: Optional[int] = None  # 0-59
+    include_expiring_domains: Optional[bool] = None
+    include_down_domains: Optional[bool] = None
+    include_soft_blocked: Optional[bool] = None
+    expiring_days_threshold: Optional[int] = None  # 7-90
+
+
+@router.get("/settings/weekly-digest")
+async def get_weekly_digest_settings(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get weekly digest email configuration.
+    Super Admin only.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    
+    from services.weekly_digest_service import get_weekly_digest_service
+    digest_service = get_weekly_digest_service(db)
+    
+    settings = await digest_service.get_digest_settings()
+    return settings
+
+
+@router.put("/settings/weekly-digest")
+async def update_weekly_digest_settings(
+    data: WeeklyDigestSettingsUpdate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Update weekly digest email configuration.
+    Super Admin only.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    
+    # Validate schedule_day
+    valid_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    if data.schedule_day and data.schedule_day.lower() not in valid_days:
+        raise HTTPException(status_code=400, detail=f"schedule_day must be one of: {', '.join(valid_days)}")
+    
+    # Validate expiring_days_threshold
+    if data.expiring_days_threshold is not None:
+        if not 7 <= data.expiring_days_threshold <= 90:
+            raise HTTPException(status_code=400, detail="expiring_days_threshold must be between 7 and 90")
+    
+    from services.weekly_digest_service import get_weekly_digest_service
+    digest_service = get_weekly_digest_service(db)
+    
+    try:
+        updates = {k: v for k, v in data.model_dump().items() if v is not None}
+        settings = await digest_service.update_digest_settings(updates)
+        return settings
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/settings/weekly-digest/send")
+async def send_weekly_digest_now(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Manually trigger sending the weekly digest email.
+    Super Admin only.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    
+    from services.weekly_digest_service import get_weekly_digest_service
+    digest_service = get_weekly_digest_service(db)
+    
+    result = await digest_service.generate_and_send_digest()
+    
+    if result.get("success"):
+        return result
+    else:
+        raise HTTPException(status_code=500, detail=result.get("error", "Failed to send digest"))
+
+
+@router.get("/settings/weekly-digest/preview")
+async def preview_weekly_digest(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Preview the weekly digest data without sending.
+    Super Admin only.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    
+    from services.weekly_digest_service import get_weekly_digest_service
+    digest_service = get_weekly_digest_service(db)
+    
+    preview = await digest_service.preview_digest()
+    return preview
+
