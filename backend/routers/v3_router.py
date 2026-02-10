@@ -7786,3 +7786,113 @@ async def create_user_notification(
     await db.user_notifications.insert_one(notification)
     return notification
 
+
+# ==================== USER PRESENCE / ONLINE STATUS ====================
+
+# Consider user online if heartbeat within last 60 seconds
+ONLINE_THRESHOLD_SECONDS = 60
+
+
+@router.post("/presence/heartbeat")
+async def send_heartbeat(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Send heartbeat to update user's online status.
+    Should be called every 30 seconds by the frontend.
+    """
+    user_id = current_user.get("id")
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Update user's last_seen and current page
+    await db.user_presence.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {
+                "user_id": user_id,
+                "last_seen": now,
+                "user_name": current_user.get("name") or current_user.get("email"),
+                "user_email": current_user.get("email"),
+                "user_role": current_user.get("role"),
+            }
+        },
+        upsert=True
+    )
+    
+    # Also update user's last_online in users collection
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"last_online": now}}
+    )
+    
+    return {"success": True, "timestamp": now}
+
+
+@router.get("/presence/online")
+async def get_online_users(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get list of currently online users.
+    Users are considered online if heartbeat within last 60 seconds.
+    """
+    threshold = datetime.now(timezone.utc) - timedelta(seconds=ONLINE_THRESHOLD_SECONDS)
+    threshold_str = threshold.isoformat()
+    
+    # Get all users with recent heartbeat
+    online_presence = await db.user_presence.find(
+        {"last_seen": {"$gte": threshold_str}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Get recently offline users (last 24 hours)
+    day_ago = datetime.now(timezone.utc) - timedelta(hours=24)
+    day_ago_str = day_ago.isoformat()
+    
+    recent_users = await db.user_presence.find(
+        {
+            "last_seen": {"$gte": day_ago_str, "$lt": threshold_str}
+        },
+        {"_id": 0}
+    ).sort("last_seen", -1).limit(20).to_list(20)
+    
+    return {
+        "online": online_presence,
+        "online_count": len(online_presence),
+        "recently_active": recent_users
+    }
+
+
+@router.get("/users/{user_id}/status")
+async def get_user_status(
+    user_id: str,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """Get online status and last seen for a specific user."""
+    presence = await db.user_presence.find_one(
+        {"user_id": user_id},
+        {"_id": 0}
+    )
+    
+    if not presence:
+        # Check users collection for last_online
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "last_online": 1})
+        return {
+            "user_id": user_id,
+            "is_online": False,
+            "last_seen": user.get("last_online") if user else None
+        }
+    
+    # Check if online
+    threshold = datetime.now(timezone.utc) - timedelta(seconds=ONLINE_THRESHOLD_SECONDS)
+    last_seen = presence.get("last_seen")
+    is_online = last_seen and last_seen >= threshold.isoformat()
+    
+    return {
+        "user_id": user_id,
+        "is_online": is_online,
+        "last_seen": last_seen,
+        "user_name": presence.get("user_name"),
+    }
+
+
