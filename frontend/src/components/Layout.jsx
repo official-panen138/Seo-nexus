@@ -170,6 +170,7 @@ export const Layout = ({ children }) => {
                                         <span className="capitalize">{user.role?.replace('_', ' ')}</span>
                                     </div>
                                 </div>
+                                <NotificationBell />
                             </div>
                         </div>
                     )}
