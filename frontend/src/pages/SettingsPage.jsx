@@ -119,7 +119,21 @@ export default function SettingsPage() {
 
     useEffect(() => {
         loadSettings();
+        loadTestDomains();
     }, []);
+    
+    const loadTestDomains = async () => {
+        try {
+            const res = await assetDomainsAPI.list({ page: 1, limit: 100 });
+            const domains = res.data?.data || res.data?.domains || [];
+            setTestDomains(domains);
+            if (domains.length > 0) {
+                setSelectedTestDomain(domains[0].id);
+            }
+        } catch (err) {
+            console.error('Failed to load domains for testing:', err);
+        }
+    };
 
     const loadSettings = async () => {
         try {
