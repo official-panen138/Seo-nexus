@@ -138,8 +138,17 @@ class SeoContextEnricher:
                     {"_id": 0, "domain": 1, "optimized_path": 1, "asset_domain_id": 1},
                 )
                 if target_entry:
+                    # Look up target domain name if not in entry
+                    target_domain_name = target_entry.get('domain') or ''
+                    if not target_domain_name and target_entry.get('asset_domain_id'):
+                        target_asset = await self.db.asset_domains.find_one(
+                            {"id": target_entry["asset_domain_id"]},
+                            {"_id": 0, "domain_name": 1}
+                        )
+                        target_domain_name = target_asset.get("domain_name", "") if target_asset else ""
+                    
                     seo_ctx["target_node"] = (
-                        f"{target_entry.get('domain', '')}{target_entry.get('optimized_path', '')}"
+                        f"{target_domain_name}{target_entry.get('optimized_path', '')}"
                     )
 
             result["seo_context"].append(seo_ctx)
