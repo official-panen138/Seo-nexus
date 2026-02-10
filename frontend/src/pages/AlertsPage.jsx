@@ -272,7 +272,27 @@ export default function AlertsPage() {
 
                 {/* Action Button - Only show when conflicts exist */}
                 {enhancedConflicts.length > 0 && (
-                    <div className="flex justify-end mb-4">
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant={viewMode === 'table' ? 'secondary' : 'outline'}
+                                size="sm"
+                                onClick={() => setViewMode('table')}
+                                data-testid="view-table-btn"
+                            >
+                                <Table className="h-4 w-4 mr-1" />
+                                Table
+                            </Button>
+                            <Button
+                                variant={viewMode === 'cards' ? 'secondary' : 'outline'}
+                                size="sm"
+                                onClick={() => setViewMode('cards')}
+                                data-testid="view-cards-btn"
+                            >
+                                <LayoutGrid className="h-4 w-4 mr-1" />
+                                Cards
+                            </Button>
+                        </div>
                         <Button 
                             onClick={handleProcessConflicts}
                             disabled={processing}
@@ -287,6 +307,160 @@ export default function AlertsPage() {
                             Create Optimization Tasks
                         </Button>
                     </div>
+                )}
+
+                {/* Stored Conflicts Section - Detailed Table */}
+                {storedConflicts.length > 0 && (
+                    <Card className="bg-card border-border mb-6" data-testid="stored-conflicts-section">
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-purple-400" />
+                                    Tracked Conflicts
+                                    <Badge variant="outline" className="ml-2">{storedStats.all}</Badge>
+                                </CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {/* Status Tabs */}
+                            <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4">
+                                <TabsList className="bg-zinc-900 border border-zinc-800">
+                                    <TabsTrigger value="all" className="data-[state=active]:bg-zinc-800">
+                                        All ({storedStats.all})
+                                    </TabsTrigger>
+                                    <TabsTrigger value="detected" className="data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400">
+                                        Detected ({storedStats.detected})
+                                    </TabsTrigger>
+                                    <TabsTrigger value="in_progress" className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400">
+                                        In Progress ({storedStats.in_progress})
+                                    </TabsTrigger>
+                                    <TabsTrigger value="resolved" className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+                                        Resolved ({storedStats.resolved})
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+
+                            {/* Detailed Table */}
+                            <div className="overflow-x-auto">
+                                <table className="w-full" data-testid="conflicts-table">
+                                    <thead>
+                                        <tr className="border-b border-zinc-800">
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Type</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Severity</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Status</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Node</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Network</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Detected</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Resolved</th>
+                                            <th className="text-left py-3 px-4 text-xs font-medium text-zinc-500 uppercase">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredStoredConflicts.map((conflict) => {
+                                            const severityColors = {
+                                                critical: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
+                                                high: { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30' },
+                                                medium: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
+                                                low: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
+                                            };
+                                            const colors = severityColors[conflict.severity] || severityColors.medium;
+                                            const statusInfo = STATUS_FLOW[conflict.status] || STATUS_FLOW.detected;
+                                            
+                                            return (
+                                                <tr key={conflict.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30" data-testid={`stored-conflict-${conflict.id}`}>
+                                                    <td className="py-3 px-4">
+                                                        <span className="text-sm text-white">
+                                                            {CONFLICT_TYPE_LABELS[conflict.conflict_type] || conflict.conflict_type}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <Badge className={`${colors.bg} ${colors.text} ${colors.border}`}>
+                                                            {conflict.severity?.toUpperCase()}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <Badge className={statusInfo.color}>
+                                                            {statusInfo.label}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <code className="text-xs text-zinc-400 bg-zinc-900 px-2 py-1 rounded">
+                                                            {conflict.node_a_label?.substring(0, 35)}
+                                                            {conflict.node_a_label?.length > 35 ? '...' : ''}
+                                                        </code>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        {conflict.network_id ? (
+                                                            <Button
+                                                                variant="link"
+                                                                size="sm"
+                                                                onClick={() => window.location.href = `/groups/${conflict.network_id}`}
+                                                                className="text-xs text-zinc-400 hover:text-blue-400 p-0 h-auto"
+                                                            >
+                                                                {conflict.network_name || 'View Network'}
+                                                                <ExternalLink className="h-3 w-3 ml-1" />
+                                                            </Button>
+                                                        ) : (
+                                                            <span className="text-sm text-zinc-500">-</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <span className="text-xs text-zinc-500">
+                                                            {conflict.detected_at ? new Date(conflict.detected_at).toLocaleDateString() : '-'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <span className="text-xs text-zinc-500">
+                                                            {conflict.resolved_at ? new Date(conflict.resolved_at).toLocaleDateString() : '-'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        {conflict.linked_optimization ? (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => window.location.href = `/optimizations/${conflict.linked_optimization.id}`}
+                                                                className="text-xs border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                                                                data-testid={`view-task-${conflict.id}`}
+                                                            >
+                                                                <ClipboardList className="h-3 w-3 mr-1" />
+                                                                View Task
+                                                            </Button>
+                                                        ) : conflict.status === 'detected' ? (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handleCreateTaskForConflict(conflict.id)}
+                                                                disabled={creatingTask === conflict.id}
+                                                                className="text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                                                                data-testid={`create-task-${conflict.id}`}
+                                                            >
+                                                                {creatingTask === conflict.id ? (
+                                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                                ) : (
+                                                                    <>
+                                                                        <Plus className="h-3 w-3 mr-1" />
+                                                                        Create Task
+                                                                    </>
+                                                                )}
+                                                            </Button>
+                                                        ) : (
+                                                            <span className="text-xs text-zinc-500">-</span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                                {filteredStoredConflicts.length === 0 && (
+                                    <div className="text-center py-8 text-zinc-500">
+                                        <p>No conflicts in this category</p>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
                 )}
 
                 {/* Conflicts List */}
