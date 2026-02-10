@@ -344,6 +344,56 @@ export default function SettingsPage() {
         setEmailAlertsConfig({ ...emailAlertsConfig, global_admin_emails: emails });
     };
 
+    // ==================== WEEKLY DIGEST HANDLERS ====================
+    
+    const handleSaveDigest = async () => {
+        setSavingDigest(true);
+        try {
+            const data = {
+                enabled: digestConfig.enabled,
+                schedule_day: digestConfig.schedule_day,
+                schedule_hour: digestConfig.schedule_hour,
+                schedule_minute: digestConfig.schedule_minute,
+                include_expiring_domains: digestConfig.include_expiring_domains,
+                include_down_domains: digestConfig.include_down_domains,
+                include_soft_blocked: digestConfig.include_soft_blocked,
+                expiring_days_threshold: digestConfig.expiring_days_threshold
+            };
+            
+            const res = await weeklyDigestAPI.updateSettings(data);
+            setDigestConfig(res.data);
+            toast.success('Weekly digest settings saved');
+        } catch (err) {
+            toast.error('Failed to save digest settings');
+        } finally {
+            setSavingDigest(false);
+        }
+    };
+
+    const handleSendDigestNow = async () => {
+        setSendingDigest(true);
+        try {
+            const res = await weeklyDigestAPI.sendNow();
+            toast.success(`Digest sent to ${res.data.recipients?.length || 0} recipients`);
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to send digest');
+        } finally {
+            setSendingDigest(false);
+        }
+    };
+
+    const handlePreviewDigest = async () => {
+        setLoadingPreview(true);
+        try {
+            const res = await weeklyDigestAPI.preview();
+            setDigestPreview(res.data);
+        } catch (err) {
+            toast.error('Failed to load preview');
+        } finally {
+            setLoadingPreview(false);
+        }
+    };
+
     if (!isSuperAdmin()) {
         return (
             <Layout>
