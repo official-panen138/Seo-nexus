@@ -68,6 +68,10 @@ export default function SettingsPage() {
     const [selectedTestDays, setSelectedTestDays] = useState(7);
     const [sendingTestAlert, setSendingTestAlert] = useState(false);
     
+    // Manual Monitoring Trigger state
+    const [triggeringExpiration, setTriggeringExpiration] = useState(false);
+    const [triggeringAvailability, setTriggeringAvailability] = useState(false);
+    
     // Branding state
     const [brandingConfig, setBrandingConfig] = useState({
         site_title: 'SEO//NOC',
