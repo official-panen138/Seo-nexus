@@ -179,7 +179,7 @@ export default function SettingsPage() {
                 seo_optimization_topic_id: seoTelegramConfig.seo_optimization_topic_id || null,
                 seo_complaint_topic_id: seoTelegramConfig.seo_complaint_topic_id || null,
                 seo_reminder_topic_id: seoTelegramConfig.seo_reminder_topic_id || null,
-                seo_leader_telegram_username: seoTelegramConfig.seo_leader_telegram_username || null
+                seo_leader_telegram_usernames: seoTelegramConfig.seo_leader_telegram_usernames || []
             };
             if (newSeoToken) data.bot_token = newSeoToken;
             if (newSeoChatId) data.chat_id = newSeoChatId;
