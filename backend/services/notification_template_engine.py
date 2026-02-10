@@ -767,3 +767,234 @@ def _get_impact_label(impact: str) -> str:
         "indexation": "Indexation",
     }
     return labels.get(impact, impact.replace("_", " ").title())
+
+
+# ==================== TEMPLATE CRUD SERVICE ====================
+
+class NotificationTemplateCRUD:
+    """CRUD operations for notification templates."""
+    
+    def __init__(self, db: AsyncIOMotorDatabase):
+        self.db = db
+        self.engine = NotificationTemplateEngine(db)
+    
+    async def list_templates(self, channel: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List all templates, optionally filtered by channel."""
+        query = {}
+        if channel:
+            query["channel"] = channel
+        
+        templates = await self.db.notification_templates.find(
+            query, {"_id": 0}
+        ).sort([("channel", 1), ("event_type", 1)]).to_list(100)
+        
+        # Also add defaults that aren't in DB
+        existing_keys = {(t["channel"], t["event_type"]) for t in templates}
+        
+        for (ch, evt), default in DEFAULT_TEMPLATES.items():
+            if (ch, evt) not in existing_keys:
+                if not channel or ch == channel:
+                    templates.append({
+                        "id": None,
+                        "channel": ch,
+                        "event_type": evt,
+                        "title": default["title"],
+                        "template_body": default["template_body"],
+                        "default_template_body": default["template_body"],
+                        "enabled": True,
+                        "is_default": True,
+                    })
+        
+        return templates
+    
+    async def get_template(self, channel: str, event_type: str) -> Optional[Dict[str, Any]]:
+        """Get a specific template by channel and event type."""
+        template = await self.db.notification_templates.find_one(
+            {"channel": channel, "event_type": event_type},
+            {"_id": 0}
+        )
+        
+        if template:
+            return template
+        
+        # Return default if available
+        default_key = (channel, event_type)
+        if default_key in DEFAULT_TEMPLATES:
+            default = DEFAULT_TEMPLATES[default_key]
+            return {
+                "id": None,
+                "channel": channel,
+                "event_type": event_type,
+                "title": default["title"],
+                "template_body": default["template_body"],
+                "default_template_body": default["template_body"],
+                "enabled": True,
+                "is_default": True,
+            }
+        
+        return None
+    
+    async def update_template(
+        self,
+        channel: str,
+        event_type: str,
+        title: Optional[str] = None,
+        template_body: Optional[str] = None,
+        enabled: Optional[bool] = None,
+        updated_by: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Update or create a template."""
+        import uuid as uuid_mod
+        
+        # Validate template if body provided
+        if template_body:
+            invalid_vars = self.engine.validate_template(template_body)
+            if invalid_vars:
+                raise ValueError(f"Invalid variables: {', '.join(invalid_vars)}")
+        
+        # Get existing or default
+        existing = await self.db.notification_templates.find_one(
+            {"channel": channel, "event_type": event_type}
+        )
+        
+        # Get default body
+        default_key = (channel, event_type)
+        default_body = DEFAULT_TEMPLATES.get(default_key, {}).get("template_body", "")
+        default_title = DEFAULT_TEMPLATES.get(default_key, {}).get("title", "")
+        
+        if existing:
+            # Update existing
+            update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+            if title is not None:
+                update_data["title"] = title
+            if template_body is not None:
+                update_data["template_body"] = template_body
+            if enabled is not None:
+                update_data["enabled"] = enabled
+            if updated_by:
+                update_data["updated_by"] = updated_by
+            
+            await self.db.notification_templates.update_one(
+                {"channel": channel, "event_type": event_type},
+                {"$set": update_data}
+            )
+            
+            # Clear cache
+            self.engine.clear_cache()
+            
+            # Return updated
+            return await self.get_template(channel, event_type)
+        else:
+            # Create new
+            template = {
+                "id": str(uuid_mod.uuid4()),
+                "channel": channel,
+                "event_type": event_type,
+                "title": title or default_title,
+                "template_body": template_body or default_body,
+                "default_template_body": default_body,
+                "enabled": enabled if enabled is not None else True,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": updated_by,
+            }
+            await self.db.notification_templates.insert_one(template)
+            
+            # Clear cache
+            self.engine.clear_cache()
+            
+            # Return without _id
+            template.pop("_id", None)
+            return template
+    
+    async def reset_template(self, channel: str, event_type: str) -> Dict[str, Any]:
+        """Reset a template to its default."""
+        default_key = (channel, event_type)
+        if default_key not in DEFAULT_TEMPLATES:
+            raise ValueError(f"No default template for {channel}/{event_type}")
+        
+        default = DEFAULT_TEMPLATES[default_key]
+        
+        # Update to default values
+        await self.db.notification_templates.update_one(
+            {"channel": channel, "event_type": event_type},
+            {
+                "$set": {
+                    "template_body": default["template_body"],
+                    "title": default["title"],
+                    "enabled": True,
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "reset_at": datetime.now(timezone.utc).isoformat(),
+                }
+            },
+            upsert=True
+        )
+        
+        # Clear cache
+        self.engine.clear_cache()
+        
+        return await self.get_template(channel, event_type)
+    
+    async def preview_template(
+        self,
+        channel: str,
+        event_type: str,
+        template_body: Optional[str] = None,
+    ) -> str:
+        """Preview a template with sample data."""
+        # Get template if body not provided
+        if not template_body:
+            template = await self.get_template(channel, event_type)
+            if not template:
+                raise ValueError(f"Template not found: {channel}/{event_type}")
+            template_body = template.get("template_body", "")
+        
+        # Build sample context
+        sample_context = build_notification_context(
+            user={"display_name": "John Doe", "email": "john@example.com", "role": "manager", "id": "user-123"},
+            network={"name": "Main SEO Network", "id": "net-123", "description": "Primary network for main brand"},
+            brand={"name": "PANEN77", "id": "brand-123"},
+            node={"domain_name": "example.com", "full_path": "/blog/article", "domain_role": "supporting", "tier": "Tier 2", "domain_status": "canonical"},
+            change={"action": "update_node", "action_label": "Mengubah Node", "reason": "Memperbaiki struktur linking untuk meningkatkan authority flow", "before": "Canonical", "after": "301 Redirect", "details": "• Target Sebelumnya: old-target.com\n• Target Baru: new-target.com"},
+            optimization={"title": "Backlink Campaign Q4", "description": "Menambahkan 50 backlink berkualitas dari situs authority tinggi", "activity_type": "backlink_campaign", "status": "in_progress", "affected_targets": ["page1.com/landing", "page2.com/promo"], "keywords": ["slot online", "casino bonus"], "report_urls": ["https://docs.google.com/report-123"], "expected_impact": ["traffic_increase", "ranking_improvement"]},
+            complaint={"reason": "Deadline tidak tercapai dan tidak ada komunikasi", "priority": "high", "category": "deadline", "report_urls": ["https://docs.google.com/evidence"]},
+            domain={"domain_name": "example.com", "expiry_date": "2026-03-15", "days_until_expiry": "30", "registrar": "Namecheap", "status": "active", "http_status": "200"},
+            impact={"severity": "HIGH", "description": "Affects tier 1-2 nodes", "affected_count": 5},
+            structure={"current": "LP / Money Site:\n  • moneysite.com [Primary]\nTier 1:\n  • tier1.com [301 Redirect] → moneysite.com", "upstream_chain": "example.com → tier1.com → moneysite.com", "downstream_impact": "3 nodes affected"},
+            reminder={"days_in_progress": 7, "optimization_title": "Content Update Campaign", "optimization_status": "In Progress"},
+            telegram_leaders=["seo_leader1", "seo_leader2"],
+            telegram_project_managers=["manager1", "manager2"],
+            telegram_tagged_users=["user1", "user2"],
+        )
+        
+        # Render template
+        return self.engine.render(template_body, sample_context)
+    
+    def get_available_events(self) -> List[Dict[str, str]]:
+        """Get list of available event types with descriptions."""
+        return [
+            {"channel": "telegram", "event_type": "seo_change", "description": "SEO structure changes (create/update/delete node)"},
+            {"channel": "telegram", "event_type": "seo_network_created", "description": "New SEO network created"},
+            {"channel": "telegram", "event_type": "seo_optimization", "description": "New optimization activity added"},
+            {"channel": "telegram", "event_type": "seo_optimization_status", "description": "Optimization status changed (completed/reverted)"},
+            {"channel": "telegram", "event_type": "seo_complaint", "description": "Complaint on optimization"},
+            {"channel": "telegram", "event_type": "seo_project_complaint", "description": "Project-level complaint"},
+            {"channel": "telegram", "event_type": "seo_reminder", "description": "Reminder for in-progress optimization"},
+            {"channel": "telegram", "event_type": "domain_expiration", "description": "Domain expiration warning"},
+            {"channel": "telegram", "event_type": "domain_down", "description": "Domain down alert"},
+            {"channel": "telegram", "event_type": "seo_node_deleted", "description": "SEO node deleted notification"},
+            {"channel": "telegram", "event_type": "test", "description": "Test notification"},
+        ]
+
+
+# ==================== GLOBAL INSTANCE ====================
+
+_template_crud: Optional[NotificationTemplateCRUD] = None
+
+
+def get_template_crud(db: AsyncIOMotorDatabase) -> NotificationTemplateCRUD:
+    """Get or create the template CRUD service."""
+    global _template_crud
+    if _template_crud is None:
+        _template_crud = NotificationTemplateCRUD(db)
+    return _template_crud
