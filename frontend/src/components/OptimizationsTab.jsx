@@ -64,7 +64,9 @@ import {
     Eye,
     AlertCircle,
     Download,
-    X
+    X,
+    RefreshCw,
+    Bell
 } from 'lucide-react';
 
 // Activity type configuration
