@@ -298,28 +298,30 @@ class TestConflictOptimizationLinker:
     # Test 11: Optimization detail includes can_edit field
     def test_optimization_detail_has_can_edit_field(self, auth_headers):
         """Test that optimization detail includes can_edit permission field"""
-        # Get any optimization
+        # Get optimization from conflict-linked optimizations
         response = requests.get(
-            f"{BASE_URL}/api/v3/optimizations",
-            headers=auth_headers,
-            params={"limit": 1}
+            f"{BASE_URL}/api/v3/conflicts/stored",
+            headers=auth_headers
         )
         
         assert response.status_code == 200
         data = response.json()
         
-        if not data.get("items"):
-            pytest.skip("No optimizations to verify can_edit field")
+        # Find a conflict with optimization_id
+        linked = [c for c in data["conflicts"] if c.get("optimization_id")]
         
-        optimization_id = data["items"][0]["id"]
+        if not linked:
+            pytest.skip("No conflict-linked optimizations to verify can_edit field")
         
-        # Get detail
+        optimization_id = linked[0]["optimization_id"]
+        
+        # Get detail via the detail endpoint (which returns can_edit)
         response = requests.get(
-            f"{BASE_URL}/api/v3/optimizations/{optimization_id}",
+            f"{BASE_URL}/api/v3/optimizations/{optimization_id}/detail",
             headers=auth_headers
         )
         
-        assert response.status_code == 200
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         opt_data = response.json()
         
         # Should have can_edit field
