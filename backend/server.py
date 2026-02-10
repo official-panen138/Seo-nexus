@@ -1196,8 +1196,8 @@ async def login(credentials: UserLogin):
         status=user.get("status", "active"),
         approved_by=user.get("approved_by"),
         approved_at=user.get("approved_at"),
-        created_at=user["created_at"],
-        updated_at=user["updated_at"],
+        created_at=user.get("created_at"),
+        updated_at=user.get("updated_at"),
     )
     return TokenResponse(access_token=token, user=user_response)
 
