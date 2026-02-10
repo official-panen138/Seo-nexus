@@ -857,9 +857,8 @@ class SeoTelegramService:
                 chain_lines.append(f"   → {target_info.get('full_label', 'unknown')} [{target_role_label}]")
             
             # Continue with upstream chain
-            for i, item in enumerate(upstream_chain):
+            for item in upstream_chain:
                 item_role_label = role_labels.get(item.get('role', ''), item.get('role', ''))
-                is_last = (i == len(upstream_chain) - 1)
                 
                 if item.get('role') == 'main':
                     chain_lines.append(f"   → 💰 {item['label']} [{item_role_label}]")
