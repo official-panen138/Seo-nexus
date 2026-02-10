@@ -91,6 +91,51 @@ class SeoOptimizationTelegramService:
         logger.warning("No Telegram configuration found for SEO Optimizations")
         return None
 
+    async def _get_seo_leader_tag(self) -> str:
+        """
+        Get the SEO Leader's Telegram tag for global notification tagging.
+        Returns @username format or empty string if not configured.
+        """
+        settings = await self.db.settings.find_one({"key": "telegram_seo"}, {"_id": 0})
+        if settings and settings.get("seo_leader_telegram_username"):
+            username = settings["seo_leader_telegram_username"]
+            # Ensure @ prefix
+            if not username.startswith("@"):
+                username = f"@{username}"
+            return username
+        return ""
+
+    async def _get_network_manager_tags(self, network_id: str) -> List[str]:
+        """
+        Get Telegram tags for all managers of a specific network.
+        Returns list of @username tags.
+        """
+        network = await self.db.seo_networks.find_one(
+            {"id": network_id}, {"_id": 0, "manager_ids": 1}
+        )
+        if not network or not network.get("manager_ids"):
+            return []
+
+        # Get users with their telegram usernames
+        managers = await self.db.users.find(
+            {"id": {"$in": network["manager_ids"]}},
+            {"_id": 0, "telegram_username": 1, "name": 1, "email": 1}
+        ).to_list(100)
+
+        tags = []
+        for manager in managers:
+            if manager.get("telegram_username"):
+                username = manager["telegram_username"]
+                if not username.startswith("@"):
+                    username = f"@{username}"
+                tags.append(username)
+            else:
+                # Fallback: mention by name/email if no telegram
+                name = manager.get("name") or manager.get("email", "Unknown")
+                tags.append(f"{name} (no Telegram)")
+        
+        return tags
+
     async def _send_telegram_message(
         self, message: str, topic_type: str = None
     ) -> bool:
