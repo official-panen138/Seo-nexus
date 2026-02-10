@@ -346,6 +346,23 @@ export const domainMonitoringTelegramAPI = {
     triggerAvailabilityCheck: () => apiV3.post('/monitoring/check-availability'),
 };
 
+// V3 Forced Monitoring & Test Alerts API
+export const forcedMonitoringAPI = {
+    // Get unmonitored domains in SEO networks
+    getUnmonitoredInSeo: () => apiV3.get('/monitoring/unmonitored-in-seo'),
+    // Check domain SEO usage
+    checkDomainSeoUsage: (domainId) => apiV3.get(`/monitoring/domain-seo-usage/${domainId}`),
+    // Send unmonitored reminders
+    sendUnmonitoredReminders: () => apiV3.post('/monitoring/send-unmonitored-reminders'),
+    // SEO domains monitoring summary
+    getSeoDomainsMonitoringSummary: () => apiV3.get('/monitoring/seo-domains-summary'),
+    // Test alerts
+    sendTestDomainDownAlert: (data) => apiV3.post('/monitoring/domain-down/test', data),
+    getTestAlertHistory: (limit = 50, domain = null) => apiV3.get('/monitoring/test-alerts/history', { 
+        params: { limit, ...(domain && { domain }) }
+    })
+};
+
 // V3 Email Alerts API
 export const emailAlertsAPI = {
     getSettings: () => apiV3.get('/settings/email-alerts'),
