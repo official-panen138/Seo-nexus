@@ -40,19 +40,6 @@ export function BrandingProvider({ children }) {
             setLoading(false);
         }
     };
-            setBranding({
-                site_title: data.site_title || DEFAULT_BRANDING.site_title,
-                site_description: data.site_description || DEFAULT_BRANDING.site_description,
-                logo_url: data.logo_url || DEFAULT_BRANDING.logo_url,
-                tagline: data.tagline || data.site_description || DEFAULT_BRANDING.tagline
-            });
-        } catch (err) {
-            console.log('Using default branding');
-            setBranding(DEFAULT_BRANDING);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     useEffect(() => {
         loadBranding();
