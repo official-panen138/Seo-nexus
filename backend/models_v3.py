@@ -1119,6 +1119,51 @@ class SeoChangeLogCreate(BaseModel):
     change_note: str  # REQUIRED - human explanation
 
 
+
+# ==================== MENU ACCESS CONTROL MODELS ====================
+
+# Master menu registry - static list of all menus
+MASTER_MENU_REGISTRY = [
+    {"key": "dashboard", "label": "Dashboard", "path": "/dashboard"},
+    {"key": "asset_domains", "label": "Asset Domains", "path": "/domains"},
+    {"key": "seo_networks", "label": "SEO Networks", "path": "/groups"},
+    {"key": "alert_center", "label": "Alert Center", "path": "/alerts"},
+    {"key": "reports", "label": "Reports", "path": "/reports"},
+    {"key": "team_evaluation", "label": "Team Evaluation", "path": "/reports/team-evaluation"},
+    {"key": "brands", "label": "Brands", "path": "/brands"},
+    {"key": "categories", "label": "Categories", "path": "/categories"},
+    {"key": "registrars", "label": "Registrars", "path": "/registrars"},
+    {"key": "users", "label": "Users", "path": "/users"},
+    {"key": "audit_logs", "label": "Audit Logs", "path": "/audit-logs"},
+    {"key": "metrics", "label": "Metrics", "path": "/metrics"},
+    {"key": "v3_activity", "label": "V3 Activity", "path": "/activity-logs"},
+    {"key": "activity_types", "label": "Activity Types", "path": "/settings/activity-types"},
+    {"key": "scheduler", "label": "Scheduler", "path": "/settings/scheduler"},
+    {"key": "monitoring", "label": "Monitoring", "path": "/settings/monitoring"},
+    {"key": "settings", "label": "Settings", "path": "/settings"},
+]
+
+# Default menu access by role
+DEFAULT_ADMIN_MENUS = [m["key"] for m in MASTER_MENU_REGISTRY]  # All menus enabled by default
+DEFAULT_USER_MENUS = []  # No menus enabled by default
+
+
+class MenuPermissionUpdate(BaseModel):
+    """Model for updating menu permissions for a user"""
+    enabled_menus: List[str] = Field(
+        ...,
+        description="List of menu keys that the user can access"
+    )
+
+
+class MenuPermissionResponse(BaseModel):
+    """Response model for menu permissions"""
+    user_id: str
+    role: str
+    enabled_menus: List[str]
+    is_super_admin: bool = False
+
+
 class SeoChangeLogResponse(BaseModel):
     """Response model for SEO change log"""
 
