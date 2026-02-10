@@ -556,17 +556,6 @@ class SeoContextEnricher:
                         lines.append(f"  • {node} [{status}]")
         
         return lines
-                        target_domain = target.get("domain", "")
-                        target_path = target.get("optimized_path", "")
-                        target_node = f"{target_domain}{target_path}"
-                        target_status = self._get_relation_type(target.get("domain_status", "canonical"))
-                        if target.get("domain_role") == "main":
-                            target_status = "Primary"
-                        lines.append(f"  • {node} [{status}] → {target_node} [{target_status}]")
-                    else:
-                        lines.append(f"  • {node} [{status}]")
-        
-        return lines
 
 
 def init_seo_context_enricher(db: AsyncIOMotorDatabase) -> SeoContextEnricher:
