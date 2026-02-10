@@ -2882,7 +2882,7 @@ async def create_project_complaint(
 
     # Send Telegram notification
     try:
-        telegram_service = SeoOptimizationTelegramService()
+        telegram_service = SeoOptimizationTelegramService(db)
         await telegram_service.send_project_complaint_notification(
             complaint=complaint,
             network_name=network["name"],
