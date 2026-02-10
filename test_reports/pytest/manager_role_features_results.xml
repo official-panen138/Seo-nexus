@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="14" failures="0" skipped="0" tests="14" time="1.232" timestamp="2026-02-10T12:34:04.074748+00:00" hostname="agent-env-e1c60a27-ff38-438c-8eab-10e7847c4e2a"><testcase classname="backend.tests.test_manager_role_features.TestManagerRoleFeatures" name="test_manager_login" time="0.292"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:35: in manager_token
+    return data["token"]
+           ^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase><testcase classname="backend.tests.test_manager_role_features.TestManagerRoleFeatures" name="test_viewer_login" time="0.263"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:47: in viewer_token
+    return data["token"]
+           ^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase><testcase classname="backend.tests.test_manager_role_features.TestManagerRoleFeatures" name="test_manager_can_update_network" time="0.000"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:35: in manager_token
+    return data["token"]
+           ^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase><testcase classname="backend.tests.test_manager_role_features.TestManagerRoleFeatures" name="test_manager_can_update_structure_entry" time="0.000"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:35: in manager_token
+    return data["token"]
+           ^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase><testcase classname="backend.tests.test_manager_role_features.TestManagerRoleFeatures" name="test_manager_can_add_structure_entry" time="0.000"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:35: in manager_token
+    return data["token"]
+           ^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase><testcase classname="backend.tests.test_manager_role_features.TestManagerRoleFeatures" name="test_manager_can_add_optimization" time="0.000"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:35: in manager_token
+    return data["token"]
+           ^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase><testcase classname="backend.tests.test_manager_role_features.TestManagerRoleFeatures" name="test_viewer_cannot_update_network" time="0.000"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:47: in viewer_token
+    return data["token"]
+           ^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase><testcase classname="backend.tests.test_manager_role_features.TestManagerRoleFeatures" name="test_viewer_cannot_update_structure_entry" time="0.000"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:47: in viewer_token
+    return data["token"]
+           ^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase><testcase classname="backend.tests.test_manager_role_features.TestManagerRoleFeatures" name="test_viewer_cannot_add_structure_entry" time="0.000"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:47: in viewer_token
+    return data["token"]
+           ^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase><testcase classname="backend.tests.test_manager_role_features.TestManagerRoleFeatures" name="test_viewer_cannot_add_optimization" time="0.000"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:47: in viewer_token
+    return data["token"]
+           ^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase><testcase classname="backend.tests.test_manager_role_features.TestManagerRoleFeatures" name="test_viewer_can_read_network" time="0.000"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:47: in viewer_token
+    return data["token"]
+           ^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase><testcase classname="backend.tests.test_manager_role_features.TestManagerRoleFeatures" name="test_viewer_can_read_structure_entry" time="0.000"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:47: in viewer_token
+    return data["token"]
+           ^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase><testcase classname="backend.tests.test_manager_role_features.TestManagerRoleFeatures" name="test_telegram_notification_sent" time="0.259"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:57: in admin_token
+    return response.json()["token"]
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase><testcase classname="backend.tests.test_manager_role_features.TestManagerNetworkPermissions" name="test_manager_access_to_assigned_network" time="0.262"><error message="failed on setup with &quot;KeyError: 'token'&quot;">backend/tests/test_manager_role_features.py:481: in manager_token
+    return response.json()["token"]
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'token'</error></testcase></testsuite></testsuites>
