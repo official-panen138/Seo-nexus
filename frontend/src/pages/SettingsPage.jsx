@@ -323,10 +323,6 @@ export default function SettingsPage() {
                                 <Clock className="h-4 w-4" />
                                 Timezone
                             </TabsTrigger>
-                            <TabsTrigger value="monitoring" className="flex items-center gap-2">
-                                <Bell className="h-4 w-4" />
-                                Monitoring Alerts
-                            </TabsTrigger>
                             <TabsTrigger value="seo" className="flex items-center gap-2" data-testid="seo-notifications-tab">
                                 <Network className="h-4 w-4" />
                                 SEO Notifications
