@@ -1,21 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
-import { alertsAPI } from '../lib/api';
+import { alertsAPI, reportsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Skeleton } from '../components/ui/skeleton';
 import { toast } from 'sonner';
 import { 
     Bell, 
     CheckCircle, 
     Loader2, 
     AlertCircle,
+    AlertTriangle,
     Clock,
     Filter,
-    Check
+    Check,
+    Network,
+    ExternalLink,
+    RefreshCw
 } from 'lucide-react';
 import { 
     SEVERITY_LABELS, 
@@ -24,11 +30,37 @@ import {
     formatDateTime 
 } from '../lib/utils';
 
+// Conflict severity badge colors
+const CONFLICT_SEVERITY_CLASSES = {
+    critical: 'bg-red-500/20 text-red-400 border-red-500/30',
+    high: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+    low: 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+};
+
+// Conflict type labels
+const CONFLICT_TYPE_LABELS = {
+    'type_a': 'Keyword Cannibalization',
+    'type_b': 'Competing Targets',
+    'type_c': 'Canonical Mismatch',
+    'type_d': 'Tier Inversion',
+    'orphan': 'Orphan Node',
+    'noindex_high_tier': 'NOINDEX in High Tier'
+};
+
 export default function AlertsPage() {
     const { canEdit } = useAuth();
+    const [activeTab, setActiveTab] = useState('alerts');
+    
+    // Alerts state
     const [alerts, setAlerts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [acknowledging, setAcknowledging] = useState(null);
+    
+    // Conflicts state
+    const [conflicts, setConflicts] = useState([]);
+    const [loadingConflicts, setLoadingConflicts] = useState(false);
+    const [conflictsLoaded, setConflictsLoaded] = useState(false);
     
     // Filters
     const [filterSeverity, setFilterSeverity] = useState('all');
@@ -38,6 +70,12 @@ export default function AlertsPage() {
     useEffect(() => {
         loadAlerts();
     }, [filterSeverity, filterType, filterAcknowledged]);
+
+    useEffect(() => {
+        if (activeTab === 'conflicts' && !conflictsLoaded) {
+            loadConflicts();
+        }
+    }, [activeTab]);
 
     const loadAlerts = async () => {
         try {
@@ -52,6 +90,20 @@ export default function AlertsPage() {
             toast.error('Failed to load alerts');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadConflicts = async () => {
+        setLoadingConflicts(true);
+        try {
+            const res = await reportsAPI.getConflicts();
+            setConflicts(res.data || []);
+            setConflictsLoaded(true);
+        } catch (err) {
+            console.error('Failed to load conflicts:', err);
+            toast.error('Failed to load conflicts');
+        } finally {
+            setLoadingConflicts(false);
         }
     };
 
@@ -74,6 +126,18 @@ export default function AlertsPage() {
         critical: alerts.filter(a => a.severity === 'critical' && !a.acknowledged).length,
         high: alerts.filter(a => a.severity === 'high' && !a.acknowledged).length,
         unacknowledged: alerts.filter(a => !a.acknowledged).length
+    };
+
+    // Conflict stats
+    const conflictStats = {
+        total: conflicts.length,
+        critical: conflicts.filter(c => c.severity === 'critical').length,
+        high: conflicts.filter(c => c.severity === 'high').length,
+        byType: conflicts.reduce((acc, c) => {
+            const type = c.conflict_type || 'unknown';
+            acc[type] = (acc[type] || 0) + 1;
+            return acc;
+        }, {})
     };
 
     if (loading) {
