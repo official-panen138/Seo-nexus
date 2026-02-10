@@ -7258,15 +7258,22 @@ async def update_telegram_seo_settings(
         elif existing and existing.get(field):
             update_data[field] = existing[field]
 
-    # SEO Leader Telegram username (for global tagging on all SEO notifications)
-    if "seo_leader_telegram_username" in settings:
-        update_data["seo_leader_telegram_username"] = (
-            settings["seo_leader_telegram_username"]
-            if settings["seo_leader_telegram_username"]
-            else None
-        )
+    # SEO Leader Telegram usernames (for global tagging on all SEO notifications)
+    # Support multiple leaders as comma-separated or array
+    if "seo_leader_telegram_usernames" in settings:
+        leaders = settings["seo_leader_telegram_usernames"]
+        # Handle both string (comma-separated) and list
+        if isinstance(leaders, str):
+            leaders = [l.strip() for l in leaders.split(",") if l.strip()]
+        update_data["seo_leader_telegram_usernames"] = leaders if leaders else []
+    elif existing and existing.get("seo_leader_telegram_usernames"):
+        update_data["seo_leader_telegram_usernames"] = existing["seo_leader_telegram_usernames"]
+    # Also handle legacy single field
+    elif "seo_leader_telegram_username" in settings:
+        single_leader = settings["seo_leader_telegram_username"]
+        update_data["seo_leader_telegram_usernames"] = [single_leader] if single_leader else []
     elif existing and existing.get("seo_leader_telegram_username"):
-        update_data["seo_leader_telegram_username"] = existing["seo_leader_telegram_username"]
+        update_data["seo_leader_telegram_usernames"] = [existing["seo_leader_telegram_username"]]
 
     await db.settings.update_one(
         {"key": "telegram_seo"}, {"$set": update_data}, upsert=True
