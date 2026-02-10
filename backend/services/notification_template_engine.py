@@ -100,6 +100,12 @@ ALLOWED_VARIABLES = {
     "structure.current",
     "structure.upstream_chain",
     "structure.downstream_impact",
+    "structure.before_deletion",
+    
+    # Node additional info for delete
+    "node.target",
+    "node.upstream_chain",
+    "node.affected_children",
     
     # Reminder specific
     "reminder.days_in_progress",
