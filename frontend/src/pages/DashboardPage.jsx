@@ -93,7 +93,10 @@ export default function DashboardPage() {
                 indexed: data.indexed_count,
                 noindex: data.noindex_count,
                 ping_up: data.ping_up,
-                ping_down: data.ping_down
+                ping_down: data.ping_down,
+                critical_alerts: data.critical_alerts,
+                critical_alert_details: data.critical_alert_details,
+                active_alerts: data.active_alerts
             }));
             setLastRefresh(new Date());
         } catch (err) {
