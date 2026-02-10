@@ -298,9 +298,24 @@ class ExpirationMonitoringService:
             # Enrich with brand/registrar and SEO context
             enriched = await self._enrich_domain_full(domain)
             
-            # Format and send alert
+            # Format and send Telegram alert
             message = self._format_expiration_alert_seo_aware(enriched, days_remaining)
             sent = await self.telegram.send_alert(message)
+            
+            # Also send email alert for HIGH/CRITICAL severity
+            try:
+                from services.email_alert_service import get_email_alert_service
+                email_service = get_email_alert_service(self.db)
+                
+                # Get network_id from SEO context if available
+                network_id = None
+                seo = enriched.get("seo", {})
+                if seo.get("seo_context"):
+                    network_id = seo["seo_context"][0].get("network_id")
+                
+                await email_service.send_expiration_alert(enriched, days_remaining, network_id)
+            except Exception as email_err:
+                logger.warning(f"Email alert failed for {domain.get('domain_name')}: {email_err}")
             
             if sent:
                 # Update tracking
