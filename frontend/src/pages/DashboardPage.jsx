@@ -28,18 +28,13 @@ import {
     Building2
 } from 'lucide-react';
 import { 
-    BarChart, 
-    Bar, 
-    XAxis, 
-    YAxis, 
-    CartesianGrid, 
-    Tooltip, 
     ResponsiveContainer,
     PieChart,
     Pie,
-    Cell
+    Cell,
+    Tooltip
 } from 'recharts';
-import { TIER_LABELS, TIER_COLORS, SEVERITY_LABELS, getSeverityBadgeClass, formatDateTime } from '../lib/utils';
+import { SEVERITY_LABELS, getSeverityBadgeClass, formatDateTime } from '../lib/utils';
 
 const PIE_COLORS = ['#22C55E', '#52525B'];
 const MONITORING_COLORS = ['#22C55E', '#EF4444', '#6B7280'];
