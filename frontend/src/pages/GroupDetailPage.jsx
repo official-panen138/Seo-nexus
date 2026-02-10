@@ -1658,6 +1658,7 @@ export default function GroupDetailPage() {
                                     networkId={network?.id}
                                     networkName={network?.name}
                                     brandName={network?.brand_name}
+                                    canEdit={canEdit}
                                 />
                             </CardContent>
                         </Card>
