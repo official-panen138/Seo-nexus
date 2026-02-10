@@ -54,6 +54,13 @@ export const notificationsAPI = {
     markAllAsRead: () => apiV3.post('/notifications/read-all')
 };
 
+// User Presence / Online Status API
+export const presenceAPI = {
+    sendHeartbeat: () => apiV3.post('/presence/heartbeat'),
+    getOnlineUsers: () => apiV3.get('/presence/online'),
+    getUserStatus: (userId) => apiV3.get(`/users/${userId}/status`)
+};
+
 // Categories API
 export const categoriesAPI = {
     getAll: () => api.get('/categories'),
