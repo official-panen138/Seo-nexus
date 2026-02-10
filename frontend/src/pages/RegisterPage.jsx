@@ -10,6 +10,7 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 export default function RegisterPage() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [telegramUsername, setTelegramUsername] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +40,13 @@ export default function RegisterPage() {
 
         setLoading(true);
         try {
-            const result = await register({ name, email, password, role: 'viewer' });
+            const result = await register({ 
+                name, 
+                email, 
+                password, 
+                role: 'viewer',
+                telegram_username: telegramUsername || null
+            });
             
             // Check if user is pending approval
             if (result?.pending) {
