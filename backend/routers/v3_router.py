@@ -5669,6 +5669,134 @@ async def get_v3_conflicts(
                                     }
                                 )
 
+        # ============ NETWORK-WIDE CONFLICT DETECTION ============
+        
+        # Build reverse lookup: target_entry_id -> list of source entries
+        target_sources = {}  # target_entry_id -> [source entries]
+        for entry in entries:
+            target_id = entry.get("target_entry_id")
+            if target_id:
+                if target_id not in target_sources:
+                    target_sources[target_id] = []
+                target_sources[target_id].append(entry)
+        
+        # TYPE E: Redirect/Canonical Loops
+        # Detect A -> B -> A or A -> B -> C -> A cycles
+        def detect_redirect_loop(start_entry_id, visited=None, path=None):
+            """Detect redirect loops starting from entry"""
+            if visited is None:
+                visited = set()
+            if path is None:
+                path = []
+            
+            if start_entry_id in visited:
+                return path  # Loop found
+            
+            visited.add(start_entry_id)
+            path.append(start_entry_id)
+            
+            entry = entry_lookup.get(start_entry_id)
+            if entry:
+                target_id = entry.get("target_entry_id")
+                # Only follow redirects/canonicals
+                if target_id and entry.get("domain_status") in ["redirect_301", "redirect_302", "canonical"]:
+                    return detect_redirect_loop(target_id, visited, path)
+            
+            return None  # No loop
+        
+        detected_loops = set()
+        for entry in entries:
+            if entry.get("domain_status") in ["redirect_301", "redirect_302", "canonical"]:
+                loop_path = detect_redirect_loop(entry["id"])
+                if loop_path and len(loop_path) > 1:
+                    loop_key = tuple(sorted(loop_path))
+                    if loop_key not in detected_loops:
+                        detected_loops.add(loop_key)
+                        first_entry = entry_lookup.get(loop_path[0])
+                        last_entry = entry_lookup.get(loop_path[-1]) if loop_path else None
+                        conflicts.append({
+                            "conflict_type": ConflictType.REDIRECT_LOOP.value,
+                            "severity": ConflictSeverity.CRITICAL.value,
+                            "network_id": network["id"],
+                            "network_name": network["name"],
+                            "domain_name": domain_name_lookup.get(first_entry["asset_domain_id"], "") if first_entry else "",
+                            "node_a_id": loop_path[0],
+                            "node_a_path": first_entry.get("optimized_path") if first_entry else None,
+                            "node_a_label": node_label(first_entry) if first_entry else "",
+                            "node_b_id": loop_path[-1] if loop_path else None,
+                            "node_b_path": last_entry.get("optimized_path") if last_entry else None,
+                            "node_b_label": node_label(last_entry) if last_entry else "",
+                            "description": f"Redirect/canonical loop detected with {len(loop_path)} nodes",
+                            "suggestion": "Break the loop by removing one redirect",
+                            "detected_at": now,
+                        })
+        
+        # TYPE F: Multiple Parents pointing to Money Site without intent
+        # Find main node
+        main_entries = [e for e in entries if e.get("domain_role") == "main"]
+        for main_entry in main_entries:
+            main_id = main_entry["id"]
+            main_domain_name = domain_name_lookup.get(main_entry["asset_domain_id"], "")
+            
+            # Find all entries pointing to this main
+            sources_to_main = target_sources.get(main_id, [])
+            
+            # Filter out expected supporting nodes
+            non_supporting_sources = [
+                s for s in sources_to_main 
+                if s.get("domain_role") != "supporting" and s.get("domain_status") not in ["redirect_301", "redirect_302"]
+            ]
+            
+            if len(non_supporting_sources) > 1:
+                # Multiple non-supporting nodes point to main - potential issue
+                for src in non_supporting_sources:
+                    conflicts.append({
+                        "conflict_type": ConflictType.MULTIPLE_PARENTS_TO_MAIN.value,
+                        "severity": ConflictSeverity.MEDIUM.value,
+                        "network_id": network["id"],
+                        "network_name": network["name"],
+                        "domain_name": domain_name_lookup.get(src["asset_domain_id"], ""),
+                        "node_a_id": src["id"],
+                        "node_a_path": src.get("optimized_path"),
+                        "node_a_label": node_label(src),
+                        "node_b_id": main_id,
+                        "node_b_path": main_entry.get("optimized_path"),
+                        "node_b_label": node_label(main_entry),
+                        "description": f"Non-supporting node pointing to Money Site (total {len(non_supporting_sources)} similar)",
+                        "suggestion": "Change to supporting role or redirect if intentional",
+                        "detected_at": now,
+                    })
+        
+        # TYPE G: Index/Noindex Mismatch in Link Chain
+        # Node A (indexed) links to Node B (noindex) - potential issue
+        for entry in entries:
+            if entry.get("index_status") == "index":
+                target_id = entry.get("target_entry_id")
+                if target_id:
+                    target = entry_lookup.get(target_id)
+                    if target and target.get("index_status") == "noindex":
+                        entry_tier = tiers.get(entry["id"], 5)
+                        target_tier = tiers.get(target_id, 5)
+                        
+                        # Only flag if indexed node is lower tier pointing to noindex higher tier
+                        if entry_tier > target_tier:
+                            conflicts.append({
+                                "conflict_type": ConflictType.INDEX_NOINDEX_MISMATCH.value,
+                                "severity": ConflictSeverity.HIGH.value,
+                                "network_id": network["id"],
+                                "network_name": network["name"],
+                                "domain_name": domain_name_lookup.get(entry["asset_domain_id"], ""),
+                                "node_a_id": entry["id"],
+                                "node_a_path": entry.get("optimized_path"),
+                                "node_a_label": node_label(entry),
+                                "node_b_id": target_id,
+                                "node_b_path": target.get("optimized_path"),
+                                "node_b_label": node_label(target),
+                                "description": f"Indexed node links to NOINDEX target in higher tier",
+                                "suggestion": "Index the target or remove the link",
+                                "detected_at": now,
+                            })
+
         # ============ LEGACY CONFLICT DETECTION ============
 
         for entry in entries:
