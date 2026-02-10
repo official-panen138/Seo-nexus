@@ -641,7 +641,10 @@ selama <b>{days_in_progress} hari</b>.
     ) -> bool:
         """
         Send notification when Super Admin creates a project-level complaint.
-        Tags responsible users via @telegram_username.
+        Tags network managers (project owners) via @telegram_username.
+        
+        NOTE: For complaints, we tag Network Managers ONLY - not global SEO leaders.
+        SEO leaders are only tagged on SEO change/optimization notifications.
         """
         try:
             # Get timezone settings
@@ -656,20 +659,25 @@ selama <b>{days_in_progress} hari</b>.
             created_by = complaint.get("created_by", {})
             creator_name = created_by.get("name", created_by.get("email", "Unknown"))
 
-            # Format tagged users
-            tagged_users_text = ""
+            # Get network managers from network's manager_ids
+            network_id = complaint.get("network_id")
+            manager_tags = []
+            if network_id:
+                manager_tags = await self._get_network_manager_tags(network_id)
+            
+            # Combine with responsible_users passed in (for backward compatibility)
             if responsible_users:
-                tags = []
                 for user in responsible_users:
                     if user.get("telegram_username"):
-                        tags.append(f"@{user['telegram_username']}")
-                    else:
-                        tags.append(
-                            f"{user.get('name', user.get('email', 'Unknown'))} (no Telegram)"
-                        )
-                tagged_users_text = "\n".join([f"  • {tag}" for tag in tags])
+                        tag = f"@{user['telegram_username']}"
+                        if tag not in manager_tags:
+                            manager_tags.append(tag)
+            
+            # Format tagged users
+            if manager_tags:
+                tagged_users_text = "\n".join([f"  • {tag}" for tag in manager_tags])
             else:
-                tagged_users_text = "  (Tidak ada pengguna yang ditag)"
+                tagged_users_text = "  (Tidak ada Network Manager yang ditag)"
 
             # Format priority
             priority = complaint.get("priority", "medium")
@@ -708,7 +716,7 @@ pada SEO Network '<b>{network_name}</b>'.
 tetapi menyangkut pengelolaan proyek secara keseluruhan.</i>
 
 ━━━━━━━━━━━━━━━━━━━━━━
-👥 <b>Tagged Users:</b>
+👥 <b>Network Manager (Tagged):</b>
 {tagged_users_text}
 
 📁 <b>Kategori:</b> {category_label}
