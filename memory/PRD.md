@@ -563,21 +563,31 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
    - Global reminder interval (default 2 days) + per-network override
    - Manual reminder check via POST /api/v3/settings/reminder-config/run
    - DO NOT send domain monitoring alerts (out of scope)
-4. **P1: Reminder System Override UI** - Create "Settings" tab in GroupDetailPage.jsx
+4. ✅ **Domain Monitoring Alerts (Phase 2)** - COMPLETE (Feb 10, 2026)
+   - SEPARATE Telegram channel from SEO notifications (NO fallback)
+   - Settings UI at /settings > Domain Monitoring tab
+   - SEO-aware context enrichment for domain alerts:
+     - Full upstream chain traversal (BFS with loop detection) to Money Site
+     - Downstream impact calculation (direct children)
+     - Impact score (LOW/MEDIUM/HIGH/CRITICAL)
+   - Soft-block detection: Cloudflare JS challenge, captcha, geo-block
+   - Alert types: Domain Expiration (30/14/7/daily), Domain Availability (DOWN/SOFT_BLOCKED/RECOVERY)
+   - All timestamps in GMT+7 (Asia/Jakarta)
+5. **P1: Reminder System Override UI** - Create "Settings" tab in GroupDetailPage.jsx
    - Per-network reminder interval override (in days)
    - Toggle to enable/disable reminders per network
-5. **P1: Conflict Detection UI** (Backend API exists at `/api/v3/reports/conflicts`)
+6. **P1: Conflict Detection UI** (Backend API exists at `/api/v3/reports/conflicts`)
    - Alert Center panel for conflicts
    - Node highlighting in D3 diagram
    - Conflict details in node detail panel
-6. **P1: Root vs. Path Main Node Visualization** - Solid vs dashed border in D3 graph
-7. **P1: Milestone Tag on Change Notes** - Optional milestone field
-8. **P1: Network Creation Telegram Notification** - Trigger notification when new SEO network is created
-9. Email notification integration (Resend/SendGrid)
-10. Scheduled conflict alerts (cron)
-11. Domain health check improvements
-12. Alert history and analytics
-13. **BACKLOG: Compare Changes** - Advanced diff viewer (parked)
+7. **P1: Root vs. Path Main Node Visualization** - Solid vs dashed border in D3 graph
+8. **P1: Milestone Tag on Change Notes** - Optional milestone field
+9. **P1: Network Creation Telegram Notification** - Trigger notification when new SEO network is created
+10. Email notification integration (Resend/SendGrid)
+11. Scheduled conflict alerts (cron)
+12. Domain health check improvements
+13. Alert history and analytics
+14. **BACKLOG: Compare Changes** - Advanced diff viewer (parked)
 
 ### P0 SEO Telegram Notification - Full Authority Chains (Feb 9, 2026) - COMPLETE
 **Issue:** Telegram notifications showed ObjectIDs instead of human-readable domain names, and didn't display complete authority chains.
