@@ -936,6 +936,101 @@ export default function UsersPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* Menu Permissions Dialog */}
+                <Dialog open={menuPermDialogOpen} onOpenChange={setMenuPermDialogOpen}>
+                    <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Key className="h-5 w-5" />
+                                Menu Access Control
+                            </DialogTitle>
+                            <DialogDescription>
+                                Configure which menus {selectedUser?.name || selectedUser?.email} can access.
+                                {selectedUser?.role === 'admin' && (
+                                    <span className="block text-amber-500 mt-1">
+                                        Admin users have all menus enabled by default.
+                                    </span>
+                                )}
+                                {selectedUser?.role === 'viewer' && (
+                                    <span className="block text-blue-500 mt-1">
+                                        User/Viewer role has no menus enabled by default.
+                                    </span>
+                                )}
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        {userMenuPerms.is_super_admin ? (
+                            <div className="py-4 text-center">
+                                <Shield className="h-12 w-12 mx-auto text-emerald-500 mb-2" />
+                                <p className="text-zinc-400">Super Admin has full access to all menus.</p>
+                                <p className="text-sm text-zinc-500">Permissions cannot be modified.</p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex justify-between items-center py-2 border-b border-zinc-800">
+                                    <span className="text-sm text-zinc-400">
+                                        {userMenuPerms.enabled_menus.length} of {menuRegistry.length} menus enabled
+                                    </span>
+                                    <div className="flex gap-2">
+                                        <Button variant="ghost" size="sm" onClick={handleSelectAllMenus}>
+                                            Select All
+                                        </Button>
+                                        <Button variant="ghost" size="sm" onClick={handleDeselectAllMenus}>
+                                            Clear All
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="max-h-[300px] overflow-y-auto py-2 space-y-1">
+                                    {menuRegistry.map(menu => (
+                                        <div 
+                                            key={menu.key} 
+                                            className="flex items-center gap-3 px-3 py-2 rounded hover:bg-zinc-800/50 cursor-pointer"
+                                            onClick={() => handleMenuPermToggle(menu.key)}
+                                        >
+                                            <Checkbox 
+                                                checked={userMenuPerms.enabled_menus.includes(menu.key)}
+                                                onCheckedChange={() => handleMenuPermToggle(menu.key)}
+                                            />
+                                            <div className="flex-1">
+                                                <span className="text-sm">{menu.label}</span>
+                                                <span className="text-xs text-zinc-500 ml-2">{menu.path}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {userMenuPerms.is_default && (
+                                    <div className="text-xs text-zinc-500 text-center py-2 border-t border-zinc-800">
+                                        Currently using default permissions for {selectedUser?.role} role
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        <DialogFooter className="gap-2">
+                            {!userMenuPerms.is_super_admin && !userMenuPerms.is_default && (
+                                <Button 
+                                    variant="outline" 
+                                    onClick={handleResetMenuPerms}
+                                    disabled={savingMenuPerms}
+                                >
+                                    Reset to Default
+                                </Button>
+                            )}
+                            <Button variant="outline" onClick={() => setMenuPermDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            {!userMenuPerms.is_super_admin && (
+                                <Button onClick={handleSaveMenuPerms} disabled={savingMenuPerms}>
+                                    {savingMenuPerms && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                    Save Changes
+                                </Button>
+                            )}
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </Layout>
     );
