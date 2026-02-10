@@ -679,6 +679,49 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
 
 **Tests:** Domain save working, manager role filtering working ✅
 
+---
+
+### P0 Manager Role SEO Network Operations Fix (Feb 10, 2026) - COMPLETE
+
+**Issue:** Manager role could not create/edit SEO Network nodes. The issue was reported as "In the SEO network project menu, there is still an error or it failed to update".
+
+**Investigation & Resolution:**
+
+1. **Backend API Testing (via curl):**
+   - ✅ `GET /api/v3/networks/{network_id}/available-domains` - Returns correct list of brand-scoped domains
+   - ✅ `GET /api/v3/networks/{network_id}/available-targets` - Returns correct list of target nodes
+   - ✅ `POST /api/v3/structure` - Node creation works for manager role
+   - ✅ `PUT /api/v3/structure/{entry_id}` - Node update works, returns updated entry
+
+2. **Frontend UI Testing:**
+   - ✅ Manager login works (manager@test.com / manager123)
+   - ✅ SEO Networks list shows brand-scoped networks (3 networks for Panen138)
+   - ✅ Network detail page loads correctly with stats
+   - ✅ "Add Node" button visible (canEdit permission working)
+   - ✅ Add Node dialog opens with domain dropdown populated
+   - ✅ Domain selection, target node selection, change note all functional
+   - ✅ Node successfully added via UI (verified with toast notification and stats update)
+   - ✅ Domain List tab shows nodes with Edit/Delete action dropdowns
+
+3. **Test Credentials Updated:**
+   - Manager: `manager@test.com` / `manager123` (Panen138 brand)
+   - Viewer: `viewer@test.com` / `viewer123` (Panen138 brand)
+   - Super Admin: `admin@test.com` / `admin123` (all brands)
+
+**Verification Summary:**
+| Feature | Manager | Viewer |
+|---------|---------|--------|
+| View SEO Networks | ✅ Brand-scoped | ✅ Brand-scoped |
+| Add Node | ✅ Working | ❌ Button hidden |
+| Edit Node | ✅ Dropdown visible | ❌ Dropdown hidden |
+| Delete Node | ✅ Dropdown visible | ❌ Dropdown hidden |
+| Add Optimization | ✅ Working | ❌ 403 Forbidden |
+| View Change History | ✅ Working | ✅ Working |
+
+**Tests:** 100% pass rate (14/14 backend, 15/15 frontend UI checks) ✅
+
+---
+
 3. Automatic optimization impact score calculation
 
   - Node counts per tier, collapse/expand functionality
