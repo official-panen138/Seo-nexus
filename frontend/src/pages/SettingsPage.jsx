@@ -144,7 +144,7 @@ export default function SettingsPage() {
         try {
             const [seoRes, brandingRes, timezoneRes, domainMonitoringRes, emailAlertsRes, digestRes] = await Promise.all([
                 settingsAPI.getSeoTelegram().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } })),
-                settingsAPI.getBranding().catch(() => ({ data: { site_title: 'SEO//NOC', site_description: '', logo_url: '' } })),
+                settingsAPI.getBranding().catch(() => ({ data: { site_title: 'SEO//NOC', site_description: '', tagline: 'Domain Network Management System', logo_url: '' } })),
                 settingsAPI.getTimezone().catch(() => ({ data: { default_timezone: 'Asia/Jakarta', timezone_label: 'GMT+7' } })),
                 domainMonitoringTelegramAPI.getSettings().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } })),
                 emailAlertsAPI.getSettings().catch(() => ({ data: { enabled: false, configured: false, global_admin_emails: [], severity_threshold: 'high', include_network_managers: true } })),
