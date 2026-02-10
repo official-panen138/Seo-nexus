@@ -512,52 +512,59 @@ class ExpirationMonitoringService:
                     f"<i>Also used in +{seo['additional_networks_count']} other networks</i>"
                 )
 
-            # Structure Chain with arrows
+            # Structure Chain - use full network structure formatted by tiers
             lines.append("")
             lines.append("━━━━━━━━━━━━━━━━━━━━━━")
-            lines.append("🔗 <b>STRUCTURE CHAIN</b>")
+            lines.append("🔗 <b>FULL SEO STRUCTURE</b>")
             lines.append("━━━━━━━━━━━━━━━━━━━━━━")
             
-            chain = seo.get("upstream_chain", [])
-            if chain:
-                # Start with the domain
-                first_ctx = seo.get("seo_context", [{}])[0]
-                status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
-                lines.append(f"🗑️ {domain.get('domain_name', 'Unknown')} [{status_label}]")
-                
-                for hop in chain:
-                    target = hop.get("target", hop.get("node", ""))
-                    relation = hop.get("target_relation", hop.get("relation", ""))
-                    
-                    if hop.get("is_end"):
-                        end_reason = hop.get("end_reason", "END")
-                        if "money" in end_reason.lower() or hop.get("relation") == "main":
-                            lines.append(f"   → 💰 {hop.get('node', target)} [{relation}]")
-                            lines.append("   → END: 💰 MONEY SITE")
-                        else:
-                            lines.append(f"   → {hop.get('node', target)} [{relation}]")
-                            lines.append(f"   → END: {end_reason}")
-                    else:
-                        lines.append(f"   → {target} [{relation}]")
-                
-                # If chain didn't end with money site marker
-                if not chain or not chain[-1].get("is_end"):
-                    if chain:
-                        last_hop = chain[-1]
-                        if last_hop.get("relation") == "main" or "money" in str(last_hop.get("target", "")).lower():
-                            lines.append("   → END: 💰 MONEY SITE")
-                        else:
-                            lines.append("   → END: (chain incomplete)")
+            # Use pre-fetched full structure if available
+            full_structure_lines = seo.get("full_structure_lines", [])
+            if full_structure_lines:
+                for line in full_structure_lines:
+                    lines.append(line)
             else:
-                # No chain - check if it's orphan or main
-                first_ctx = seo.get("seo_context", [{}])[0] if seo.get("seo_context") else {}
-                if first_ctx.get("role") == "main":
-                    lines.append(f"💰 {domain.get('domain_name', 'Unknown')} [Primary]")
-                    lines.append("   → END: 💰 THIS IS MONEY SITE")
-                else:
+                # Fallback to old chain display
+                chain = seo.get("upstream_chain", [])
+                if chain:
+                    # Start with the domain
+                    first_ctx = seo.get("seo_context", [{}])[0]
                     status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
-                    lines.append(f"⚠️ {domain.get('domain_name', 'Unknown')} [{status_label}]")
-                    lines.append("   → END: ⚠️ ORPHAN NODE (no target)")
+                    lines.append(f"🗑️ {domain.get('domain_name', 'Unknown')} [{status_label}]")
+                    
+                    for hop in chain:
+                        target = hop.get("target", hop.get("node", ""))
+                        relation = hop.get("target_relation", hop.get("relation", ""))
+                        
+                        if hop.get("is_end"):
+                            end_reason = hop.get("end_reason", "END")
+                            if "money" in end_reason.lower() or hop.get("relation") == "main":
+                                lines.append(f"   → 💰 {hop.get('node', target)} [{relation}]")
+                                lines.append("   → END: 💰 MONEY SITE")
+                            else:
+                                lines.append(f"   → {hop.get('node', target)} [{relation}]")
+                                lines.append(f"   → END: {end_reason}")
+                        else:
+                            lines.append(f"   → {target} [{relation}]")
+                    
+                    # If chain didn't end with money site marker
+                    if not chain or not chain[-1].get("is_end"):
+                        if chain:
+                            last_hop = chain[-1]
+                            if last_hop.get("relation") == "main" or "money" in str(last_hop.get("target", "")).lower():
+                                lines.append("   → END: 💰 MONEY SITE")
+                            else:
+                                lines.append("   → END: (chain incomplete)")
+                else:
+                    # No chain - check if it's orphan or main
+                    first_ctx = seo.get("seo_context", [{}])[0] if seo.get("seo_context") else {}
+                    if first_ctx.get("role") == "main":
+                        lines.append(f"💰 {domain.get('domain_name', 'Unknown')} [Primary]")
+                        lines.append("   → END: 💰 THIS IS MONEY SITE")
+                    else:
+                        status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
+                        lines.append(f"⚠️ {domain.get('domain_name', 'Unknown')} [{status_label}]")
+                        lines.append("   → END: ⚠️ ORPHAN NODE (no target)")
 
             # Downstream Impact
             downstream = seo.get("downstream_impact", [])
