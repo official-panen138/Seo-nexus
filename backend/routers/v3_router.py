@@ -809,6 +809,97 @@ async def reset_user_menu_permissions(
     }
 
 
+class BulkMenuPermissionUpdate(BaseModel):
+    """Model for bulk updating menu permissions"""
+    user_ids: List[str] = Field(..., description="List of user IDs to update")
+    enabled_menus: List[str] = Field(..., description="List of menu keys to assign")
+
+
+@router.put("/admin/menu-permissions/bulk")
+async def bulk_update_menu_permissions(
+    bulk_update: BulkMenuPermissionUpdate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """Bulk update menu permissions for multiple users (Super Admin only)"""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can modify menu permissions")
+    
+    # Validate menu keys
+    valid_keys = {m["key"] for m in MASTER_MENU_REGISTRY}
+    invalid_keys = set(bulk_update.enabled_menus) - valid_keys
+    if invalid_keys:
+        raise HTTPException(status_code=400, detail=f"Invalid menu keys: {invalid_keys}")
+    
+    # Get all target users
+    target_users = await db.users.find(
+        {"id": {"$in": bulk_update.user_ids}},
+        {"_id": 0, "id": 1, "email": 1, "role": 1}
+    ).to_list(None)
+    
+    if not target_users:
+        raise HTTPException(status_code=404, detail="No users found")
+    
+    user_map = {u["id"]: u for u in target_users}
+    
+    now = datetime.now(timezone.utc).isoformat()
+    results = {
+        "updated": [],
+        "skipped_super_admin": [],
+        "not_found": []
+    }
+    
+    for user_id in bulk_update.user_ids:
+        user = user_map.get(user_id)
+        
+        if not user:
+            results["not_found"].append(user_id)
+            continue
+        
+        if user.get("role") == "super_admin":
+            results["skipped_super_admin"].append(user_id)
+            continue
+        
+        # Upsert permissions
+        await db.menu_permissions.update_one(
+            {"user_id": user_id},
+            {
+                "$set": {
+                    "user_id": user_id,
+                    "enabled_menus": bulk_update.enabled_menus,
+                    "updated_at": now,
+                    "updated_by": current_user.get("id")
+                },
+                "$setOnInsert": {
+                    "created_at": now
+                }
+            },
+            upsert=True
+        )
+        results["updated"].append({"user_id": user_id, "email": user.get("email")})
+    
+    # Log the bulk action
+    await db.audit_logs.insert_one({
+        "id": str(uuid.uuid4()),
+        "event_type": "menu_permissions_bulk_updated",
+        "actor": current_user.get("email"),
+        "actor_id": current_user.get("id"),
+        "resource": "bulk_users",
+        "details": {
+            "user_count": len(results["updated"]),
+            "enabled_menus": bulk_update.enabled_menus,
+            "skipped_super_admin": len(results["skipped_super_admin"])
+        },
+        "severity": "info",
+        "status": "success",
+        "timestamp": now
+    })
+    
+    return {
+        "message": f"Menu permissions updated for {len(results['updated'])} users",
+        "results": results,
+        "enabled_menus": bulk_update.enabled_menus
+    }
+
 # ==================== REGISTRAR ENDPOINTS (MASTER DATA) ====================
 
 
