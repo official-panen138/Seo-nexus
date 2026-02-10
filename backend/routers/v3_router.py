@@ -8434,10 +8434,6 @@ async def get_audit_event_types(
         ],
     }
 
-            {"value": -1, "label": "-1 day (already expired)"},
-        ],
-        "reminder_schedule": {
-
 
 # ==================== METRICS & ANALYTICS API ====================
 
