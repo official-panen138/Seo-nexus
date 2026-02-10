@@ -667,10 +667,50 @@ export function NetworkComplaintsTab({ networkId, brandId, networkManagers = [] 
                             </div>
                         </div>
 
-                        {/* Tag Users */}
+                        {/* Network Managers (Auto-Tagged - Mandatory) */}
                         <div>
-                            <Label>Tag Responsible Users</Label>
-                            <div className="relative mt-1">
+                            <Label className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-amber-400" />
+                                Network Manager(s) 
+                                <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/30">
+                                    Auto-tagged
+                                </Badge>
+                            </Label>
+                            <p className="text-xs text-zinc-500 mt-1">Manager akan otomatis di-tag pada notifikasi complaint ini.</p>
+                            
+                            {networkManagers.length > 0 ? (
+                                <div className="flex flex-wrap gap-2 mt-2 p-2 bg-zinc-900/50 border border-amber-500/20 rounded-lg">
+                                    {networkManagers.map(mgr => (
+                                        <Badge
+                                            key={mgr.id}
+                                            variant="outline"
+                                            className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/30"
+                                        >
+                                            <User className="h-3 w-3 mr-1" />
+                                            {mgr.name || mgr.email}
+                                            {mgr.telegram_username && (
+                                                <span className="text-zinc-500 ml-1">@{mgr.telegram_username}</span>
+                                            )}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-zinc-500 mt-2 p-2 bg-zinc-900/50 border border-zinc-700 rounded-lg">
+                                    Tidak ada Network Manager yang ditugaskan untuk project ini.
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Additional Users to Tag (Optional) */}
+                        <div>
+                            <Label className="flex items-center gap-2">
+                                Tag Additional Users 
+                                <Badge variant="outline" className="text-xs text-zinc-500">
+                                    Optional
+                                </Badge>
+                            </Label>
+                            <p className="text-xs text-zinc-500 mt-1">Tambahkan user lain untuk memonitor complaint ini.</p>
+                            <div className="relative mt-2">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                                 <Input
                                     value={userSearchQuery}
@@ -687,7 +727,10 @@ export function NetworkComplaintsTab({ networkId, brandId, networkManagers = [] 
                             {/* Search Results */}
                             {userSearchResults.length > 0 && (
                                 <div className="mt-2 p-2 border border-border rounded-lg bg-zinc-900 max-h-32 overflow-y-auto">
-                                    {userSearchResults.map(u => (
+                                    {userSearchResults
+                                        .filter(u => !networkManagers.some(m => m.id === u.id)) // Exclude managers from results
+                                        .filter(u => !selectedUsers.some(s => s.id === u.id)) // Exclude already selected
+                                        .map(u => (
                                         <div
                                             key={u.id}
                                             onClick={() => addUser(u)}
@@ -700,7 +743,7 @@ export function NetworkComplaintsTab({ networkId, brandId, networkManagers = [] 
                                 </div>
                             )}
 
-                            {/* Selected Users */}
+                            {/* Selected Additional Users */}
                             {selectedUsers.length > 0 && (
                                 <div className="flex flex-wrap gap-2 mt-2">
                                     {selectedUsers.map(u => (
