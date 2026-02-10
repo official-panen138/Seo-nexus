@@ -548,6 +548,58 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
 ### P2 - Medium Priority  
 1. **Deep-link Drawer Auto-Open** - Auto-open optimization detail drawer when URL has `?optimization_id=...`
 2. Correlate optimization timeline with ranking history
+
+
+---
+
+### Email Alerts for Domain Monitoring (Feb 10, 2026) - COMPLETE
+**Feature:** Email notifications as redundancy layer for HIGH/CRITICAL domain alerts.
+
+**Implementation Summary:**
+
+**1. Backend - Email Alert Service (`/app/backend/services/email_alert_service.py`):**
+- Uses Resend API for transactional email delivery
+- Static HTML templates (no AI-generated content)
+- Severity-aware filtering (HIGH/CRITICAL only)
+- Recipient logic: Global admin emails + per-network managers
+
+**2. API Endpoints:**
+- `GET /api/v3/settings/email-alerts` - Retrieve email alert configuration
+- `PUT /api/v3/settings/email-alerts` - Update settings (enabled, severity_threshold, emails)
+- `POST /api/v3/settings/email-alerts/test` - Send test email
+
+**3. Frontend - Settings Page Email Alerts Tab:**
+- Enable/disable toggle
+- Resend API key configuration
+- Sender email (optional, verified domain required)
+- Severity threshold dropdown (HIGH / CRITICAL only)
+- Include Network Managers toggle
+- Global Admin Emails management (add/remove)
+- Test email functionality
+
+**4. Integration with Monitoring Service:**
+- Expiration alerts (≤7 days) trigger email
+- DOWN alerts (CRITICAL) trigger email
+- Soft-blocked alerts (HIGH) trigger email
+- Email includes full SEO context when applicable
+
+**Email Alert Recipients:**
+- **Global Admins:** Receive ALL alerts regardless of network
+- **Network Managers:** Receive alerts for domains in their networks (if enabled)
+
+**Severity Mapping:**
+| Alert Type | Severity | Email Sent? (threshold=HIGH) |
+|------------|----------|------------------------------|
+| Domain DOWN | CRITICAL | Yes |
+| Domain Expired/≤3 days | CRITICAL | Yes |
+| Soft Blocked | HIGH | Yes |
+| Expiring 4-7 days | HIGH | Yes |
+| Expiring 8-30 days | MEDIUM | No |
+
+**Tests:** 100% pass rate (15/15 backend, all frontend UI verified) ✅
+
+**Note:** Requires Resend API key from resend.com to actually send emails. Get key at: https://resend.com/api-keys
+
 3. Automatic optimization impact score calculation
 
   - Node counts per tier, collapse/expand functionality
