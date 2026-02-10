@@ -522,7 +522,7 @@ export function NetworkComplaintsTab({ networkId, brandId }) {
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <CheckCircle className="h-4 w-4 text-emerald-400" />
                                                                 <span className="text-xs text-emerald-400">
-                                                                    Resolved by {complaint.resolved_by?.name || complaint.resolved_by?.email}
+                                                                    Resolved by {complaint.resolved_by?.display_name || complaint.resolved_by?.email}
                                                                 </span>
                                                                 <span className="text-xs text-zinc-600">
                                                                     {formatDate(complaint.resolved_at)}
