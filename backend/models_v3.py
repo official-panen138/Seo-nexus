@@ -287,6 +287,9 @@ class SeoOptimizationCreate(BaseModel):
     report_urls: List[ReportUrlEntry] = []  # With start/end dates
     expected_impact: List[OptimizationExpectedImpact] = []
     status: OptimizationStatus = OptimizationStatus.COMPLETED
+    
+    # Linked conflict (for auto-created conflict resolution)
+    linked_conflict_id: Optional[str] = None
 
 
 class SeoOptimizationUpdate(BaseModel):
@@ -333,6 +336,10 @@ class SeoOptimizationResponse(BaseModel):
     complaint_status: str = "none"  # none, complained, under_review, resolved
     complaint_note: Optional[str] = None
     telegram_notified_at: Optional[str] = None
+
+    # Linked conflict (for conflict resolution type)
+    linked_conflict_id: Optional[str] = None
+    linked_conflict: Optional[Any] = None  # LinkedConflictInfo when enriched
 
     # Enriched fields
     network_name: Optional[str] = None
