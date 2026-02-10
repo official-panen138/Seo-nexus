@@ -365,9 +365,7 @@ class SeoContextEnricher:
                 )
                 break
 
-            target_node = (
-                f"{target.get('domain', '')}{target.get('optimized_path', '')}"
-            )
+            target_node = await get_node_label(target)
             target_relation = self._get_relation_type(
                 target.get("domain_status", "canonical")
             )
