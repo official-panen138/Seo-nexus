@@ -160,45 +160,70 @@ export default function AlertsPage() {
                         <div>
                             <h1 className="page-title">Alert Center</h1>
                             <p className="page-subtitle">
-                                Monitor and manage system alerts
+                                Monitor alerts and SEO conflicts
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <Card className="bg-card border-border">
-                        <CardContent className="pt-4">
-                            <div className="text-sm text-zinc-500 mb-1">Total Alerts</div>
-                            <div className="text-2xl font-bold font-mono">{stats.total}</div>
-                        </CardContent>
-                    </Card>
-                    <Card className={`bg-card border-border ${stats.critical > 0 ? 'border-red-900/50' : ''}`}>
-                        <CardContent className="pt-4">
-                            <div className="text-sm text-zinc-500 mb-1">Critical</div>
-                            <div className={`text-2xl font-bold font-mono ${stats.critical > 0 ? 'text-red-500' : 'text-zinc-400'}`}>
-                                {stats.critical}
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className={`bg-card border-border ${stats.high > 0 ? 'border-amber-900/50' : ''}`}>
-                        <CardContent className="pt-4">
-                            <div className="text-sm text-zinc-500 mb-1">High Priority</div>
-                            <div className={`text-2xl font-bold font-mono ${stats.high > 0 ? 'text-amber-500' : 'text-zinc-400'}`}>
-                                {stats.high}
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-card border-border">
-                        <CardContent className="pt-4">
-                            <div className="text-sm text-zinc-500 mb-1">Unacknowledged</div>
-                            <div className={`text-2xl font-bold font-mono ${stats.unacknowledged > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                                {stats.unacknowledged}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                {/* Tabs for Alerts and Conflicts */}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="bg-card border border-border mb-6">
+                        <TabsTrigger value="alerts" className="relative" data-testid="alerts-tab">
+                            <Bell className="h-4 w-4 mr-2" />
+                            Alerts
+                            {stats.unacknowledged > 0 && (
+                                <Badge className="ml-2 h-5 min-w-[20px] bg-red-500/20 text-red-400 border-red-500/30">
+                                    {stats.unacknowledged}
+                                </Badge>
+                            )}
+                        </TabsTrigger>
+                        <TabsTrigger value="conflicts" className="relative" data-testid="conflicts-tab">
+                            <AlertTriangle className="h-4 w-4 mr-2" />
+                            SEO Conflicts
+                            {conflictStats.total > 0 && (
+                                <Badge className="ml-2 h-5 min-w-[20px] bg-amber-500/20 text-amber-400 border-amber-500/30">
+                                    {conflictStats.total}
+                                </Badge>
+                            )}
+                        </TabsTrigger>
+                    </TabsList>
+
+                    {/* Alerts Tab */}
+                    <TabsContent value="alerts">
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <Card className="bg-card border-border">
+                                <CardContent className="pt-4">
+                                    <div className="text-sm text-zinc-500 mb-1">Total Alerts</div>
+                                    <div className="text-2xl font-bold font-mono">{stats.total}</div>
+                                </CardContent>
+                            </Card>
+                            <Card className={`bg-card border-border ${stats.critical > 0 ? 'border-red-900/50' : ''}`}>
+                                <CardContent className="pt-4">
+                                    <div className="text-sm text-zinc-500 mb-1">Critical</div>
+                                    <div className={`text-2xl font-bold font-mono ${stats.critical > 0 ? 'text-red-500' : 'text-zinc-400'}`}>
+                                        {stats.critical}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className={`bg-card border-border ${stats.high > 0 ? 'border-amber-900/50' : ''}`}>
+                                <CardContent className="pt-4">
+                                    <div className="text-sm text-zinc-500 mb-1">High Priority</div>
+                                    <div className={`text-2xl font-bold font-mono ${stats.high > 0 ? 'text-amber-500' : 'text-zinc-400'}`}>
+                                        {stats.high}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-card border-border">
+                                <CardContent className="pt-4">
+                                    <div className="text-sm text-zinc-500 mb-1">Unacknowledged</div>
+                                    <div className={`text-2xl font-bold font-mono ${stats.unacknowledged > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                                        {stats.unacknowledged}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
 
                 {/* Filters */}
                 <div className="flex flex-wrap items-center gap-3 mb-6">
