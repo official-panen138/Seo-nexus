@@ -7904,3 +7904,220 @@ async def get_user_status(
     }
 
 
+
+# ==================== NOTIFICATION TEMPLATES API ====================
+
+
+@router.get("/settings/notification-templates")
+async def list_notification_templates(
+    channel: Optional[str] = Query(None, description="Filter by channel: telegram, email"),
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    List all notification templates.
+    Only super_admin can access.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can manage templates")
+    
+    from services.notification_template_engine import get_template_crud
+    crud = get_template_crud(db)
+    
+    templates = await crud.list_templates(channel)
+    return {"templates": templates}
+
+
+@router.get("/settings/notification-templates/events")
+async def get_available_template_events(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """Get list of available notification event types."""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can manage templates")
+    
+    from services.notification_template_engine import get_template_crud
+    crud = get_template_crud(db)
+    
+    return {"events": crud.get_available_events()}
+
+
+@router.get("/settings/notification-templates/variables")
+async def get_available_template_variables(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """Get list of allowed template variables."""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can manage templates")
+    
+    from services.notification_template_engine import NotificationTemplateEngine, ALLOWED_VARIABLES
+    
+    # Group variables by category
+    grouped = {}
+    for var in sorted(ALLOWED_VARIABLES):
+        category = var.split(".")[0]
+        if category not in grouped:
+            grouped[category] = []
+        grouped[category].append(var)
+    
+    return {"variables": grouped, "all_variables": sorted(list(ALLOWED_VARIABLES))}
+
+
+@router.get("/settings/notification-templates/{channel}/{event_type}")
+async def get_notification_template(
+    channel: str,
+    event_type: str,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """Get a specific notification template."""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can manage templates")
+    
+    from services.notification_template_engine import get_template_crud
+    crud = get_template_crud(db)
+    
+    template = await crud.get_template(channel, event_type)
+    if not template:
+        raise HTTPException(status_code=404, detail=f"Template not found: {channel}/{event_type}")
+    
+    return template
+
+
+@router.put("/settings/notification-templates/{channel}/{event_type}")
+async def update_notification_template(
+    channel: str,
+    event_type: str,
+    body: dict,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Update a notification template.
+    Only super_admin can update.
+    
+    Body can contain:
+    - title: str (optional)
+    - template_body: str (optional)
+    - enabled: bool (optional)
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can manage templates")
+    
+    from services.notification_template_engine import get_template_crud
+    crud = get_template_crud(db)
+    
+    try:
+        template = await crud.update_template(
+            channel=channel,
+            event_type=event_type,
+            title=body.get("title"),
+            template_body=body.get("template_body"),
+            enabled=body.get("enabled"),
+            updated_by=current_user.get("email"),
+        )
+        
+        # Log the change
+        await db.activity_logs_v3.insert_one({
+            "id": str(uuid.uuid4()),
+            "entity_type": "notification_template",
+            "entity_id": f"{channel}/{event_type}",
+            "action": "update",
+            "actor_id": current_user.get("id"),
+            "actor_email": current_user.get("email"),
+            "details": {"channel": channel, "event_type": event_type, "changes": list(body.keys())},
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+        
+        return template
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/settings/notification-templates/{channel}/{event_type}/reset")
+async def reset_notification_template(
+    channel: str,
+    event_type: str,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """Reset a notification template to its default."""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can manage templates")
+    
+    from services.notification_template_engine import get_template_crud
+    crud = get_template_crud(db)
+    
+    try:
+        template = await crud.reset_template(channel, event_type)
+        
+        # Log the reset
+        await db.activity_logs_v3.insert_one({
+            "id": str(uuid.uuid4()),
+            "entity_type": "notification_template",
+            "entity_id": f"{channel}/{event_type}",
+            "action": "reset",
+            "actor_id": current_user.get("id"),
+            "actor_email": current_user.get("email"),
+            "details": {"channel": channel, "event_type": event_type},
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+        
+        return template
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/settings/notification-templates/{channel}/{event_type}/preview")
+async def preview_notification_template(
+    channel: str,
+    event_type: str,
+    body: dict = None,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Preview a notification template with sample data.
+    
+    Body can optionally contain:
+    - template_body: str (to preview custom text without saving)
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can manage templates")
+    
+    from services.notification_template_engine import get_template_crud
+    crud = get_template_crud(db)
+    
+    try:
+        template_body = body.get("template_body") if body else None
+        rendered = await crud.preview_template(channel, event_type, template_body)
+        return {"preview": rendered, "channel": channel, "event_type": event_type}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/settings/notification-templates/validate")
+async def validate_template_body(
+    body: dict,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Validate a template body for unknown variables.
+    
+    Body must contain:
+    - template_body: str
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can manage templates")
+    
+    template_body = body.get("template_body", "")
+    if not template_body:
+        raise HTTPException(status_code=400, detail="template_body is required")
+    
+    from services.notification_template_engine import NotificationTemplateEngine
+    engine = NotificationTemplateEngine(db)
+    
+    invalid_vars = engine.validate_template(template_body)
+    
+    return {
+        "valid": len(invalid_vars) == 0,
+        "invalid_variables": invalid_vars,
+        "message": "Template is valid" if not invalid_vars else f"Unknown variables: {', '.join(invalid_vars)}"
+    }
+
+
