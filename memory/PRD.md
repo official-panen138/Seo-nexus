@@ -498,6 +498,58 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
 - ✅ **Bulk Node Import with Path Support** (Feb 8, 2026)
 - ✅ **Tier-based Grouping in Domain List** (Feb 9, 2026)
   - Accordion-style tier groups (LP/Money Site, Tier 1, Tier 2, etc.)
+
+
+---
+
+### Legacy Monitoring Alerts Removal (Feb 10, 2026) - COMPLETE
+**Feature:** Complete removal of the legacy "Monitoring Alerts" feature, replaced by the new SEO-aware Domain Monitoring system.
+
+**What was removed:**
+
+**1. Frontend - AlertsPage.jsx:**
+- ❌ REMOVED: "Alerts" tab showing generic monitoring alerts
+- ❌ REMOVED: Tabbed interface (Alerts | SEO Conflicts)
+- ✅ KEPT: SEO Conflicts display (now the main and only view)
+- ✅ Refactored to single-purpose "SEO Conflicts" page
+
+**2. Frontend - SettingsPage.jsx:**
+- ❌ REMOVED: Legacy "Monitoring Alerts" tab
+- ✅ Fixed: Duplicate `loadSettings` function syntax error
+- ✅ KEPT: 4 tabs only: Branding, Timezone, SEO Notifications, Domain Monitoring
+
+**3. Frontend - api.js:**
+- ✅ Updated: `monitoringAPI.getStats()` now points to `/api/v3/monitoring/stats`
+- ✅ KEPT: alertsAPI for acknowledging alerts (still used by dashboard)
+
+**4. Backend - v3_router.py:**
+- ✅ KEPT: `/api/v3/monitoring/stats` endpoint (provides availability/expiration stats for dashboard)
+- ✅ Fixed: Unused `resolved_complaints_count` variable (linter warning)
+
+**What was kept (New Domain Monitoring System):**
+- `/api/v3/settings/telegram-monitoring` - Dedicated Telegram channel for domain alerts
+- `/api/v3/monitoring/stats` - Monitoring statistics for dashboard
+- SEO-aware alerts via `monitoring_service.py` with:
+  - Full SEO context (structure chain, impact score)
+  - Upstream chain to Money Site
+  - Downstream impact analysis
+  - Soft-block detection (Cloudflare, captcha, geo-blocking)
+
+**Tests:** 100% pass rate (12/12 backend, 100% frontend UI verified) ✅
+
+---
+
+## Future Tasks (Backlog)
+
+### P1 - High Priority
+1. **Reminder effectiveness metric** - Track how many reminders are sent before optimization is resolved
+2. **Conflict aging metric** - Track how long SEO conflicts remain unresolved in Alert Center
+
+### P2 - Medium Priority  
+1. **Deep-link Drawer Auto-Open** - Auto-open optimization detail drawer when URL has `?optimization_id=...`
+2. Correlate optimization timeline with ranking history
+3. Automatic optimization impact score calculation
+
   - Node counts per tier, collapse/expand functionality
   - Grouped/Flat view toggle
 - ✅ **Filterable SEO Change History Timeline** (Feb 9, 2026)
