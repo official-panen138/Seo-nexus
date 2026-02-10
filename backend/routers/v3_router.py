@@ -6586,8 +6586,8 @@ async def _detect_network_conflicts(network_id: str) -> List[Dict[str, Any]]:
     network_name = network.get("name", "Unknown")
     
     # Get tier service
-    from services.tier_calculation_service import get_tier_service
-    tier_svc = get_tier_service(db)
+    from services.tier_service import get_tier_service
+    tier_svc = get_tier_service()
     
     tiers = await tier_svc.calculate_network_tiers(network_id)
     entries = await db.seo_structure_entries.find(
