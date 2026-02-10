@@ -5704,18 +5704,31 @@ async def get_dashboard_stats_only(
     current_user: dict = Depends(get_current_user_wrapper)
 ):
     """Get lightweight dashboard stats for auto-refresh (no heavy computations)"""
+    # Apply brand filtering for non-super-admin users
+    brand_filter = build_brand_filter(current_user)
+    
+    # Domain filters
+    domain_base_filter = brand_filter.copy() if brand_filter else {}
+    domain_active_filter = {**domain_base_filter, "status": "active"}
+    domain_monitored_filter = {**domain_base_filter, "monitoring_enabled": True}
+    domain_up_filter = {**domain_base_filter, "ping_status": "up"}
+    domain_down_filter = {**domain_base_filter, "ping_status": "down"}
+    
+    # Network filter
+    network_filter = brand_filter.copy() if brand_filter else {}
+    
     stats = {
-        "total_domains": await db.asset_domains.count_documents({}),
-        "total_networks": await db.seo_networks.count_documents({}),
-        "active_domains": await db.asset_domains.count_documents({"status": "active"}),
-        "monitored_count": await db.asset_domains.count_documents({"monitoring_enabled": True}),
+        "total_domains": await db.asset_domains.count_documents(domain_base_filter),
+        "total_networks": await db.seo_networks.count_documents(network_filter),
+        "active_domains": await db.asset_domains.count_documents(domain_active_filter),
+        "monitored_count": await db.asset_domains.count_documents(domain_monitored_filter),
         "indexed_count": await db.seo_structure_entries.count_documents({"index_status": "index"}),
         "noindex_count": await db.seo_structure_entries.count_documents({"index_status": "noindex"}),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
-    stats["ping_up"] = await db.asset_domains.count_documents({"ping_status": "up"})
-    stats["ping_down"] = await db.asset_domains.count_documents({"ping_status": "down"})
+    stats["ping_up"] = await db.asset_domains.count_documents(domain_up_filter)
+    stats["ping_down"] = await db.asset_domains.count_documents(domain_down_filter)
     stats["active_alerts"] = await db.alerts.count_documents({"acknowledged": False})
     
     return stats
