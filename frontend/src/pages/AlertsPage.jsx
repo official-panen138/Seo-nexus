@@ -38,7 +38,9 @@ const CONFLICT_TYPE_LABELS = {
 
 export default function AlertsPage() {
     const [conflicts, setConflicts] = useState([]);
+    const [storedConflicts, setStoredConflicts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [processing, setProcessing] = useState(false);
 
     useEffect(() => {
         loadConflicts();
@@ -47,8 +49,14 @@ export default function AlertsPage() {
     const loadConflicts = async () => {
         setLoading(true);
         try {
-            const res = await v3ReportsAPI.getConflicts();
-            setConflicts(res.data?.conflicts || []);
+            // Load both detected and stored conflicts
+            const [detectedRes, storedRes] = await Promise.all([
+                v3ReportsAPI.getConflicts(),
+                conflictsAPI.getStored()
+            ]);
+            
+            setConflicts(detectedRes.data?.conflicts || []);
+            setStoredConflicts(storedRes.data?.conflicts || []);
         } catch (err) {
             console.error('Failed to load conflicts:', err);
             toast.error('Failed to load SEO conflicts');
@@ -56,6 +64,44 @@ export default function AlertsPage() {
             setLoading(false);
         }
     };
+
+    const handleProcessConflicts = async () => {
+        setProcessing(true);
+        try {
+            const res = await conflictsAPI.process();
+            const data = res.data;
+            
+            if (data.success) {
+                toast.success(
+                    `Processed ${data.conflicts_processed} conflicts. Created ${data.optimizations_created} optimization tasks.`
+                );
+                loadConflicts(); // Reload to show updated data
+            }
+        } catch (err) {
+            console.error('Failed to process conflicts:', err);
+            toast.error('Failed to process conflicts');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    // Create a map of stored conflicts by their key for quick lookup
+    const storedConflictMap = storedConflicts.reduce((acc, c) => {
+        const key = `${c.network_id}|${c.conflict_type}|${c.node_a_id}|${c.node_b_id || ''}`;
+        acc[key] = c;
+        return acc;
+    }, {});
+
+    // Enhance detected conflicts with stored info (linked optimization)
+    const enhancedConflicts = conflicts.map(c => {
+        const key = `${c.network_id}|${c.conflict_type}|${c.node_a_id}|${c.node_b_id || ''}`;
+        const stored = storedConflictMap[key];
+        return {
+            ...c,
+            stored_conflict: stored,
+            linked_optimization: stored?.linked_optimization
+        };
+    });
 
     // Conflict stats
     const conflictStats = {
