@@ -119,7 +119,11 @@ export function NetworkComplaintsTab({ networkId, brandId }) {
             // Load project-level complaints
             const projectRes = await projectComplaintsAPI.getAll(networkId);
             setProjectComplaints(projectRes.data || []);
-            
+        } catch (err) {
+            console.error('Failed to load project complaints:', err);
+        }
+        
+        try {
             // Load optimization complaints (from optimizations with complaints)
             const optRes = await optimizationsAPI.getByNetwork(networkId, { limit: 100 });
             const complainedOpts = (optRes.data?.data || []).filter(o => 
@@ -127,11 +131,10 @@ export function NetworkComplaintsTab({ networkId, brandId }) {
             );
             setOptimizationComplaints(complainedOpts);
         } catch (err) {
-            console.error('Failed to load complaints:', err);
-            toast.error('Failed to load complaints');
-        } finally {
-            setLoading(false);
+            console.error('Failed to load optimization complaints:', err);
         }
+        
+        setLoading(false);
     };
 
     // Debounced user search
