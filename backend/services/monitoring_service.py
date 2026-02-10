@@ -377,6 +377,7 @@ class ExpirationMonitoringService:
                         "$set": {
                             "expiration_alert_sent_at": now.isoformat(),
                             "last_expiration_threshold": days_remaining,
+                            "last_alert_reason": alert_reason,
                         }
                     },
                 )
