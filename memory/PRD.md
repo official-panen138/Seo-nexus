@@ -648,6 +648,37 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
 
 **Note:** Requires Resend API key from resend.com to actually send emails. Get key at: https://resend.com/api-keys
 
+
+
+---
+
+### Bug Fixes and Role-Based Access Control (Feb 10, 2026) - COMPLETE
+
+**1. Fixed UserRole Enum:**
+- Added `MANAGER = "manager"` to UserRole enum in server.py
+- Manager login was previously failing with Pydantic validation error
+
+**2. Fixed Dashboard Stats Brand Filtering:**
+- Updated `/api/reports/dashboard-stats` to use V3 collections (`asset_domains`, `seo_networks`)
+- Applied `brand_scope_ids` filtering for non-super-admin users
+- Manager now sees only their assigned brand's data
+
+**3. Domain Save Verification:**
+- Tested domain creation via UI - working correctly
+- Domain form validates required fields (domain_name, brand_id)
+
+**Role Access Summary:**
+
+| Feature | Super Admin | Manager | Viewer |
+|---------|-------------|---------|--------|
+| Dashboard Stats | All data | Brand-scoped | Brand-scoped |
+| SEO Networks | All 5 | 3 (brand filtered) | Brand-scoped |
+| Asset Domains | All 32 | 11 (brand filtered) | Brand-scoped |
+| Settings | Full access | Limited | No access |
+| Email Alerts | Full access | No access | No access |
+
+**Tests:** Domain save working, manager role filtering working ✅
+
 3. Automatic optimization impact score calculation
 
   - Node counts per tier, collapse/expand functionality
