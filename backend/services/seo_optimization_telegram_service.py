@@ -420,11 +420,13 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
         optimization: Dict[str, Any],
         network: Dict[str, Any],
         brand: Dict[str, Any],
-        responsible_users: List[Dict[str, Any]],
+        responsible_users: List[Dict[str, Any]],  # Deprecated - now using network managers
     ) -> bool:
         """
         Send notification when Super Admin creates a complaint on an optimization.
-        Tags responsible users via @telegram_username.
+        
+        IMPORTANT: Per new policy, complaints ONLY tag Network Manager(s) -
+        NOT global users, NOT viewers, NOT SEO leader.
         """
         try:
             # Get timezone settings
@@ -439,21 +441,15 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
             created_by = complaint.get("created_by", {})
             creator_name = created_by.get("display_name", "Unknown")
 
-            # Format tagged users
-            tagged_users_text = ""
-            if responsible_users:
-                tags = []
-                for user in responsible_users:
-                    if user.get("telegram_username"):
-                        tags.append(f"@{user['telegram_username']}")
-                    else:
-                        # Fallback to email if no Telegram username
-                        tags.append(
-                            f"{user.get('name', user.get('email', 'Unknown'))} (no Telegram)"
-                        )
-                tagged_users_text = "\n".join([f"  • {tag}" for tag in tags])
+            # POLICY: Complaints ONLY tag Network Manager(s) of the specific project
+            # NOT global users, NOT viewers, NOT SEO leader
+            network_id = network.get("id")
+            manager_tags = await self._get_network_manager_tags(network_id)
+            
+            if manager_tags:
+                tagged_users_text = "\n".join([f"  • {tag}" for tag in manager_tags])
             else:
-                tagged_users_text = "  (Tidak ada pengguna yang ditag)"
+                tagged_users_text = "  (Tidak ada Network Manager yang ditag)"
 
             # Format activity type
             activity_type = optimization.get("activity_type", "other")
