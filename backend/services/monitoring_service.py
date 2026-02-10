@@ -29,8 +29,10 @@ logger = logging.getLogger(__name__)
 DEFAULT_MONITORING_SETTINGS = {
     "expiration": {
         "enabled": True,
-        "alert_window_days": 7,  # Alert when expiration <= today + N days
-        "alert_thresholds": [30, 14, 7, 3, 1, 0],  # Days to send alerts
+        "alert_window_days": 30,  # Start alerting 30 days before expiration
+        "alert_thresholds": [30, 14, 7],  # Specific days to send one-time alerts
+        "critical_threshold": 7,  # Below this, send 2x daily alerts
+        "critical_alert_hours": [9, 18],  # GMT+7 hours for <7 days alerts
         "include_auto_renew": False,  # Include domains with auto-renew enabled
     },
     "availability": {
