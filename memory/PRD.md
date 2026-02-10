@@ -573,16 +573,22 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
    - Soft-block detection: Cloudflare JS challenge, captcha, geo-block
    - Alert types: Domain Expiration (30/14/7/daily), Domain Availability (DOWN/SOFT_BLOCKED/RECOVERY)
    - All timestamps in GMT+7 (Asia/Jakarta)
-5. **P1: Reminder System Override UI** - Create "Settings" tab in GroupDetailPage.jsx
-   - Per-network reminder interval override (in days)
-   - Toggle to enable/disable reminders per network
-6. **P1: Conflict Detection UI** (Backend API exists at `/api/v3/reports/conflicts`)
-   - Alert Center panel for conflicts
-   - Node highlighting in D3 diagram
-   - Conflict details in node detail panel
-7. **P1: Root vs. Path Main Node Visualization** - Solid vs dashed border in D3 graph
-8. **P1: Milestone Tag on Change Notes** - Optional milestone field
-9. **P1: Network Creation Telegram Notification** - Trigger notification when new SEO network is created
+5. ✅ **P1: Reminder System Override UI** - COMPLETE (Feb 10, 2026)
+   - New "Settings" tab in GroupDetailPage (after Managers tab)
+   - Per-network reminder interval override (1-30 days)
+   - Use Global Default toggle
+   - Save and Reset to Global buttons
+6. ✅ **P1: Conflict Detection UI** - COMPLETE (Feb 10, 2026)
+   - "SEO Conflicts" tab in Alert Center
+   - Stats: Total, Critical, High Priority with refresh button
+   - Conflict cards with severity badges and affected nodes
+   - Quick jump to network via View Network button
+7. ✅ **P1: Network Creation Telegram Notification** - COMPLETE (Feb 10, 2026)
+   - Notification sent immediately when new SEO network created
+   - Sent to seo_change_topic_id
+   - Includes: Network name, Brand, Creator, Main node, Timestamp
+8. **P1: Root vs. Path Main Node Visualization** - Solid vs dashed border in D3 graph
+9. **P1: Milestone Tag on Change Notes** - Optional milestone field
 10. Email notification integration (Resend/SendGrid)
 11. Scheduled conflict alerts (cron)
 12. Domain health check improvements
