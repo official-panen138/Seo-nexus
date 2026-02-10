@@ -162,6 +162,7 @@ const INITIAL_FORM_V2 = {
 
 export default function DomainsPage() {
     const { canEdit } = useAuth();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [assets, setAssets] = useState([]);
     const [domains, setDomains] = useState([]); // V2 fallback
     const [brands, setBrands] = useState([]);
