@@ -296,7 +296,7 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
             setSelectedOptimization(null);
             loadOptimizations();
         } catch (err) {
-            toast.error(err.response?.data?.detail || 'Failed to delete optimization');
+            toast.error(getErrorMessage(err.response?.data, 'Failed to delete optimization'));
         } finally {
             setSaving(false);
         }
