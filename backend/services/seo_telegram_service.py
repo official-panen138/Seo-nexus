@@ -654,10 +654,12 @@ class SeoTelegramService:
     ) -> bool:
         """
         Send SEO change notification to Telegram with full human-readable details.
-        NO ObjectIds or internal IDs in the output.
+        Uses template system with fallback to hardcoded message.
 
         Returns True if sent, False if rate limited or failed.
         """
+        from services.notification_template_engine import render_notification
+        
         # Check rate limit
         if not skip_rate_limit and not self._check_rate_limit(network_id):
             return False
@@ -684,8 +686,7 @@ class SeoTelegramService:
                 actor_user_id, actor_email
             )
 
-            # Resolve target labels for before/after - SIMPLE FORMAT (domain/path only, NO STATUS)
-            # Status annotations belong ONLY in STRUKTUR SEO TERKINI section
+            # Resolve target labels for before/after
             before_target_label = None
             after_target_label = None
 
@@ -719,14 +720,39 @@ class SeoTelegramService:
                 after_target_label,
             )
 
-            # Get SEO Leader tag for global oversight
+            # Get SEO Leader tags
+            seo_leaders = await self._get_seo_leader_usernames()
             seo_leader_tag = await self._get_seo_leader_tag()
-            leader_section = ""
-            if seo_leader_tag:
-                leader_section = f"\n\n👁 <b>CC:</b> {seo_leader_tag}"
 
-            # Build message
-            message = f"""👤 <b>PEMBARUAN OPTIMASI BAGAN SEO</b>
+            # Try to use template system
+            message = await render_notification(
+                db=self.db,
+                channel="telegram",
+                event_type="seo_change",
+                context_data={
+                    "user": {"display_name": user_display_name, "email": actor_email, "id": actor_user_id},
+                    "network": {"name": network_name, "id": network_id},
+                    "brand": {"name": brand_name, "id": brand_id},
+                    "change": {
+                        "action": action_type,
+                        "action_label": action_label,
+                        "reason": change_note,
+                        "details": change_details,
+                        "before": before_target_label or "",
+                        "after": after_target_label or "",
+                    },
+                    "structure": {"current": structure_text},
+                    "telegram_leaders": seo_leaders,
+                }
+            )
+
+            # Fallback to hardcoded if template disabled or failed
+            if not message:
+                leader_section = ""
+                if seo_leader_tag:
+                    leader_section = f"\n\n👁 <b>CC:</b> {seo_leader_tag}"
+
+                message = f"""👤 <b>PEMBARUAN OPTIMASI BAGAN SEO</b>
 
 {user_display_name} telah melakukan perubahan optimasi bagan SEO pada network '<b>{network_name}</b>' untuk brand '<b>{brand_name}</b>', dengan detail sebagai berikut:
 
