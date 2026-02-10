@@ -4906,6 +4906,13 @@ async def delete_structure_entry(
     if not existing:
         raise HTTPException(status_code=404, detail="Structure entry not found")
 
+    # PERMISSION CHECK: Only super_admin or network managers can delete nodes
+    network = await db.seo_networks.find_one({"id": existing.get("network_id")}, {"_id": 0})
+    if network:
+        await require_manager_permission(network, current_user)
+    else:
+        raise HTTPException(status_code=404, detail="Network not found for this entry")
+
     # CRITICAL: Validate change_note BEFORE any operation
     validate_change_note(data.change_note)
 
