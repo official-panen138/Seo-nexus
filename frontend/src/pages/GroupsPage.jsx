@@ -710,10 +710,16 @@ export default function GroupsPage() {
                                             </div>
                                         )}
                                         
-                                        <div className="mt-3 pt-3 border-t border-border">
+                                        <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
                                             <span className="text-xs text-zinc-600">
                                                 Created {formatDate(network.created_at)}
                                             </span>
+                                            {network.last_optimization_at && (
+                                                <span className="text-xs text-zinc-500 flex items-center gap-1" title="Last optimization activity">
+                                                    <Clock className="h-3 w-3" />
+                                                    Last activity {formatDate(network.last_optimization_at)}
+                                                </span>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
