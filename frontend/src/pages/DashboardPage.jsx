@@ -13,12 +13,10 @@ import {
     Network, 
     Tag, 
     TrendingUp, 
-    AlertTriangle, 
     CheckCircle,
     ArrowRight,
     Loader2,
     Database,
-    BarChart3,
     Activity,
     Bell,
     AlertCircle,
@@ -26,7 +24,8 @@ import {
     Zap,
     XCircle,
     RefreshCw,
-    Settings
+    Settings,
+    Building2
 } from 'lucide-react';
 import { 
     BarChart, 
