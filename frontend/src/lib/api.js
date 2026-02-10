@@ -150,9 +150,23 @@ export const settingsAPI = {
     updateTimezone: (data) => api.put('/settings/timezone', data)
 };
 
-// Audit logs API
+// Audit logs API (V3)
 export const auditAPI = {
-    getLogs: (limit, entityType) => api.get('/audit-logs', { params: { limit, entity_type: entityType } })
+    getLogs: (limit = 50, entityType = null, eventType = null, severity = null, success = null) => 
+        apiV3.get('/audit-logs', { params: { limit, resource_type: entityType, event_type: eventType, severity, success } }),
+    getStats: (days = 7) => apiV3.get('/audit-logs/stats', { params: { days } }),
+    getEventTypes: () => apiV3.get('/audit-logs/event-types'),
+};
+
+// Metrics API (V3)
+export const metricsAPI = {
+    getDashboard: () => apiV3.get('/metrics/dashboard'),
+    getReminderEffectiveness: (days = 30, networkId = null) => 
+        apiV3.get('/metrics/reminder-effectiveness', { params: { days, network_id: networkId } }),
+    getConflictAging: (networkId = null, brandId = null) => 
+        apiV3.get('/metrics/conflict-aging', { params: { network_id: networkId, brand_id: brandId } }),
+    getConflictResolution: (days = 30, networkId = null) => 
+        apiV3.get('/metrics/conflict-resolution', { params: { days, network_id: networkId } }),
 };
 
 // Seed data API
