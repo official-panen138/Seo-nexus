@@ -996,10 +996,11 @@ export default function MonitoringSettingsPage() {
                                                             <Button
                                                                 variant="outline"
                                                                 size="sm"
-                                                                onClick={() => window.open(`/domains?search=${domain.domain_name}`, '_blank')}
+                                                                onClick={() => window.location.href = `/domains?edit=${domain.domain_id}`}
+                                                                data-testid={`view-domain-${domain.domain_id}`}
                                                             >
                                                                 <ExternalLink className="h-3 w-3 mr-1" />
-                                                                View
+                                                                Settings
                                                             </Button>
                                                         </TableCell>
                                                     </TableRow>
