@@ -204,7 +204,7 @@ export const Layout = ({ children }) => {
                             <Zap className="h-5 w-5 text-blue-500" />
                             SEO<span className="text-blue-500">//</span>NOC
                         </span>
-                        <div className="w-9" />
+                        <NotificationBell />
                     </div>
                 </div>
                 
