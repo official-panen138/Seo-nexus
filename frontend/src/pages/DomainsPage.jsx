@@ -247,7 +247,7 @@ export default function DomainsPage() {
                 setSearchParams({}, { replace: true });
             } else {
                 // Domain not found in current page, try to fetch it directly
-                assetDomainsAPI.getById(editDomainId)
+                assetDomainsAPI.getOne(editDomainId)
                     .then(response => {
                         if (response.data) {
                             openEditDialog(response.data);
