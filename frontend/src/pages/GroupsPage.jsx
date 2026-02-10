@@ -34,7 +34,9 @@ import {
     BarChart3,
     Activity,
     Lock,
-    Users
+    Users,
+    AlertCircle,
+    Clock
 } from 'lucide-react';
 import { formatDate, debounce } from '../lib/utils';
 
