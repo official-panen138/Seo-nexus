@@ -261,7 +261,7 @@ class SeoTelegramService:
                         del payload["message_thread_id"]
                         retry_response = await client.post(url, json=payload, timeout=15)
                         if retry_response.status_code == 200:
-                            logger.info(f"SEO Telegram notification sent (fallback to main chat after invalid topic_id)")
+                            logger.info("SEO Telegram notification sent (fallback to main chat after invalid topic_id)")
                             return True
                         else:
                             logger.error(f"Telegram API error (retry): {retry_response.status_code} - {retry_response.text}")
