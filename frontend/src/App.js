@@ -2,6 +2,7 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./lib/auth";
 import { BrandProvider } from "./contexts/BrandContext";
+import { BrandingProvider } from "./lib/BrandingContext";
 import { MenuPermissionsProvider, useMenuPermissions } from "./lib/menuPermissions";
 import { Toaster } from "./components/ui/sonner";
 
