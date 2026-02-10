@@ -73,6 +73,56 @@ class ReminderScheduler:
             self._digest_service = get_weekly_digest_service(self.db)
         return self._digest_service
 
+    @property
+    def forced_monitoring_service(self):
+        """Lazy load forced monitoring service for unmonitored domain reminders"""
+        if self._forced_monitoring_service is None:
+            from services.forced_monitoring_service import ForcedMonitoringService
+
+            self._forced_monitoring_service = ForcedMonitoringService(self.db)
+        return self._forced_monitoring_service
+
+    async def _run_unmonitored_domain_reminder_job(self):
+        """
+        Execute the unmonitored domain reminder job.
+        
+        Sends daily Telegram reminders for domains used in SEO networks
+        that don't have monitoring enabled.
+        
+        Per spec:
+        - Message type: ⚠️ MONITORING NOT CONFIGURED
+        - Repeat: Once per day
+        - Stop only when: monitoring_enabled = true OR domain removed from all SEO Networks
+        """
+        logger.info("[SCHEDULER] Starting unmonitored domain reminder job...")
+
+        try:
+            result = await self.forced_monitoring_service.send_unmonitored_reminders()
+
+            # Log execution
+            await self.db.scheduler_execution_logs.insert_one(
+                {
+                    "job_id": self.UNMONITORED_DOMAIN_JOB_ID,
+                    "executed_at": datetime.now(timezone.utc).isoformat(),
+                    "results": result,
+                    "status": "success" if result.get("reminders_sent", 0) >= 0 else "failed",
+                }
+            )
+
+            logger.info(f"[SCHEDULER] Unmonitored domain reminder job completed: {result}")
+
+        except Exception as e:
+            logger.error(f"[SCHEDULER] Unmonitored domain reminder job failed: {e}")
+
+            await self.db.scheduler_execution_logs.insert_one(
+                {
+                    "job_id": self.UNMONITORED_DOMAIN_JOB_ID,
+                    "executed_at": datetime.now(timezone.utc).isoformat(),
+                    "error": str(e),
+                    "status": "failed",
+                }
+            )
+
     async def _run_digest_job(self):
         """Execute the weekly digest email job"""
         logger.info("[SCHEDULER] Starting weekly digest job execution...")
