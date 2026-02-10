@@ -15,7 +15,8 @@ import {
     ExternalLink,
     RefreshCw,
     Link2,
-    ClipboardList
+    ClipboardList,
+    BarChart3
 } from 'lucide-react';
 
 // Conflict severity badge colors
