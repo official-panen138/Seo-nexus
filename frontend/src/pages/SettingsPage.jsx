@@ -703,20 +703,71 @@ export default function SettingsPage() {
                                     {/* SEO Leader Tagging Section */}
                                     <div className="space-y-3 pt-4 border-t border-border">
                                         <div>
-                                            <Label className="text-amber-400 font-medium">Global SEO Leader</Label>
-                                            <p className="text-xs text-zinc-500 mt-1">Telegram username untuk di-tag pada semua notifikasi SEO (untuk oversight)</p>
+                                            <Label className="text-amber-400 font-medium">Global SEO Leaders</Label>
+                                            <p className="text-xs text-zinc-500 mt-1">Telegram usernames untuk di-tag pada semua notifikasi SEO (untuk oversight). Bisa lebih dari satu leader.</p>
                                         </div>
-                                        <div>
-                                            <Label className="text-xs text-zinc-500">SEO Leader Telegram Username</Label>
+                                        
+                                        {/* Current Leaders List */}
+                                        {seoTelegramConfig.seo_leader_telegram_usernames?.length > 0 && (
+                                            <div className="flex flex-wrap gap-2">
+                                                {seoTelegramConfig.seo_leader_telegram_usernames.map((leader, idx) => (
+                                                    <Badge 
+                                                        key={idx}
+                                                        variant="outline"
+                                                        className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/30 cursor-pointer hover:bg-red-500/20"
+                                                        onClick={() => {
+                                                            const updated = seoTelegramConfig.seo_leader_telegram_usernames.filter((_, i) => i !== idx);
+                                                            setSeoTelegramConfig({...seoTelegramConfig, seo_leader_telegram_usernames: updated});
+                                                        }}
+                                                    >
+                                                        @{leader.replace('@', '')} ✕
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        )}
+                                        
+                                        {/* Add New Leader */}
+                                        <div className="flex gap-2">
                                             <Input 
-                                                value={seoTelegramConfig.seo_leader_telegram_username || ''} 
-                                                onChange={(e) => setSeoTelegramConfig({...seoTelegramConfig, seo_leader_telegram_username: e.target.value})}
-                                                placeholder="@username (tanpa @)" 
-                                                className="bg-black border-border font-mono text-sm h-9 max-w-xs" 
+                                                id="new-seo-leader"
+                                                placeholder="username (tanpa @)" 
+                                                className="bg-black border-border font-mono text-sm h-9 flex-1" 
                                                 data-testid="seo-leader-username-input"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const input = e.target.value.trim().replace('@', '');
+                                                        if (input && !seoTelegramConfig.seo_leader_telegram_usernames?.includes(input)) {
+                                                            setSeoTelegramConfig({
+                                                                ...seoTelegramConfig, 
+                                                                seo_leader_telegram_usernames: [...(seoTelegramConfig.seo_leader_telegram_usernames || []), input]
+                                                            });
+                                                            e.target.value = '';
+                                                        }
+                                                    }
+                                                }}
                                             />
-                                            <p className="text-xs text-zinc-600 mt-1">SEO Leader akan di-tag pada semua notifikasi SEO (change, optimization, node update). Untuk notifikasi complaint, hanya Network Manager yang akan di-tag.</p>
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm"
+                                                onClick={() => {
+                                                    const input = document.getElementById('new-seo-leader');
+                                                    const value = input.value.trim().replace('@', '');
+                                                    if (value && !seoTelegramConfig.seo_leader_telegram_usernames?.includes(value)) {
+                                                        setSeoTelegramConfig({
+                                                            ...seoTelegramConfig, 
+                                                            seo_leader_telegram_usernames: [...(seoTelegramConfig.seo_leader_telegram_usernames || []), value]
+                                                        });
+                                                        input.value = '';
+                                                    }
+                                                }}
+                                            >
+                                                Add Leader
+                                            </Button>
                                         </div>
+                                        <p className="text-xs text-zinc-600">
+                                            SEO Leaders akan di-tag pada semua notifikasi SEO (change, optimization, node update). 
+                                            Untuk notifikasi complaint, hanya Network Manager yang akan di-tag.
+                                        </p>
                                     </div>
 
                                     <div className="flex items-center gap-3 pt-2">
