@@ -380,17 +380,45 @@ export function NetworkComplaintsTab({ networkId, brandId, networkManagers = [] 
                         View and manage complaints for this SEO network
                     </p>
                 </div>
-                {isSuperAdmin && (
+                <div className="flex items-center gap-2">
                     <Button
-                        onClick={() => setCreateDialogOpen(true)}
-                        className="bg-red-600 hover:bg-red-700"
-                        data-testid="create-project-complaint-btn"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRefreshComplaints}
+                        className="border-border"
+                        data-testid="refresh-complaints-btn"
                     >
-                        <Plus className="h-4 w-4 mr-2" />
-                        New Project Complaint
+                        <RefreshCw className="h-4 w-4" />
                     </Button>
-                )}
+                    {isSuperAdmin && (
+                        <Button
+                            onClick={() => setCreateDialogOpen(true)}
+                            className="bg-red-600 hover:bg-red-700"
+                            data-testid="create-project-complaint-btn"
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            New Project Complaint
+                        </Button>
+                    )}
+                </div>
             </div>
+            
+            {/* New complaints banner */}
+            {newItemsAvailable && (
+                <div 
+                    className="flex items-center justify-between p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg cursor-pointer hover:bg-blue-500/20 transition-colors"
+                    onClick={handleRefreshComplaints}
+                    data-testid="new-complaints-banner"
+                >
+                    <div className="flex items-center gap-2">
+                        <Bell className="h-4 w-4 text-blue-400" />
+                        <span className="text-sm text-blue-400">New complaints available</span>
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300">
+                        Click to refresh
+                    </Button>
+                </div>
+            )}
 
             {/* Sub-tabs */}
             <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
