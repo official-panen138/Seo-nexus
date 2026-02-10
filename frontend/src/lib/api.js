@@ -315,6 +315,14 @@ export const emailAlertsAPI = {
     testEmail: (email) => apiV3.post('/settings/email-alerts/test', null, { params: { recipient_email: email } })
 };
 
+// V3 Weekly Digest API
+export const weeklyDigestAPI = {
+    getSettings: () => apiV3.get('/settings/weekly-digest'),
+    updateSettings: (data) => apiV3.put('/settings/weekly-digest', data),
+    sendNow: () => apiV3.post('/settings/weekly-digest/send'),
+    preview: () => apiV3.get('/settings/weekly-digest/preview')
+};
+
 // V3 Activity Logs API
 export const activityLogsAPI = {
     getAll: (params) => apiV3.get('/activity-logs', { params }),
