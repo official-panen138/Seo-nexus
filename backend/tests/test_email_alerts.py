@@ -262,7 +262,8 @@ class TestEmailAlertServiceIntegration:
             json={"email": "admin@test.com", "password": "admin123"}
         )
         assert response.status_code == 200
-        return response.json()["token"]
+        data = response.json()
+        return data.get("access_token") or data.get("token")
     
     @pytest.fixture(scope="class")
     def headers(self, auth_token):
