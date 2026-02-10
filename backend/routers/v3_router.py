@@ -6220,7 +6220,7 @@ async def update_telegram_seo_settings(
     settings: dict,
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Update SEO Telegram channel settings (separate from monitoring)"""
+    """Update SEO Telegram channel settings with forum topic support"""
     # Require super_admin for settings
     if current_user.get("role") != "super_admin":
         raise HTTPException(status_code=403, detail="Only super admin can update Telegram settings")
@@ -6234,6 +6234,7 @@ async def update_telegram_seo_settings(
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
+    # Core settings
     if "bot_token" in settings and settings["bot_token"]:
         update_data["bot_token"] = settings["bot_token"]
     elif existing and existing.get("bot_token"):
@@ -6251,13 +6252,27 @@ async def update_telegram_seo_settings(
     else:
         update_data["enabled"] = True
     
+    # Forum topic settings
+    if "enable_topic_routing" in settings:
+        update_data["enable_topic_routing"] = settings["enable_topic_routing"]
+    elif existing:
+        update_data["enable_topic_routing"] = existing.get("enable_topic_routing", False)
+    
+    # Topic IDs for forum routing
+    topic_fields = ["seo_change_topic_id", "seo_optimization_topic_id", "seo_complaint_topic_id", "seo_reminder_topic_id"]
+    for field in topic_fields:
+        if field in settings:
+            update_data[field] = settings[field] if settings[field] else None
+        elif existing and existing.get(field):
+            update_data[field] = existing[field]
+    
     await db.settings.update_one(
         {"key": "telegram_seo"},
         {"$set": update_data},
         upsert=True
     )
     
-    return {"message": "SEO Telegram settings updated"}
+    return {"message": "SEO Telegram settings updated", "settings": {k: v for k, v in update_data.items() if k != "key"}}
 
 
 @router.get("/settings/telegram-seo")
