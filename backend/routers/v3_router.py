@@ -7898,7 +7898,7 @@ async def get_user_notifications(
 
 
 @router.post("/notifications/{notification_id}/read")
-async def mark_notification_read(
+async def mark_user_notification_read(
     notification_id: str,
     current_user: dict = Depends(get_current_user_wrapper),
 ):
@@ -7917,7 +7917,7 @@ async def mark_notification_read(
 
 
 @router.post("/notifications/read-all")
-async def mark_all_notifications_read(
+async def mark_all_user_notifications_read(
     current_user: dict = Depends(get_current_user_wrapper),
 ):
     """Mark all notifications as read for current user."""
