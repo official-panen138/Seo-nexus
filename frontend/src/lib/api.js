@@ -83,12 +83,7 @@ export const groupsAPI = {
     delete: (groupId) => api.delete(`/groups/${groupId}`)
 };
 
-// Monitoring API
-export const monitoringAPI = {
-    getStats: () => api.get('/monitoring/stats')
-};
-
-// Alerts API
+// Alerts API (for SEO conflicts only)
 export const alertsAPI = {
     getAll: (params) => api.get('/alerts', { params }),
     acknowledge: (alertId) => api.post(`/alerts/${alertId}/acknowledge`)

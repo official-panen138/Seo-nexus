@@ -82,8 +82,6 @@ export default function SettingsPage() {
 
     const loadSettings = async () => {
         try {
-    const loadSettings = async () => {
-        try {
             const [seoRes, brandingRes, timezoneRes, domainMonitoringRes] = await Promise.all([
                 settingsAPI.getSeoTelegram().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } })),
                 settingsAPI.getBranding().catch(() => ({ data: { site_title: 'SEO//NOC', site_description: '', logo_url: '' } })),
