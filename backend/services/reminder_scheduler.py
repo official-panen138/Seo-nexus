@@ -55,6 +55,49 @@ class ReminderScheduler:
             )
         return self._reminder_service
     
+    @property
+    def digest_service(self):
+        """Lazy load weekly digest service"""
+        if self._digest_service is None:
+            from services.weekly_digest_service import get_weekly_digest_service
+            self._digest_service = get_weekly_digest_service(self.db)
+        return self._digest_service
+    
+    async def _run_digest_job(self):
+        """Execute the weekly digest email job"""
+        logger.info("[SCHEDULER] Starting weekly digest job execution...")
+        
+        try:
+            # Check if digest is enabled
+            settings = await self.digest_service.get_digest_settings()
+            
+            if not settings.get("enabled", False):
+                logger.info("[SCHEDULER] Weekly digest is disabled, skipping...")
+                return
+            
+            # Send the digest
+            result = await self.digest_service.generate_and_send_digest()
+            
+            # Log execution
+            await self.db.scheduler_execution_logs.insert_one({
+                "job_id": self.DIGEST_JOB_ID,
+                "executed_at": datetime.now(timezone.utc).isoformat(),
+                "results": result,
+                "status": "success" if result.get("success") else "failed"
+            })
+            
+            logger.info(f"[SCHEDULER] Weekly digest job completed: {result}")
+            
+        except Exception as e:
+            logger.error(f"[SCHEDULER] Weekly digest job failed: {e}")
+            
+            await self.db.scheduler_execution_logs.insert_one({
+                "job_id": self.DIGEST_JOB_ID,
+                "executed_at": datetime.now(timezone.utc).isoformat(),
+                "error": str(e),
+                "status": "failed"
+            })
+    
     async def _run_reminder_job(self):
         """Execute the reminder processing job"""
         logger.info("[SCHEDULER] Starting reminder job execution...")
