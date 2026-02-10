@@ -1471,3 +1471,49 @@ Full optimization detail view with complaint thread, team response system, and c
 4. **Scheduler Dashboard UI** - View scheduler status, execution logs, and manual trigger button
 5. Correlate optimization timeline with ranking history
 6. Automatic optimization impact score calculation
+---
+
+### Bug Fix: Manual Trigger for Optimization Reminders (Feb 10, 2026) - COMPLETE
+
+**Issue:** Manual trigger for "Manage automatic optimization reminders" was not working. When clicking the trigger button in the Settings UI, no reminders were being sent.
+
+**Root Cause Analysis:**
+1. The `ReminderScheduler` was initialized with `telegram_service=seo_optimization_telegram_service`
+2. However, `seo_optimization_telegram_service` was imported directly but never initialized - it was `None`
+3. The `init_seo_optimization_telegram_service(db)` function was never called in `server.py`
+4. As a result, the reminder service had no Telegram service to send notifications
+
+**Fix Applied:**
+Changed in `/app/backend/server.py`:
+```python
+# Before (broken):
+from services.seo_optimization_telegram_service import (
+    seo_optimization_telegram_service,
+)
+reminder_scheduler = init_reminder_scheduler(
+    db, telegram_service=seo_optimization_telegram_service
+)
+
+# After (fixed):
+from services.seo_optimization_telegram_service import (
+    init_seo_optimization_telegram_service,
+)
+optimization_telegram_service = init_seo_optimization_telegram_service(db)
+reminder_scheduler = init_reminder_scheduler(
+    db, telegram_service=optimization_telegram_service
+)
+```
+
+**Additional Fix:**
+Fixed login endpoint to handle missing `created_at`/`updated_at` fields gracefully using `.get()` instead of direct key access.
+
+**Test Results:**
+- ✅ Manual trigger API: `POST /api/v3/scheduler/trigger-reminders`
+- ✅ Found 1 optimization needing reminder (5+ days old)
+- ✅ Telegram HTTP Request: 200 OK
+- ✅ Notification sent successfully
+- ✅ Reminder logged to database
+- ✅ `reminders_sent: 1`
+
+**Files Modified:**
+- `/app/backend/server.py` - Fixed initialization of optimization Telegram service
