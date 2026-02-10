@@ -55,6 +55,17 @@ export default function SettingsPage() {
     const [savingSeo, setSavingSeo] = useState(false);
     const [testingSeo, setTestingSeo] = useState(false);
     
+    // Domain Monitoring Telegram state (SEPARATE from SEO)
+    const [domainMonitoringConfig, setDomainMonitoringConfig] = useState({
+        bot_token: '',
+        chat_id: '',
+        enabled: true
+    });
+    const [newDomainMonitoringToken, setNewDomainMonitoringToken] = useState('');
+    const [newDomainMonitoringChatId, setNewDomainMonitoringChatId] = useState('');
+    const [savingDomainMonitoring, setSavingDomainMonitoring] = useState(false);
+    const [testingDomainMonitoring, setTestingDomainMonitoring] = useState(false);
+    
     // Branding state
     const [brandingConfig, setBrandingConfig] = useState({
         site_title: 'SEO//NOC',
