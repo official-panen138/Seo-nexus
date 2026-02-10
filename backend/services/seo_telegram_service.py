@@ -589,8 +589,8 @@ class SeoTelegramService:
 ━━━━━━━━━━━━━━━━━━━━━━
 {structure_text}"""
 
-            # Send message
-            success = await self._send_telegram_message(message)
+            # Send message with topic routing
+            success = await self._send_telegram_message(message, topic_type="seo_change")
             
             if success:
                 # Update rate limit tracker
