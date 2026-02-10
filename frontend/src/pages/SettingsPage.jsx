@@ -90,20 +90,54 @@ export default function SettingsPage() {
 
     const loadSettings = async () => {
         try {
-            const [mainRes, seoRes, brandingRes, timezoneRes] = await Promise.all([
+            const [mainRes, seoRes, brandingRes, timezoneRes, domainMonitoringRes] = await Promise.all([
                 settingsAPI.getTelegram(),
                 settingsAPI.getSeoTelegram().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } })),
                 settingsAPI.getBranding().catch(() => ({ data: { site_title: 'SEO//NOC', site_description: '', logo_url: '' } })),
-                settingsAPI.getTimezone().catch(() => ({ data: { default_timezone: 'Asia/Jakarta', timezone_label: 'GMT+7' } }))
+                settingsAPI.getTimezone().catch(() => ({ data: { default_timezone: 'Asia/Jakarta', timezone_label: 'GMT+7' } })),
+                domainMonitoringTelegramAPI.getSettings().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } }))
             ]);
             setTelegramConfig(mainRes.data);
             setSeoTelegramConfig(seoRes.data);
             setBrandingConfig(brandingRes.data);
             setTimezoneConfig(timezoneRes.data);
+            setDomainMonitoringConfig(domainMonitoringRes.data);
         } catch (err) {
             console.error('Failed to load settings:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Domain Monitoring Telegram handlers (SEPARATE channel)
+    const handleSaveDomainMonitoring = async () => {
+        setSavingDomainMonitoring(true);
+        try {
+            const data = { enabled: domainMonitoringConfig.enabled };
+            if (newDomainMonitoringToken) data.bot_token = newDomainMonitoringToken;
+            if (newDomainMonitoringChatId) data.chat_id = newDomainMonitoringChatId;
+            
+            await domainMonitoringTelegramAPI.updateSettings(data);
+            toast.success('Domain Monitoring Telegram settings saved');
+            setNewDomainMonitoringToken('');
+            setNewDomainMonitoringChatId('');
+            loadSettings();
+        } catch (err) {
+            toast.error('Failed to save Domain Monitoring settings');
+        } finally {
+            setSavingDomainMonitoring(false);
+        }
+    };
+
+    const handleTestDomainMonitoring = async () => {
+        setTestingDomainMonitoring(true);
+        try {
+            await domainMonitoringTelegramAPI.testAlert();
+            toast.success('Test message sent to Domain Monitoring channel');
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to send test message. Configure bot_token and chat_id first.');
+        } finally {
+            setTestingDomainMonitoring(false);
         }
     };
 
