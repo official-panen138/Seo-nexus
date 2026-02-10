@@ -160,12 +160,23 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
         }
     }, [searchParams]);
 
+    // Load optimizations on mount/filter change and setup polling for real-time updates
     useEffect(() => {
         loadOptimizations();
+        
+        // Poll for new optimizations every 15 seconds
+        const pollInterval = setInterval(() => {
+            loadOptimizations();
+        }, 15000);
+        
+        return () => clearInterval(pollInterval);
     }, [networkId, currentPage, filterType, filterStatus]);
 
     const loadOptimizations = async () => {
-        setLoading(true);
+        // Don't show loading spinner during polling updates
+        if (optimizations.length === 0) {
+            setLoading(true);
+        }
         try {
             const params = { page: currentPage, limit: pageSize };
             if (filterType !== 'all') params.activity_type = filterType;
