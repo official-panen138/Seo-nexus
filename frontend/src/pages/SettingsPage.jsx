@@ -467,62 +467,6 @@ export default function SettingsPage() {
                             </Card>
                         </TabsContent>
                         
-                        {/* Monitoring Alerts Tab */}
-                        <TabsContent value="monitoring" className="space-y-6">
-                            <Card className="bg-card border-border">
-                                <CardHeader>
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-lg bg-blue-500/10">
-                                            <MessageCircle className="h-5 w-5 text-blue-500" />
-                                        </div>
-                                        <div>
-                                            <CardTitle className="text-lg">Telegram Alerts (Monitoring)</CardTitle>
-                                            <CardDescription>Configure Telegram for domain monitoring (ping/expiration)</CardDescription>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="p-3 rounded-lg bg-black/50 border border-border">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm text-zinc-400">Current Status</span>
-                                            {telegramConfig.bot_token && telegramConfig.chat_id ? (
-                                                <span className="flex items-center gap-1 text-xs text-emerald-500">
-                                                    <CheckCircle className="h-3 w-3" />Configured
-                                                </span>
-                                            ) : (
-                                                <span className="flex items-center gap-1 text-xs text-amber-500">
-                                                    <AlertCircle className="h-3 w-3" />Not configured
-                                                </span>
-                                            )}
-                                        </div>
-                                        {telegramConfig.bot_token && <div className="text-xs text-zinc-500">Token: <code className="text-zinc-400">{telegramConfig.bot_token}</code></div>}
-                                        {telegramConfig.chat_id && <div className="text-xs text-zinc-500">Chat ID: <code className="text-zinc-400">{telegramConfig.chat_id}</code></div>}
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-zinc-400">Bot Token</Label>
-                                        <Input value={newToken} onChange={(e) => setNewToken(e.target.value)} placeholder="Enter new bot token to update" className="bg-black border-border font-mono text-sm" data-testid="telegram-token-input" />
-                                        <p className="text-xs text-zinc-600">Get a bot token from @BotFather on Telegram</p>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-zinc-400">Chat ID</Label>
-                                        <Input value={newChatId} onChange={(e) => setNewChatId(e.target.value)} placeholder="Enter chat ID or group ID" className="bg-black border-border font-mono text-sm" data-testid="telegram-chatid-input" />
-                                        <p className="text-xs text-zinc-600">Use @userinfobot to get your chat ID</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-3 pt-2">
-                                        <Button onClick={handleSave} disabled={saving || (!newToken && !newChatId)} className="bg-white text-black hover:bg-zinc-200" data-testid="save-telegram-btn">
-                                            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Save Changes
-                                        </Button>
-                                        <Button variant="outline" onClick={handleTest} disabled={testing || !telegramConfig.bot_token || !telegramConfig.chat_id} data-testid="test-telegram-btn">
-                                            {testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}Send Test
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                        
                         {/* SEO Notifications Tab */}
                         <TabsContent value="seo" className="space-y-6">
                             <Card className="bg-card border-border">
