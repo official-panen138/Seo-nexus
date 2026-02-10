@@ -2646,15 +2646,34 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
 
     # Active alerts
     active_alerts = await db.alerts.count_documents({"acknowledged": False})
-    critical_alerts_count = await db.alerts.count_documents(
-        {"acknowledged": False, "severity": "critical"}
+    
+    # Get domains that are currently DOWN
+    down_domain_names = []
+    down_domains_cursor = db.asset_domains.find(
+        domain_down_filter,
+        {"_id": 0, "domain": 1}
     )
+    async for doc in down_domains_cursor:
+        if doc.get("domain"):
+            down_domain_names.append(doc["domain"])
+    
+    # Critical alerts: only count alerts for domains that are CURRENTLY down
+    # This ensures banner disappears when domain is fixed
+    critical_filter = {"acknowledged": False, "severity": "critical"}
+    if down_domain_names:
+        # Only show critical alerts for domains that are still down
+        critical_filter["domain_name"] = {"$in": down_domain_names}
+    else:
+        # No domains down, no critical alerts to show
+        critical_filter["domain_name"] = {"$in": []}  # Match nothing
+    
+    critical_alerts_count = await db.alerts.count_documents(critical_filter)
     
     # Get critical alert details (domain names) for dashboard display
     critical_alert_details = []
     if critical_alerts_count > 0:
         critical_alerts_cursor = db.alerts.find(
-            {"acknowledged": False, "severity": "critical"},
+            critical_filter,
             {"_id": 0, "domain_name": 1, "title": 1, "alert_type": 1, "created_at": 1}
         ).limit(5)  # Show max 5 in banner
         critical_alert_details = await critical_alerts_cursor.to_list(5)
