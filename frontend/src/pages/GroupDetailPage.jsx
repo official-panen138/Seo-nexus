@@ -139,12 +139,19 @@ export default function GroupDetailPage() {
     const { groupId } = useParams();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { user: currentUser } = useAuth();
     const [network, setNetwork] = useState(null);
     const [tierData, setTierData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedEntry, setSelectedEntry] = useState(null);
     const [sheetOpen, setSheetOpen] = useState(false);
     const [useV3, setUseV3] = useState(true);
+    
+    // Permission check - viewers can only view, not edit
+    const canEdit = useMemo(() => {
+        const role = currentUser?.role;
+        return role === 'super_admin' || role === 'admin' || role === 'manager';
+    }, [currentUser?.role]);
     
     // Change History state
     const [changeHistory, setChangeHistory] = useState([]);
