@@ -1,0 +1,165 @@
+{
+  "summary": "SEO-AWARE DOMAIN MONITORING + STRUCTURED ALERT OUTPUT - Backend Testing Complete. All 20 API tests passed (100%). Test alert endpoint sends structured alerts with STRUKTUR SEO TERKINI format, severity calculation returns CRITICAL for tier 1 reaching money site, unmonitored domains endpoint correctly identifies domains in SEO networks without monitoring.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+
+  "passed_tests": {
+    "backend_api": [
+      "GET /api/v3/monitoring/unmonitored-in-seo - Returns 200 with correct structure",
+      "GET /api/v3/monitoring/unmonitored-in-seo - Response has domain_id, domain_name, monitoring_enabled, networks_used_in, network_count",
+      "GET /api/v3/monitoring/seo-domains-summary - Returns total_seo_domains, monitored, unmonitored, monitoring_coverage",
+      "POST /api/v3/monitoring/send-unmonitored-reminders - Returns 200 with scheduled message",
+      "POST /api/v3/monitoring/domain-down/test - Returns 200 with test_mode=true",
+      "POST /api/v3/monitoring/domain-down/test - Force severity override works",
+      "POST /api/v3/monitoring/domain-down/test - SOFT_BLOCKED issue type works",
+      "POST /api/v3/monitoring/domain-down/test - Invalid issue type returns 400",
+      "POST /api/v3/monitoring/domain-down/test - Invalid severity returns 400",
+      "GET /api/v3/monitoring/test-alerts/history - Returns history with correct structure",
+      "GET /api/v3/monitoring/test-alerts/history - Respects limit parameter",
+      "GET /api/v3/monitoring/test-alerts/history - Domain filter works",
+      "Severity calculation: CRITICAL for money site",
+      "Severity calculation: CRITICAL for tier 1 reaching money site",
+      "Message contains TEST MODE marker (🧪)",
+      "Message structure contains key sections (Test, Domain, Impact, Action)",
+      "Message contains STRUKTUR SEO TERKINI section (full_structure_lines)",
+      "Rate limiting: endpoint responds correctly to repeated calls",
+      "Auth: Unauthorized access to reminders correctly rejected (401)",
+      "Auth: Unauthorized access to test alert correctly rejected (401)"
+    ]
+  },
+
+  "features_verified": {
+    "unmonitored_domains_endpoint": {
+      "status": "VERIFIED",
+      "endpoint": "GET /api/v3/monitoring/unmonitored-in-seo",
+      "notes": "Returns 6 unmonitored domains in SEO networks including moneysite.com and tier1-site1.com"
+    },
+    "seo_domains_summary": {
+      "status": "VERIFIED",
+      "endpoint": "GET /api/v3/monitoring/seo-domains-summary",
+      "notes": "Returns 7 total SEO domains, 1 monitored, 6 unmonitored (14.3% coverage)"
+    },
+    "test_alert_endpoint": {
+      "status": "VERIFIED",
+      "endpoint": "POST /api/v3/monitoring/domain-down/test",
+      "notes": "Sends structured alert with STRUKTUR SEO TERKINI format, supports DOWN and SOFT_BLOCKED issue types"
+    },
+    "severity_calculation": {
+      "status": "VERIFIED",
+      "notes": "calculate_strict_severity function correctly returns CRITICAL for money site, CRITICAL for tier 1 reaching money site, HIGH for tier 1 or >=3 downstream, MEDIUM for tier 2+ reaching money site, LOW for orphan nodes"
+    },
+    "struktur_seo_terkini_format": {
+      "status": "VERIFIED",
+      "notes": "full_structure_lines in SEO context provides tier-based structure: LP/Money Site section, Tier 1 section with redirects to money site"
+    },
+    "message_order": {
+      "status": "VERIFIED",
+      "notes": "Message follows order: Alert Type -> Domain Info -> SEO Context -> STRUKTUR SEO TERKINI -> Impact Summary -> Next Action"
+    },
+    "test_alerts_history": {
+      "status": "VERIFIED",
+      "endpoint": "GET /api/v3/monitoring/test-alerts/history",
+      "notes": "Returns test alert logs with test_mode=true, supports limit and domain filter parameters"
+    },
+    "send_unmonitored_reminders": {
+      "status": "VERIFIED",
+      "endpoint": "POST /api/v3/monitoring/send-unmonitored-reminders",
+      "notes": "Schedules reminder job with 24h rate limit via scheduler_state collection"
+    }
+  },
+
+  "test_report_links": [
+    "/app/backend/tests/test_seo_monitoring_alerts.py",
+    "/app/test_reports/pytest/seo_monitoring_alerts_results.xml"
+  ],
+
+  "action_items": [],
+
+  "critical_code_review_comments": [
+    "GOOD: calculate_strict_severity in forced_monitoring_service.py correctly implements severity rules",
+    "GOOD: STRUKTUR SEO TERKINI format provided via full_structure_lines in seo_context_enricher.py",
+    "GOOD: Test alerts marked with 🧪 TEST MODE and don't affect real monitoring data",
+    "GOOD: Unmonitored reminders use 24h rate limit via scheduler_state collection",
+    "GOOD: API endpoints properly require admin/super_admin authentication"
+  ],
+
+  "updated_files": [
+    "/app/backend/tests/test_seo_monitoring_alerts.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% (20/20 tests passed)",
+    "frontend": "N/A (backend only testing requested)"
+  },
+
+  "test_credentials": {
+    "super_admin": {"email": "testadmin@test.com", "password": "test"}
+  },
+
+  "seed_data_creation": "None - using existing data",
+
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "SEO-aware monitoring alerts fully verified. Key files: /app/backend/services/forced_monitoring_service.py (TestAlertService, ForcedMonitoringService, calculate_strict_severity), /app/backend/services/monitoring_service.py (_format_down_alert_seo_aware), /app/backend/services/seo_context_enricher.py (full_structure_lines for STRUKTUR SEO TERKINI), /app/backend/routers/v3_router.py (lines 7690-7880 for monitoring endpoints). Test domains in SEO: tier1-site1.com, moneysite.com/landing.",
+
+  "api_documentation": {
+    "unmonitored_in_seo": {
+      "url": "/api/v3/monitoring/unmonitored-in-seo",
+      "method": "GET",
+      "auth": "Required",
+      "response": {"unmonitored_domains": "Array of {domain_id, domain_name, monitoring_enabled, networks_used_in, network_count, paths_used}", "total": "Number"}
+    },
+    "seo_domains_summary": {
+      "url": "/api/v3/monitoring/seo-domains-summary",
+      "method": "GET",
+      "auth": "Required",
+      "response": {"total_seo_domains": "Number", "monitored": "Number", "unmonitored": "Number", "monitoring_coverage": "Number (percentage)"}
+    },
+    "test_domain_down_alert": {
+      "url": "/api/v3/monitoring/domain-down/test",
+      "method": "POST",
+      "auth": "Admin required",
+      "body": {"domain": "string", "issue_type": "DOWN|SOFT_BLOCKED", "reason": "string", "force_severity": "LOW|MEDIUM|HIGH|CRITICAL (optional)"},
+      "response": {"success": "boolean", "domain": "string", "test_mode": "true", "seo_context": "object", "message_preview": "string (500 chars)"}
+    },
+    "send_unmonitored_reminders": {
+      "url": "/api/v3/monitoring/send-unmonitored-reminders",
+      "method": "POST",
+      "auth": "Admin required",
+      "response": {"message": "Reminder check scheduled", "status": "running"}
+    },
+    "test_alerts_history": {
+      "url": "/api/v3/monitoring/test-alerts/history",
+      "method": "GET",
+      "auth": "Required",
+      "params": {"limit": "Number (max 200)", "domain": "string (optional filter)"},
+      "response": {"history": "Array of test alert logs", "total": "Number"}
+    }
+  },
+
+  "severity_calculation_rules": {
+    "CRITICAL": ["Domain is Money Site (LP/Primary)", "Tier 1 node that reaches Money Site"],
+    "HIGH": ["Tier 1 node", "Has >= 3 downstream nodes"],
+    "MEDIUM": ["Tier 2+ node that reaches Money Site"],
+    "LOW": ["Orphan node (no target)", "Tier 99 (very far from money site)"]
+  },
+
+  "message_format_order": [
+    "1. Alert Type (🧪 TEST MODE – DOWN / SOFT_BLOCKED)",
+    "2. Domain Info (Status, Brand, Monitoring status)",
+    "3. SEO Context Summary (Network, Tier, Role, Reaches Money Site)",
+    "4. 🧭 STRUKTUR SEO TERKINI (Tier-based structure)",
+    "5. 🔥 Impact Summary (Severity, downstream nodes, broken links)",
+    "6. ⏰ Next Action (based on severity level)"
+  ]
+}
