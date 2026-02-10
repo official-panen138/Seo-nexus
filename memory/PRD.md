@@ -1109,7 +1109,12 @@ Full optimization detail view with complaint thread, team response system, and c
 ## Prioritized Backlog
 
 ### P0 - Critical
-- None (All critical features complete)
+1. ✅ **Access Summary Panel** - COMPLETE (Feb 10, 2026)
+   - Network cards show: managers count/names, open complaints badge, last optimization date
+   - Network detail header shows: visibility mode, managers, open complaints count, last activity date
+   - API endpoints return `open_complaints_count` and `last_optimization_at` fields
+   - Backend queries `seo_optimizations` for complaints with status `complained` or `under_review`
+   - Frontend conditionally renders badges only when data exists
 
 ### P1 - High Priority
 1. ✅ **Scheduler Integration for Reminders** - COMPLETE (Feb 9, 2026)
