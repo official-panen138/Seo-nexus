@@ -6792,6 +6792,89 @@ async def _detect_network_conflicts(network_id: str) -> List[Dict[str, Any]]:
     return conflicts
 
 
+@router.post("/conflicts/{conflict_id}/create-optimization")
+async def create_optimization_for_conflict(
+    conflict_id: str,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Create an optimization task for a specific conflict.
+    
+    Use this when:
+    - A conflict exists without a linked optimization (e.g., after deletion)
+    - You want to manually create a task for a conflict
+    
+    Only managers and super admins can create optimization tasks.
+    """
+    # Check permission
+    user_role = current_user.get("role", "user")
+    if user_role not in ["super_admin", "admin"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Only managers and super admins can create optimization tasks"
+        )
+    
+    # Get the conflict
+    conflict = await db.seo_conflicts.find_one({"id": conflict_id}, {"_id": 0})
+    if not conflict:
+        raise HTTPException(status_code=404, detail="Conflict not found")
+    
+    # Check if conflict already has an optimization
+    if conflict.get("optimization_id"):
+        # Verify the optimization still exists
+        existing_opt = await db.seo_optimizations.find_one(
+            {"id": conflict["optimization_id"]},
+            {"_id": 0, "id": 1}
+        )
+        if existing_opt:
+            raise HTTPException(
+                status_code=400,
+                detail="Conflict already has a linked optimization task"
+            )
+    
+    # Get network info
+    network = await db.seo_networks.find_one(
+        {"id": conflict.get("network_id")},
+        {"_id": 0, "name": 1, "brand_id": 1}
+    )
+    network_name = network.get("name", "Unknown") if network else "Unknown"
+    brand_id = network.get("brand_id") if network else None
+    
+    # Create the optimization
+    from services.conflict_optimization_linker_service import get_conflict_linker_service
+    linker_service = get_conflict_linker_service(db)
+    
+    opt_id = await linker_service._create_optimization_for_conflict(
+        conflict_id=conflict_id,
+        conflict=conflict,
+        network_id=conflict.get("network_id"),
+        network_name=network_name,
+        brand_id=brand_id,
+        is_recurring=conflict.get("recurrence_count", 0) > 0,
+        recurrence_count=conflict.get("recurrence_count", 0)
+    )
+    
+    if not opt_id:
+        raise HTTPException(status_code=500, detail="Failed to create optimization")
+    
+    # Update conflict with the new optimization link
+    await db.seo_conflicts.update_one(
+        {"id": conflict_id},
+        {"$set": {
+            "optimization_id": opt_id,
+            "status": "under_review",
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "success": True,
+        "conflict_id": conflict_id,
+        "optimization_id": opt_id,
+        "message": "Optimization task created successfully"
+    }
+
+
 @router.post("/conflicts/{conflict_id}/resolve")
 async def resolve_conflict(
     conflict_id: str,
