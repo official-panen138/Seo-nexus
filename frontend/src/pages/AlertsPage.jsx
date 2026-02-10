@@ -97,7 +97,8 @@ export default function AlertsPage() {
         setLoadingConflicts(true);
         try {
             const res = await reportsAPI.getConflicts();
-            setConflicts(res.data || []);
+            // API returns {conflicts: [], total: 0, by_type: {}, by_severity: {}}
+            setConflicts(res.data?.conflicts || []);
             setConflictsLoaded(true);
         } catch (err) {
             console.error('Failed to load conflicts:', err);
