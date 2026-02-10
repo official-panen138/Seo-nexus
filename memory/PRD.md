@@ -1597,3 +1597,81 @@ if message_thread_id and ("thread" in error_text or "topic" in error_text):
 - If topic_id is valid → Message sent to specific topic ✅
 - If topic_id is invalid → Warning logged, message sent to main chat ✅
 - If both fail → Error logged, returns False ❌
+
+
+---
+
+### P0 SEO Conflict Reporting System Unified (Feb 10, 2026) - COMPLETE
+
+**Issue:** SEO Conflict dashboard displayed 14 conflicts using legacy API (`/api/seo/conflicts`) reading from deprecated `domains` collection, while V3 API (`/api/v3/reports/conflicts`) using current `seo_structure_entries` collection showed zero conflicts. This caused inconsistent/misleading conflict data.
+
+**Root Cause:** Frontend was calling legacy endpoint that queried outdated data collection.
+
+**Fix Applied:**
+
+**1. Frontend API Migration:**
+- Updated `/app/frontend/src/lib/api.js`:
+  - `conflictsAPI.detect()` now calls `/api/v3/reports/conflicts` instead of `/api/seo/conflicts`
+  - Added optional `networkId` parameter for filtered queries
+
+**2. Frontend Response Handling:**
+- Updated `/app/frontend/src/pages/DashboardPage.jsx`:
+  - Updated conflict card display to handle V3 response format
+  - Supports both V3 fields (`conflict_type`, `description`, `node_a_label`) and legacy fallbacks
+
+**3. Legacy Endpoint Deprecated:**
+- Updated `/app/backend/server.py`:
+  - Added clear deprecation notice to `/api/seo/conflicts` endpoint docstring
+  - Legacy endpoint kept for backward compatibility but marked for future removal
+
+**4. Enhanced Conflict Detection (V3):**
+- Added new conflict types to `/app/backend/models_v3.py` ConflictType enum:
+  - `REDIRECT_LOOP` - Redirect/canonical loop detected
+  - `MULTIPLE_PARENTS_TO_MAIN` - Multiple non-supporting nodes pointing to Money Site
+  - `INDEX_NOINDEX_MISMATCH` - Indexed node links to NOINDEX target in higher tier
+  - `ORPHAN_NODE` - Node not connected to main hierarchy
+  - `NOINDEX_HIGH_TIER` - NOINDEX node in high tier
+
+**5. V3 Conflict Detection Logic (`/app/backend/routers/v3_router.py`):**
+- TYPE A: Keyword Cannibalization (same keyword, different paths)
+- TYPE B: Competing Targets (different paths targeting different nodes)
+- TYPE C: Canonical Mismatch (path redirects to indexed path)
+- TYPE D: Tier Inversion (higher tier supports lower tier) - CRITICAL severity
+- TYPE E: Redirect/Canonical Loops (cycle detection with BFS)
+- TYPE F: Multiple Parents to Money Site (non-supporting nodes pointing to main)
+- TYPE G: Index/Noindex Mismatch (indexed node → noindex target)
+- Legacy: NOINDEX in high tier, Orphan nodes
+
+**API Response Structure:**
+```json
+{
+  "conflicts": [...],
+  "total": 0,
+  "by_type": {},
+  "by_severity": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  }
+}
+```
+
+**Conflict Object Fields:**
+- `conflict_type`, `severity`, `network_id`, `network_name`, `domain_name`
+- `node_a_id`, `node_a_path`, `node_a_label`
+- `node_b_id` (optional), `node_b_path` (optional), `node_b_label` (optional)
+- `description`, `suggestion`, `detected_at`
+
+**Tests:** 100% pass rate (12/12 backend, 8/8 frontend) verified by testing_agent_v3_fork
+
+**Files Modified:**
+- `/app/frontend/src/lib/api.js` - Line 113-117
+- `/app/frontend/src/pages/DashboardPage.jsx` - Lines 551-577
+- `/app/backend/server.py` - Lines 2513-2589
+- `/app/backend/models_v3.py` - ConflictType enum
+- `/app/backend/routers/v3_router.py` - Lines 5473-5900
+
+---
+
+
