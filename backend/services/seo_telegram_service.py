@@ -661,8 +661,8 @@ class SeoTelegramService:
 ━━━━━━━━━━━━━━━━━━━━━━
 {structure_text}"""
 
-            # Send message
-            success = await self._send_telegram_message(message)
+            # Send message with topic routing
+            success = await self._send_telegram_message(message, topic_type="seo_change")
             
             if success:
                 self._update_rate_limit(network_id)
@@ -697,4 +697,4 @@ Ini adalah pesan test dari sistem notifikasi SEO.
 
 <i>TEST MESSAGE - NO SEO CHANGE APPLIED</i>"""
 
-        return await self._send_telegram_message(message)
+        return await self._send_telegram_message(message, topic_type="seo_change")
