@@ -47,6 +47,13 @@ export const usersAPI = {
     getByIds: (ids) => apiV3.get('/users/by-ids', { params: { ids: ids.join(',') } })
 };
 
+// User Notifications API
+export const notificationsAPI = {
+    getAll: (params = {}) => apiV3.get('/notifications', { params }),
+    markAsRead: (notificationId) => apiV3.post(`/notifications/${notificationId}/read`),
+    markAllAsRead: () => apiV3.post('/notifications/read-all')
+};
+
 // Categories API
 export const categoriesAPI = {
     getAll: () => api.get('/categories'),
