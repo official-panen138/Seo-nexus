@@ -278,15 +278,33 @@ class SeoContextEnricher:
         current = entry
         reaches_money = False
         max_hops = 20  # Safety limit
+        
+        # Cache for domain name lookups
+        domain_cache = {}
+        
+        async def get_node_label(entry_data):
+            """Get full node label (domain + path) for an entry."""
+            domain = entry_data.get('domain') or ''
+            if not domain and entry_data.get('asset_domain_id'):
+                asset_id = entry_data['asset_domain_id']
+                if asset_id not in domain_cache:
+                    asset = await self.db.asset_domains.find_one(
+                        {"id": asset_id}, {"_id": 0, "domain_name": 1}
+                    )
+                    domain_cache[asset_id] = asset.get("domain_name", "") if asset else ""
+                domain = domain_cache[asset_id]
+            path = entry_data.get('optimized_path') or ''
+            return f"{domain}{path}"
 
         for _ in range(max_hops):
             current_id = current.get("id")
 
             if current_id in visited:
                 # Loop detected
+                node = await get_node_label(current)
                 chain.append(
                     {
-                        "node": f"{current.get('domain', '')}{current.get('optimized_path', '')}",
+                        "node": node,
                         "relation": "LOOP DETECTED",
                         "target": None,
                         "is_end": True,
@@ -297,7 +315,7 @@ class SeoContextEnricher:
 
             visited.add(current_id)
 
-            node = f"{current.get('domain', '')}{current.get('optimized_path', '')}"
+            node = await get_node_label(current)
             relation = self._get_relation_type(
                 current.get("domain_status", "canonical")
             )
