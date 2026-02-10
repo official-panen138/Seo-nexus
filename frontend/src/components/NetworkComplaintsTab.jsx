@@ -255,7 +255,9 @@ export function NetworkComplaintsTab({ networkId, brandId, networkManagers = [] 
             setRespondDialogOpen(false);
             setResponseNote('');
             setSelectedComplaint(null);
-            loadComplaints();
+            // Small delay to ensure backend has processed
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await loadComplaints();
         } catch (err) {
             toast.error(err.response?.data?.detail || 'Failed to add response');
         } finally {
@@ -278,7 +280,9 @@ export function NetworkComplaintsTab({ networkId, brandId, networkManagers = [] 
             setResolveDialogOpen(false);
             setResolutionNote('');
             setSelectedComplaint(null);
-            loadComplaints();
+            // Small delay to ensure backend has processed
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await loadComplaints();
         } catch (err) {
             toast.error(err.response?.data?.detail || 'Failed to resolve complaint');
         } finally {
