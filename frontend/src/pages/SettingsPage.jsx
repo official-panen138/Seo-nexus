@@ -307,6 +307,10 @@ export default function SettingsPage() {
                                 <Globe className="h-4 w-4" />
                                 Domain Monitoring
                             </TabsTrigger>
+                            <TabsTrigger value="email-alerts" className="flex items-center gap-2" data-testid="email-alerts-tab">
+                                <Mail className="h-4 w-4" />
+                                Email Alerts
+                            </TabsTrigger>
                         </TabsList>
                         
                         {/* Branding Tab */}
