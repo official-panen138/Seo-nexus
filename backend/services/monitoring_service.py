@@ -714,6 +714,27 @@ class AvailabilityMonitoringService:
         
         alert_sent = False
         
+        # Helper to send email alerts
+        async def send_email_alert(enriched_domain, alert_type, err_msg=None):
+            try:
+                from services.email_alert_service import get_email_alert_service
+                email_service = get_email_alert_service(self.db)
+                
+                # Get network_id from SEO context if available
+                network_id = None
+                seo = enriched_domain.get("seo", {})
+                if seo.get("seo_context"):
+                    network_id = seo["seo_context"][0].get("network_id")
+                
+                await email_service.send_availability_alert(
+                    enriched_domain, 
+                    err_msg or "Unreachable", 
+                    alert_type,
+                    network_id
+                )
+            except Exception as email_err:
+                logger.warning(f"Email alert failed for {enriched_domain.get('domain_name')}: {email_err}")
+        
         # Check for status transitions
         if new_status == "down" and previous_status in ["up", "unknown", "soft_blocked"]:
             # Transition to DOWN - CRITICAL
@@ -727,9 +748,11 @@ class AvailabilityMonitoringService:
                         await self._update_alert_timestamp(domain, "down")
                         await self._create_alert_record(enriched, "down", error_message, previous_status)
                         alert_sent = True
+                        # Also send email alert
+                        await send_email_alert(enriched, "down", error_message)
         
         elif new_status == "soft_blocked" and previous_status in ["up", "unknown"]:
-            # Transition to SOFT_BLOCKED - WARNING
+            # Transition to SOFT_BLOCKED - WARNING (HIGH severity)
             if await self._can_send_alert(domain, "soft_blocked"):
                 enriched = await self._enrich_domain_full(domain)
                 message = self._format_soft_block_alert_seo_aware(enriched, error_message, soft_block_type)
@@ -738,6 +761,8 @@ class AvailabilityMonitoringService:
                     await self._update_alert_timestamp(domain, "soft_blocked")
                     await self._create_alert_record(enriched, "soft_blocked", error_message, previous_status)
                     alert_sent = True
+                    # Also send email alert
+                    await send_email_alert(enriched, "soft_blocked", error_message)
         
         elif new_status == "up" and previous_status in ["down", "soft_blocked"]:
             # Recovery
