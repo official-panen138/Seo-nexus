@@ -777,7 +777,7 @@ export default function SettingsPage() {
                                     </div>
 
                                     <div className="flex items-center gap-3 pt-2">
-                                        <Button onClick={handleSaveSeo} disabled={savingSeo || (!newSeoToken && !newSeoChatId && !seoTelegramConfig.enable_topic_routing)} className="bg-amber-500 text-black hover:bg-amber-400" data-testid="save-seo-telegram-btn">
+                                        <Button onClick={handleSaveSeo} disabled={savingSeo} className="bg-amber-500 text-black hover:bg-amber-400" data-testid="save-seo-telegram-btn">
                                             {savingSeo && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Simpan Pengaturan
                                         </Button>
                                         <Button variant="outline" onClick={handleTestSeo} disabled={testingSeo} data-testid="test-seo-telegram-btn">
