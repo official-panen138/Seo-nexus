@@ -2866,6 +2866,7 @@ async def create_project_complaint(
         "created_at": datetime.now(timezone.utc).isoformat(),
         "resolved_at": None,
         "resolved_by": None,
+        "network_id": network_id,  # Store network_id for manager lookup in notification
         "reason": data.reason.strip(),
         "responsible_user_ids": data.responsible_user_ids,
         "responsible_users": responsible_users,
