@@ -1131,6 +1131,67 @@ export default function UsersPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* Bulk Menu Permissions Dialog */}
+                <Dialog open={bulkMenuDialogOpen} onOpenChange={setBulkMenuDialogOpen}>
+                    <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Key className="h-5 w-5" />
+                                Bulk Menu Access Control
+                            </DialogTitle>
+                            <DialogDescription>
+                                Set menu access for {selectedUserIds.length} selected user{selectedUserIds.length > 1 ? 's' : ''}.
+                                <span className="block text-amber-500 mt-1">
+                                    This will overwrite existing permissions for all selected users.
+                                </span>
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="flex justify-between items-center py-2 border-b border-zinc-800">
+                            <span className="text-sm text-zinc-400">
+                                {bulkMenuSelection.length} of {menuRegistry.length} menus selected
+                            </span>
+                            <div className="flex gap-2">
+                                <Button variant="ghost" size="sm" onClick={handleBulkSelectAllMenus}>
+                                    Select All
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={handleBulkDeselectAllMenus}>
+                                    Clear All
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div className="max-h-[300px] overflow-y-auto py-2 space-y-1">
+                            {menuRegistry.map(menu => (
+                                <div 
+                                    key={menu.key} 
+                                    className="flex items-center gap-3 px-3 py-2 rounded hover:bg-zinc-800/50 cursor-pointer"
+                                    onClick={() => handleBulkMenuToggle(menu.key)}
+                                >
+                                    <Checkbox 
+                                        checked={bulkMenuSelection.includes(menu.key)}
+                                        onCheckedChange={() => handleBulkMenuToggle(menu.key)}
+                                    />
+                                    <div className="flex-1">
+                                        <span className="text-sm">{menu.label}</span>
+                                        <span className="text-xs text-zinc-500 ml-2">{menu.path}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <DialogFooter className="gap-2">
+                            <Button variant="outline" onClick={() => setBulkMenuDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleBulkMenuUpdate} disabled={savingMenuPerms}>
+                                {savingMenuPerms && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                Apply to {selectedUserIds.length} User{selectedUserIds.length > 1 ? 's' : ''}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </Layout>
     );
