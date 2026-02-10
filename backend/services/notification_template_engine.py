@@ -115,6 +115,8 @@ ALLOWED_VARIABLES = {
     "node.is_orphan",
     "node.tier_label",  # Tier 1, Tier 2, LP/Money Site
     "node.relation",  # 301 Redirect, Canonical, etc.
+    "node.full_path",  # Full path including domain/path
+    "node.role",  # Supporting, Main, etc.
     
     # Impact additional
     "impact.affected_children",
