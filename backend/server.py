@@ -272,6 +272,7 @@ class UserManualCreate(BaseModel):
     role: UserRole = UserRole.VIEWER
     brand_scope_ids: List[str] = []
     password: Optional[str] = None  # If not provided, auto-generate
+    telegram_username: Optional[str] = None
 
 
 class UserLogin(BaseModel):
