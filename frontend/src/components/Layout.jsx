@@ -60,16 +60,22 @@ export const Layout = ({ children }) => {
     const [mobileOpen, setMobileOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, logout, hasRole } = useAuth();
+    const { user, logout } = useAuth();
+    const { canAccessMenu, isSuperAdmin, loading: permLoading } = useMenuPermissions();
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
 
-    const filteredNavItems = navItems.filter(item => 
-        item.roles.some(role => hasRole(role))
-    );
+    // Filter nav items based on menu permissions
+    const filteredNavItems = navItems.filter(item => {
+        if (item.type === 'divider') {
+            // Show divider only if super admin or has access to admin menus
+            return isSuperAdmin || canAccessMenu('brands') || canAccessMenu('users');
+        }
+        return canAccessMenu(item.menuKey);
+    });
 
     return (
         <div className="app-layout">
