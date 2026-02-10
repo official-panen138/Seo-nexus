@@ -3949,7 +3949,7 @@ async def get_team_evaluation_summary(
     ]
     resolution_result = await db.optimization_complaints.aggregate(resolution_pipeline).to_list(1)
     avg_resolution_time_hours = resolution_result[0]["avg_hours"] if resolution_result else None
-    resolved_complaints_count = resolution_result[0]["resolved_count"] if resolution_result else 0
+    # resolved_count is available in resolution_result but not currently used in the response
     
     # Get top contributors
     top_users = await get_team_evaluation_users(brand_id, network_id, start_date, end_date, current_user)
