@@ -308,6 +308,13 @@ export const domainMonitoringTelegramAPI = {
     testAlert: () => apiV3.post('/settings/telegram-monitoring/test')
 };
 
+// V3 Email Alerts API
+export const emailAlertsAPI = {
+    getSettings: () => apiV3.get('/settings/email-alerts'),
+    updateSettings: (data) => apiV3.put('/settings/email-alerts', data),
+    testEmail: (email) => apiV3.post('/settings/email-alerts/test', null, { params: { recipient_email: email } })
+};
+
 // V3 Activity Logs API
 export const activityLogsAPI = {
     getAll: (params) => apiV3.get('/activity-logs', { params }),
