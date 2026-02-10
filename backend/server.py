@@ -532,7 +532,7 @@ def format_to_local_time(dt_str: str, timezone_str: str = "Asia/Jakarta") -> str
                 dt_str = dt_str.replace("Z", "+00:00")
             try:
                 dt = datetime.fromisoformat(dt_str)
-            except:
+            except (ValueError, TypeError):
                 dt = datetime.strptime(dt_str[:19], "%Y-%m-%d %H:%M:%S")
                 dt = dt.replace(tzinfo=timezone.utc)
         else:
