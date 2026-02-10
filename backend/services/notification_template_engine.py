@@ -335,66 +335,107 @@ Optimasi berikut sudah berjalan <b>{{reminder.days_in_progress}} hari</b> dan ma
     # Domain Expiration Alert (Telegram)
     ("telegram", "domain_expiration"): {
         "title": "Domain Expiration Alert",
-        "template_body": """⚠️ <b>DOMAIN EXPIRATION ALERT</b>
+        "template_body": """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ <b>DOMAIN EXPIRATION ALERT</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Domain <b>{{domain.name}}</b> akan expire dalam <b>{{domain.days_until_expiry}} hari</b>.
+🟠 <b>EXPIRING:</b> <code>{{domain.name}}</code>
+• <b>Days Left:</b> {{domain.days_until_expiry}} days
+• <b>Severity:</b> {{impact.severity_emoji}} {{impact.severity}}
 
-━━━━━━━━━━━━━━━━━━━━━━
-📌 <b>DETAIL DOMAIN</b>
-━━━━━━━━━━━━━━━━━━━━━━
-• Domain: {{domain.name}}
-• Expiry Date: {{domain.expiry_date}}
-• Registrar: {{domain.registrar}}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 <b>DOMAIN INFO</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• <b>Domain:</b> {{domain.name}}
+• <b>Expiry Date:</b> {{domain.expiry_date}}
+• <b>Registrar:</b> {{domain.registrar}}
+• <b>Brand:</b> {{brand.name}}
 
-━━━━━━━━━━━━━━━━━━━━━━
-🧭 <b>SEO NETWORK CONTEXT</b>
-━━━━━━━━━━━━━━━━━━━━━━
-• Network: {{network.name}}
-• Role: {{node.role}}
-• Tier: {{node.tier}}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔗 <b>SEO CONTEXT</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• <b>Network:</b> {{network.name}}
+• <b>Tier:</b> {{node.tier_label}}
+• <b>Role:</b> {{node.role}}
+• <b>Reaches Money Site:</b> {{impact.reaches_money_site}}
 
-📊 <b>IMPACT ANALYSIS</b>
-━━━━━━━━━━━━━━━━━━━━━━
-• Severity: {{impact.severity_emoji}} {{impact.severity}}
-• Upstream Chain: {{structure.upstream_chain}}
-• Downstream Impact: {{structure.downstream_impact}}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧭 <b>STRUKTUR SEO TERKINI</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{structure.full_structure}}
 
-━━━━━━━━━━━━━━━━━━━━━━
-⚠️ <b>Action Required:</b>
-<i>Renew domain before expiration to avoid SEO impact.</i>"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔥 <b>IMPACT SUMMARY</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• <b>Severity:</b> {{impact.severity_emoji}} {{impact.severity}}
+• <b>Downstream Nodes:</b> {{impact.affected_count}}
+• <b>Upstream Chain:</b> {{structure.upstream_chain}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏰ <b>NEXT ACTION</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<b>Renew domain before expiration</b>
+If domain expires, all SEO link flow will be BROKEN.
+
+🕐 <b>Alert Time:</b> {{timestamp.gmt7}}"""
     },
     
     # Domain Down Alert (Telegram)
     ("telegram", "domain_down"): {
         "title": "Domain Down Alert",
-        "template_body": """🔴 <b>DOMAIN DOWN ALERT</b>
+        "template_body": """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{impact.severity_emoji}} <b>DOMAIN DOWN ALERT</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Domain <b>{{domain.name}}</b> tidak dapat diakses!
+🔴 <b>DOWN:</b> <code>{{domain.name}}</code>
+• <b>Reason:</b> {{domain.error_message}}
+• <b>Severity:</b> {{impact.severity_emoji}} {{impact.severity}}
 
-━━━━━━━━━━━━━━━━━━━━━━
-📌 <b>DETAIL STATUS</b>
-━━━━━━━━━━━━━━━━━━━━━━
-• Domain: {{domain.name}}
-• HTTP Status: {{domain.http_status}}
-• Response Time: {{domain.response_time}}
-• Checked At: {{timestamp.gmt7}}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 <b>DOMAIN INFO</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• <b>HTTP Status:</b> {{domain.http_status}}
+• <b>Response Time:</b> {{domain.response_time}}
+• <b>Brand:</b> {{brand.name}}
+• <b>Category:</b> {{domain.category}}
 
-━━━━━━━━━━━━━━━━━━━━━━
-🧭 <b>SEO NETWORK CONTEXT</b>
-━━━━━━━━━━━━━━━━━━━━━━
-• Network: {{network.name}}
-• Role: {{node.role}}
-• Tier: {{node.tier}}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔗 <b>SEO CONTEXT</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• <b>Network:</b> {{network.name}}
+• <b>Tier:</b> {{node.tier_label}}
+• <b>Role:</b> {{node.role}}
+• <b>Relation:</b> {{node.relation}}
+• <b>Reaches Money Site:</b> {{impact.reaches_money_site}}
 
-📊 <b>IMPACT ANALYSIS</b>
-━━━━━━━━━━━━━━━━━━━━━━
-• Severity: {{impact.severity_emoji}} {{impact.severity}}
-• Affected Nodes: {{impact.affected_count}}
-• Upstream Chain: {{structure.upstream_chain}}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧭 <b>STRUKTUR SEO TERKINI</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{structure.full_structure}}
 
-━━━━━━━━━━━━━━━━━━━━━━
-🚨 <b>URGENT Action Required:</b>
-<i>Investigate and restore domain immediately.</i>"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⬆️ <b>UPSTREAM CHAIN</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{structure.upstream_chain}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⬇️ <b>DOWNSTREAM IMPACT</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{structure.downstream_impact}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔥 <b>IMPACT SUMMARY</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• <b>Severity:</b> {{impact.severity_emoji}} {{impact.severity}}
+• <b>Affected Nodes:</b> {{impact.affected_count}}
+{{impact.money_site_warning}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏰ <b>NEXT ACTION</b>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{impact.action_required}}
+
+🕐 <b>Detected:</b> {{timestamp.gmt7}}"""
     },
     
     # Node Deleted (Telegram) - Enhanced with full pre-deletion details
