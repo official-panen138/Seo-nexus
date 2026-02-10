@@ -198,12 +198,59 @@ class ReminderScheduler:
     
     def get_status(self) -> dict:
         """Get scheduler status"""
+        digest_next_run = None
+        if self.scheduler:
+            digest_job = self.scheduler.get_job(self.DIGEST_JOB_ID)
+            if digest_job and digest_job.next_run_time:
+                digest_next_run = digest_job.next_run_time.isoformat()
+        
         return {
             "running": self.scheduler is not None and self.scheduler.running,
             "job_id": self.JOB_ID,
             "interval_hours": self.DEFAULT_INTERVAL_HOURS,
-            "next_run_time": self.get_next_run_time()
+            "next_run_time": self.get_next_run_time(),
+            "digest_job_id": self.DIGEST_JOB_ID,
+            "digest_next_run_time": digest_next_run
         }
+    
+    async def _update_digest_schedule(self):
+        """Update digest job schedule from settings"""
+        try:
+            settings = await self.digest_service.get_digest_settings()
+            
+            day = settings.get("schedule_day", "monday").lower()
+            hour = settings.get("schedule_hour", 9)
+            minute = settings.get("schedule_minute", 0)
+            
+            day_of_week = self.DAY_MAP.get(day, 'mon')
+            
+            if self.scheduler:
+                self.scheduler.reschedule_job(
+                    self.DIGEST_JOB_ID,
+                    trigger=CronTrigger(day_of_week=day_of_week, hour=hour, minute=minute)
+                )
+                logger.info(f"[SCHEDULER] Updated digest schedule: {day} at {hour:02d}:{minute:02d}")
+        except Exception as e:
+            logger.warning(f"[SCHEDULER] Failed to update digest schedule: {e}")
+    
+    async def update_digest_schedule(self, day: str, hour: int, minute: int):
+        """Update the weekly digest schedule"""
+        if not self.scheduler:
+            return
+        
+        day_of_week = self.DAY_MAP.get(day.lower(), 'mon')
+        
+        self.scheduler.reschedule_job(
+            self.DIGEST_JOB_ID,
+            trigger=CronTrigger(day_of_week=day_of_week, hour=hour, minute=minute)
+        )
+        logger.info(f"[SCHEDULER] Updated digest schedule: {day} at {hour:02d}:{minute:02d}")
+    
+    async def trigger_digest_now(self) -> dict:
+        """Manually trigger the weekly digest job"""
+        logger.info("[SCHEDULER] Manual digest trigger requested")
+        await self._run_digest_job()
+        return {"message": "Digest job triggered manually", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 
 # Global scheduler instance (initialized in server.py)
