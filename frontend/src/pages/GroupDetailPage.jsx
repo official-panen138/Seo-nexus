@@ -619,11 +619,25 @@ export default function GroupDetailPage() {
                 setNetwork(networkRes.data);
                 setTierData(tiersRes.data);
                 setUseV3(true);
+                
+                // Fetch network managers for complaints auto-tagging
+                if (networkRes.data?.manager_ids?.length > 0) {
+                    try {
+                        const managersRes = await usersAPI.getByIds(networkRes.data.manager_ids);
+                        setNetworkManagers(managersRes.data?.users || []);
+                    } catch (err) {
+                        console.error('Failed to load network managers:', err);
+                        setNetworkManagers([]);
+                    }
+                } else {
+                    setNetworkManagers([]);
+                }
             } else {
                 // Fallback to V2 API
                 const res = await groupsAPI.getOne(groupId);
                 setNetwork(res.data);
                 setUseV3(false);
+                setNetworkManagers([]);
             }
         } catch (err) {
             console.error('Failed to load network:', err);
