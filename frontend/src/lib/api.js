@@ -370,7 +370,8 @@ export const activityLogsAPI = {
 // V3 Reports API
 export const v3ReportsAPI = {
     getDashboard: () => apiV3.get('/reports/dashboard'),
-    getConflicts: (networkId) => apiV3.get('/reports/conflicts', { params: networkId ? { network_id: networkId } : {} })
+    getConflicts: (networkId) => apiV3.get('/reports/conflicts', { params: networkId ? { network_id: networkId } : {} }),
+    getDomainsByBrand: () => apiV3.get('/reports/domains-by-brand')
 };
 
 // V3 Export API
