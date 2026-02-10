@@ -1878,6 +1878,57 @@ async def update_structure_entry(
     if "optimized_path" in update_dict:
         update_dict["optimized_path"] = normalize_path(update_dict["optimized_path"])
 
+    # ========================================================================
+    # CRITICAL: STRICT DIFF VALIDATION - PREVENT NO-CHANGE SAVES
+    # ========================================================================
+    # Fields that constitute an actual data change (change_note excluded)
+    TRACKED_FIELDS = [
+        "domain_role",
+        "domain_status", 
+        "index_status",
+        "target_entry_id",
+        "target_asset_domain_id",
+        "optimized_path",
+        "ranking_url",
+        "primary_keyword",
+        "ranking_position",
+        "notes",
+    ]
+    
+    changed_fields = []
+    for field in TRACKED_FIELDS:
+        if field in update_dict:
+            old_value = existing.get(field)
+            new_value = update_dict[field]
+            
+            # Handle enum comparison
+            if hasattr(new_value, "value"):
+                new_value = new_value.value
+            
+            # Normalize None vs empty string
+            if old_value is None:
+                old_value = ""
+            if new_value is None:
+                new_value = ""
+            
+            # Check if actually different
+            if str(old_value) != str(new_value):
+                changed_fields.append({
+                    "field": field,
+                    "old": old_value,
+                    "new": new_value
+                })
+    
+    # REJECT if no actual changes detected
+    if len(changed_fields) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="No changes detected. Please modify at least one field before saving."
+        )
+    
+    logger.info(f"SEO node update - {len(changed_fields)} field(s) changed: {[c['field'] for c in changed_fields]}")
+    # ========================================================================
+
     # Validate target_entry_id if changing (node-to-node relationship)
     if "target_entry_id" in update_dict and update_dict["target_entry_id"]:
         target_entry = await db.seo_structure_entries.find_one(
