@@ -105,10 +105,11 @@ export default function AlertsPage() {
 
     // Conflict stats
     const conflictStats = {
-        total: conflicts.length,
-        critical: conflicts.filter(c => c.severity === 'critical').length,
-        high: conflicts.filter(c => c.severity === 'high').length,
-        byType: conflicts.reduce((acc, c) => {
+        total: enhancedConflicts.length,
+        critical: enhancedConflicts.filter(c => c.severity === 'critical').length,
+        high: enhancedConflicts.filter(c => c.severity === 'high').length,
+        linked: enhancedConflicts.filter(c => c.linked_optimization).length,
+        byType: enhancedConflicts.reduce((acc, c) => {
             const type = c.conflict_type || 'unknown';
             acc[type] = (acc[type] || 0) + 1;
             return acc;
