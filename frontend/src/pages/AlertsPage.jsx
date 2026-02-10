@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
-import { v3ReportsAPI } from '../lib/api';
+import { v3ReportsAPI, conflictsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -13,7 +13,9 @@ import {
     Loader2, 
     Network,
     ExternalLink,
-    RefreshCw
+    RefreshCw,
+    Link2,
+    ClipboardList
 } from 'lucide-react';
 
 // Conflict severity badge colors
