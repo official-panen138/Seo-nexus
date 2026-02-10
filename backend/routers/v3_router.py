@@ -3019,8 +3019,8 @@ async def update_optimization(
     if data.affected_scope is not None:
         # Handle both string and Enum types
         update_data["affected_scope"] = data.affected_scope.value if hasattr(data.affected_scope, 'value') else data.affected_scope
-    if data.affected_targets is not None:
-        update_data["affected_targets"] = data.affected_targets
+    if data.target_domains is not None:
+        update_data["target_domains"] = data.target_domains
     if data.keywords is not None:
         update_data["keywords"] = data.keywords
     if data.report_urls is not None:
