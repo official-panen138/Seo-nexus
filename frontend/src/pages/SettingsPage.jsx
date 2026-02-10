@@ -455,6 +455,10 @@ export default function SettingsPage() {
                                 <Mail className="h-4 w-4" />
                                 Email Alerts
                             </TabsTrigger>
+                            <TabsTrigger value="templates" className="flex items-center gap-2" data-testid="notification-templates-tab">
+                                <FileText className="h-4 w-4" />
+                                Templates
+                            </TabsTrigger>
                         </TabsList>
                         
                         {/* Branding Tab */}
