@@ -1146,6 +1146,199 @@ Tier 2:
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            {/* Weekly Digest Section */}
+                            <Card className="bg-card border-border" data-testid="weekly-digest-card">
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-purple-500/10">
+                                            <Calendar className="h-5 w-5 text-purple-500" />
+                                        </div>
+                                        <div>
+                                            <CardTitle>Weekly Digest Email</CardTitle>
+                                            <CardDescription>
+                                                Scheduled summary of domain health for management visibility
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    {/* Enable/Disable */}
+                                    <div className="flex items-center justify-between p-4 rounded-lg bg-zinc-900/50 border border-border">
+                                        <div>
+                                            <p className="font-medium text-white">Enable Weekly Digest</p>
+                                            <p className="text-xs text-zinc-500">Send weekly summary to global admins</p>
+                                        </div>
+                                        <Switch
+                                            checked={digestConfig.enabled}
+                                            onCheckedChange={(checked) => setDigestConfig({...digestConfig, enabled: checked})}
+                                            data-testid="digest-enabled-switch"
+                                        />
+                                    </div>
+
+                                    {/* Schedule */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Day of Week</Label>
+                                            <Select 
+                                                value={digestConfig.schedule_day}
+                                                onValueChange={(val) => setDigestConfig({...digestConfig, schedule_day: val})}
+                                            >
+                                                <SelectTrigger className="bg-black border-border" data-testid="digest-day-select">
+                                                    <SelectValue placeholder="Select day" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="monday">Monday</SelectItem>
+                                                    <SelectItem value="tuesday">Tuesday</SelectItem>
+                                                    <SelectItem value="wednesday">Wednesday</SelectItem>
+                                                    <SelectItem value="thursday">Thursday</SelectItem>
+                                                    <SelectItem value="friday">Friday</SelectItem>
+                                                    <SelectItem value="saturday">Saturday</SelectItem>
+                                                    <SelectItem value="sunday">Sunday</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Hour (24h)</Label>
+                                            <Select 
+                                                value={String(digestConfig.schedule_hour)}
+                                                onValueChange={(val) => setDigestConfig({...digestConfig, schedule_hour: parseInt(val)})}
+                                            >
+                                                <SelectTrigger className="bg-black border-border" data-testid="digest-hour-select">
+                                                    <SelectValue placeholder="Hour" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {Array.from({length: 24}, (_, i) => (
+                                                        <SelectItem key={i} value={String(i)}>{String(i).padStart(2, '0')}:00</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Expiring Threshold</Label>
+                                            <Select 
+                                                value={String(digestConfig.expiring_days_threshold)}
+                                                onValueChange={(val) => setDigestConfig({...digestConfig, expiring_days_threshold: parseInt(val)})}
+                                            >
+                                                <SelectTrigger className="bg-black border-border" data-testid="digest-threshold-select">
+                                                    <SelectValue placeholder="Days" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="7">7 days</SelectItem>
+                                                    <SelectItem value="14">14 days</SelectItem>
+                                                    <SelectItem value="30">30 days</SelectItem>
+                                                    <SelectItem value="60">60 days</SelectItem>
+                                                    <SelectItem value="90">90 days</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    {/* Content Options */}
+                                    <div className="space-y-3">
+                                        <Label>Include in Digest</Label>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/30 border border-border/50">
+                                                <span className="text-sm text-zinc-300">Expiring Domains</span>
+                                                <Switch
+                                                    checked={digestConfig.include_expiring_domains}
+                                                    onCheckedChange={(checked) => setDigestConfig({...digestConfig, include_expiring_domains: checked})}
+                                                    data-testid="digest-include-expiring"
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/30 border border-border/50">
+                                                <span className="text-sm text-zinc-300">Down Domains</span>
+                                                <Switch
+                                                    checked={digestConfig.include_down_domains}
+                                                    onCheckedChange={(checked) => setDigestConfig({...digestConfig, include_down_domains: checked})}
+                                                    data-testid="digest-include-down"
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-900/30 border border-border/50">
+                                                <span className="text-sm text-zinc-300">Soft Blocked Domains</span>
+                                                <Switch
+                                                    checked={digestConfig.include_soft_blocked}
+                                                    onCheckedChange={(checked) => setDigestConfig({...digestConfig, include_soft_blocked: checked})}
+                                                    data-testid="digest-include-blocked"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Last Sent Info */}
+                                    {digestConfig.last_sent_at && (
+                                        <div className="p-3 rounded-lg bg-zinc-900/30 border border-border/50">
+                                            <p className="text-xs text-zinc-500">
+                                                Last sent: {new Date(digestConfig.last_sent_at).toLocaleString()}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-3 pt-2">
+                                        <Button 
+                                            onClick={handleSaveDigest} 
+                                            disabled={savingDigest} 
+                                            className="bg-purple-500 text-white hover:bg-purple-400" 
+                                            data-testid="save-digest-btn"
+                                        >
+                                            {savingDigest && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                            Save Settings
+                                        </Button>
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={handlePreviewDigest}
+                                            disabled={loadingPreview}
+                                            data-testid="preview-digest-btn"
+                                        >
+                                            {loadingPreview ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Eye className="h-4 w-4 mr-2" />}
+                                            Preview
+                                        </Button>
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={handleSendDigestNow}
+                                            disabled={sendingDigest || !emailAlertsConfig.configured}
+                                            data-testid="send-digest-btn"
+                                        >
+                                            {sendingDigest ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                                            Send Now
+                                        </Button>
+                                    </div>
+                                    {!emailAlertsConfig.configured && (
+                                        <p className="text-xs text-amber-400">Configure Resend API key above to enable sending</p>
+                                    )}
+
+                                    {/* Preview Panel */}
+                                    {digestPreview && (
+                                        <div className="p-4 rounded-lg bg-zinc-900/50 border border-border space-y-3" data-testid="digest-preview-panel">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="font-medium text-white">Preview: {digestPreview.subject}</h4>
+                                                <button onClick={() => setDigestPreview(null)} className="text-zinc-500 hover:text-white">
+                                                    <X className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                <div className="p-3 rounded bg-zinc-800 text-center">
+                                                    <div className="text-xl font-bold text-white">{digestPreview.total_issues}</div>
+                                                    <div className="text-xs text-zinc-500">Total Issues</div>
+                                                </div>
+                                                <div className="p-3 rounded bg-zinc-800 text-center">
+                                                    <div className="text-xl font-bold text-red-400">{digestPreview.expiring_domains?.critical?.length || 0}</div>
+                                                    <div className="text-xs text-zinc-500">Critical Expiring</div>
+                                                </div>
+                                                <div className="p-3 rounded bg-zinc-800 text-center">
+                                                    <div className="text-xl font-bold text-red-400">{digestPreview.down_domains_count}</div>
+                                                    <div className="text-xs text-zinc-500">Down</div>
+                                                </div>
+                                                <div className="p-3 rounded bg-zinc-800 text-center">
+                                                    <div className="text-xl font-bold text-amber-400">{digestPreview.soft_blocked_count}</div>
+                                                    <div className="text-xs text-zinc-500">Soft Blocked</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
                         </TabsContent>
                     </Tabs>
                 </div>
