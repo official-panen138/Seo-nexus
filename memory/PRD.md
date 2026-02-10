@@ -47,7 +47,45 @@ Build a full-stack SEO Network Operations Center combining:
 - **Monitoring**: Background scheduler (5-minute cycles)
 - **Alerts**: Telegram Bot API
 
-## What's Been Implemented (Feb 8, 2026)
+## What's Been Implemented
+
+### SEO-Aware Domain Monitoring + Structured Alert Output (Feb 10, 2026) - COMPLETE
+**Feature:** Transform domain monitoring into a true SEO Incident Response System
+
+**1. Structured Alert Format (STRUKTUR SEO TERKINI):**
+- All monitoring alerts include tier-based SEO snapshot
+- Format: LP/Money Site → Tier 1 → Tier 2 → ... with relation types
+- No "Unknown" in test mode if domain exists in SEO network
+- Full graph resolution for upstream/downstream chains
+
+**2. Strict Severity Calculation:**
+- **CRITICAL**: Domain is Money Site OR Tier 1 reaching Money Site
+- **HIGH**: Tier 1 node OR ≥3 downstream nodes
+- **MEDIUM**: Tier 2+ with indirect money site impact
+- **LOW**: Orphan/unused node
+
+**3. Message Order (Telegram):**
+1. Alert Type (DOWN / EXPIRATION / CONFIG MISSING)
+2. Domain Info (Status, Brand, Monitoring)
+3. SEO Context Summary (Network, Tier, Role, Reaches Money Site)
+4. 🧭 STRUKTUR SEO TERKINI (Tier-based structure)
+5. 🔥 Impact Summary (Severity, downstream nodes)
+6. ⏰ Next Action (based on severity)
+
+**4. Unmonitored Domain Reminders:**
+- Daily ⚠️ MONITORING NOT CONFIGURED alerts at 8:00 AM
+- Sent for domains in SEO networks without monitoring enabled
+- Stops only when monitoring enabled OR domain removed from network
+- 24h rate limit to prevent spam
+
+**API Endpoints:**
+- `GET /api/v3/monitoring/unmonitored-in-seo` - List unmonitored SEO domains
+- `POST /api/v3/monitoring/domain-down/test` - Test alert with full SEO context
+- `POST /api/v3/monitoring/send-unmonitored-reminders` - Manual reminder trigger
+
+**Tests:** 100% pass rate (20/20 backend tests)
+
+---
 
 ### Full Multi-Brand Support (Feb 8, 2026) - COMPLETE
 **Feature:** Enterprise-ready multi-brand data isolation
