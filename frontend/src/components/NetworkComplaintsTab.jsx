@@ -67,7 +67,7 @@ const STATUS_BADGES = {
     dismissed: { label: 'Dismissed', className: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30' }
 };
 
-export function NetworkComplaintsTab({ networkId, brandId }) {
+export function NetworkComplaintsTab({ networkId, brandId, networkManagers = [] }) {
     const { user } = useAuth();
     const [activeSubTab, setActiveSubTab] = useState('project');
     const [loading, setLoading] = useState(true);
