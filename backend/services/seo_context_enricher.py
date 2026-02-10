@@ -107,12 +107,17 @@ class SeoContextEnricher:
                 highest_tier = tier
 
             # Build SEO context for this entry
+            # Get the domain name from the input or look it up from asset_domain
+            entry_domain = entry.get('domain') or domain_name
+            entry_path = entry.get('optimized_path') or ''
+            full_node = f"{entry_domain}{entry_path}"
+            
             seo_ctx = {
                 "network_id": network_id,
                 "network_name": network.get("name", "Unknown"),
                 "brand_name": brand.get("name", "Unknown") if brand else "Unknown",
                 "entry_id": entry.get("id"),
-                "node": f"{entry.get('domain', '')}{entry.get('optimized_path', '')}",
+                "node": full_node,
                 "role": (
                     "LP / Money Site"
                     if entry.get("domain_role") == "main"
@@ -130,7 +135,7 @@ class SeoContextEnricher:
             if entry.get("target_entry_id"):
                 target_entry = await self.db.seo_structure_entries.find_one(
                     {"id": entry["target_entry_id"]},
-                    {"_id": 0, "domain": 1, "optimized_path": 1},
+                    {"_id": 0, "domain": 1, "optimized_path": 1, "asset_domain_id": 1},
                 )
                 if target_entry:
                     seo_ctx["target_node"] = (
