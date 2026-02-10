@@ -1058,6 +1058,96 @@ class SeoConflict(BaseModel):
     detected_at: str
 
 
+# ==================== STORED CONFLICT MODELS ====================
+
+
+class ConflictStatus(str, Enum):
+    """Status of a stored conflict"""
+    DETECTED = "detected"  # Initial state when conflict is found
+    UNDER_REVIEW = "under_review"  # Optimization created, being worked on
+    RESOLVED = "resolved"  # Conflict resolved and validated
+    IGNORED = "ignored"  # Marked as intentional/acceptable
+
+
+class StoredConflict(BaseModel):
+    """Model for a stored SEO conflict with tracking"""
+    
+    id: str
+    conflict_type: str  # ConflictType value
+    severity: str  # ConflictSeverity value
+    status: str = ConflictStatus.DETECTED.value
+    
+    # Network info
+    network_id: str
+    network_name: Optional[str] = None
+    
+    # Domain info
+    domain_name: str
+    domain_id: Optional[str] = None
+    
+    # Involved nodes
+    node_a_id: str
+    node_a_path: Optional[str] = None
+    node_a_label: str
+    
+    node_b_id: Optional[str] = None
+    node_b_path: Optional[str] = None
+    node_b_label: Optional[str] = None
+    
+    # Affected nodes list
+    affected_nodes: List[str] = []
+    
+    # Details
+    description: str
+    suggestion: Optional[str] = None
+    
+    # Linked optimization
+    optimization_id: Optional[str] = None
+    
+    # Timestamps
+    detected_at: str
+    updated_at: Optional[str] = None
+    resolved_at: Optional[str] = None
+    
+    # Metrics
+    recurrence_count: int = 0  # How many times this conflict was re-detected
+    last_recurrence_at: Optional[str] = None
+
+
+class ConflictResolutionCreate(BaseModel):
+    """Request to create conflict resolution optimization"""
+    
+    conflict_id: str
+    assigned_to_user_id: Optional[str] = None  # If not provided, auto-assign to network manager
+    priority: Optional[str] = "high"
+    notes: Optional[str] = None
+
+
+class ConflictResolutionResponse(BaseModel):
+    """Response for conflict resolution creation"""
+    
+    conflict_id: str
+    optimization_id: str
+    assigned_to: Optional[str] = None
+    status: str
+    message: str
+
+
+class LinkedConflictInfo(BaseModel):
+    """Conflict info embedded in optimization detail"""
+    
+    id: str
+    conflict_type: str
+    severity: str
+    status: str
+    detected_at: str
+    domain_name: str
+    node_a_label: str
+    node_b_label: Optional[str] = None
+    description: str
+    affected_nodes: List[str] = []
+
+
 # ==================== MONITORING SETTINGS MODELS ====================
 
 
