@@ -197,17 +197,33 @@ export default function AlertsPage() {
                     </Card>
                 </div>
 
-                {/* Process Conflicts Button */}
+                {/* Action Button - Process Conflicts or View Dashboard */}
                 <div className="flex justify-end mb-4">
-                    <Button 
-                        onClick={handleProcessConflicts}
-                        disabled={processing || conflicts.length === 0}
-                        className="bg-emerald-600 hover:bg-emerald-700"
-                        data-testid="process-conflicts-btn"
-                    >
-                        {processing ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
+                    {enhancedConflicts.length > 0 ? (
+                        <Button 
+                            onClick={handleProcessConflicts}
+                            disabled={processing}
+                            className="bg-emerald-600 hover:bg-emerald-700"
+                            data-testid="process-conflicts-btn"
+                        >
+                            {processing ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                                <ClipboardList className="h-4 w-4 mr-2" />
+                            )}
+                            Create Optimization Tasks
+                        </Button>
+                    ) : (
+                        <Button 
+                            onClick={() => window.location.href = '/conflicts/dashboard'}
+                            className="bg-blue-600 hover:bg-blue-700"
+                            data-testid="view-dashboard-btn"
+                        >
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            View Resolution Dashboard
+                        </Button>
+                    )}
+                </div>
                             <ClipboardList className="h-4 w-4 mr-2" />
                         )}
                         Create Optimization Tasks
