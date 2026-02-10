@@ -79,6 +79,9 @@ export default function AlertsPage() {
     const [storedConflicts, setStoredConflicts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
+    const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
+    const [activeTab, setActiveTab] = useState('all'); // 'all', 'detected', 'in_progress', 'resolved'
+    const [creatingTask, setCreatingTask] = useState(null);
 
     useEffect(() => {
         loadConflicts();
@@ -120,6 +123,22 @@ export default function AlertsPage() {
             toast.error('Failed to process conflicts');
         } finally {
             setProcessing(false);
+        }
+    };
+
+    const handleCreateTaskForConflict = async (conflictId) => {
+        setCreatingTask(conflictId);
+        try {
+            const res = await conflictsAPI.createOptimization(conflictId);
+            if (res.data?.success) {
+                toast.success('Optimization task created successfully');
+                loadConflicts(); // Reload to update the view
+            }
+        } catch (err) {
+            console.error('Failed to create task:', err);
+            toast.error(err.response?.data?.detail || 'Failed to create optimization task');
+        } finally {
+            setCreatingTask(null);
         }
     };
 
