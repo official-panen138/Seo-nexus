@@ -570,10 +570,18 @@ export default function ConflictDashboardPage() {
                                                                 variant="outline"
                                                                 size="sm"
                                                                 onClick={() => handleCreateTaskForConflict(conflict.id)}
+                                                                disabled={creatingTask === conflict.id}
                                                                 className="text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
                                                                 data-testid={`create-task-${conflict.id}`}
                                                             >
-                                                                Create Task
+                                                                {creatingTask === conflict.id ? (
+                                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                                ) : (
+                                                                    <>
+                                                                        <Plus className="h-3 w-3 mr-1" />
+                                                                        Create Task
+                                                                    </>
+                                                                )}
                                                             </Button>
                                                         ) : (
                                                             <span className="text-xs text-zinc-500">-</span>
