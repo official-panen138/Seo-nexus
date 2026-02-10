@@ -1250,6 +1250,97 @@ export default function UsersPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* Bulk Brand Access Dialog */}
+                <Dialog open={bulkBrandDialogOpen} onOpenChange={setBulkBrandDialogOpen}>
+                    <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Building2 className="h-5 w-5" />
+                                Bulk Brand Access Control
+                            </DialogTitle>
+                            <DialogDescription>
+                                Set brand access for {selectedUserIds.length} selected user{selectedUserIds.length > 1 ? 's' : ''}.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-4">
+                            {/* Mode selection */}
+                            <div className="flex gap-4 p-3 bg-zinc-900 rounded-lg">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input 
+                                        type="radio" 
+                                        name="bulkBrandMode" 
+                                        value="replace"
+                                        checked={bulkBrandMode === 'replace'}
+                                        onChange={() => setBulkBrandMode('replace')}
+                                        className="accent-blue-500"
+                                    />
+                                    <span className="text-sm">Replace existing brands</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input 
+                                        type="radio" 
+                                        name="bulkBrandMode" 
+                                        value="add"
+                                        checked={bulkBrandMode === 'add'}
+                                        onChange={() => setBulkBrandMode('add')}
+                                        className="accent-blue-500"
+                                    />
+                                    <span className="text-sm">Add to existing brands</span>
+                                </label>
+                            </div>
+
+                            {bulkBrandMode === 'replace' && (
+                                <p className="text-xs text-amber-500">
+                                    Warning: This will overwrite all existing brand access for selected users.
+                                </p>
+                            )}
+
+                            <div className="flex justify-between items-center py-2 border-b border-zinc-800">
+                                <span className="text-sm text-zinc-400">
+                                    {bulkBrandSelection.length} of {brands.length} brands selected
+                                </span>
+                                <div className="flex gap-2">
+                                    <Button variant="ghost" size="sm" onClick={handleBulkSelectAllBrands}>
+                                        Select All
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={handleBulkDeselectAllBrands}>
+                                        Clear All
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="max-h-[250px] overflow-y-auto py-2 space-y-1">
+                                {brands.map(brand => (
+                                    <div 
+                                        key={brand.id} 
+                                        className="flex items-center gap-3 px-3 py-2 rounded hover:bg-zinc-800/50 cursor-pointer"
+                                        onClick={() => handleBulkBrandToggle(brand.id)}
+                                    >
+                                        <Checkbox 
+                                            checked={bulkBrandSelection.includes(brand.id)}
+                                            onCheckedChange={() => handleBulkBrandToggle(brand.id)}
+                                        />
+                                        <div className="flex-1">
+                                            <span className="text-sm font-medium">{brand.name}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <DialogFooter className="gap-2">
+                            <Button variant="outline" onClick={() => setBulkBrandDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleBulkBrandUpdate} disabled={saving}>
+                                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                Apply to {selectedUserIds.length} User{selectedUserIds.length > 1 ? 's' : ''}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </Layout>
     );
