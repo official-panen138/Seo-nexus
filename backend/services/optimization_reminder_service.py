@@ -211,8 +211,6 @@ class OptimizationReminderService:
                 else:
                     tags.append(user.get("name", user.get("email", "Unknown")))
 
-            tags_text = ", ".join(tags) if tags else "No users tagged"
-
             days_in_progress = optimization.get("days_since_reminder", 0)
 
             # Send notification
