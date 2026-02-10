@@ -160,23 +160,43 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
         }
     }, [searchParams]);
 
-    // Load optimizations on mount/filter change and setup polling for real-time updates
+    // Track if there are new items available (without auto-refreshing)
+    const [newItemsAvailable, setNewItemsAvailable] = useState(false);
+    const [lastKnownCount, setLastKnownCount] = useState(0);
+
+    // Load optimizations on mount/filter change
     useEffect(() => {
         loadOptimizations();
-        
-        // Poll for new optimizations every 15 seconds
-        const pollInterval = setInterval(() => {
-            loadOptimizations();
-        }, 15000);
-        
-        return () => clearInterval(pollInterval);
     }, [networkId, currentPage, filterType, filterStatus]);
+    
+    // Check for new optimizations periodically (but don't auto-refresh)
+    useEffect(() => {
+        if (!networkId) return;
+        
+        const checkForNewOptimizations = async () => {
+            // Don't check if dialog is open
+            if (dialogOpen || deleteDialogOpen || complaintDialogOpen) return;
+            
+            try {
+                const params = { page: 1, limit: 1 };
+                const response = await optimizationsAPI.getAll(networkId, params);
+                const newTotal = response.data?.total || 0;
+                
+                if (lastKnownCount > 0 && newTotal > lastKnownCount) {
+                    setNewItemsAvailable(true);
+                }
+            } catch (err) {
+                // Silently fail
+            }
+        };
+        
+        const interval = setInterval(checkForNewOptimizations, 20000);
+        return () => clearInterval(interval);
+    }, [networkId, lastKnownCount, dialogOpen, deleteDialogOpen, complaintDialogOpen]);
 
     const loadOptimizations = async () => {
-        // Don't show loading spinner during polling updates
-        if (optimizations.length === 0) {
-            setLoading(true);
-        }
+        setLoading(true);
+        setNewItemsAvailable(false);
         try {
             const params = { page: currentPage, limit: pageSize };
             if (filterType !== 'all') params.activity_type = filterType;
