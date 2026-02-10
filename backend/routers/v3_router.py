@@ -1064,6 +1064,21 @@ async def get_networks(
         network["best_ranking_position"] = min(ranking_nodes) if ranking_nodes else None
         network["tracked_urls_count"] = len(tracked_urls)
         
+        # Access Summary Panel: Open complaints count and last optimization
+        open_complaints = await db.seo_optimizations.count_documents({
+            "network_id": network["id"],
+            "complaint_status": {"$in": ["complained", "under_review"]}
+        })
+        network["open_complaints_count"] = open_complaints
+        
+        # Get most recent optimization date
+        last_opt = await db.seo_optimizations.find_one(
+            {"network_id": network["id"]},
+            {"_id": 0, "created_at": 1},
+            sort=[("created_at", -1)]
+        )
+        network["last_optimization_at"] = last_opt["created_at"] if last_opt else None
+        
         result.append(network)
     
     # Filter by ranking_status if specified
