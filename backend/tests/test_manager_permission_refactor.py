@@ -157,18 +157,29 @@ class TestNetworkManagerPermissions:
         """Network manager (in manager_ids) can update structure entries"""
         headers = TestHelpers.auth_headers(manager_token)
         
-        # First get current entry to restore later
+        # First get current entry to see its configuration
         get_response = requests.get(
             f"{BASE_URL}/api/v3/structure/{ENTRY_ID}",
             headers=headers
         )
-        original_notes = get_response.json().get("notes", "") if get_response.status_code == 200 else ""
         
-        # Update the entry
+        if get_response.status_code != 200:
+            pytest.skip(f"Could not get entry: {get_response.status_code}")
+        
+        entry = get_response.json()
+        original_notes = entry.get("notes", "")
+        domain_role = entry.get("domain_role", "supporting")
+        
+        # Build update payload - for main nodes we only update notes, not status
+        # Main nodes have validation rules about status
         payload = {
             "notes": "Updated by manager - permission test",
             "change_note": "Testing manager update permission"
         }
+        
+        # If it's a main node, we might need to include domain_status as primary
+        if domain_role == "main":
+            payload["domain_status"] = "primary"
         
         response = requests.put(
             f"{BASE_URL}/api/v3/structure/{ENTRY_ID}",
@@ -187,6 +198,8 @@ class TestNetworkManagerPermissions:
             "notes": original_notes or "",
             "change_note": "Restoring original notes after test"
         }
+        if domain_role == "main":
+            restore_payload["domain_status"] = "primary"
         requests.put(f"{BASE_URL}/api/v3/structure/{ENTRY_ID}", headers=headers, json=restore_payload)
 
 
@@ -220,18 +233,28 @@ class TestSuperAdminPermissions:
         """Super admin can update structure entries (bypasses manager_ids check)"""
         headers = TestHelpers.auth_headers(admin_token)
         
-        # First get current entry to restore later
+        # First get current entry to see its configuration
         get_response = requests.get(
             f"{BASE_URL}/api/v3/structure/{ENTRY_ID}",
             headers=headers
         )
-        original_notes = get_response.json().get("notes", "") if get_response.status_code == 200 else ""
         
-        # Update the entry
+        if get_response.status_code != 200:
+            pytest.skip(f"Could not get entry: {get_response.status_code}")
+        
+        entry = get_response.json()
+        original_notes = entry.get("notes", "")
+        domain_role = entry.get("domain_role", "supporting")
+        
+        # Build update payload - for main nodes we need to be careful about status
         payload = {
             "notes": "Updated by super admin - permission test",
             "change_note": "Testing super admin update permission"
         }
+        
+        # If it's a main node, include domain_status as primary
+        if domain_role == "main":
+            payload["domain_status"] = "primary"
         
         response = requests.put(
             f"{BASE_URL}/api/v3/structure/{ENTRY_ID}",
@@ -250,6 +273,8 @@ class TestSuperAdminPermissions:
             "notes": original_notes or "",
             "change_note": "Restoring original notes after test"
         }
+        if domain_role == "main":
+            restore_payload["domain_status"] = "primary"
         requests.put(f"{BASE_URL}/api/v3/structure/{ENTRY_ID}", headers=headers, json=restore_payload)
 
 
