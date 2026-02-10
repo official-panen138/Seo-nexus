@@ -116,14 +116,25 @@ export function NetworkComplaintsTab({ networkId, brandId, networkManagers = [] 
 
     const isSuperAdmin = user?.role === 'super_admin';
 
+    // Load complaints on mount and setup polling for real-time updates
     useEffect(() => {
         if (networkId) {
             loadComplaints();
+            
+            // Poll for new complaints every 10 seconds when tab is active
+            const pollInterval = setInterval(() => {
+                loadComplaints();
+            }, 10000);
+            
+            return () => clearInterval(pollInterval);
         }
     }, [networkId]);
 
     const loadComplaints = async () => {
-        setLoading(true);
+        // Don't show loading spinner during polling updates
+        if (projectComplaints.length === 0 && optimizationComplaints.length === 0) {
+            setLoading(true);
+        }
         try {
             // Load project-level complaints
             const projectRes = await projectComplaintsAPI.getAll(networkId);
