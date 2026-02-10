@@ -8345,6 +8345,15 @@ async def get_expiration_test_options(
             {"value": 3, "label": "3 days (urgent)"},
             {"value": 1, "label": "1 day (expires tomorrow)"},
             {"value": 0, "label": "0 days (expires today)"},
+            {"value": -1, "label": "-1 day (already expired)"},
+        ],
+        "reminder_schedule": {
+            "30_days": "One-time alert",
+            "14_days": "One-time alert",
+            "7_days": "One-time alert",
+            "less_than_7": "2x daily (09:00 & 18:00 GMT+7)",
+        }
+    }
 
 
 # ==================== AUDIT LOGS API ====================
