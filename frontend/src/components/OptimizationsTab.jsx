@@ -522,6 +522,15 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
                 </div>
                 <div className="flex gap-2">
                     <Button 
+                        variant="outline"
+                        size="icon"
+                        onClick={handleRefreshOptimizations}
+                        className="border-border"
+                        data-testid="refresh-optimizations-btn"
+                    >
+                        <RefreshCw className="h-4 w-4" />
+                    </Button>
+                    <Button 
                         variant="outline" 
                         onClick={handleExportCSV} 
                         disabled={exporting || optimizations.length === 0}
@@ -539,6 +548,23 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
                     )}
                 </div>
             </div>
+            
+            {/* New items banner */}
+            {newItemsAvailable && (
+                <div 
+                    className="flex items-center justify-between p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg cursor-pointer hover:bg-emerald-500/20 transition-colors"
+                    onClick={handleRefreshOptimizations}
+                    data-testid="new-optimizations-banner"
+                >
+                    <div className="flex items-center gap-2">
+                        <Bell className="h-4 w-4 text-emerald-400" />
+                        <span className="text-sm text-emerald-400">New optimizations available</span>
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-emerald-400 hover:text-emerald-300">
+                        Click to refresh
+                    </Button>
+                </div>
+            )}
 
             {/* Filters */}
             <div className="flex flex-wrap gap-3">
