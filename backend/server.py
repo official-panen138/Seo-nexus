@@ -2912,12 +2912,13 @@ Time: {local_time}"""
 
 @api_router.get("/settings/branding")
 async def get_branding_settings(current_user: dict = Depends(get_current_user)):
-    """Get app branding settings (title, description, logo)"""
+    """Get app branding settings (title, description, logo, tagline)"""
     settings = await db.settings.find_one({"key": "branding"}, {"_id": 0})
     return settings or {
         "site_title": "SEO//NOC",
         "site_description": "SEO Network Operations Center - Manage your domain networks efficiently",
         "logo_url": "",
+        "tagline": "Domain Network Management System",
     }
 
 
@@ -2938,6 +2939,8 @@ async def update_branding_settings(
         update_data["site_description"] = config.site_description
     if config.logo_url is not None:
         update_data["logo_url"] = config.logo_url
+    if config.tagline is not None:
+        update_data["tagline"] = config.tagline
 
     await db.settings.update_one(
         {"key": "branding"}, {"$set": update_data}, upsert=True
