@@ -148,6 +148,29 @@ class SeoTelegramService:
                 tags.append(username)
         
         return " ".join(tags) if tags else ""
+    
+    async def _get_seo_leader_usernames(self) -> List[str]:
+        """
+        Get SEO Leader Telegram usernames WITHOUT @ prefix (for template engine).
+        Returns list of raw usernames.
+        """
+        settings = await self.db.settings.find_one({"key": "telegram_seo"}, {"_id": 0})
+        if not settings:
+            return []
+        
+        # Try multiple leaders first (new format)
+        leaders = settings.get("seo_leader_telegram_usernames", [])
+        if not leaders:
+            # Fallback to legacy single leader
+            single = settings.get("seo_leader_telegram_username")
+            if single:
+                leaders = [single]
+        
+        if not leaders:
+            return []
+        
+        # Return usernames without @ prefix
+        return [username.replace("@", "") for username in leaders if username]
 
     async def _get_network_manager_tags(self, network_id: str) -> List[str]:
         """
