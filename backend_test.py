@@ -7,7 +7,7 @@ from datetime import datetime, timezone, timedelta
 
 class SEONOCAPITester:
     def __init__(
-        self, base_url="https://seo-monitoring-hub.preview.emergentagent.com/api"
+        self, base_url="https://msg-engine.preview.emergentagent.com/api"
     ):
         self.base_url = base_url
         self.token = None

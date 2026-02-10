@@ -1,210 +1,181 @@
-<analysis>original_problem_statement:
-The user initially requested the removal of legacy monitoring features. The scope then expanded to include several new features and bug fixes:
-1.  **Feature**: Implement Email Notifications for critical domain alerts using the Resend service.
-2.  **Feature**: Implement a Weekly Digest Email for admins, summarizing domain health.
-3.  **Feature**: Add a  field to the user registration and management UI.
-4.  **Bug/Feature**: Implement and correct Role-Based Access Control (RBAC):
-    *    role should only see and manage projects/networks for their assigned brands.
-    *    role should have read-only access to the SEO network menu (no adding/editing nodes or optimizations).
-5.  **Bug**: Fix an issue where saving a new domain was failing.
-6.  **Bug**: Fix an issue where dashboard statistics were not filtered by brand for non-super\_admin users.
-7.  **Bug**: Investigate and fix an error occurring when updating an SEO network.
+<analysis>An analysis of the conversation and codebase has been completed. The agent has successfully addressed multiple user requests, including a critical permission system refactor, UI bug fixes, and the implementation of several new features like in-app notifications and an online user presence indicator. The user has now provided a large, detailed specification for a global Notification Template System, which is the current priority.
 
-PRODUCT REQUIREMENTS:
--   **Email Notifications (Domain Monitoring)**:
-    -   **Recipient**: Global admin emails + per-network managers.
-    -   **Provider**: Resend.
-    -   **Trigger**: HIGH/CRITICAL severity alerts only.
--   **Weekly Digest Email**:
-    -   **Recipients**: Global admins only.
-    -   **Schedule**: Weekly, configurable.
-    -   **Content**: Domains expiring soon, down domains, soft-blocked domains, SEO impact summary.
--   **SEO Network Permissions**:
-    -    role cannot add/edit nodes or optimizations.  and  can.
--   **User Management**:
-    -   The  should be part of the user model and manageable in the UI.
+### original_problem_statement
+The initial task was to resolve a P0 bug where the 'manager' role could not create or edit SEO Network nodes. During the investigation, a major security flaw was discovered and a new directive was issued by the user to implement a strict, role-based access control system.
 
-**User's preferred language**: English
+Subsequent user requests included:
+1.  **Strict Access Control:** Only Super Admins or assigned Network Managers can perform write actions (create, edit, delete) on SEO networks, optimizations, and complaints. This must be enforced on both the frontend (hiding UI elements) and backend (returning 403 Forbidden).
+2.  **Specific Telegram Tagging Rules:**
+    *   **SEO Notifications (changes, optimizations, etc.):** Must tag a global list of SEO Leaders.
+    *   **Complaint Notifications:** Must ONLY tag the assigned Network Manager(s) for that specific project.
+3.  **UI/UX Fixes:**
+    *   Fix a React rendering error caused by Pydantic validation objects.
+    *   Improve the Add Complaint dialog to automatically pre-select and tag the project's Network Managers.
+    *   Implement an in-app notification system for user tags and other events.
+    *   Fix notifications to navigate to the correct page/tab upon clicking.
+    *   Replace disruptive, aggressive page polling with a user-initiated refresh banner.
+4.  **New Feature Requests:**
+    *   An Online Users indicator to show who is currently active on the site.
+    *   Support for multiple Global SEO Leaders.
+    *   **CURRENT MAJOR TASK:** A comprehensive, global **Notification Template System** allowing admins to edit and reset all email/Telegram notification messages via the UI. This is a mandatory, high-priority feature.
 
-**what currently exists?**
-The application is an SEO and domain monitoring tool. It features a FastAPI backend and a React frontend. Key functionalities include:
--   Management of Brands, Asset Domains, and SEO Networks.
--   A role-based access system with , , and  roles.
--   Dashboard with stats on domains and networks.
--   Notification system via Telegram for real-time alerts.
--   Email notification system (via Resend) for critical alerts and a weekly digest summary.
--   An Alert Center for viewing SEO conflicts.
+### **User's preferred language**
+English.
 
-**Last working item**:
--   Last item agent was working: The agent was debugging an issue reported by the user: In the SEO network project menu, there is still an error or it failed to update. The agent fixed a bug in the  update endpoint which was causing an internal server error. The agent then moved on to test adding a new node as a manager and was investigating a potential issue with the  API endpoint response or domain access permissions for the manager role.
--   Status: IN PROGRESS
--   Agent Testing Done: N
--   Which testing method agent to use? The agent should first use  to manually test the  endpoint as the manager user to verify the response format and data. After fixing the issue, the frontend testing agent should be used to perform a full test of adding/editing/deleting nodes in the SEO Network UI as a manager.
--   User Testing Done: N
+### **what currently exists?**
+The application is a web-based SEO Network Operations Center (NOC). The latest updates have significantly hardened the permission model, ensuring only authorized users (Super Admins or assigned managers) can modify data. A new in-app notification system has been implemented, along with a real-time Online Users presence feature. The system now supports multiple Global SEO Leaders for Telegram notifications and correctly routes complaint notifications exclusively to Network Managers.
 
-**All Pending/In progress Issue list**:
--   Issue 1: SEO Network node creation/editing might be broken for manager roles. (P0)
--   Issue 2: Full regression test for the  role is pending. (P1)
--   Issue 3: Pre-existing linter warnings in backend files. (P2)
+### **Last working item**
+*   **Last item agent was working:** The agent began the initial analysis for the **Notification Template System** feature request.
+*   **Status:** IN PROGRESS
+*   **Agent Testing Done:** N
+*   **Which testing method agent to use?** After backend and frontend implementation, use both the backend and frontend testing agents to ensure the new template management UI works, templates are saved correctly, and notifications are rendered and sent using the new system. Manual  tests should be used to verify API validation and default fallbacks.
+*   **User Testing Done:** N
 
-Issues Detail:
--   Issue 1: SEO Network node creation/editing might be broken for manager roles.
-    -   Attempted fixes: The agent identified and fixed a bug in the  endpoint that was returning  and causing a response validation error. However, the overall user flow of editing/adding nodes in the UI for a manager is not fully validated. The agent saw an issue when trying to add a new node, suspecting the domain list fetched by  was not being handled correctly.
-    -   Next debug checklist:
-        1.  Log in as the  user ().
-        2.  Use  to call the  endpoint with the manager's auth token.
-        3.  Inspect the JSON response. The agent noted the response might be  instead of  which the frontend might expect.
-        4.  If the format is wrong, check the frontend code in  or related components to see how the domain list for the Add Node modal is fetched and parsed.
-        5.  Adjust either the backend () to change the response key, or the frontend to parse the correct key.
-        6.  Once fixed, re-run the UI test of adding a node as a manager.
-    -   Why fix this issue and what will be achieved with the fix? This is a core functionality for  users. Fixing it will allow managers to properly manage their assigned SEO networks.
-    -   Status: IN PROGRESS
-    -   Is recurring issue? N
-    -   Should Test frontend/backend/both after fix? Both.
-    -   Blocked on other issue: None.
+### **All Pending/In progress Issue list**
+*   **Issue 1:** The Telegram notification for complaints fails if the configured  for that brand doesn't exist in the Telegram forum. The agent observed a  error, indicating a configuration issue rather than a code bug.
 
--   Issue 2: Full regression test for the  role is pending.
-    -   Attempted fixes: N/A.
-    -   Next debug checklist: After fixing Issue 1, the agent should perform a comprehensive test of all features accessible to the  role to ensure no other regressions exist. This includes dashboard, asset domains, SEO networks, and settings.
-    -   Why fix this issue and what will be achieved with the fix? The user explicitly requested to check other features according to the role manager, make sure they are all working. This will ensure the  role is fully functional as per requirements.
-    -   Status: NOT STARTED
-    -   Is recurring issue? N
-    -   Should Test frontend/backend/both after fix? Both.
-    -   Blocked on other issue: Issue 1.
+    *   **Attempted fixes:** None. The agent correctly identified the notification logic was working and the error was due to invalid configuration data (a non-existent Telegram topic ID ).
+    *   **Next debug checklist:**
+        1.  Verify the  in the  collection.
+        2.  Ensure that the topic IDs listed for project complaints are valid and the bot has access to them.
+        3.  Consider adding a UI-level validation or a health check in the settings page to confirm that configured Topic IDs are reachable.
+    *   **Why fix this issue and what will be achieved with the fix?** To ensure reliable delivery of complaint notifications via Telegram, which is a core requirement.
+    *   **Status:** NOT STARTED
+    *   **Is recurring issue?** N
+    *   **Should Test frontend/backend/both after fix?** Backend (manual curl to trigger notification)
+    *   **Blocked on other issue:** None
 
--   Issue 3: Pre-existing linter warnings in backend files.
-    -   Attempted fixes: None in this session for the remaining warnings.
-    -   Next debug checklist: Run  in  and  and manually fix any outstanding issues.
-    -   Why fix this issue and what will be achieved with the fix? Improves code quality and maintainability.
-    -   Status: NOT STARTED
-    -   Is recurring issue? Y
-    -   Should Test frontend/backend/both after fix? Backend.
-    -   Blocked on other issue: None.
+### **In progress Task List**
+*   **Task 1:** Implement the global Notification Template System (P0)
 
-**In progress Task List**:
-There are no multi-step tasks in progress, the main focus is on resolving the pending issues.
+    *   **Where to resume:** The agent has completed the analysis of existing notification services (, , ) to identify variables. The next steps are:
+        1.  **Backend:** Create the  MongoDB collection with the specified schema (, , , , etc.).
+        2.  **Backend:** Implement a template rendering engine (e.g., using Jinja2 or a similar library) that can substitute variables like .
+        3.  **Backend:** Create API endpoints for Super Admins to list, view, update, and reset templates. Add validation to reject templates with unknown variables.
+        4.  **Backend:** Refactor all notification services to fetch and render templates from the database, with a fallback to the  if the custom template is missing or disabled.
+        5.  **Frontend:** Create the new Settings UI (Settings → Notifications → Templates) for Super Admins to manage the templates, including a live preview feature.
+    *   **What will be achieved with this?** A fully functional system allowing Super Admins to customize all notification messages without code changes, improving flexibility and maintainability.
+    *   **Status:** IN PROGRESS
+    *   **Should Test frontend/backend/both after fix?** Both
+    *   **Blocked on something:** None.
 
-**Upcoming and Future Tasks**
-Upcoming Tasks:
--   P0: Implement Reminder Effectiveness Metric as requested by the user.
--   P1: Implement Conflict Aging Metric.
+### **Upcoming and Future Tasks**
+*   **Upcoming Tasks:**
+    *   **P1: Domain Monitoring Context Enrichment:** As part of the template system, ensure monitoring alerts (domain expiration/down) include rich context like SEO Network name, node role, tier, and impact severity as requested.
+    *   **P1: Audit & Logging:** Implement logging for template changes, resets, permission violations, and failed notifications.
+*   **Future Tasks:**
+    *   **P2: Reminder Effectiveness Metric:** Track response rates and completion times for SEO reminders.
+    *   **P2: Conflict Aging Metric:** Track how long SEO conflicts remain unresolved to identify bottlenecks.
+    *   **P3: SEO Health & Performance Tracking:** Integrate with Google Search Console/Analytics to track rankings, traffic, and other key SEO metrics.
+    *   **P3: Automated SEO Auditing:** Implement a technical SEO crawler to find on-site issues like broken links and duplicate content.
 
-**Completed work in this session**
--   Legacy Monitoring Removal: Removed Alerts tab from  and legacy Monitoring Alerts settings from .
--   Email Notification Feature: Implemented email alerts for critical domain monitoring issues using Resend.
-    -   Created .
-    -   Added endpoints to .
-    -   Added Email Alerts tab and configuration UI to .
--   Weekly Digest Email Feature: Implemented a scheduled weekly email digest.
-    -   Created .
-    -   Updated  to handle the weekly job.
-    -   Added UI for configuration and preview in .
--   Telegram Username in User Mgmt: Added  field to the user model, registration page (), and user management page ().
--   Role-Based Access Control (RBAC):
-    -   Fixed  role by adding it to the  enum in .
-    -   Implemented brand-scoping for  and  roles across the app.
-    -   Fixed dashboard stats ( and ) to be brand-scoped.
-    -   Implemented read-only restrictions for the  role on the SEO Network details page ( and ).
--   Bug Fixes:
-    -   Fixed domain saving functionality in .
-    -   Fixed the SEO network structure update endpoint () in  to return the updated object.
+### **Completed work in this session**
+*   **Critical Permission System Refactor (DONE):** Fixed a major security flaw. Enforced strict backend ( decorator) and frontend ( logic) checks to ensure only Super Admins or assigned Network Managers can modify data.
+*   **In-App Notification System (DONE):** Created a complete notification feature, including a backend collection, APIs, and a frontend notification bell UI for real-time user alerts.
+*   **Real-time Presence Feature (DONE):** Implemented an Online Users list in the sidebar, showing currently active and recently active users with a heartbeat mechanism.
+*   **Telegram Notification Enhancements (DONE):**
+    *   Implemented support for multiple Global SEO Leaders.
+    *   Corrected tagging logic to ensure complaints ONLY tag Network Managers, while other SEO events tag Leaders.
+    *   Fixed bugs related to missing dependencies and incorrect method calls in Telegram services.
+*   **UI/UX Improvements (DONE):**
+    *   Fixed a critical React rendering crash by implementing a robust error message handler ().
+    *   Improved the complaint submission flow to automatically and mandatorily tag Network Managers.
+    *   Replaced annoying, aggressive polling with a user-friendly New updates available banner.
+    *   Ensured clicking an in-app notification correctly navigates the user to the relevant page and tab.
 
-**Earlier issues found/mentioned but not fixed**
-None that are not already listed in the All Pending/In progress Issue list.
+### **Earlier issues found/mentioned but not fixed**
+None that were not already listed in the **Pending/In progress Issue list**.
 
-**Known issue recurrence from previous fork**
--   Issue recurrence in previous fork: Linter warnings in backend python files.
--   Recurrence count: 2+
--   Status: NOT STARTED
+### **Known issue recurrence from previous fork**
+N/A
 
-**Code Architecture**
+### **Code Architecture**
 
 
-**Key Technical Concepts**
--   **Backend**: FastAPI, Python
--   **Frontend**: React, Vite, Mantine UI
--   **Database**: MongoDB
--   **Notifications**: Telegram (real-time), Resend (email)
--   **Scheduled Jobs**: APScheduler
--   **Architecture**: Monorepo with distinct , , and  directories. API is versioned with legacy routes and a  prefix for newer features.
+### **Key Technical Concepts**
+*   **Backend:** FastAPI, Python, MongoDB (with  for async access), Pydantic for data models.
+*   **Frontend:** React, Vite, JavaScript, Axios, TailwindCSS, , .
+*   **Authentication:** JWT-based authentication with role-based and resource-based access control.
+*   **Testing:** Playwright for automated UI/screenshot testing, Pytest for backend tests.
+*   **Real-time:** A polling/heartbeat mechanism is used for the presence feature and for update notifications (via banners).
 
-**key DB schema**
--   : 
--   : 
--   : 
--   : 
--   : Stores various system settings like Telegram/Email configs.
+### **key DB schema**
+*   : { , , , , ,  }
+*   : { , , ,  }
+*   : { , , , , ,  }
+*   : { , , , , ,  }
+*   : { , , , , , ,  }
+*    (TO BE CREATED): { , , , , , ,  }
 
-**changes in tech stack**
--   : Added as a Python dependency for sending emails.
+### **changes in tech stack**
+None.
 
-**All files of reference**
--   **Created Files**:
-    -   : Service to send email notifications using Resend.
-    -   : Service to generate data for the weekly email digest.
--   **Updated Files**:
-    -   : Added endpoints for email settings, weekly digest, and fixed structure update endpoint.
-    -   : Added  to  enum, added  to models, and fixed dashboard stats endpoint.
-    -   : Integrated the weekly digest job.
-    -   : Integrated calls to the email alert service.
-    -   : Major refactor to add tabs/sections for Email Alerts and Weekly Digest.
-    -   : Added RBAC to hide edit/add controls for  role.
-    -   : Added Telegram column and field to create/edit user modals.
-    -   : Added Telegram field to the registration form.
-    -   : Added API functions for new email and digest features.
+### **All files of reference**
+*   ****: Heavily modified to add  decorator to all write endpoints (, , ).
+*   ****: Modified to create in-app and Telegram notifications.
+*   ****: New file created for the Online Users feature.
+*   ****: Modified to add an endpoint to fetch users by a list of IDs.
+*   ****: Refactored to handle multiple SEO leaders and correct tagging logic for complaints.
+*   ****: Similarly refactored for multiple SEO leaders.
+*   ****: New file created for the in-app notification system.
+*   ****: Major refactoring to enforce new  logic based on , fetch manager details, pass props to tabs, and handle new error patterns.
+*   ****: Refactored to auto-tag managers, add the New updates banner, and stop aggressive polling.
+*   ****: Similarly refactored to use the banner instead of polling.
+*   ****: New utility file created to parse Pydantic/backend errors into user-readable strings.
+*   ****: New component for the in-app notification UI.
+*   ****: New component for the presence/online users feature.
+*   ****: Modified to support an array of Global SEO Leaders instead of a single user.
 
-**Areas that need refactoring**:
--   The main dashboard () still relies on some legacy API endpoints (). These could be migrated to use the V3 API structure for consistency and to avoid maintaining two separate stats calculation logics in  and .
+### **Areas that need refactoring**
+*   The New updates available banner logic is duplicated in  and . This could be extracted into a custom React hook (e.g., ) to simplify the components and reduce code duplication.
 
-**key api endpoints**
--   : User registration (updated to include ).
--   : Get user list (updated to return ).
--   : Manage email alert settings.
--   : Manage weekly digest settings.
--   : Get a preview of the weekly digest email.
--   : Update an SEO network structure entry (Bug fixed).
--   : Get details for a single SEO network.
--   : Get stats for the dashboard (fixed brand-scoping).
+### **key api endpoints**
+*   : Create a node (now requires manager permission).
+*   : Update a node (now requires manager permission).
+*   : Delete a node (now requires manager permission).
+*   : New endpoint to fetch user details from a list of IDs.
+*   : Get notifications for the current user.
+*   : Endpoint for clients to report they are online.
+*   : Get the list of currently online users.
 
-**Critical Info for New Agent**
--   The application now has three user roles with distinct permissions:  (full access),  (brand-scoped edit access), and  (brand-scoped read-only access). All new features and fixes must be tested against these roles.
--   The user has a clear priority for the next tasks: 1) Reminder Effectiveness Metric, 2) Conflict Aging Metric. Do not start them until all current bugs are resolved and confirmed by the user.
--   The current highest priority is fixing the SEO network editing/creation flow for the  role. Start debugging from the  endpoint as called by the Add Node modal.
+### **Critical Info for New Agent**
+1.  **The Notification Template System is the top priority.** The user has provided a detailed spec in Chat Message 607. All hardcoded notification strings must be eliminated.
+2.  **Permissions are paramount.** The model is strict: only a  or a user whose ID is in the  array can perform write actions on that network. All new features must respect this rule.
+3.  **Telegram Tagging is specific.** Do not tag SEO Leaders in complaint notifications. They are only tagged on general SEO events (node changes, optimizations). Complaints must only tag the assigned Network Managers.
 
-**documents and test reports created in this job**
--    (updated multiple times)
--   Multiple test reports generated by the testing agent under .
+### **documents and test reports created in this job**
+*   : This file was updated multiple times to reflect the resolution of bugs and the implementation of new features.
 
-**Last 10 User Messages and any pending HUMAN messages**
-1.  : In the SEO network project menu, there is still an error or it failed to update. Also check other features according to the role manager, make sure they are all working, there are no more errors, and notifications on Telegram are running smoothly. (PENDING - Manager role features not fully fixed/tested).
-2.  : (Summary of work done)
-3.  : In the SEO network menu, you should not be able to add nodes or edit nodes, add optimization, if you are not a manager or super admin you can only view it. Apart from that, fix it on the user, there is no list of Telegram accounts that have been entered, also add the Telegram user to the registration menu (COMPLETED).
-4.  : (Updated PRD and finished task)
-5.  : try to do a test on the domain list, can't save, also do a test other than super admin, and the manager can only see the project (COMPLETED - bugs were found and fixed).
-6.  : (Updated PRD and finished task)
-7.  : yes confirm next Next Action Items (COMPLETED).
-8.  : Thanks for the proposal — confirmed 👍 I’d like to proceed with the Weekly Digest Email as the next feature... (COMPLETED).
-9.  : (Implemented Weekly Digest Email).
-10. : yes i need, confirm (COMPLETED).
+### **Last 10 User Messages and any pending HUMAN messages**
+1.  **Chat 610**: User gives go-ahead to start template system implementation, clarifying that provided variables are examples. (Status: In Progress)
+2.  **Chat 608**: Agent confirms understanding of the large Notification Template System request and proposes a plan.
+3.  **Chat 607**: User provides a very large, detailed feature request for a global Notification Template System and reinforces strict permission rules. (Status: In Progress)
+4.  **Chat 606**: Agent provides a list of potential new features from an SEO expert perspective.
+5.  **Chat 605**: User asks what features are missing from an SEO expert's point of view.
+6.  **Chat 603**: Agent shows the fixed UI for adding multiple SEO Leaders. (Status: Completed)
+7.  **Chat 588**: User reports a UI bug ( not imported) when adding a leader and clarifies that leaders should NOT be tagged in complaints. (Status: Completed)
+8.  **Chat 586**: Agent provides a summary after implementing the backend logic for Telegram complaint notifications.
+9.  **Chat 535**: User requests that complaints be sent to Telegram, tagging the project owner, and that the system supports multiple Global SEO Leaders. (Status: Completed)
+10. **Chat 533**: Agent provides a summary after successfully implementing the Online Users feature. (Status: Completed)
 
-**Project Health Check:**
--   **Broken**: The functionality for a  to add or edit nodes in an SEO Network is currently broken and under investigation.
--   **Mocked**: No features are currently mocked.
+### **Project Health Check:**
+*   **Broken:** None
+*   **Mocked:** None
 
-**3rd Party Integrations**
--   **Resend**: Used for sending email notifications (critical alerts and weekly digest). Requires a User API Key ().
--   **Telegram**: Used for sending real-time notifications. Requires user-provided bot token and chat IDs.
+### **3rd Party Integrations**
+*   **Telegram:** Used for sending real-time notifications to user channels and groups. Requires a Bot Token and configuration of chat/topic IDs in the application settings.
 
-**Testing status**
--   Testing agent used after significant changes: YES
--   Troubleshoot agent used after agent stuck in loop: NO
--   Test files created: Yes, the testing agent created multiple test files in .
--   Known regressions: A bug was introduced and found by the testing agent where dashboard stats were not brand-scoped for managers. This has since been fixed. The current bug with node editing for managers is the primary focus.
+### **Testing status**
+*   **Testing agent used after significant changes:** YES. The testing agent was used successfully to validate the major permission refactor and found a critical bug in a Pydantic response model, which was then fixed.
+*   **Troubleshoot agent used after agent stuck in loop:** NO
+*   **Test files created:** None (testing was done via ephemeral scripts).
+*   **Known regressions:** A regression was found by the testing agent ( missing from ) and was immediately fixed. No other known regressions.
 
-**Credentials to test flow:**
--   **Super Admin**:  / 
--   **Manager**:  /  (Assigned to 'Panen138' brand)
--   **Viewer**:  /  (Assigned to 'Panen138' brand)
+### **Credentials to test flow:**
+*   **Super Admin:**  / 
+*   **Manager:**  / 
+*   **Viewer:**  / 
 
-**What agent forgot to execute**
-The agent was in the middle of a debugging session for the manager role's inability to correctly add/edit SEO network nodes. The user's request to check other features according to the role manager, make sure they are all working has not been fully completed, as it is blocked by the current bug. A full regression test for the manager role is pending.</analysis>
+### **What agent forgot to execute**
+The agent is currently on track with the user's latest and most significant request (Notification Template System). Nothing has been forgotten from this new directive. The user's specification for templates uses a singular placeholder , but the agent has already implemented support for an array of leaders. The new template engine must correctly handle iterating over this array to tag all leaders.</analysis>

@@ -17,7 +17,7 @@ import time
 import uuid
 
 BASE_URL = os.environ.get(
-    "REACT_APP_BACKEND_URL", "https://seo-monitoring-hub.preview.emergentagent.com"
+    "REACT_APP_BACKEND_URL", "https://msg-engine.preview.emergentagent.com"
 ).rstrip("/")
 
 
