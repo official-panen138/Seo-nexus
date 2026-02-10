@@ -384,4 +384,31 @@ export const dashboardSettingsAPI = {
     getStats: () => apiV3.get('/dashboard/stats')
 };
 
+// V3 Notification Templates API
+export const notificationTemplatesAPI = {
+    // List all templates
+    list: (channel = null) => apiV3.get('/settings/notification-templates', { params: channel ? { channel } : {} }),
+    
+    // Get available event types
+    getEvents: () => apiV3.get('/settings/notification-templates/events'),
+    
+    // Get allowed variables
+    getVariables: () => apiV3.get('/settings/notification-templates/variables'),
+    
+    // Get a specific template
+    get: (channel, eventType) => apiV3.get(`/settings/notification-templates/${channel}/${eventType}`),
+    
+    // Update a template
+    update: (channel, eventType, data) => apiV3.put(`/settings/notification-templates/${channel}/${eventType}`, data),
+    
+    // Reset a template to default
+    reset: (channel, eventType) => apiV3.post(`/settings/notification-templates/${channel}/${eventType}/reset`),
+    
+    // Preview a template
+    preview: (channel, eventType, templateBody = null) => apiV3.post(`/settings/notification-templates/${channel}/${eventType}/preview`, templateBody ? { template_body: templateBody } : {}),
+    
+    // Validate template body
+    validate: (templateBody) => apiV3.post('/settings/notification-templates/validate', { template_body: templateBody })
+};
+
 export default api;
