@@ -802,6 +802,12 @@ class SeoTelegramService:
             )
 
             # Build message
+            # Get SEO Leader tag for global oversight
+            seo_leader_tag = await self._get_seo_leader_tag()
+            leader_section = ""
+            if seo_leader_tag:
+                leader_section = f"\n\n👁 <b>CC:</b> {seo_leader_tag}"
+
             message = f"""👤 <b>SEO NETWORK BARU DIBUAT</b>
 
 {user_display_name} telah membuat SEO Network baru '<b>{network_name}</b>' untuk brand '<b>{brand_name}</b>'.
@@ -818,7 +824,7 @@ class SeoTelegramService:
 ━━━━━━━━━━━━━━━━━━━━━━
 🧭 <b>STRUKTUR SEO AWAL</b>
 ━━━━━━━━━━━━━━━━━━━━━━
-{structure_text}"""
+{structure_text}{leader_section}"""
 
             # Send message with topic routing
             success = await self._send_telegram_message(
