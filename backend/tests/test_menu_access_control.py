@@ -36,7 +36,7 @@ class TestMenuAccessControlSystem:
             json={"email": SUPER_ADMIN_EMAIL, "password": SUPER_ADMIN_PASSWORD}
         )
         assert response.status_code == 200, f"Super admin login failed: {response.text}"
-        return response.json().get("token")
+        return response.json().get("access_token")
     
     @pytest.fixture(scope="class")
     def auth_headers(self, super_admin_token):
@@ -329,7 +329,7 @@ class TestMenuPermissionsForCurrentUser:
             json={"email": SUPER_ADMIN_EMAIL, "password": SUPER_ADMIN_PASSWORD}
         )
         assert response.status_code == 200, f"Login failed: {response.text}"
-        return response.json().get("token")
+        return response.json().get("access_token")
     
     @pytest.fixture(scope="class")
     def auth_headers(self, super_admin_token):
