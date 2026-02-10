@@ -6381,6 +6381,373 @@ async def get_v3_conflicts(
     }
 
 
+# ==================== STORED CONFLICTS & AUTO-OPTIMIZATION ENDPOINTS ====================
+
+
+@router.get("/conflicts/stored")
+async def get_stored_conflicts(
+    network_id: Optional[str] = None,
+    status: Optional[str] = None,
+    severity: Optional[str] = None,
+    limit: int = 100,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get stored conflicts with their linked optimization status.
+    
+    These conflicts have been processed and linked to optimization tasks.
+    """
+    conflict_service = get_conflict_linker_service(db)
+    
+    conflicts = await conflict_service.get_stored_conflicts(
+        network_id=network_id,
+        status=status,
+        severity=severity,
+        limit=limit
+    )
+    
+    # Enrich with optimization info
+    for conflict in conflicts:
+        if conflict.get("optimization_id"):
+            opt = await db.seo_optimizations.find_one(
+                {"id": conflict["optimization_id"]},
+                {"_id": 0, "id": 1, "title": 1, "status": 1, "created_at": 1}
+            )
+            conflict["linked_optimization"] = opt
+    
+    # Calculate stats
+    by_status = {}
+    by_severity = {}
+    for c in conflicts:
+        s = c.get("status", "unknown")
+        sev = c.get("severity", "unknown")
+        by_status[s] = by_status.get(s, 0) + 1
+        by_severity[sev] = by_severity.get(sev, 0) + 1
+    
+    return {
+        "conflicts": conflicts,
+        "total": len(conflicts),
+        "by_status": by_status,
+        "by_severity": by_severity,
+    }
+
+
+@router.get("/conflicts/stored/{conflict_id}")
+async def get_stored_conflict_detail(
+    conflict_id: str,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """Get detailed info for a single stored conflict."""
+    conflict_service = get_conflict_linker_service(db)
+    
+    conflict = await conflict_service.get_conflict_by_id(conflict_id)
+    
+    if not conflict:
+        raise HTTPException(status_code=404, detail="Conflict not found")
+    
+    # Enrich with optimization info
+    if conflict.get("optimization_id"):
+        opt = await db.seo_optimizations.find_one(
+            {"id": conflict["optimization_id"]},
+            {"_id": 0}
+        )
+        conflict["linked_optimization"] = opt
+    
+    return conflict
+
+
+@router.post("/conflicts/process")
+async def process_and_store_conflicts(
+    network_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Detect conflicts and auto-create optimization tasks.
+    
+    This endpoint:
+    1. Detects all SEO conflicts (like /reports/conflicts)
+    2. Stores new conflicts in seo_conflicts collection
+    3. Auto-creates optimization tasks for each new conflict
+    4. Sends Telegram notifications
+    
+    Use this for scheduled conflict detection with auto-linking.
+    """
+    # Check permission - only managers or super admin
+    user_role = current_user.get("role", "user")
+    if user_role not in ["super_admin", "admin"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Only managers and super admins can process conflicts"
+        )
+    
+    conflict_service = get_conflict_linker_service(db)
+    
+    # Get all networks or specific one
+    if network_id:
+        networks = await db.seo_networks.find(
+            {"id": network_id},
+            {"_id": 0}
+        ).to_list(1)
+    else:
+        networks = await db.seo_networks.find({}, {"_id": 0}).to_list(500)
+    
+    total_processed = 0
+    total_new = 0
+    total_recurring = 0
+    total_optimizations = 0
+    
+    for network in networks:
+        nid = network.get("id")
+        
+        # Detect conflicts for this network (similar to /reports/conflicts)
+        detected_conflicts = await _detect_network_conflicts(nid)
+        
+        if detected_conflicts:
+            result = await conflict_service.process_detected_conflicts(
+                conflicts=detected_conflicts,
+                network_id=nid,
+                triggered_by=current_user.get("id", "system")
+            )
+            
+            total_processed += result.get("processed", 0)
+            total_new += result.get("new_conflicts", 0)
+            total_recurring += result.get("recurring_conflicts", 0)
+            total_optimizations += result.get("optimizations_created", 0)
+    
+    return {
+        "success": True,
+        "networks_scanned": len(networks),
+        "conflicts_processed": total_processed,
+        "new_conflicts": total_new,
+        "recurring_conflicts": total_recurring,
+        "optimizations_created": total_optimizations,
+    }
+
+
+async def _detect_network_conflicts(network_id: str) -> List[Dict[str, Any]]:
+    """
+    Helper to detect conflicts for a single network.
+    Returns list of conflict dictionaries.
+    """
+    conflicts = []
+    
+    # Get network
+    network = await db.seo_networks.find_one(
+        {"id": network_id},
+        {"_id": 0, "id": 1, "name": 1}
+    )
+    if not network:
+        return []
+    
+    network_name = network.get("name", "Unknown")
+    
+    # Get tier service
+    from services.tier_calculation_service import get_tier_service
+    tier_svc = get_tier_service(db)
+    
+    tiers = await tier_svc.calculate_network_tiers(network_id)
+    entries = await db.seo_structure_entries.find(
+        {"network_id": network_id},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    if not entries:
+        return []
+    
+    # Build node map
+    node_map = {}
+    for e in entries:
+        node_id = e.get("id")
+        tier = tiers.get(node_id, 99)
+        e["tier"] = tier
+        node_map[node_id] = e
+    
+    now_str = datetime.now(timezone.utc).isoformat()
+    
+    # Group entries by domain
+    by_domain = {}
+    for e in entries:
+        domain = e.get("optimized_domain") or e.get("asset_domain_name") or ""
+        if domain:
+            if domain not in by_domain:
+                by_domain[domain] = []
+            by_domain[domain].append(e)
+    
+    # Detect conflicts (simplified version of the main detection logic)
+    for domain, domain_entries in by_domain.items():
+        if len(domain_entries) < 2:
+            continue
+        
+        # Check for competing targets
+        targets = {}
+        for e in domain_entries:
+            target = e.get("target_node_id")
+            path = e.get("optimized_path", "/")
+            if target:
+                if target not in targets:
+                    targets[target] = []
+                targets[target].append(e)
+        
+        # Cross-path conflicts
+        for target_id, target_entries in targets.items():
+            if len(target_entries) >= 2:
+                # Multiple paths targeting same node
+                entry_a = target_entries[0]
+                entry_b = target_entries[1]
+                
+                conflicts.append({
+                    "conflict_type": ConflictType.COMPETING_TARGETS.value,
+                    "severity": ConflictSeverity.MEDIUM.value,
+                    "network_id": network_id,
+                    "network_name": network_name,
+                    "domain_name": domain,
+                    "node_a_id": entry_a.get("id"),
+                    "node_a_path": entry_a.get("optimized_path"),
+                    "node_a_label": f"{domain}{entry_a.get('optimized_path', '')}",
+                    "node_b_id": entry_b.get("id"),
+                    "node_b_path": entry_b.get("optimized_path"),
+                    "node_b_label": f"{domain}{entry_b.get('optimized_path', '')}",
+                    "description": f"Multiple paths on {domain} are targeting the same node",
+                    "suggestion": "Consolidate paths or differentiate their targets",
+                    "detected_at": now_str,
+                })
+    
+    # Check for tier inversions
+    for e in entries:
+        source_tier = e.get("tier", 99)
+        target_id = e.get("target_node_id")
+        
+        if target_id and target_id in node_map:
+            target_entry = node_map[target_id]
+            target_tier = target_entry.get("tier", 99)
+            
+            # Tier inversion: source has lower tier number (higher authority) than target
+            if source_tier < target_tier and source_tier != 99 and target_tier != 99:
+                domain = e.get("optimized_domain") or e.get("asset_domain_name") or ""
+                
+                conflicts.append({
+                    "conflict_type": ConflictType.TIER_INVERSION.value,
+                    "severity": ConflictSeverity.CRITICAL.value,
+                    "network_id": network_id,
+                    "network_name": network_name,
+                    "domain_name": domain,
+                    "node_a_id": e.get("id"),
+                    "node_a_path": e.get("optimized_path"),
+                    "node_a_label": f"{domain}{e.get('optimized_path', '')} (Tier {source_tier})",
+                    "node_b_id": target_id,
+                    "node_b_path": target_entry.get("optimized_path"),
+                    "node_b_label": f"{target_entry.get('optimized_domain', '')}{target_entry.get('optimized_path', '')} (Tier {target_tier})",
+                    "description": f"Higher authority node (Tier {source_tier}) is supporting lower authority node (Tier {target_tier})",
+                    "suggestion": "Reverse the link direction or restructure the hierarchy",
+                    "detected_at": now_str,
+                })
+    
+    # Check for orphan nodes (not connected to main)
+    main_entry = None
+    for e in entries:
+        if e.get("domain_role") == "main":
+            main_entry = e
+            break
+    
+    if main_entry:
+        # Find all nodes that can reach main
+        reachable = set()
+        reachable.add(main_entry.get("id"))
+        
+        changed = True
+        while changed:
+            changed = False
+            for e in entries:
+                target_id = e.get("target_node_id")
+                if target_id in reachable and e.get("id") not in reachable:
+                    reachable.add(e.get("id"))
+                    changed = True
+        
+        # Nodes not reachable are orphans
+        for e in entries:
+            if e.get("id") not in reachable and e.get("domain_role") != "main":
+                domain = e.get("optimized_domain") or e.get("asset_domain_name") or ""
+                
+                conflicts.append({
+                    "conflict_type": "orphan",
+                    "severity": ConflictSeverity.MEDIUM.value,
+                    "network_id": network_id,
+                    "network_name": network_name,
+                    "domain_name": domain,
+                    "node_a_id": e.get("id"),
+                    "node_a_path": e.get("optimized_path"),
+                    "node_a_label": f"{domain}{e.get('optimized_path', '')}",
+                    "node_b_id": None,
+                    "node_b_path": None,
+                    "node_b_label": None,
+                    "description": f"Node is not connected to the main hierarchy",
+                    "suggestion": "Connect this node to the network structure or remove it",
+                    "detected_at": now_str,
+                })
+    
+    return conflicts
+
+
+@router.post("/conflicts/{conflict_id}/resolve")
+async def resolve_conflict(
+    conflict_id: str,
+    resolution_note: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Mark a conflict as resolved.
+    
+    Only managers and super admins can resolve conflicts.
+    This should be called after the linked optimization is completed
+    AND the structure has been validated.
+    """
+    # Check permission
+    user_role = current_user.get("role", "user")
+    if user_role not in ["super_admin", "admin"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Only managers and super admins can resolve conflicts"
+        )
+    
+    conflict_service = get_conflict_linker_service(db)
+    
+    result = await conflict_service.resolve_conflict(
+        conflict_id=conflict_id,
+        resolved_by_user_id=current_user.get("id", ""),
+        resolution_note=resolution_note
+    )
+    
+    if not result.get("success"):
+        raise HTTPException(status_code=404, detail=result.get("error", "Unknown error"))
+    
+    return result
+
+
+@router.get("/conflicts/metrics")
+async def get_conflict_metrics(
+    network_id: Optional[str] = None,
+    days: int = 30,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get conflict resolution metrics.
+    
+    Returns:
+    - Time-to-resolution per conflict
+    - Conflicts resolved per manager
+    - Recurring conflicts count
+    - Distribution by severity and type
+    """
+    conflict_service = get_conflict_linker_service(db)
+    
+    metrics = await conflict_service.get_conflict_metrics(
+        network_id=network_id,
+        days=days
+    )
+    
+    return metrics
+
+
 # ==================== TELEGRAM ALERT ENDPOINTS ====================
 
 
