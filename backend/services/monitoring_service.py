@@ -1177,10 +1177,14 @@ class AvailabilityMonitoringService:
             else:
                 # Fallback to old chain display
                 chain = seo.get("upstream_chain", [])
+                first_ctx = seo.get("seo_context", [{}])[0] if seo.get("seo_context") else {}
+                
+                # Get FULL node label (domain + path) - NEVER just the root domain
+                node_label = first_ctx.get("node") or domain.get("domain_name", "Unknown")
+                status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
+                
                 if chain:
-                    first_ctx = seo.get("seo_context", [{}])[0]
-                    status_label = first_ctx.get("domain_status", "").replace("_", " ").title()
-                    lines.append(f"⚠️ {domain.get('domain_name', 'Unknown')} [{status_label}] ← DOWN")
+                    lines.append(f"⚠️ {node_label} [{status_label}] ← DOWN")
                     
                     for hop in chain:
                         target = hop.get("target", hop.get("node", ""))
@@ -1193,12 +1197,11 @@ class AvailabilityMonitoringService:
                         else:
                             lines.append(f"   → {target} [{relation}]")
                 else:
-                    first_ctx = seo.get("seo_context", [{}])[0] if seo.get("seo_context") else {}
-                    if first_ctx.get("role") == "main":
-                        lines.append(f"💰 {domain.get('domain_name', 'Unknown')} [Primary] ← DOWN")
+                    if first_ctx.get("role") == "main" or first_ctx.get("domain_role") == "main":
+                        lines.append(f"💰 {node_label} [Primary] ← DOWN")
                         lines.append("   → END: ⚠️ THIS IS THE MONEY SITE!")
                     else:
-                        lines.append(f"⚠️ {domain.get('domain_name', 'Unknown')} ← DOWN")
+                        lines.append(f"⚠️ {node_label} ← DOWN")
                         lines.append("   → END: ⚠️ ORPHAN NODE (no target)")
 
             # Downstream Impact
