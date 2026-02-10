@@ -750,7 +750,7 @@ class AvailabilityMonitoringService:
             last_alert = datetime.fromisoformat(last_alert_str.replace("Z", "+00:00"))
             hours_since = (datetime.now(timezone.utc) - last_alert).total_seconds() / 3600
             return hours_since >= 24
-        except:
+        except (ValueError, TypeError):
             return True
     
     async def _update_alert_timestamp(self, domain: Dict[str, Any], alert_type: str):
