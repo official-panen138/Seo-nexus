@@ -267,39 +267,35 @@ export default function DashboardPage() {
 
                 {/* Critical Alerts Banner */}
                 {stats?.critical_alerts > 0 && (
-                    <div className="mb-6 p-4 bg-red-950/30 border border-red-900/50 rounded-lg">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <AlertCircle className="h-6 w-6 text-red-500 animate-pulse" />
-                                <div>
-                                    <p className="font-semibold text-red-400">
-                                        {stats.critical_alerts} Critical Alert{stats.critical_alerts > 1 ? 's' : ''} Require Attention
-                                    </p>
-                                    {stats.critical_alert_details && stats.critical_alert_details.length > 0 && (
-                                        <div className="mt-1 space-y-1">
-                                            {stats.critical_alert_details.map((alert, idx) => (
-                                                <p key={idx} className="text-sm text-red-300 flex items-center gap-2">
-                                                    <XCircle className="h-3 w-3" />
-                                                    <code className="bg-red-950/50 px-1.5 py-0.5 rounded text-xs">{alert.domain_name}</code>
-                                                    <span className="text-red-400/70 text-xs">- {alert.title || alert.alert_type}</span>
-                                                </p>
-                                            ))}
-                                            {stats.critical_alerts > 5 && (
-                                                <p className="text-xs text-red-400/60 mt-1">
-                                                    +{stats.critical_alerts - 5} more critical alerts
-                                                </p>
-                                            )}
-                                        </div>
-                                    )}
-                                    {(!stats.critical_alert_details || stats.critical_alert_details.length === 0) && (
-                                        <p className="text-sm text-red-400/70">
-                                            Review and acknowledge alerts to prevent SEO impact
+                    <div className="mb-6 p-3 bg-red-950/30 border border-red-900/50 rounded-lg">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <AlertCircle className="h-5 w-5 text-red-500 animate-pulse flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <p className="font-semibold text-red-400 text-sm">
+                                            {stats.critical_alerts} Critical Alert{stats.critical_alerts > 1 ? 's' : ''}
                                         </p>
-                                    )}
+                                        {stats.critical_alert_details && stats.critical_alert_details.length > 0 && (
+                                            <div className="flex items-center gap-1 flex-wrap">
+                                                <span className="text-red-400/50 text-xs">|</span>
+                                                {stats.critical_alert_details.slice(0, 3).map((alert, idx) => (
+                                                    <code key={idx} className="bg-red-950/50 px-1.5 py-0.5 rounded text-xs text-red-300 truncate max-w-[120px]">
+                                                        {alert.domain_name}
+                                                    </code>
+                                                ))}
+                                                {stats.critical_alerts > 3 && (
+                                                    <span className="text-xs text-red-400/60">
+                                                        +{stats.critical_alerts - 3} more
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                            <Link to="/settings/monitoring">
-                                <Button size="sm" className="bg-red-600 hover:bg-red-700">
+                            <Link to="/settings/monitoring" className="flex-shrink-0">
+                                <Button size="sm" className="bg-red-600 hover:bg-red-700 text-xs px-3">
                                     View Alerts
                                 </Button>
                             </Link>
