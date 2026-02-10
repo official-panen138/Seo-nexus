@@ -1,5 +1,53 @@
 # SEO-NOC Changelog
 
+## [3.1.0] - 2026-02-10
+
+### SEO-Aware Domain Monitoring + Structured Alert Output - COMPLETE
+
+#### Features Implemented
+- **STRUKTUR SEO TERKINI** - Tier-based SEO snapshot in all domain monitoring alerts
+- **Strict Severity Calculation** - CRITICAL/HIGH/MEDIUM/LOW based on tier and money site proximity
+- **Daily Unmonitored Domain Reminders** - ⚠️ MONITORING NOT CONFIGURED alerts via Telegram
+- **Enhanced Test Alerts** - Full SEO context and structure in test mode alerts
+
+#### Severity Calculation Rules
+- **CRITICAL**: Domain is Money Site/LP OR Tier 1 reaching Money Site
+- **HIGH**: Tier 1 node OR has ≥3 downstream nodes
+- **MEDIUM**: Tier 2+ node with indirect money site impact
+- **LOW**: Orphan/unused node
+
+#### Message Format (New Standard)
+1. Alert Type (DOWN / EXPIRATION / CONFIG MISSING)
+2. Domain Info
+3. SEO Context Summary
+4. 🧭 STRUKTUR SEO TERKINI (Tier-based)
+5. 🔥 Impact Summary
+6. ⏰ Next Action
+
+#### Backend Changes
+- Enhanced `forced_monitoring_service.py`:
+  - `calculate_strict_severity()` - Strict severity calculation
+  - `_build_test_alert_message()` - New structured format
+  - `send_unmonitored_reminders()` - SEO-aware reminders
+- Enhanced `monitoring_service.py`:
+  - `_format_down_alert_seo_aware()` - New message order
+- Enhanced `reminder_scheduler.py`:
+  - Added `unmonitored_domain_reminder_job` (daily 8:00 AM)
+- `seo_context_enricher.py`:
+  - `get_full_network_structure_formatted()` - STRUKTUR SEO TERKINI
+
+#### API Endpoints
+- `GET /api/v3/monitoring/unmonitored-in-seo` - List unmonitored domains in SEO
+- `POST /api/v3/monitoring/domain-down/test` - Send test alert with full SEO context
+- `POST /api/v3/monitoring/send-unmonitored-reminders` - Manual trigger (24h rate limited)
+- `GET /api/v3/monitoring/test-alerts/history` - Test alert history
+
+#### Testing
+- 100% backend test pass rate (20/20 tests)
+- All features verified via testing agent
+
+---
+
 ## [3.0.0] - 2026-02-08
 
 ### V3 Architecture Migration - COMPLETE
