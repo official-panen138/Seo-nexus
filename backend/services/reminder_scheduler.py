@@ -25,16 +25,24 @@ logger = logging.getLogger(__name__)
 
 
 class ReminderScheduler:
-    """Scheduler for automatic optimization reminders"""
+    """Scheduler for automatic optimization reminders and weekly digest"""
     
     DEFAULT_INTERVAL_HOURS = 24  # Check daily, but only send if interval_days passed
     JOB_ID = "optimization_reminder_job"
+    DIGEST_JOB_ID = "weekly_digest_job"
+    
+    # Day name to APScheduler day_of_week mapping
+    DAY_MAP = {
+        'monday': 'mon', 'tuesday': 'tue', 'wednesday': 'wed', 'thursday': 'thu',
+        'friday': 'fri', 'saturday': 'sat', 'sunday': 'sun'
+    }
     
     def __init__(self, db: AsyncIOMotorDatabase, telegram_service=None):
         self.db = db
         self.telegram_service = telegram_service
         self.scheduler: Optional[AsyncIOScheduler] = None
         self._reminder_service = None
+        self._digest_service = None
     
     @property
     def reminder_service(self):
