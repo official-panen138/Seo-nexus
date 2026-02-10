@@ -2453,6 +2453,196 @@ async def get_optimization_complaints(
     return complaints
 
 
+# ==================== PROJECT-LEVEL COMPLAINTS ====================
+
+@router.post("/networks/{network_id}/complaints", response_model=ProjectComplaintResponse)
+async def create_project_complaint(
+    network_id: str,
+    data: ProjectComplaintCreate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Create a project-level complaint (not tied to a specific optimization).
+    Only Super Admin can create project-level complaints.
+    """
+    # Only Super Admin can create complaints
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can create project complaints")
+    
+    # Validate network exists and get brand
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0, "brand_id": 1, "name": 1})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    # Validate brand access
+    require_brand_access(network["brand_id"], current_user)
+    
+    # Validate reason length
+    if len(data.reason.strip()) < 10:
+        raise HTTPException(status_code=400, detail="Complaint reason must be at least 10 characters")
+    
+    # Enrich responsible users
+    responsible_users = []
+    if data.responsible_user_ids:
+        users = await db.users.find(
+            {"id": {"$in": data.responsible_user_ids}},
+            {"_id": 0, "id": 1, "name": 1, "email": 1, "telegram_username": 1}
+        ).to_list(100)
+        responsible_users = users
+    
+    # Create complaint
+    complaint = {
+        "id": str(uuid.uuid4()),
+        "network_id": network_id,
+        "brand_id": network["brand_id"],
+        "created_by": {
+            "id": current_user["id"],
+            "name": current_user.get("name") or current_user.get("email"),
+            "email": current_user.get("email")
+        },
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "resolved_at": None,
+        "resolved_by": None,
+        "reason": data.reason.strip(),
+        "responsible_user_ids": data.responsible_user_ids,
+        "responsible_users": responsible_users,
+        "priority": data.priority.value if data.priority else "medium",
+        "status": "open",
+        "resolution_note": None,
+        "report_urls": data.report_urls or [],
+        "category": data.category,
+        "responses": []
+    }
+    
+    await db.project_complaints.insert_one(complaint)
+    
+    # Send Telegram notification
+    try:
+        telegram_service = SeoOptimizationTelegramService()
+        await telegram_service.send_project_complaint_notification(
+            complaint=complaint,
+            network_name=network["name"],
+            responsible_users=responsible_users
+        )
+    except Exception as e:
+        logger.error(f"Failed to send project complaint Telegram notification: {e}")
+    
+    return ProjectComplaintResponse(**complaint)
+
+
+@router.get("/networks/{network_id}/complaints", response_model=List[ProjectComplaintResponse])
+async def get_project_complaints(
+    network_id: str,
+    status: Optional[str] = None,  # open, under_review, resolved, dismissed
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get all project-level complaints for a network.
+    """
+    # Validate network exists
+    network = await db.seo_networks.find_one({"id": network_id}, {"_id": 0, "brand_id": 1})
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    
+    require_brand_access(network["brand_id"], current_user)
+    
+    query = {"network_id": network_id}
+    if status:
+        query["status"] = status
+    
+    complaints = await db.project_complaints.find(
+        query, {"_id": 0}
+    ).sort("created_at", -1).to_list(limit)
+    
+    return [ProjectComplaintResponse(**c) for c in complaints]
+
+
+@router.post("/networks/{network_id}/complaints/{complaint_id}/respond")
+async def respond_to_project_complaint(
+    network_id: str,
+    complaint_id: str,
+    data: TeamResponseCreate,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Add a response to a project-level complaint.
+    Managers and Super Admin can respond.
+    """
+    # Validate complaint exists
+    complaint = await db.project_complaints.find_one({"id": complaint_id, "network_id": network_id}, {"_id": 0})
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    
+    require_brand_access(complaint["brand_id"], current_user)
+    
+    # Validate note length
+    if len(data.note.strip()) < 20:
+        raise HTTPException(status_code=400, detail="Response must be at least 20 characters")
+    
+    # Create response entry
+    response_entry = {
+        "id": str(uuid.uuid4()),
+        "created_by": {
+            "id": current_user["id"],
+            "name": current_user.get("name") or current_user.get("email"),
+            "email": current_user.get("email")
+        },
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "note": data.note.strip(),
+        "report_urls": data.report_urls or []
+    }
+    
+    # Update complaint with response and set to under_review if currently open
+    update_data = {
+        "$push": {"responses": response_entry}
+    }
+    if complaint.get("status") == "open":
+        update_data["$set"] = {"status": "under_review"}
+    
+    await db.project_complaints.update_one({"id": complaint_id}, update_data)
+    
+    return {"message": "Response added successfully", "response_id": response_entry["id"]}
+
+
+@router.patch("/networks/{network_id}/complaints/{complaint_id}/resolve")
+async def resolve_project_complaint(
+    network_id: str,
+    complaint_id: str,
+    data: ProjectComplaintResolveRequest,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Resolve a project-level complaint. Super Admin only.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can resolve complaints")
+    
+    # Validate complaint exists
+    complaint = await db.project_complaints.find_one({"id": complaint_id, "network_id": network_id}, {"_id": 0})
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    
+    if len(data.resolution_note.strip()) < 10:
+        raise HTTPException(status_code=400, detail="Resolution note must be at least 10 characters")
+    
+    await db.project_complaints.update_one(
+        {"id": complaint_id},
+        {"$set": {
+            "status": "resolved",
+            "resolved_at": datetime.now(timezone.utc).isoformat(),
+            "resolved_by": {
+                "id": current_user["id"],
+                "name": current_user.get("name") or current_user.get("email"),
+                "email": current_user.get("email")
+            },
+            "resolution_note": data.resolution_note.strip()
+        }}
+    )
+    
+    return {"message": "Complaint resolved successfully"}
+
+
 # ==================== OPTIMIZATION DETAIL & RESPONSE ENDPOINTS ====================
 
 @router.get("/optimizations/{optimization_id}/detail", response_model=SeoOptimizationDetailResponse)
