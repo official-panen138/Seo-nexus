@@ -31,14 +31,6 @@ const TIMEZONE_OPTIONS = [
 export default function SettingsPage() {
     const { isSuperAdmin } = useAuth();
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [testing, setTesting] = useState(false);
-    const [telegramConfig, setTelegramConfig] = useState({
-        bot_token: '',
-        chat_id: ''
-    });
-    const [newToken, setNewToken] = useState('');
-    const [newChatId, setNewChatId] = useState('');
     
     // SEO Telegram state with topic routing support
     const [seoTelegramConfig, setSeoTelegramConfig] = useState({
