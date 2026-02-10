@@ -377,6 +377,147 @@ export default function AlertsPage() {
                         </TableBody>
                     </Table>
                 </div>
+                    </TabsContent>
+
+                    {/* Conflicts Tab */}
+                    <TabsContent value="conflicts">
+                        {/* Conflict Stats */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <Card className="bg-card border-border">
+                                <CardContent className="pt-4">
+                                    <div className="text-sm text-zinc-500 mb-1">Total Conflicts</div>
+                                    <div className="text-2xl font-bold font-mono">{conflictStats.total}</div>
+                                </CardContent>
+                            </Card>
+                            <Card className={`bg-card border-border ${conflictStats.critical > 0 ? 'border-red-900/50' : ''}`}>
+                                <CardContent className="pt-4">
+                                    <div className="text-sm text-zinc-500 mb-1">Critical</div>
+                                    <div className={`text-2xl font-bold font-mono ${conflictStats.critical > 0 ? 'text-red-500' : 'text-zinc-400'}`}>
+                                        {conflictStats.critical}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className={`bg-card border-border ${conflictStats.high > 0 ? 'border-amber-900/50' : ''}`}>
+                                <CardContent className="pt-4">
+                                    <div className="text-sm text-zinc-500 mb-1">High Priority</div>
+                                    <div className={`text-2xl font-bold font-mono ${conflictStats.high > 0 ? 'text-amber-500' : 'text-zinc-400'}`}>
+                                        {conflictStats.high}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-card border-border">
+                                <CardContent className="pt-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="text-sm text-zinc-500 mb-1">Refresh</div>
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={loadConflicts}
+                                                disabled={loadingConflicts}
+                                                data-testid="refresh-conflicts-btn"
+                                            >
+                                                {loadingConflicts ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Conflicts List */}
+                        {loadingConflicts ? (
+                            <div className="space-y-4">
+                                <Skeleton className="h-20 w-full" />
+                                <Skeleton className="h-20 w-full" />
+                                <Skeleton className="h-20 w-full" />
+                            </div>
+                        ) : conflicts.length === 0 ? (
+                            <Card className="bg-card border-border">
+                                <CardContent className="py-12 text-center">
+                                    <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-3" />
+                                    <p className="text-lg font-medium text-white">No Conflicts Detected</p>
+                                    <p className="text-sm text-zinc-500 mt-1">
+                                        Your SEO networks are configured correctly
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <div className="space-y-4">
+                                {conflicts.map((conflict, idx) => {
+                                    const severityClass = CONFLICT_SEVERITY_CLASSES[conflict.severity] || CONFLICT_SEVERITY_CLASSES.medium;
+                                    const typeLabel = CONFLICT_TYPE_LABELS[conflict.conflict_type] || conflict.conflict_type;
+                                    
+                                    return (
+                                        <Card 
+                                            key={idx} 
+                                            className={`bg-card border-border ${conflict.severity === 'critical' ? 'border-red-500/30' : conflict.severity === 'high' ? 'border-amber-500/30' : ''}`}
+                                            data-testid={`conflict-${idx}`}
+                                        >
+                                            <CardContent className="pt-4">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex items-start gap-3">
+                                                        <AlertTriangle className={`h-5 w-5 flex-shrink-0 ${
+                                                            conflict.severity === 'critical' ? 'text-red-400' :
+                                                            conflict.severity === 'high' ? 'text-amber-400' : 'text-yellow-400'
+                                                        }`} />
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <Badge className={severityClass}>
+                                                                    {(conflict.severity || 'medium').toUpperCase()}
+                                                                </Badge>
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    {typeLabel}
+                                                                </Badge>
+                                                            </div>
+                                                            <p className="text-sm text-white font-medium">
+                                                                {conflict.description || conflict.message || 'SEO structure conflict detected'}
+                                                            </p>
+                                                            {conflict.network_name && (
+                                                                <p className="text-xs text-zinc-500 mt-1">
+                                                                    Network: {conflict.network_name}
+                                                                </p>
+                                                            )}
+                                                            {conflict.affected_nodes && conflict.affected_nodes.length > 0 && (
+                                                                <div className="mt-2 space-y-1">
+                                                                    <p className="text-xs text-zinc-500">Affected Nodes:</p>
+                                                                    {conflict.affected_nodes.slice(0, 3).map((node, nIdx) => (
+                                                                        <div key={nIdx} className="flex items-center gap-2">
+                                                                            <Network className="h-3 w-3 text-zinc-600" />
+                                                                            <code className="text-xs text-zinc-400 bg-zinc-900 px-1 rounded">
+                                                                                {node.domain}{node.path || ''}
+                                                                            </code>
+                                                                        </div>
+                                                                    ))}
+                                                                    {conflict.affected_nodes.length > 3 && (
+                                                                        <p className="text-xs text-zinc-600">
+                                                                            +{conflict.affected_nodes.length - 3} more nodes
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    {conflict.network_id && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => window.location.href = `/groups/${conflict.network_id}`}
+                                                            className="text-xs"
+                                                        >
+                                                            <ExternalLink className="h-3 w-3 mr-1" />
+                                                            View Network
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </TabsContent>
+                </Tabs>
             </div>
         </Layout>
     );
