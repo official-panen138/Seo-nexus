@@ -28,7 +28,8 @@ import {
     History,
     Building,
     Radio,
-    Clock
+    Clock,
+    BarChart3
 } from 'lucide-react';
 
 const navItems = [
