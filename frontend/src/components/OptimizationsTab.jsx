@@ -99,8 +99,9 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [complaintDialogOpen, setComplaintDialogOpen] = useState(false);
     
-    // Use prop if provided, otherwise default to role check
-    const canEdit = canEditProp !== undefined ? canEditProp : (isSuperAdmin() || hasRole('admin') || hasRole('manager'));
+    // STRICT: canEdit MUST be passed from parent (based on network.manager_ids)
+    // Fallback to super_admin/admin only (NOT manager role) for safety
+    const canEdit = canEditProp !== undefined ? canEditProp : (isSuperAdmin() || hasRole('admin'));
     const [selectedOptimization, setSelectedOptimization] = useState(null);
     const [form, setForm] = useState(INITIAL_FORM);
     const [complaintForm, setComplaintForm] = useState({ reason: '', priority: 'medium', report_urls: [] });
