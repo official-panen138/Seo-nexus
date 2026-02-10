@@ -831,8 +831,7 @@ class AvailabilityMonitoringService:
         """Format SEO-aware SOFT BLOCK alert (WARNING level)"""
         seo = domain.get("seo", {})
         
-        # Soft blocks are warnings, not critical
-        severity = "MEDIUM"
+        # Soft blocks are warnings, not critical - severity_emoji is 🟡
         severity_emoji = "🟡"
         
         # Timezone
