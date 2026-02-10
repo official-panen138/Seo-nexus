@@ -89,7 +89,7 @@ const INITIAL_FORM = {
     status: 'completed'
 };
 
-export function OptimizationsTab({ networkId, networkName, brandName }) {
+export function OptimizationsTab({ networkId, networkName, brandName, canEdit: canEditProp }) {
     const { hasRole, isSuperAdmin } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const [optimizations, setOptimizations] = useState([]);
@@ -98,6 +98,9 @@ export function OptimizationsTab({ networkId, networkName, brandName }) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [complaintDialogOpen, setComplaintDialogOpen] = useState(false);
+    
+    // Use prop if provided, otherwise default to role check
+    const canEdit = canEditProp !== undefined ? canEditProp : (isSuperAdmin() || hasRole('admin') || hasRole('manager'));
     const [selectedOptimization, setSelectedOptimization] = useState(null);
     const [form, setForm] = useState(INITIAL_FORM);
     const [complaintForm, setComplaintForm] = useState({ reason: '', priority: 'medium', report_urls: [] });
