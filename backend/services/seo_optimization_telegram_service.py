@@ -240,7 +240,7 @@ pada network '<b>{network.get('name', 'Unknown')}</b>' untuk brand '<b>{brand.ge
 ━━━━━━━━━━━━━━━━━━━━━━
 <i>⚠️ Catatan: Tidak ada perubahan struktur SEO</i>"""
             
-            success = await self._send_telegram_message(message)
+            success = await self._send_telegram_message(message, topic_type="seo_optimization")
             
             if success:
                 # Update optimization with notification timestamp
