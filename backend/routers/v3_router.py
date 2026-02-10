@@ -6626,7 +6626,6 @@ async def _detect_network_conflicts(network_id: str) -> List[Dict[str, Any]]:
         targets = {}
         for e in domain_entries:
             target = e.get("target_node_id")
-            path = e.get("optimized_path", "/")
             if target:
                 if target not in targets:
                     targets[target] = []
