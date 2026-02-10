@@ -709,55 +709,270 @@ class SeoTelegramService:
                 actor_user_id, actor_email
             )
 
-            # Resolve target labels for before/after
-            before_target_label = None
-            after_target_label = None
-
-            if before_snapshot and before_snapshot.get("target_entry_id"):
-                before_target_label = await self._resolve_target_simple(
-                    before_snapshot.get("target_entry_id")
-                )
-
-            if after_snapshot and after_snapshot.get("target_entry_id"):
-                after_target_label = await self._resolve_target_simple(
-                    after_snapshot.get("target_entry_id")
-                )
-
-            # Get current structure with full authority chains
-            structure = await self._get_network_structure_with_chains(network_id)
-            structure_text = self._format_structure_snapshot(structure)
-
             # Format action label
             action_label = ACTION_LABELS.get(action_type, action_type)
 
             # Format timestamp
             timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
-            # Build change details with resolved targets
-            change_details = self._format_change_details(
-                action_type,
-                affected_node,
-                before_snapshot,
-                after_snapshot,
-                before_target_label,
-                after_target_label,
-            )
-
             # Get SEO Leader tags
             seo_leaders = await self._get_seo_leader_usernames()
             seo_leader_tag = await self._get_seo_leader_tag()
 
-            # Try to use template system
-            message = await render_notification(
-                db=self.db,
-                channel="telegram",
-                event_type="seo_change",
-                context_data={
-                    "user": {"display_name": user_display_name, "email": actor_email, "id": actor_user_id},
-                    "network": {"name": network_name, "id": network_id},
-                    "brand": {"name": brand_name, "id": brand_id},
-                    "change": {
-                        "action": action_type,
+            # ================================================================
+            # SPECIAL HANDLING FOR DELETE NODE
+            # ================================================================
+            is_delete = action_type in ["delete_node", "DELETE_NODE", SeoChangeActionType.DELETE_NODE]
+            if hasattr(action_type, "value"):
+                is_delete = is_delete or action_type.value == "delete_node"
+            
+            if is_delete and before_snapshot:
+                # Use seo_node_deleted template for DELETE operations
+                message = await self._build_delete_notification(
+                    before_snapshot=before_snapshot,
+                    network_name=network_name,
+                    brand_name=brand_name,
+                    user_display_name=user_display_name,
+                    actor_email=actor_email,
+                    change_note=change_note,
+                    seo_leaders=seo_leaders,
+                    seo_leader_tag=seo_leader_tag,
+                    timestamp=timestamp,
+                )
+            else:
+                # Standard update/create notification
+                message = await self._build_change_notification(
+                    network_id=network_id,
+                    network_name=network_name,
+                    brand_name=brand_name,
+                    user_display_name=user_display_name,
+                    actor_email=actor_email,
+                    actor_user_id=actor_user_id,
+                    action_type=action_type,
+                    action_label=action_label,
+                    affected_node=affected_node,
+                    change_note=change_note,
+                    before_snapshot=before_snapshot,
+                    after_snapshot=after_snapshot,
+                    seo_leaders=seo_leaders,
+                    seo_leader_tag=seo_leader_tag,
+                    timestamp=timestamp,
+                )
+
+            # Send message with topic routing
+            success = await self._send_telegram_message(
+                message, topic_type="seo_change"
+            )
+
+            if success:
+                # Update rate limit tracker
+                self._update_rate_limit(network_id)
+                logger.info(f"SEO notification sent for network {network_id}")
+
+            return success
+
+        except Exception as e:
+            logger.error(f"Failed to send SEO change notification: {e}")
+            return False
+
+    async def _build_delete_notification(
+        self,
+        before_snapshot: Dict[str, Any],
+        network_name: str,
+        brand_name: str,
+        user_display_name: str,
+        actor_email: str,
+        change_note: str,
+        seo_leaders: List[str],
+        seo_leader_tag: str,
+        timestamp: str,
+    ) -> str:
+        """Build DELETE node notification with full pre-deletion details."""
+        from services.notification_template_engine import render_notification
+        
+        # Extract enriched data from before_snapshot
+        node_label = before_snapshot.get("node_label", before_snapshot.get("domain_name", "Unknown"))
+        domain_role = before_snapshot.get("domain_role", "unknown")
+        domain_status = before_snapshot.get("domain_status", "unknown")
+        index_status = before_snapshot.get("index_status", "unknown")
+        target_info = before_snapshot.get("target_info")
+        upstream_chain = before_snapshot.get("upstream_chain", [])
+        affected_children = before_snapshot.get("affected_children", [])
+        orphan_count = before_snapshot.get("orphan_count", 0)
+        structure_before = before_snapshot.get("structure_before", [])
+        
+        # Format role label
+        role_labels = {
+            "main": "LP / Money Site",
+            "supporting": "Supporting / Tier 2",
+            "tier3": "Tier 3",
+            "pbn": "PBN",
+        }
+        role_label = role_labels.get(domain_role, domain_role)
+        
+        # Format status label
+        status_labels = {
+            "canonical": "Canonical",
+            "301_redirect": "301 Redirect",
+            "302_redirect": "302 Redirect",
+            "primary": "Primary",
+            "noindex": "No Index",
+        }
+        status_label = status_labels.get(domain_status, domain_status)
+        
+        # Format target info
+        target_text = "(Tidak ada target)"
+        if target_info:
+            target_text = f"{target_info.get('full_label', 'unknown')} [{target_info.get('role', '')}]"
+        
+        # Format upstream chain
+        upstream_text = "(Langsung ke Money Site)" if not upstream_chain else ""
+        if upstream_chain:
+            chain_parts = [f"  → {item['label']} [{item.get('role', '')}]" for item in upstream_chain]
+            upstream_text = "\n".join(chain_parts)
+        
+        # Format affected children
+        affected_text = "(Tidak ada)"
+        if affected_children:
+            affected_text = "\n".join([f"  • {child}" for child in affected_children[:5]])
+            if len(affected_children) > 5:
+                affected_text += f"\n  ... dan {len(affected_children) - 5} node lainnya"
+        
+        # Format structure before deletion
+        structure_text = ""
+        for entry in structure_before:
+            marker = "🗑️ " if entry.get("is_deleted_node") else "   "
+            role_emoji = "💰" if entry.get("role") == "main" else "🔗"
+            structure_text += f"{marker}{role_emoji} {entry['label']} [{entry.get('status', '')}]\n"
+        
+        if not structure_text:
+            structure_text = "(Tidak ada struktur)"
+        
+        # Try to use template system
+        message = await render_notification(
+            db=self.db,
+            channel="telegram",
+            event_type="seo_node_deleted",
+            context_data={
+                "user": {"display_name": user_display_name, "email": actor_email},
+                "network": {"name": network_name},
+                "brand": {"name": brand_name},
+                "node": {
+                    "domain_name": node_label,
+                    "full_path": "",
+                    "domain_role": role_label,
+                    "domain_status": status_label,
+                    "index_status": index_status,
+                },
+                "change": {
+                    "action": "delete_node",
+                    "action_label": "Menghapus Node",
+                    "reason": change_note,
+                },
+                "impact": {
+                    "severity": "HIGH" if orphan_count > 0 else "MEDIUM",
+                    "description": f"{orphan_count} node terdampak" if orphan_count > 0 else "Tidak ada node terdampak",
+                    "affected_count": orphan_count,
+                },
+                "telegram_leaders": seo_leaders,
+            }
+        )
+        
+        # Fallback to hardcoded if template disabled or failed
+        if not message:
+            leader_section = ""
+            if seo_leader_tag:
+                leader_section = f"\n\n👁 <b>CC:</b> {seo_leader_tag}"
+            
+            message = f"""🗑️ <b>NODE SEO DIHAPUS</b>
+
+<b>{user_display_name}</b> telah menghapus node dari network '<b>{network_name}</b>' untuk brand '<b>{brand_name}</b>'.
+
+━━━━━━━━━━━━━━━━━━━━━━
+📌 <b>DETAIL NODE (SEBELUM DIHAPUS)</b>
+━━━━━━━━━━━━━━━━━━━━━━
+• <b>Node:</b> {node_label}
+• <b>Role:</b> {role_label}
+• <b>Status:</b> {status_label}
+• <b>Index:</b> {index_status}
+• <b>Target:</b> {target_text}
+
+━━━━━━━━━━━━━━━━━━━━━━
+🔗 <b>UPSTREAM CHAIN (KE MONEY SITE)</b>
+━━━━━━━━━━━━━━━━━━━━━━
+{node_label}
+{upstream_text}
+
+━━━━━━━━━━━━━━━━━━━━━━
+📝 <b>ALASAN PENGHAPUSAN</b>
+━━━━━━━━━━━━━━━━━━━━━━
+"{change_note}"
+
+━━━━━━━━━━━━━━━━━━━━━━
+⚠️ <b>DAMPAK PENGHAPUSAN</b>
+━━━━━━━━━━━━━━━━━━━━━━
+• <b>Authority Flow:</b> TERPUTUS
+• <b>Node Terdampak ({orphan_count}):</b>
+{affected_text}
+
+━━━━━━━━━━━━━━━━━━━━━━
+🧭 <b>STRUKTUR SEO (SEBELUM PENGHAPUSAN)</b>
+━━━━━━━━━━━━━━━━━━━━━━
+{structure_text}
+━━━━━━━━━━━━━━━━━━━━━━
+🕐 <b>Waktu:</b> {timestamp}
+👤 <b>Oleh:</b> {user_display_name} ({actor_email}){leader_section}"""
+        
+        return message
+
+    async def _build_change_notification(
+        self,
+        network_id: str,
+        network_name: str,
+        brand_name: str,
+        user_display_name: str,
+        actor_email: str,
+        actor_user_id: str,
+        action_type: str,
+        action_label: str,
+        affected_node: str,
+        change_note: str,
+        before_snapshot: Optional[Dict[str, Any]],
+        after_snapshot: Optional[Dict[str, Any]],
+        seo_leaders: List[str],
+        seo_leader_tag: str,
+        timestamp: str,
+    ) -> str:
+        """Build standard UPDATE/CREATE notification."""
+        from services.notification_template_engine import render_notification
+        
+        # Resolve target labels for before/after
+        before_target_label = None
+        after_target_label = None
+
+        if before_snapshot and before_snapshot.get("target_entry_id"):
+            before_target_label = await self._resolve_target_simple(
+                before_snapshot.get("target_entry_id")
+            )
+
+        if after_snapshot and after_snapshot.get("target_entry_id"):
+            after_target_label = await self._resolve_target_simple(
+                after_snapshot.get("target_entry_id")
+            )
+
+        # Get current structure with full authority chains
+        structure = await self._get_network_structure_with_chains(network_id)
+        structure_text = self._format_structure_snapshot(structure)
+
+        # Build change details with resolved targets
+        change_details = self._format_change_details(
+            action_type,
+            affected_node,
+            before_snapshot,
+            after_snapshot,
+            before_target_label,
+            after_target_label,
+        )
                         "action_label": action_label,
                         "reason": change_note,
                         "details": change_details,
