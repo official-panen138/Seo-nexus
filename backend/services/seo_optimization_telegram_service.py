@@ -478,7 +478,7 @@ selama <b>{days_in_progress} hari</b>.
 <i>⚠️ Mohon segera update status optimasi ini.</i>
 <i>Reminder akan terus dikirim sampai status diubah.</i>"""
             
-            success = await self._send_telegram_message(message)
+            success = await self._send_telegram_message(message, topic_type="seo_reminder")
             return success
             
         except Exception as e:
