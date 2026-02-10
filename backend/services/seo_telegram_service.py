@@ -722,7 +722,7 @@ class SeoTelegramService:
             # ================================================================
             # SPECIAL HANDLING FOR DELETE NODE
             # ================================================================
-            is_delete = action_type in ["delete_node", "DELETE_NODE", SeoChangeActionType.DELETE_NODE]
+            is_delete = action_type in ["delete_node", "DELETE_NODE"]
             if hasattr(action_type, "value"):
                 is_delete = is_delete or action_type.value == "delete_node"
             
