@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { menuPermissionsAPI } from './api';
 import { useAuth } from './auth';
 
@@ -12,6 +12,7 @@ export const MenuPermissionsProvider = ({ children }) => {
         loading: true,
         error: null
     });
+    const lastUserId = useRef(null);
 
     // Check if user is super admin from auth context
     const userIsSuperAdmin = user?.role === 'super_admin';
@@ -22,8 +23,14 @@ export const MenuPermissionsProvider = ({ children }) => {
             return;
         }
 
+        // Skip if already loaded for this user
+        if (lastUserId.current === user.id && !permissions.loading) {
+            return;
+        }
+
         // If user is super_admin, grant all access immediately without API call
         if (user.role === 'super_admin') {
+            lastUserId.current = user.id;
             setPermissions({
                 enabledMenus: [], // Not needed for super admin
                 isSuperAdmin: true,
@@ -35,6 +42,7 @@ export const MenuPermissionsProvider = ({ children }) => {
 
         try {
             const response = await menuPermissionsAPI.getMyPermissions();
+            lastUserId.current = user.id;
             setPermissions({
                 enabledMenus: response.data.enabled_menus || [],
                 isSuperAdmin: response.data.is_super_admin || false,
@@ -47,6 +55,7 @@ export const MenuPermissionsProvider = ({ children }) => {
             const defaultMenus = user.role === 'admin' 
                 ? ['dashboard', 'asset_domains', 'seo_networks', 'alert_center', 'reports', 'team_evaluation', 'brands', 'categories', 'registrars', 'users', 'audit_logs', 'metrics', 'v3_activity', 'monitoring', 'activity_types', 'scheduler', 'settings']
                 : [];
+            lastUserId.current = user.id;
             setPermissions({
                 enabledMenus: defaultMenus,
                 isSuperAdmin: false,
@@ -54,7 +63,7 @@ export const MenuPermissionsProvider = ({ children }) => {
                 error: 'Failed to load permissions'
             });
         }
-    }, [isAuthenticated, user]);
+    }, [isAuthenticated, user, permissions.loading]);
 
     useEffect(() => {
         loadPermissions();
