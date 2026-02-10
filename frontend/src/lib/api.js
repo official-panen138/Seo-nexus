@@ -109,9 +109,11 @@ export const monitoringAPI = {
     getStats: () => api.get('/v3/monitoring/stats')
 };
 
-// SEO Conflicts API
+// SEO Conflicts API (V3 - uses seo_structure_entries, not legacy domains collection)
 export const conflictsAPI = {
-    detect: () => api.get('/seo/conflicts')
+    detect: (networkId = null) => apiV3.get('/reports/conflicts', { 
+        params: networkId ? { network_id: networkId } : {} 
+    })
 };
 
 // Reports API

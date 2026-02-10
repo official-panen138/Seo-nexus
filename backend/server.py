@@ -2510,12 +2510,20 @@ async def delete_group(
     return {"message": "Group deleted"}
 
 
-# ==================== CONFLICT DETECTION ====================
+# ==================== CONFLICT DETECTION (DEPRECATED) ====================
 
 
 @api_router.get("/seo/conflicts")
 async def detect_seo_conflicts(current_user: dict = Depends(get_current_user)):
-    """Detect SEO structure conflicts"""
+    """
+    [DEPRECATED] Detect SEO structure conflicts - LEGACY ENDPOINT
+    
+    WARNING: This endpoint uses the OLD 'domains' collection which is no longer maintained.
+    Frontend should use /api/v3/reports/conflicts instead, which works with the current
+    'seo_structure_entries' collection.
+    
+    This endpoint is kept for backward compatibility but will be removed in a future version.
+    """
     conflicts = []
 
     # Get all domains in groups
