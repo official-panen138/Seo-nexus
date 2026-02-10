@@ -155,8 +155,23 @@ class ReminderScheduler:
             replace_existing=True
         )
         
+        # Add the weekly digest job - runs weekly on configured day/time
+        # Default: Monday 9:00 AM (will be updated dynamically based on settings)
+        self.scheduler.add_job(
+            self._run_digest_job,
+            trigger=CronTrigger(day_of_week='mon', hour=9, minute=0),
+            id=self.DIGEST_JOB_ID,
+            name="Weekly Domain Health Digest",
+            replace_existing=True
+        )
+        
         self.scheduler.start()
         logger.info(f"[SCHEDULER] Started reminder scheduler (runs every {self.DEFAULT_INTERVAL_HOURS} hours)")
+        logger.info("[SCHEDULER] Started weekly digest scheduler (Monday 9:00 AM default)")
+        
+        # Update digest schedule from settings asynchronously
+        import asyncio
+        asyncio.create_task(self._update_digest_schedule())
     
     def stop(self):
         """Stop the scheduler gracefully"""
