@@ -272,7 +272,7 @@ export function OptimizationsTab({ networkId, networkName, brandName, canEdit: c
             setDialogOpen(false);
             loadOptimizations();
         } catch (err) {
-            toast.error(err.response?.data?.detail || 'Failed to save optimization');
+            toast.error(getErrorMessage(err.response?.data, 'Failed to save optimization'));
         } finally {
             setSaving(false);
         }
