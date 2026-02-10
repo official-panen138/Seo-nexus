@@ -1418,6 +1418,11 @@ Tier 2:
                                 </CardContent>
                             </Card>
                         </TabsContent>
+                        
+                        {/* Notification Templates Tab */}
+                        <TabsContent value="templates" className="space-y-6" data-testid="notification-templates-content">
+                            <NotificationTemplatesTab />
+                        </TabsContent>
                     </Tabs>
                 </div>
             </div>
