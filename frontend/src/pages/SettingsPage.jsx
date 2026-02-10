@@ -711,6 +711,143 @@ Tier 2:
                                 </CardContent>
                             </Card>
                         </TabsContent>
+
+                        {/* Domain Monitoring Tab - SEPARATE from SEO */}
+                        <TabsContent value="domain-monitoring" className="space-y-6">
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-blue-500/10">
+                                            <Globe className="h-5 w-5 text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <CardTitle>Domain Monitoring Telegram</CardTitle>
+                                            <CardDescription>
+                                                Channel terpisah untuk alert domain (expiration & availability).
+                                                <span className="block text-amber-400 mt-1">⚠️ BUKAN untuk SEO change notifications - gunakan tab SEO Notifications.</span>
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {/* Enable toggle */}
+                                    <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                                        <div>
+                                            <Label className="text-blue-400">Aktifkan Domain Monitoring Alerts</Label>
+                                            <p className="text-xs text-zinc-500 mt-1">Kirim alert ke Telegram untuk expiration & availability</p>
+                                        </div>
+                                        <Switch 
+                                            checked={domainMonitoringConfig.enabled} 
+                                            onCheckedChange={(checked) => setDomainMonitoringConfig({...domainMonitoringConfig, enabled: checked})}
+                                            data-testid="domain-monitoring-toggle"
+                                        />
+                                    </div>
+
+                                    {/* Status */}
+                                    <div className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+                                        <span className="text-zinc-400">Status Konfigurasi</span>
+                                        {domainMonitoringConfig.configured ? (
+                                            <span className="flex items-center gap-2 text-emerald-400">
+                                                <CheckCircle className="h-4 w-4" /> Terkonfigurasi
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center gap-2 text-amber-400">
+                                                <AlertCircle className="h-4 w-4" /> Belum dikonfigurasi
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Bot Token */}
+                                    <div className="space-y-2">
+                                        <Label className="text-zinc-400">Bot Token (Wajib untuk channel terpisah)</Label>
+                                        <Input 
+                                            value={newDomainMonitoringToken} 
+                                            onChange={(e) => setNewDomainMonitoringToken(e.target.value)} 
+                                            type="password"
+                                            placeholder={domainMonitoringConfig.bot_token ? '••••••••••' : 'Masukkan bot token'} 
+                                            className="bg-black border-border font-mono text-sm" 
+                                            data-testid="domain-monitoring-token-input"
+                                        />
+                                        <p className="text-xs text-zinc-600">Buat bot baru di @BotFather untuk channel monitoring terpisah</p>
+                                    </div>
+
+                                    {/* Chat ID */}
+                                    <div className="space-y-2">
+                                        <Label className="text-zinc-400">Chat ID (Wajib)</Label>
+                                        <Input 
+                                            value={newDomainMonitoringChatId} 
+                                            onChange={(e) => setNewDomainMonitoringChatId(e.target.value)} 
+                                            placeholder={domainMonitoringConfig.chat_id || 'ID grup/channel untuk monitoring alerts'} 
+                                            className="bg-black border-border font-mono text-sm" 
+                                            data-testid="domain-monitoring-chatid-input"
+                                        />
+                                        <p className="text-xs text-zinc-600">Gunakan grup/channel BERBEDA dari SEO notifications</p>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-3 pt-2">
+                                        <Button 
+                                            onClick={handleSaveDomainMonitoring} 
+                                            disabled={savingDomainMonitoring || (!newDomainMonitoringToken && !newDomainMonitoringChatId)} 
+                                            className="bg-blue-500 text-white hover:bg-blue-400" 
+                                            data-testid="save-domain-monitoring-btn"
+                                        >
+                                            {savingDomainMonitoring && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                            Simpan Pengaturan
+                                        </Button>
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={handleTestDomainMonitoring} 
+                                            disabled={testingDomainMonitoring || !domainMonitoringConfig.configured} 
+                                            data-testid="test-domain-monitoring-btn"
+                                        >
+                                            {testingDomainMonitoring ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                                            Kirim Test
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Alert Types Info */}
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <CardTitle className="text-base">Jenis Alert Domain Monitoring</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-red-400 font-medium">🔴 Domain Expiration</span>
+                                            </div>
+                                            <ul className="text-xs text-zinc-400 space-y-1">
+                                                <li>• Alert di 30, 14, 7 hari sebelum expired</li>
+                                                <li>• Daily reminder jika {"<"} 7 hari</li>
+                                                <li>• Termasuk SEO impact jika domain ada di network</li>
+                                            </ul>
+                                        </div>
+                                        <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-amber-400 font-medium">🟠 Domain Availability</span>
+                                            </div>
+                                            <ul className="text-xs text-zinc-400 space-y-1">
+                                                <li>• DOWN = CRITICAL (timeout, DNS error, 5xx)</li>
+                                                <li>• SOFT BLOCK = WARNING (Cloudflare, captcha)</li>
+                                                <li>• Recovery notification saat UP kembali</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-emerald-400 font-medium">🧩 SEO-Aware Alerts</span>
+                                        </div>
+                                        <p className="text-xs text-zinc-400">
+                                            Setiap alert mencakup: SEO Context, Full Structure Chain ke Money Site, Downstream Impact, dan Impact Score untuk prioritas.
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
                     </Tabs>
                 </div>
             </div>
