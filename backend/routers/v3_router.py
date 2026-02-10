@@ -2890,6 +2890,25 @@ async def create_project_complaint(
     except Exception as e:
         logger.error(f"Failed to send project complaint Telegram notification: {e}")
 
+    # Create in-app notifications for all tagged users
+    for user_id in data.responsible_user_ids:
+        try:
+            await create_user_notification(
+                user_id=user_id,
+                notification_type="complaint_tagged",
+                title=f"📢 New Complaint: {network['name']}",
+                message=f"You have been tagged in a project complaint. Reason: {data.reason[:100]}...",
+                link=f"/groups/{network_id}?tab=complaints",
+                metadata={
+                    "complaint_id": complaint["id"],
+                    "network_id": network_id,
+                    "network_name": network["name"],
+                    "created_by": current_user.get("name") or current_user.get("email"),
+                }
+            )
+        except Exception as e:
+            logger.error(f"Failed to create notification for user {user_id}: {e}")
+
     return ProjectComplaintResponse(**complaint)
 
 
