@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { useBranding } from '../lib/BrandingContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -14,6 +15,7 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const { login } = useAuth();
+    const { branding } = useBranding();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -34,14 +36,29 @@ export default function LoginPage() {
         }
     };
 
+    // Parse site_title to handle SEO//NOC format for styling
+    const renderBrandLogo = () => {
+        const title = branding.site_title || 'SEO//NOC';
+        // Check if it contains // for special styling
+        if (title.includes('//')) {
+            const parts = title.split('//');
+            return (
+                <>
+                    {parts[0]}<span className="text-blue-500">//</span>{parts[1]}
+                </>
+            );
+        }
+        return title;
+    };
+
     return (
         <div className="login-page" data-testid="login-page">
             <div className="login-card animate-fade-in">
                 <div className="login-logo" data-testid="login-logo">
-                    SEO<span className="text-blue-500">//</span>NEXUS
+                    {renderBrandLogo()}
                 </div>
                 <p className="login-tagline">
-                    Domain Network Management System
+                    {branding.tagline || 'Domain Network Management System'}
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
