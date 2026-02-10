@@ -142,30 +142,19 @@ export default function DashboardPage() {
         try {
             const brandId = selectedBrand === 'all' ? undefined : selectedBrand;
             
-            const [statsRes, tierRes, indexRes, brandsRes, monitorRes, alertsRes, conflictsRes] = await Promise.all([
+            const [statsRes, brandsRes, monitorRes, alertsRes, brandDomainsRes] = await Promise.all([
                 reportsAPI.getDashboardStats(),
-                reportsAPI.getTierDistribution(brandId),
-                reportsAPI.getIndexStatus(brandId),
                 brandsAPI.getAll(),
                 monitoringAPI.getStats(),
                 alertsAPI.getAll({ acknowledged: false, limit: 5 }),
-                conflictsAPI.detect()
+                v3ReportsAPI.getDomainsByBrand()
             ]);
 
             setStats(statsRes.data);
-            setTierData(tierRes.data.map(t => ({
-                name: TIER_LABELS[t.tier] || t.tier,
-                value: t.count,
-                fill: TIER_COLORS[t.tier] || '#3B82F6'
-            })));
-            setIndexData(indexRes.data.map(s => ({
-                name: s.status === 'index' ? 'Indexed' : 'Noindex',
-                value: s.count
-            })));
             setBrands(brandsRes.data);
             setMonitoringStats(monitorRes.data);
             setRecentAlerts(alertsRes.data);
-            setConflicts(conflictsRes.data.conflicts || []);
+            setBrandDomainCounts(brandDomainsRes.data.data || []);
         } catch (err) {
             console.error('Failed to load dashboard data:', err);
         } finally {
