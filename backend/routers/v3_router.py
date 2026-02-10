@@ -6279,15 +6279,30 @@ async def update_telegram_seo_settings(
 async def get_telegram_seo_settings(
     current_user: dict = Depends(get_current_user_wrapper)
 ):
-    """Get SEO Telegram channel settings"""
+    """Get SEO Telegram channel settings with forum topic support"""
     settings = await db.settings.find_one({"key": "telegram_seo"}, {"_id": 0})
     if not settings:
-        return {"configured": False}
+        return {
+            "configured": False,
+            "enabled": True,
+            "enable_topic_routing": False,
+            "chat_id": None,
+            "seo_change_topic_id": None,
+            "seo_optimization_topic_id": None,
+            "seo_complaint_topic_id": None,
+            "seo_reminder_topic_id": None
+        }
     
     return {
         "configured": bool(settings.get("bot_token") and settings.get("chat_id")),
         "enabled": settings.get("enabled", True),
-        "chat_id": settings.get("chat_id")
+        "chat_id": settings.get("chat_id"),
+        "bot_token": settings.get("bot_token"),  # For display (masked in frontend)
+        "enable_topic_routing": settings.get("enable_topic_routing", False),
+        "seo_change_topic_id": settings.get("seo_change_topic_id"),
+        "seo_optimization_topic_id": settings.get("seo_optimization_topic_id"),
+        "seo_complaint_topic_id": settings.get("seo_complaint_topic_id"),
+        "seo_reminder_topic_id": settings.get("seo_reminder_topic_id")
     }
 
 
