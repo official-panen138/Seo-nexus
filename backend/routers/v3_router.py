@@ -8314,11 +8314,18 @@ async def send_test_expiration_alert(
         triggered_by=current_user.get("email", "unknown"),
     )
     
-    if not result.get("success"):
+    if result.get("error"):
         raise HTTPException(
             status_code=500, 
             detail=result.get("error", "Failed to send test alert")
         )
+    
+    if not result.get("success"):
+        # Telegram might not be configured - still return result with details
+        return {
+            **result,
+            "warning": "Telegram notification may not have been delivered. Check Domain Monitoring Telegram settings."
+        }
     
     return result
 
