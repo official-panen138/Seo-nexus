@@ -270,7 +270,7 @@ class SeoTelegramService:
         if last_time:
             elapsed = (now - last_time).total_seconds()
             if elapsed < self._rate_limit_seconds:
-                logger.debug(
+                logger.warning(
                     f"Rate limited: Network {network_id}, {self._rate_limit_seconds - elapsed:.0f}s remaining"
                 )
                 return False
