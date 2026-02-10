@@ -1,5 +1,56 @@
 # SEO-NOC Changelog
 
+## [3.2.0] - 2026-02-10
+
+### Auto-Link Conflict → Optimization Task - COMPLETE
+
+Transforms conflict detection into actionable SEO execution by automatically creating optimization tasks from detected conflicts.
+
+#### Features Implemented
+- **Auto Optimization Creation** - System auto-creates optimization when conflict detected
+- **One-to-One Relationship** - Each conflict links to exactly one optimization
+- **Status Flow** - `detected` → `under_review` (optimization created) → `resolved` (validated)
+- **Permission Enforcement** - Only managers/super_admin can update/resolve
+- **Telegram Notifications** - Alerts on conflict detection and resolution
+- **Metrics Tracking** - Time-to-resolution, by severity, by type, by resolver
+- **Recurrence Detection** - Tracks recurring conflicts with count and timestamp
+
+#### New Models (models_v3.py)
+- `ConflictStatus` enum: detected, under_review, resolved, ignored
+- `StoredConflict` - Persistent conflict with optimization link
+- `ConflictResolutionCreate/Response` - API request/response models
+- `LinkedConflictInfo` - Conflict info embedded in optimization detail
+- Added `linked_conflict_id` and `linked_conflict` to optimization models
+- Added `can_edit` field to SeoOptimizationDetailResponse
+
+#### New Service
+- `conflict_optimization_linker_service.py`:
+  - `process_detected_conflicts()` - Stores conflicts and creates optimizations
+  - `_create_optimization_for_conflict()` - Creates linked optimization task
+  - `resolve_conflict()` - Marks conflict as resolved
+  - `get_conflict_metrics()` - Returns resolution metrics
+  - `_send_conflict_notification()` - Telegram alerts
+
+#### New API Endpoints
+- `GET /api/v3/conflicts/stored` - List stored conflicts with linked optimization
+- `GET /api/v3/conflicts/stored/{id}` - Get single conflict detail
+- `POST /api/v3/conflicts/process` - Detect and auto-link conflicts to optimizations
+- `POST /api/v3/conflicts/{id}/resolve` - Mark conflict as resolved
+- `GET /api/v3/conflicts/metrics` - Get resolution metrics
+
+#### Frontend Changes
+- Updated `AlertsPage.jsx`:
+  - "Create Optimization Tasks" button to process conflicts
+  - "Linked Optimization" badge on conflicts with linked tasks
+  - "View Task" button to navigate to optimization detail
+- Updated `api.js` with conflictsAPI methods
+
+#### Testing
+- 100% backend test pass rate (17/17 tests)
+- All features verified via testing agent
+
+---
+
 ## [3.1.0] - 2026-02-10
 
 ### SEO-Aware Domain Monitoring + Structured Alert Output - COMPLETE
