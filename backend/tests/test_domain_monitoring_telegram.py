@@ -30,7 +30,7 @@ def auth_token():
     })
     assert response.status_code == 200, f"Login failed: {response.text}"
     data = response.json()
-    return data["token"]
+    return data["access_token"]
 
 
 @pytest.fixture(scope="module")
