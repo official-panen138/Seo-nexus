@@ -7313,7 +7313,7 @@ async def get_telegram_seo_settings(
         "seo_optimization_topic_id": settings.get("seo_optimization_topic_id"),
         "seo_complaint_topic_id": settings.get("seo_complaint_topic_id"),
         "seo_reminder_topic_id": settings.get("seo_reminder_topic_id"),
-        "seo_leader_telegram_username": settings.get("seo_leader_telegram_username"),
+        "seo_leader_telegram_usernames": settings.get("seo_leader_telegram_usernames", []),
     }
 
 
