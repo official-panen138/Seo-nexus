@@ -29,7 +29,7 @@ class TestAccessSummaryPanelAPI:
             json={"email": "superadmin@seonoc.com", "password": "SuperAdmin123!"}
         )
         assert login_response.status_code == 200, f"Login failed: {login_response.text}"
-        self.token = login_response.json().get("token")
+        self.token = login_response.json().get("access_token")
         self.headers = {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
@@ -174,7 +174,7 @@ class TestNetworkDetailHeaderAccessSummary:
             json={"email": "superadmin@seonoc.com", "password": "SuperAdmin123!"}
         )
         assert login_response.status_code == 200, f"Login failed: {login_response.text}"
-        self.token = login_response.json().get("token")
+        self.token = login_response.json().get("access_token")
         self.headers = {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
