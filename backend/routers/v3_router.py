@@ -7429,7 +7429,7 @@ async def update_telegram_seo_settings(
         leaders = settings["seo_leader_telegram_usernames"]
         # Handle both string (comma-separated) and list
         if isinstance(leaders, str):
-            leaders = [l.strip() for l in leaders.split(",") if l.strip()]
+            leaders = [name.strip() for name in leaders.split(",") if name.strip()]
         update_data["seo_leader_telegram_usernames"] = leaders if leaders else []
     elif existing and existing.get("seo_leader_telegram_usernames"):
         update_data["seo_leader_telegram_usernames"] = existing["seo_leader_telegram_usernames"]
