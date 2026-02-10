@@ -1814,8 +1814,12 @@ if message_thread_id and ("thread" in error_text or "topic" in error_text):
 
 ## Prioritized Backlog
 
-### P1 - Next Up
-- **Verify "Unknown" in Test Mode Alerts:** Confirm test alerts for SEO network domains don't show "Unknown" for upstream/downstream chains
+### P1 - Completed
+- ✅ **Verified "Unknown" in Test Mode Alerts (Feb 10, 2026):** Test alerts for SEO network domains properly show all data without "Unknown" values:
+  - Money Site domains show correct tier, severity (CRITICAL), and network info
+  - Supporting domains show proper upstream chain to Money Site (e.g., `tier1-site1.com → moneysite.com/landing → Money Site reached`)
+  - Full structure lines (`STRUKTUR SEO TERKINI`) display correctly with tier hierarchy
+  - Non-SEO domains gracefully show "not used in SEO" without errors
 
 ### P2 - Future
 - **Email Notifications:** Optional email notifications for conflict detection/resolution
