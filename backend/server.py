@@ -2645,9 +2645,18 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
 
     # Active alerts
     active_alerts = await db.alerts.count_documents({"acknowledged": False})
-    critical_alerts = await db.alerts.count_documents(
+    critical_alerts_count = await db.alerts.count_documents(
         {"acknowledged": False, "severity": "critical"}
     )
+    
+    # Get critical alert details (domain names) for dashboard display
+    critical_alert_details = []
+    if critical_alerts_count > 0:
+        critical_alerts_cursor = db.alerts.find(
+            {"acknowledged": False, "severity": "critical"},
+            {"_id": 0, "domain_name": 1, "title": 1, "alert_type": 1, "created_at": 1}
+        ).limit(5)  # Show max 5 in banner
+        critical_alert_details = await critical_alerts_cursor.to_list(5)
 
     return {
         "total_domains": total_domains,
@@ -2662,7 +2671,8 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         "up_count": up,
         "down_count": down,
         "active_alerts": active_alerts,
-        "critical_alerts": critical_alerts,
+        "critical_alerts": critical_alerts_count,
+        "critical_alert_details": critical_alert_details,
     }
 
 
