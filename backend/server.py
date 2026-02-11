@@ -2271,27 +2271,28 @@ async def check_domain_now(
 
 @api_router.get("/monitoring/stats", response_model=MonitoringStats)
 async def get_monitoring_stats(current_user: dict = Depends(get_current_user)):
-    """Get monitoring statistics"""
-    total = await db.domains.count_documents({"monitoring_enabled": True})
-    up = await db.domains.count_documents(
+    """Get monitoring statistics from asset_domains collection"""
+    # Query asset_domains for monitoring data
+    total = await db.asset_domains.count_documents({"monitoring_enabled": True})
+    up = await db.asset_domains.count_documents(
         {"monitoring_enabled": True, "ping_status": "up"}
     )
-    down = await db.domains.count_documents(
+    down = await db.asset_domains.count_documents(
         {"monitoring_enabled": True, "ping_status": "down"}
     )
-    unknown = await db.domains.count_documents(
-        {"monitoring_enabled": True, "ping_status": "unknown"}
+    unknown = await db.asset_domains.count_documents(
+        {"monitoring_enabled": True, "ping_status": {"$nin": ["up", "down"]}}
     )
 
     # Check expiring domains (within 7 days)
     now = datetime.now(timezone.utc)
     week_later = (now + timedelta(days=7)).isoformat()
 
-    expiring = await db.domains.count_documents(
+    expiring = await db.asset_domains.count_documents(
         {"expiration_date": {"$ne": None, "$lte": week_later, "$gt": now.isoformat()}}
     )
 
-    expired = await db.domains.count_documents(
+    expired = await db.asset_domains.count_documents(
         {"expiration_date": {"$ne": None, "$lte": now.isoformat()}}
     )
 
