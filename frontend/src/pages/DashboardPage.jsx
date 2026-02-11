@@ -454,7 +454,7 @@ export default function DashboardPage() {
                                     <Bell className="h-4 w-4 text-amber-500" />
                                     Recent Alerts
                                 </CardTitle>
-                                <Link to="/alerts">
+                                <Link to="/settings/monitoring">
                                     <Button variant="ghost" size="sm" className="text-xs">
                                         View All <ArrowRight className="h-3 w-3 ml-1" />
                                     </Button>
