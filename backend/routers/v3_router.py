@@ -8001,7 +8001,7 @@ async def get_monitoring_stats(current_user: dict = Depends(get_current_user_wra
         {"monitoring_enabled": True, "ping_status": "down"}
     )
     unknown_count = await db.asset_domains.count_documents(
-        {"monitoring_enabled": True, "ping_status": "unknown"}
+        {"monitoring_enabled": True, "ping_status": {"$nin": ["up", "down"]}}
     )
 
     # Expiration stats
