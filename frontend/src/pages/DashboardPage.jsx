@@ -188,10 +188,10 @@ export default function DashboardPage() {
         );
     }
 
-    const monitoringPieData = monitoringStats ? [
-        { name: 'Up', value: monitoringStats.up_count, fill: MONITORING_COLORS[0] },
-        { name: 'Down', value: monitoringStats.down_count, fill: MONITORING_COLORS[1] },
-        { name: 'Unknown', value: monitoringStats.unknown_count, fill: MONITORING_COLORS[2] }
+    const monitoringPieData = monitoringStats?.availability ? [
+        { name: 'Up', value: monitoringStats.availability.up || 0, fill: MONITORING_COLORS[0] },
+        { name: 'Down', value: monitoringStats.availability.down || 0, fill: MONITORING_COLORS[1] },
+        { name: 'Unknown', value: monitoringStats.availability.unknown || 0, fill: MONITORING_COLORS[2] }
     ].filter(d => d.value > 0) : [];
 
     return (
