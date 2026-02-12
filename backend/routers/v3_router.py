@@ -1355,29 +1355,41 @@ async def get_asset_domains(
     brand_id: Optional[str] = None,
     category_id: Optional[str] = None,
     registrar_id: Optional[str] = None,
-    status: Optional[AssetStatus] = None,
     monitoring_enabled: Optional[bool] = None,
     search: Optional[str] = None,
     network_id: Optional[str] = None,
-    # New filters for lifecycle and quarantine
+    # Filters for lifecycle and quarantine
     lifecycle_status: Optional[DomainLifecycleStatus] = None,
     quarantine_category: Optional[str] = None,
     is_quarantined: Optional[bool] = None,
     used_in_seo: Optional[bool] = None,
+    # Filter by monitoring status (technical)
+    monitoring_status: Optional[str] = Query(default=None, description="Filter by monitoring_status: up, down, unknown, etc."),
+    # Filter by domain active status (administrative)
+    domain_active_status: Optional[str] = Query(default=None, description="Filter by domain_active_status: active, expired"),
     # Special view modes
-    view_mode: Optional[str] = Query(default=None, description="Special view: 'released', 'quarantined', 'unmonitored'"),
+    view_mode: Optional[str] = Query(default=None, description="Special view: 'released', 'quarantined', 'unmonitored', 'expired'"),
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     limit: int = Query(default=25, ge=1, le=100, description="Items per page"),
     current_user: dict = Depends(get_current_user_wrapper),
 ):
     """
     Get asset domains with SERVER-SIDE PAGINATION - BRAND SCOPED.
-
-    Lifecycle filters (strategic state):
-    - lifecycle_status: Filter by domain lifecycle (active, released, quarantined, archived)
-    - view_mode: Special views - 'released', 'quarantined', 'archived', 'unmonitored'
-
-    Note: Only 'active' lifecycle domains are included in real-time monitoring.
+    
+    DOMAIN STATUS, MONITORING & LIFECYCLE FILTERS:
+    
+    1. domain_active_status: Administrative status (active/expired) - computed from expiration_date
+    2. monitoring_status: Technical availability (up/down/unknown/etc.) - from monitoring engine
+    3. lifecycle_status: Strategic decision (active/released/quarantined) - Super Admin managed
+    4. quarantine_category: Why domain is quarantined
+    
+    Special view modes:
+    - 'released': Domains with lifecycle_status = released
+    - 'quarantined': Domains with lifecycle_status = quarantined
+    - 'unmonitored': Domains in SEO networks without monitoring enabled (lifecycle=active only)
+    - 'expired': Domains with domain_active_status = expired
+    
+    Note: Only 'active' lifecycle domains with domain_active_status = 'active' can be monitored.
 
     Returns paginated response with meta information.
     """
