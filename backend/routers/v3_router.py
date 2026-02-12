@@ -2120,33 +2120,41 @@ async def get_seo_monitoring_coverage(
     
     total_in_seo = len(domains_in_seo)
     
-    # Count by monitoring status (only for active/pending lifecycle and non-quarantined)
+    # Count by monitoring status
+    # ONLY active lifecycle domains should be counted for monitoring coverage
     monitored = 0
     unmonitored = 0
+    active_count = 0
     active_monitored = 0
     active_unmonitored = 0
-    expired_pending_count = 0
-    expired_released_count = 0
+    released_count = 0
     quarantined_count = 0
+    archived_count = 0
     
     for d in domains_in_seo:
         lifecycle = d.get("domain_lifecycle_status", "active")
-        is_quarantined = d.get("quarantine_category") is not None
+        is_quarantined = (
+            d.get("quarantine_category") is not None or 
+            lifecycle == DomainLifecycleStatus.QUARANTINED.value
+        )
         is_monitoring_enabled = d.get("monitoring_enabled", False)
         
-        if is_quarantined:
+        # Count by lifecycle
+        if is_quarantined or lifecycle == DomainLifecycleStatus.QUARANTINED.value:
             quarantined_count += 1
             continue
         
-        if lifecycle == DomainLifecycleStatus.EXPIRED_RELEASED.value:
-            expired_released_count += 1
+        if lifecycle == DomainLifecycleStatus.RELEASED.value:
+            released_count += 1
             continue
         
-        if lifecycle == DomainLifecycleStatus.EXPIRED_PENDING.value:
-            expired_pending_count += 1
+        if lifecycle == DomainLifecycleStatus.ARCHIVED.value:
+            archived_count += 1
+            continue
         
-        # Count active lifecycle domains
-        if lifecycle in [DomainLifecycleStatus.ACTIVE.value, DomainLifecycleStatus.EXPIRED_PENDING.value, None]:
+        # Count active lifecycle domains (only these are monitorable)
+        if lifecycle in [DomainLifecycleStatus.ACTIVE.value, None]:
+            active_count += 1
             if is_monitoring_enabled:
                 monitored += 1
                 active_monitored += 1
@@ -2154,12 +2162,10 @@ async def get_seo_monitoring_coverage(
                 unmonitored += 1
                 active_unmonitored += 1
     
-    # Calculate coverage percentage (exclude quarantined and released from denominator)
-    monitorable_domains = total_in_seo - quarantined_count - expired_released_count
-    coverage_percentage = (monitored / monitorable_domains * 100) if monitorable_domains > 0 else 100.0
+    # Calculate coverage percentage (only active lifecycle domains are monitorable)
+    coverage_percentage = (monitored / active_count * 100) if active_count > 0 else 100.0
     
     # Find root domains missing monitoring (domains used via path but root not monitored)
-    # First, find all unique root domains from structure entries with paths
     root_domains_with_paths = set()
     for entry in all_structure_entries:
         if entry.get("optimized_path") and entry["optimized_path"] != "/":
@@ -2175,13 +2181,16 @@ async def get_seo_monitoring_coverage(
         
         for d in root_domain_docs:
             lifecycle = d.get("domain_lifecycle_status", "active")
-            is_quarantined = d.get("quarantine_category") is not None
+            is_quarantined = (
+                d.get("quarantine_category") is not None or 
+                lifecycle == DomainLifecycleStatus.QUARANTINED.value
+            )
             is_monitoring_enabled = d.get("monitoring_enabled", False)
             
-            # Only count as missing if domain is active and not quarantined
+            # Only count as missing if domain is active lifecycle
             if (not is_monitoring_enabled and 
                 not is_quarantined and 
-                lifecycle in [DomainLifecycleStatus.ACTIVE.value, DomainLifecycleStatus.EXPIRED_PENDING.value, None]):
+                lifecycle in [DomainLifecycleStatus.ACTIVE.value, None]):
                 root_domains_missing_monitoring += 1
     
     return SeoMonitoringCoverageStats(
