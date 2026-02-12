@@ -2463,6 +2463,50 @@ async def get_networks(
         )
         network["last_optimization_at"] = last_opt["created_at"] if last_opt else None
 
+        # Domain Health Indicators: Get expired and quarantined domain counts
+        # Get all domain IDs used in this network's structure entries
+        structure_entries_for_health = await db.seo_structure_entries.find(
+            {"network_id": network["id"]},
+            {"_id": 0, "asset_domain_id": 1}
+        ).to_list(1000)
+        
+        domain_ids = [e.get("asset_domain_id") for e in structure_entries_for_health if e.get("asset_domain_id")]
+        
+        if domain_ids:
+            # Get asset domains with these IDs
+            domains_in_network = await db.asset_domains.find(
+                {"id": {"$in": domain_ids}},
+                {"_id": 0, "expiration_date": 1, "lifecycle_status": 1, "quarantine_category": 1}
+            ).to_list(1000)
+            
+            expired_count = 0
+            quarantined_count = 0
+            
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            
+            for d in domains_in_network:
+                # Check if expired
+                exp_date = d.get("expiration_date")
+                if exp_date:
+                    if isinstance(exp_date, str):
+                        try:
+                            exp_date = datetime.fromisoformat(exp_date.replace('Z', '+00:00'))
+                        except:
+                            exp_date = None
+                    if exp_date and exp_date <= now:
+                        expired_count += 1
+                
+                # Check if quarantined
+                if d.get("lifecycle_status") == "quarantined" or d.get("quarantine_category"):
+                    quarantined_count += 1
+            
+            network["expired_domains_count"] = expired_count
+            network["quarantined_domains_count"] = quarantined_count
+        else:
+            network["expired_domains_count"] = 0
+            network["quarantined_domains_count"] = 0
+
         result.append(network)
 
     # Filter by ranking_status if specified
