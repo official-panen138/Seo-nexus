@@ -7047,22 +7047,28 @@ async def migrate_approved_conflicts(
 @router.get("/conflicts/metrics")
 async def get_conflict_metrics(
     network_id: Optional[str] = None,
+    brand_id: Optional[str] = None,
     days: int = 30,
     current_user: dict = Depends(get_current_user_wrapper),
 ):
     """
-    Get conflict resolution metrics.
+    Get comprehensive conflict resolution metrics.
     
-    Returns:
-    - Time-to-resolution per conflict
-    - Conflicts resolved per manager
-    - Recurring conflicts count
-    - Distribution by severity and type
+    Production-grade dashboard metrics with:
+    - Fingerprint-based recurrence detection
+    - Status derived from linked optimizations
+    - Accurate resolution time calculations (first_detected_at → completed_at)
+    - Filtered top resolvers (excludes system/null users)
+    - False resolution rate tracking
+    - Recurrence interval analysis
+    
+    Returns all P0 and P1 metrics for the dashboard.
     """
-    conflict_service = get_conflict_linker_service(db)
+    metrics_service = get_conflict_metrics_service(db)
     
-    metrics = await conflict_service.get_conflict_metrics(
+    metrics = await metrics_service.get_dashboard_metrics(
         network_id=network_id,
+        brand_id=brand_id,
         days=days
     )
     
