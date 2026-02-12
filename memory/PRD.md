@@ -759,13 +759,17 @@ Fields: id, network_id, brand_id, actor_user_id, actor_email, action_type,
 
 ## Future Tasks (Backlog)
 
-### P1 - High Priority
-1. **Reminder effectiveness metric** - Track how many reminders are sent before optimization is resolved
-2. **Conflict aging metric** - Track how long SEO conflicts remain unresolved in Alert Center
+### P1 - High Priority (Pending)
+1. **Inaccurate Pagination Count on Filter** - Backend fix needed in `v3_router.py`. The post-processing filter logic for computed fields like `domain_active_status` must be applied *before* the `total_count` is calculated.
+2. **Bulk Menu Access Control** - User requested but requirements not yet provided. Must ask user for details.
+3. **Team Performance Alerts Verification** - User needs to configure Telegram Bot Token/Chat ID and trigger a test alert.
 
-### P2 - Medium Priority  
-1. **Deep-link Drawer Auto-Open** - Auto-open optimization detail drawer when URL has `?optimization_id=...`
-2. Correlate optimization timeline with ranking history
+### P2 - Medium Priority
+1. **Email Notifications** - Deferred by user
+2. **Advanced Auto-Assign Logic** - Deferred by user
+3. **Refactor `v3_router.py`** - File is large and could be broken into smaller routers
+4. **Deep-link Drawer Auto-Open** - Auto-open optimization detail drawer when URL has `?optimization_id=...`
+5. Correlate optimization timeline with ranking history
 
 
 ---
