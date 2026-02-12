@@ -623,7 +623,7 @@ class ConflictOptimizationLinkerService:
             if sev not in by_severity:
                 by_severity[sev] = {"total": 0, "resolved": 0}
             by_severity[sev]["total"] += 1
-            if c.get("status") == "resolved":
+            if c.get("status") in ("resolved", "approved"):
                 by_severity[sev]["resolved"] += 1
         
         # Group by type
@@ -633,7 +633,7 @@ class ConflictOptimizationLinkerService:
             if ct not in by_type:
                 by_type[ct] = {"total": 0, "resolved": 0}
             by_type[ct]["total"] += 1
-            if c.get("status") == "resolved":
+            if c.get("status") in ("resolved", "approved"):
                 by_type[ct]["resolved"] += 1
         
         # Group by resolver
