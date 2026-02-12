@@ -2198,13 +2198,31 @@ async def get_seo_monitoring_coverage(
         monitored=monitored,
         unmonitored=unmonitored,
         coverage_percentage=round(coverage_percentage, 1),
+        active_count=active_count,
         active_monitored=active_monitored,
         active_unmonitored=active_unmonitored,
-        expired_pending_count=expired_pending_count,
-        expired_released_count=expired_released_count,
+        released_count=released_count,
         quarantined_count=quarantined_count,
+        archived_count=archived_count,
         root_domains_missing_monitoring=root_domains_missing_monitoring,
     )
+
+
+@router.get("/lifecycle-info")
+async def get_lifecycle_info(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get lifecycle status labels and tooltip information for UI.
+    """
+    return {
+        "statuses": [
+            {"value": s.value, "label": LIFECYCLE_STATUS_LABELS.get(s.value, s.value)}
+            for s in DomainLifecycleStatus
+        ],
+        "tooltip": LIFECYCLE_TOOLTIP,
+        "monitored_statuses": [s.value for s in MONITORED_LIFECYCLE_STATUSES],
+    }
 
 
 @router.get("/quarantine-categories")
