@@ -1761,20 +1761,11 @@ export default function DomainsPage() {
 
                                 {useV3 ? (
                                     <div className="space-y-2">
-                                        <Label>Status</Label>
-                                        <Select 
-                                            value={form.status} 
-                                            onValueChange={(v) => setForm({...form, status: v})}
-                                        >
-                                            <SelectTrigger className="bg-black border-border">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {Object.entries(ASSET_STATUS_LABELS).map(([k, v]) => (
-                                                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <Label className="text-zinc-400 text-xs">Domain Active Status</Label>
+                                        <div className="flex items-center gap-2 px-3 py-2 bg-zinc-900/50 border border-border rounded-md text-sm text-zinc-400">
+                                            <Info className="h-4 w-4" />
+                                            <span>Auto-computed from Expiration Date</span>
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
