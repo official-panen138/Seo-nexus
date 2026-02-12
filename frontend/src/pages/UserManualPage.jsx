@@ -105,21 +105,21 @@ const tocData = [
     }
 ];
 
-// Screenshot URLs - using placeholder images that represent each section
+// Screenshot URLs - actual generated images for each section
 const sectionImages = {
-    'overview': '/api/placeholder/dashboard',
-    'login': '/api/placeholder/login',
-    'register': '/api/placeholder/register',
-    'navigation': '/api/placeholder/navigation',
-    'dashboard': '/api/placeholder/dashboard',
-    'asset-domains': '/api/placeholder/domains',
-    'seo-networks': '/api/placeholder/networks',
-    'conflicts': '/api/placeholder/conflicts',
-    'monitoring': '/api/placeholder/monitoring',
-    'reports': '/api/placeholder/reports',
-    'team-eval': '/api/placeholder/team',
-    'users': '/api/placeholder/users',
-    'settings': '/api/placeholder/settings',
+    'overview': 'https://static.prod-images.emergentagent.com/jobs/f75a7479-a250-46ba-b604-bc372d67aeda/images/d6e8683b52a165baae0f907472cdaaa66c067fb993704a57372aa4931c44d992.png',
+    'login': 'https://static.prod-images.emergentagent.com/jobs/f75a7479-a250-46ba-b604-bc372d67aeda/images/2852e4bc8c15c1f62a555ac73c073ce318288099c77469673af210cc5f47f2e8.png',
+    'register': 'https://static.prod-images.emergentagent.com/jobs/f75a7479-a250-46ba-b604-bc372d67aeda/images/83c5ddb793dbae50d4b7d07d2b1b9c8cc36ca8c337f4295c0904c78253195fa5.png',
+    'navigation': 'https://static.prod-images.emergentagent.com/jobs/f75a7479-a250-46ba-b604-bc372d67aeda/images/20f0ea1615c719a4bb711c927d31b0f6ebbdc121b9889c8cb587550f90aa9176.png',
+    'dashboard': 'https://static.prod-images.emergentagent.com/jobs/f75a7479-a250-46ba-b604-bc372d67aeda/images/d6e8683b52a165baae0f907472cdaaa66c067fb993704a57372aa4931c44d992.png',
+    'asset-domains': 'https://static.prod-images.emergentagent.com/jobs/f75a7479-a250-46ba-b604-bc372d67aeda/images/2952a1816adc5e91ecfbd5ba2176a4c777df29419d30d1400502f5e8495a110e.png',
+    'seo-networks': 'https://static.prod-images.emergentagent.com/jobs/f75a7479-a250-46ba-b604-bc372d67aeda/images/1b6849de127a893357df31f2aa02d89bc667c2002934e974883493190ec180c7.png',
+    'conflicts': 'https://static.prod-images.emergentagent.com/jobs/f75a7479-a250-46ba-b604-bc372d67aeda/images/851b162f97be8a5a42c424b87ee5e7dd6d7d86ef43a2f560c30cb9bf73e8a995.png',
+    'monitoring': 'https://static.prod-images.emergentagent.com/jobs/f75a7479-a250-46ba-b604-bc372d67aeda/images/43bc7d4e724094dbbf6464dec53813f005c35905f4d80a97d2c5f7e390e41650.png',
+    'reports': 'https://static.prod-images.emergentagent.com/jobs/f75a7479-a250-46ba-b604-bc372d67aeda/images/dabd16e2201f03ed54a070ccf5b3344ca42a7f3c054ac8f4ea5823df55df3700.png',
+    'team-eval': 'https://static.prod-images.emergentagent.com/jobs/f75a7479-a250-46ba-b604-bc372d67aeda/images/15f022504ad84c7e9960188224f5f81aef4129463d8d4910ea74cb7089782fc7.png',
+    'users': 'https://static.prod-images.emergentagent.com/jobs/f75a7479-a250-46ba-b604-bc372d67aeda/images/5698fbb8d44a32d8cd36b2b32a4c3da68763048370e219cf48bac82f8d419bad.png',
+    'settings': 'https://static.prod-images.emergentagent.com/jobs/f75a7479-a250-46ba-b604-bc372d67aeda/images/6f01c43704df446bd238cc257f29920dcb2e09ee80fe1035ce9b25adeb0ddf4d.png',
 };
 
 // Content sections with images
