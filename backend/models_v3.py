@@ -756,6 +756,10 @@ class AssetDomainUpdate(BaseModel):
     expiration_date: Optional[str] = None
     auto_renew: Optional[bool] = None
     status: Optional[AssetStatus] = None
+    # Lifecycle and quarantine fields - managed via separate endpoints (Super Admin only)
+    domain_lifecycle_status: Optional[DomainLifecycleStatus] = None
+    quarantine_category: Optional[str] = None
+    quarantine_note: Optional[str] = None
     monitoring_enabled: Optional[bool] = None
     monitoring_interval: Optional[MonitoringInterval] = None
     last_checked_at: Optional[str] = None
@@ -763,6 +767,29 @@ class AssetDomainUpdate(BaseModel):
     last_http_code: Optional[int] = None
     expiration_alert_sent_at: Optional[str] = None
     notes: Optional[str] = None
+
+
+# Models for lifecycle and quarantine management (Super Admin only)
+class MarkAsReleasedRequest(BaseModel):
+    """Request to mark a domain as released (not renewed)"""
+    reason: Optional[str] = None
+
+
+class SetQuarantineRequest(BaseModel):
+    """Request to quarantine a domain"""
+    quarantine_category: str  # One of QuarantineCategory values or custom
+    quarantine_note: Optional[str] = None  # Required if category is 'custom'
+
+
+class RemoveQuarantineRequest(BaseModel):
+    """Request to remove quarantine from a domain"""
+    reason: Optional[str] = None
+
+
+class LifecycleChangeRequest(BaseModel):
+    """Request to change domain lifecycle status"""
+    lifecycle_status: DomainLifecycleStatus
+    reason: Optional[str] = None
 
 
 class NetworkUsageInfo(BaseModel):
