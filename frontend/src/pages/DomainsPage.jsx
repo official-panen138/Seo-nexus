@@ -305,6 +305,10 @@ export default function DomainsPage() {
     const [coverageStats, setCoverageStats] = useState(null);
     const [loadingCoverage, setLoadingCoverage] = useState(false);
     
+    // NEW: Sorting state
+    const [sortField, setSortField] = useState('critical');  // Default: critical first
+    const [sortDirection, setSortDirection] = useState('asc');
+    
     // NEW: Lifecycle/Quarantine action dialogs
     const [lifecycleDialogOpen, setLifecycleDialogOpen] = useState(false);
     const [quarantineDialogOpen, setQuarantineDialogOpen] = useState(false);
