@@ -494,7 +494,7 @@ def normalize_path(path: str | None) -> str | None:
 
 
 async def enrich_asset_domain(asset: dict) -> dict:
-    """Enrich asset domain with brand/category/registrar names"""
+    """Enrich asset domain with brand/category/registrar names and lifecycle info"""
     if asset.get("brand_id"):
         brand = await db.brands.find_one(
             {"id": asset["brand_id"]}, {"_id": 0, "name": 1}
@@ -519,6 +519,57 @@ async def enrich_asset_domain(asset: dict) -> dict:
         asset["registrar_name"] = registrar["name"] if registrar else None
     else:
         asset["registrar_name"] = asset.get("registrar")  # Legacy fallback
+
+    # Enrich SEO network usage
+    structure_entries = await db.seo_structure_entries.find(
+        {"asset_domain_id": asset["id"]}, {"_id": 0, "network_id": 1, "domain_role": 1, "optimized_path": 1}
+    ).to_list(100)
+    
+    network_ids = [e["network_id"] for e in structure_entries]
+    networks = await db.seo_networks.find(
+        {"id": {"$in": network_ids}}, {"_id": 0, "id": 1, "name": 1}
+    ).to_list(100)
+    network_map = {n["id"]: n["name"] for n in networks}
+    
+    asset["seo_networks"] = [
+        NetworkUsageInfo(
+            network_id=e["network_id"],
+            network_name=network_map.get(e["network_id"], "Unknown"),
+            role=e.get("domain_role", "supporting"),
+            optimized_path=e.get("optimized_path")
+        )
+        for e in structure_entries
+    ]
+    
+    # Determine if used in SEO and if monitoring is required
+    asset["is_used_in_seo_network"] = len(structure_entries) > 0
+    
+    lifecycle = asset.get("domain_lifecycle_status", DomainLifecycleStatus.ACTIVE.value)
+    is_active_lifecycle = lifecycle in [
+        DomainLifecycleStatus.ACTIVE.value, 
+        DomainLifecycleStatus.EXPIRED_PENDING.value,
+        None
+    ]
+    is_not_quarantined = not asset.get("quarantine_category")
+    asset["requires_monitoring"] = asset["is_used_in_seo_network"] and is_active_lifecycle and is_not_quarantined
+    
+    # Add quarantine category label
+    qc = asset.get("quarantine_category")
+    if qc:
+        asset["quarantine_category_label"] = QUARANTINE_CATEGORY_LABELS.get(qc, qc)
+    
+    # Ensure lifecycle status has a default
+    if not asset.get("domain_lifecycle_status"):
+        asset["domain_lifecycle_status"] = DomainLifecycleStatus.ACTIVE.value
+    
+    # Enrich user names for quarantine and release
+    if asset.get("quarantined_by"):
+        user = await db.users.find_one({"id": asset["quarantined_by"]}, {"_id": 0, "name": 1, "email": 1})
+        asset["quarantined_by_name"] = user.get("name") or user.get("email") if user else None
+    
+    if asset.get("released_by"):
+        user = await db.users.find_one({"id": asset["released_by"]}, {"_id": 0, "name": 1, "email": 1})
+        asset["released_by_name"] = user.get("name") or user.get("email") if user else None
 
     return asset
 
