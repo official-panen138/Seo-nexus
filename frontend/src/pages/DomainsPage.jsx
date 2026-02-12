@@ -281,11 +281,15 @@ export default function DomainsPage() {
     const [detailPanelOpen, setDetailPanelOpen] = useState(false);
     const [detailDomain, setDetailDomain] = useState(null);
     
-    // Import state
+    // Import state (Enhanced with Preview flow)
     const [importDialogOpen, setImportDialogOpen] = useState(false);
     const [importData, setImportData] = useState([]);
+    const [importPreview, setImportPreview] = useState(null);  // Preview result from backend
     const [importResult, setImportResult] = useState(null);
     const [importing, setImporting] = useState(false);
+    const [importStep, setImportStep] = useState('upload');  // 'upload', 'preview', 'result'
+    const [createNew, setCreateNew] = useState(true);
+    const [updateExisting, setUpdateExisting] = useState(true);
     const fileInputRef = useRef(null);
     
     // Filters
