@@ -1081,6 +1081,7 @@ class ConflictStatus(str, Enum):
     DETECTED = "detected"  # Initial state when conflict is found
     UNDER_REVIEW = "under_review"  # Optimization created, being worked on
     RESOLVED = "resolved"  # Conflict resolved and validated
+    APPROVED = "approved"  # Approved by Super Admin (auto-resolved and deactivated)
     IGNORED = "ignored"  # Marked as intentional/acceptable
 
 
