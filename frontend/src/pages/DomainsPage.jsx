@@ -79,43 +79,75 @@ const ASSET_STATUS_COLORS = {
     'expired': 'text-red-400 border-red-400/30'
 };
 
-// Domain Lifecycle Status (Strategic, not Technical)
-// Status = technical condition (Active / Down / Expired)
-// Lifecycle = strategic decision (Active / Released / Quarantined / Archived)
+// ===== DOMAIN ACTIVE STATUS (Administrative - AUTO) =====
+// Computed from expiration_date - NOT editable
+const DOMAIN_ACTIVE_STATUS_LABELS = {
+    'active': 'Active',
+    'expired': 'Expired'
+};
+
+const DOMAIN_ACTIVE_STATUS_COLORS = {
+    'active': 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10',
+    'expired': 'text-red-400 border-red-400/30 bg-red-500/10'
+};
+
+// ===== MONITORING STATUS (Technical - AUTO) =====
+// Updated by monitoring engine - NOT editable
+const MONITORING_STATUS_LABELS = {
+    'up': 'Up',
+    'down': 'Down',
+    'soft_blocked': 'Soft Blocked',
+    'js_challenge': 'JS Challenge',
+    'country_block': 'Country Block',
+    'captcha': 'Captcha',
+    'unknown': 'Unknown'
+};
+
+const MONITORING_STATUS_COLORS = {
+    'up': 'text-emerald-400 bg-emerald-500/10',
+    'down': 'text-red-400 bg-red-500/10',
+    'soft_blocked': 'text-amber-400 bg-amber-500/10',
+    'js_challenge': 'text-amber-400 bg-amber-500/10',
+    'country_block': 'text-red-400 bg-red-500/10',
+    'captcha': 'text-amber-400 bg-amber-500/10',
+    'unknown': 'text-zinc-400 bg-zinc-500/10'
+};
+
+// ===== LIFECYCLE STATUS (Strategic - MANUAL) =====
+// Super Admin ONLY can edit
 const LIFECYCLE_STATUS_LABELS = {
     'active': 'Active',
     'released': 'Released',
-    'quarantined': 'Quarantined',
-    'archived': 'Archived'
+    'quarantined': 'Quarantined'
 };
 
 const LIFECYCLE_STATUS_COLORS = {
     'active': 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10',
     'released': 'text-zinc-400 border-zinc-400/30 bg-zinc-500/10',
-    'quarantined': 'text-orange-400 border-orange-400/30 bg-orange-500/10',
-    'archived': 'text-zinc-500 border-zinc-500/30 bg-zinc-600/10'
+    'quarantined': 'text-orange-400 border-orange-400/30 bg-orange-500/10'
 };
 
-// Lifecycle tooltip text
-const LIFECYCLE_TOOLTIP = `Lifecycle determines strategic usage and monitoring behavior.
+// Lifecycle tooltip text (MANDATORY UI REQUIREMENT)
+const LIFECYCLE_TOOLTIP = `Lifecycle represents a strategic decision about domain usage.
+It is NOT related to uptime or expiration status.
 
-• Active: Included in monitoring & SEO alerts
-• Released: Intentionally retired, no alerts
-• Quarantined: Blocked due to issues
-• Archived: History only
+• Active: Used in SEO Networks, monitoring enabled
+• Released: Intentionally not renewed / abandoned
+• Quarantined: Domain is problematic (Spam, DMCA, etc.)
 
-⚠️ Domains with lifecycle ≠ Active are excluded from real-time monitoring.`;
+⚠️ Only Active domains can be monitored.`;
 
-// Quarantine Categories
+// ===== QUARANTINE CATEGORIES =====
 const QUARANTINE_CATEGORY_LABELS = {
-    'spam_murni': 'Spam Murni',
+    'spam': 'Spam (Pure Spam)',
     'dmca': 'DMCA',
     'manual_penalty': 'Manual Penalty',
     'rollback_restore': 'Rollback / Restore',
+    'penalized': 'Penalized',
     'other': 'Other'
 };
 
-// SEO Networks Badges Component
+// SEO Networks Badges Component (NO duplicates)
 const SeoNetworksBadges = ({ networks }) => {
     if (!networks || networks.length === 0) {
         return <span className="text-zinc-500 text-sm">—</span>;
