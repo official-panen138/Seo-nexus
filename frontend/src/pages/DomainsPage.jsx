@@ -1160,6 +1160,9 @@ export default function DomainsPage() {
                             <TabsTrigger value="quarantined" data-testid="tab-quarantined" className="text-orange-400 data-[state=active]:text-orange-400">
                                 Quarantined
                             </TabsTrigger>
+                            <TabsTrigger value="not_renewed" data-testid="tab-not-renewed" className="text-red-400 data-[state=active]:text-red-400">
+                                Not Renewed
+                            </TabsTrigger>
                         </TabsList>
                     </Tabs>
                 )}
