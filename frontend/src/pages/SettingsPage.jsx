@@ -156,13 +156,14 @@ export default function SettingsPage() {
 
     const loadSettings = async () => {
         try {
-            const [seoRes, brandingRes, timezoneRes, domainMonitoringRes, emailAlertsRes, digestRes] = await Promise.all([
+            const [seoRes, brandingRes, timezoneRes, domainMonitoringRes, emailAlertsRes, digestRes, perfRes] = await Promise.all([
                 settingsAPI.getSeoTelegram().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } })),
                 settingsAPI.getBranding().catch(() => ({ data: { site_title: 'SEO//NOC', site_description: '', tagline: 'Domain Network Management System', logo_url: '' } })),
                 settingsAPI.getTimezone().catch(() => ({ data: { default_timezone: 'Asia/Jakarta', timezone_label: 'GMT+7' } })),
                 domainMonitoringTelegramAPI.getSettings().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } })),
                 emailAlertsAPI.getSettings().catch(() => ({ data: { enabled: false, configured: false, global_admin_emails: [], severity_threshold: 'high', include_network_managers: true } })),
-                weeklyDigestAPI.getSettings().catch(() => ({ data: { enabled: false, schedule_day: 'monday', schedule_hour: 9 } }))
+                weeklyDigestAPI.getSettings().catch(() => ({ data: { enabled: false, schedule_day: 'monday', schedule_hour: 9 } })),
+                performanceAlertsAPI.getThresholds().catch(() => ({ data: { thresholds: {} } }))
             ]);
             setSeoTelegramConfig(seoRes.data);
             setBrandingConfig(brandingRes.data);
@@ -170,6 +171,9 @@ export default function SettingsPage() {
             setDomainMonitoringConfig(domainMonitoringRes.data);
             setEmailAlertsConfig(emailAlertsRes.data);
             setDigestConfig(digestRes.data);
+            if (perfRes.data?.thresholds) {
+                setPerformanceThresholds(perfRes.data.thresholds);
+            }
         } catch (err) {
             console.error('Failed to load settings:', err);
         } finally {
