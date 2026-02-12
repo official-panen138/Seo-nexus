@@ -815,11 +815,39 @@ class AssetDomainResponse(AssetDomainBase):
     monitoring_status: Optional[str] = None  # up/down/unknown
     days_until_expiration: Optional[int] = None  # Calculated field
 
+    # Lifecycle and quarantine display
+    quarantine_category_label: Optional[str] = None  # Human-readable quarantine label
+    quarantined_by_name: Optional[str] = None  # Name of user who quarantined
+    released_by_name: Optional[str] = None  # Name of user who released
+
     # SEO Network usage - derived from seo_structure_entries
     seo_networks: List[NetworkUsageInfo] = []
 
+    # Computed fields for monitoring rules
+    is_used_in_seo_network: bool = False  # Whether domain is used in any SEO network
+    requires_monitoring: bool = False  # Whether monitoring should be required for this domain
+
     created_at: str
     updated_at: str
+
+
+class SeoMonitoringCoverageStats(BaseModel):
+    """Statistics for SEO Monitoring Coverage panel"""
+
+    domains_in_seo: int  # Total domains used in SEO networks
+    monitored: int  # Domains with monitoring_enabled = true
+    unmonitored: int  # Domains with monitoring_enabled = false
+    coverage_percentage: float  # (monitored / domains_in_seo) * 100
+    
+    # Breakdown by lifecycle
+    active_monitored: int
+    active_unmonitored: int
+    expired_pending_count: int
+    expired_released_count: int
+    quarantined_count: int
+    
+    # Root domain monitoring issues
+    root_domains_missing_monitoring: int  # Root domains used via path but not monitored
 
 
 # ==================== SEO NETWORK MODELS ====================
