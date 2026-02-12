@@ -1624,15 +1624,23 @@ async def get_asset_domains(
         is_expired = domain_active_status_val == "expired"
 
         # ===== 2. MONITORING STATUS (AUTO) =====
+        # Monitoring Status = result from monitoring engine, NEVER editable manually
+        # Unknown means: monitoring toggle OFF, or not yet executed, or domain not eligible
         mon_status = asset.get("monitoring_status", asset.get("ping_status", "unknown"))
         asset["monitoring_status"] = mon_status
         asset["monitoring_status_label"] = MONITORING_STATUS_LABELS.get(mon_status, mon_status.title() if mon_status else "Unknown")
 
-        # ===== 3. LIFECYCLE STATUS (MANUAL) =====
+        # ===== 3. LIFECYCLE STATUS (STRATEGIC - AUTO for expired, MANUAL for rest) =====
         lifecycle = asset.get("lifecycle_status", DomainLifecycleStatus.ACTIVE.value)
         if not lifecycle:
             lifecycle = DomainLifecycleStatus.ACTIVE.value
-            asset["lifecycle_status"] = lifecycle
+        
+        # AUTO-TRANSITION RULE: When domain expires, lifecycle MUST become NOT_RENEWED
+        # This overrides any previous lifecycle status
+        if is_expired and lifecycle not in [DomainLifecycleStatus.NOT_RENEWED.value, "not_renewed"]:
+            lifecycle = DomainLifecycleStatus.NOT_RENEWED.value
+        
+        asset["lifecycle_status"] = lifecycle
         asset["lifecycle_status_label"] = LIFECYCLE_STATUS_LABELS.get(lifecycle, lifecycle.title() if lifecycle else "Active")
         is_active_lifecycle = lifecycle == DomainLifecycleStatus.ACTIVE.value
 
@@ -1642,30 +1650,40 @@ async def get_asset_domains(
             asset["quarantine_category_label"] = QUARANTINE_CATEGORY_LABELS.get(qc, qc)
 
         # ===== MONITORING RULES =====
+        # Monitoring Toggle = human decision (ON/OFF)
+        # Monitoring is allowed ONLY if lifecycle=Active AND domain is not expired
         monitoring_allowed = is_active_lifecycle and not is_expired
         asset["monitoring_allowed"] = monitoring_allowed
         asset["requires_monitoring"] = is_used_in_seo and monitoring_allowed
         
+        # If monitoring not allowed but toggle is ON, force monitoring_status to Unknown
+        if not monitoring_allowed and asset.get("monitoring_enabled"):
+            asset["monitoring_status"] = "unknown"
+            asset["monitoring_status_label"] = "Unknown"
+        
         # ===== VALIDATION WARNINGS =====
         warnings = []
         
-        # RULE 2: Invalid state - Expired domain with Active lifecycle
-        if is_expired and is_active_lifecycle:
+        # RULE 2: Invalid state - Expired domain with Active lifecycle (should auto-transition)
+        if is_expired and lifecycle == DomainLifecycleStatus.ACTIVE.value:
             warnings.append({
                 "warning_type": "expired_active_lifecycle",
                 "message": "⚠️ Domain has expired and cannot be marked as Active.",
-                "suggestion": "Mark as Released"
+                "suggestion": "Auto-transitioning to Not Renewed"
             })
         
-        # Warning if monitoring enabled but not allowed
+        # Warning if monitoring toggle ON but not allowed
         if asset.get("monitoring_enabled") and not monitoring_allowed:
             warnings.append({
                 "warning_type": "monitoring_not_allowed",
-                "message": "Monitoring is enabled but not allowed for this domain.",
-                "suggestion": "Disable monitoring or change lifecycle"
+                "message": "Monitoring toggle is ON but not allowed for this domain.",
+                "suggestion": "Monitoring is disabled for Released/Quarantined/Not Renewed domains"
             })
         
         asset["lifecycle_warnings"] = warnings
+        
+        # Add SEO networks count for sorting
+        asset["seo_networks_count"] = len(unique_networks)
 
     # Batch fetch user names for quarantined_by and released_by
     user_ids_to_fetch = set()
