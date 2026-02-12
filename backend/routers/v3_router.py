@@ -1220,12 +1220,26 @@ async def get_asset_domains(
     monitoring_enabled: Optional[bool] = None,
     search: Optional[str] = None,
     network_id: Optional[str] = None,
+    # New filters for lifecycle and quarantine
+    lifecycle_status: Optional[DomainLifecycleStatus] = None,
+    quarantine_category: Optional[str] = None,
+    is_quarantined: Optional[bool] = None,
+    used_in_seo: Optional[bool] = None,
+    # Special view modes
+    view_mode: Optional[str] = Query(default=None, description="Special view: 'released', 'quarantined', 'unmonitored'"),
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     limit: int = Query(default=25, ge=1, le=100, description="Items per page"),
     current_user: dict = Depends(get_current_user_wrapper),
 ):
     """
     Get asset domains with SERVER-SIDE PAGINATION - BRAND SCOPED.
+
+    New filters:
+    - lifecycle_status: Filter by domain lifecycle (active, expired_pending, expired_released, inactive, archived)
+    - quarantine_category: Filter by quarantine category
+    - is_quarantined: true = only quarantined, false = only non-quarantined
+    - used_in_seo: true = only domains in SEO networks, false = only unused domains
+    - view_mode: Special views - 'released' (expired_released), 'quarantined', 'unmonitored' (in SEO but monitoring disabled)
 
     Returns paginated response with meta information:
     {
@@ -1259,7 +1273,30 @@ async def get_asset_domains(
     if search:
         query["domain_name"] = {"$regex": search, "$options": "i"}
 
+    # New lifecycle filter
+    if lifecycle_status:
+        query["domain_lifecycle_status"] = lifecycle_status.value
+    
+    # Quarantine filters
+    if quarantine_category:
+        query["quarantine_category"] = quarantine_category
+    if is_quarantined is not None:
+        if is_quarantined:
+            query["quarantine_category"] = {"$ne": None}
+        else:
+            query["$or"] = [
+                {"quarantine_category": None},
+                {"quarantine_category": {"$exists": False}}
+            ]
+
+    # Handle special view modes
+    if view_mode == "released":
+        query["domain_lifecycle_status"] = DomainLifecycleStatus.EXPIRED_RELEASED.value
+    elif view_mode == "quarantined":
+        query["quarantine_category"] = {"$ne": None}
+
     # Filter by network_id if provided (domains used in a specific SEO network)
+    domain_ids_in_seo = None
     if network_id:
         # Get all asset_domain_ids used in this network
         structure_entries = await db.seo_structure_entries.find(
@@ -1267,6 +1304,30 @@ async def get_asset_domains(
         ).to_list(10000)
         domain_ids_in_network = [e["asset_domain_id"] for e in structure_entries]
         query["id"] = {"$in": domain_ids_in_network}
+    elif used_in_seo is not None or view_mode == "unmonitored":
+        # Get all domain IDs used in any SEO network
+        all_structure_entries = await db.seo_structure_entries.find(
+            {}, {"_id": 0, "asset_domain_id": 1}
+        ).to_list(100000)
+        domain_ids_in_seo = list(set([e["asset_domain_id"] for e in all_structure_entries]))
+        
+        if view_mode == "unmonitored":
+            # Unmonitored = in SEO network + monitoring disabled + active lifecycle + not quarantined
+            query["id"] = {"$in": domain_ids_in_seo}
+            query["monitoring_enabled"] = False
+            query["domain_lifecycle_status"] = {"$in": [
+                DomainLifecycleStatus.ACTIVE.value,
+                DomainLifecycleStatus.EXPIRED_PENDING.value,
+                None  # Legacy domains without lifecycle status
+            ]}
+            query["$or"] = [
+                {"quarantine_category": None},
+                {"quarantine_category": {"$exists": False}}
+            ]
+        elif used_in_seo:
+            query["id"] = {"$in": domain_ids_in_seo}
+        else:
+            query["id"] = {"$nin": domain_ids_in_seo}
 
     # Get total count for pagination
     total = await db.asset_domains.count_documents(query)
