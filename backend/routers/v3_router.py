@@ -1524,6 +1524,7 @@ async def get_asset_domains(
         ]
     elif sort_by in sort_field_map:
         sort_spec = [(sort_field_map[sort_by], sort_dir), ("domain_name", 1)]  # Secondary sort by name
+        logger.info(f"[SORT DEBUG] Using sort_field_map, sort_spec={sort_spec}")
     elif sort_by == "seo_networks_count":
         # Handle in post-processing (computed field)
         sort_spec = [("domain_name", sort_dir)]
