@@ -1585,6 +1585,8 @@ async def create_asset_domain(
         asset["monitoring_interval"] = asset["monitoring_interval"].value
     if asset.get("ping_status") and hasattr(asset["ping_status"], "value"):
         asset["ping_status"] = asset["ping_status"].value
+    if asset.get("domain_lifecycle_status") and hasattr(asset["domain_lifecycle_status"], "value"):
+        asset["domain_lifecycle_status"] = asset["domain_lifecycle_status"].value
 
     await db.asset_domains.insert_one(asset)
 
