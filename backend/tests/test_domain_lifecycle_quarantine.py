@@ -30,7 +30,7 @@ def super_admin_token():
     )
     if response.status_code != 200:
         pytest.skip(f"Super Admin login failed: {response.text}")
-    return response.json().get("token")
+    return response.json().get("access_token")
 
 
 @pytest.fixture(scope="module")
@@ -42,7 +42,7 @@ def regular_admin_token():
     )
     if response.status_code != 200:
         pytest.skip(f"Regular Admin login failed: {response.text}")
-    return response.json().get("token")
+    return response.json().get("access_token")
 
 
 @pytest.fixture(scope="module")
