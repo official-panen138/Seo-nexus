@@ -17,7 +17,7 @@ import uuid
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 if not BASE_URL:
-    BASE_URL = "https://seo-metrics-prod.preview.emergentagent.com"
+    BASE_URL = "https://domain-monitor-3.preview.emergentagent.com"
 
 # Test credentials
 TEST_EMAIL = "admin@test.com"
