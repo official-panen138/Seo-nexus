@@ -247,7 +247,15 @@ export const assetDomainsAPI = {
     getOne: (assetId) => apiV3.get(`/asset-domains/${assetId}`),
     create: (data) => apiV3.post('/asset-domains', data),
     update: (assetId, data) => apiV3.put(`/asset-domains/${assetId}`, data),
-    delete: (assetId) => apiV3.delete(`/asset-domains/${assetId}`)
+    delete: (assetId) => apiV3.delete(`/asset-domains/${assetId}`),
+    // Lifecycle Management (Super Admin only)
+    markAsReleased: (assetId, data = {}) => apiV3.post(`/asset-domains/${assetId}/mark-released`, data),
+    setLifecycle: (assetId, data) => apiV3.post(`/asset-domains/${assetId}/set-lifecycle`, data),
+    // Quarantine Management (Super Admin only)
+    quarantine: (assetId, data) => apiV3.post(`/asset-domains/${assetId}/quarantine`, data),
+    removeQuarantine: (assetId, data = {}) => apiV3.post(`/asset-domains/${assetId}/remove-quarantine`, data),
+    // Get quarantine categories
+    getQuarantineCategories: () => apiV3.get('/quarantine-categories')
 };
 
 // V3 SEO Networks API
