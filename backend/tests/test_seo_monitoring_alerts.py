@@ -25,7 +25,7 @@ from datetime import datetime, timedelta
 # Base URL from environment - must be set
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://seo-alert-system.preview.emergentagent.com"
+    BASE_URL = "https://seo-metrics-prod.preview.emergentagent.com"
 
 # Test credentials
 TEST_ADMIN_EMAIL = "testadmin@test.com"
