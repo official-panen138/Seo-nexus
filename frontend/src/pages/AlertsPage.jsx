@@ -147,9 +147,9 @@ export default function AlertsPage() {
 
     const loadConflicts = async () => {
         try {
-            // Load stored conflicts
-            const storedRes = await conflictsAPI.getAll();
-            const stored = storedRes.data?.conflicts || [];
+            // Load stored conflicts - use getStored endpoint
+            const storedRes = await conflictsAPI.getStored();
+            const stored = storedRes.data?.conflicts || storedRes.data || [];
             setStoredConflicts(stored);
             setEnhancedConflicts(stored);
         } catch (err) {
