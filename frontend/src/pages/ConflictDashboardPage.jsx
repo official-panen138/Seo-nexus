@@ -552,66 +552,99 @@ export default function ConflictDashboardPage() {
                                 Recurring Conflicts
                             </CardTitle>
                             <p className="text-xs text-zinc-500 mt-1">
+                                <Info className="h-3 w-3 inline mr-1" />
                                 Approved conflicts are automatically resolved and removed from this list.
                             </p>
                         </CardHeader>
                         <CardContent>
-                            {recurringConflicts.length > 0 ? (
-                                <div className="space-y-3 max-h-[250px] overflow-y-auto">
-                                    {recurringConflicts.map((conflict) => (
-                                        <div 
-                                            key={conflict.id}
-                                            className="p-3 rounded-lg bg-zinc-800/50 border border-red-500/20"
-                                        >
-                                            <div className="flex items-start justify-between">
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
-                                                            {conflict.recurrence_count}x recurred
-                                                        </Badge>
-                                                        <Badge variant="outline" className="text-xs">
-                                                            {CONFLICT_TYPE_LABELS[conflict.conflict_type] || conflict.conflict_type}
-                                                        </Badge>
+                            {/* Get recurring conflicts from stored conflicts based on recurring_conflict_ids */}
+                            {(() => {
+                                const recurringIds = metrics?.recurring_conflict_ids || [];
+                                const recurringConflicts = storedConflicts.filter(c => 
+                                    recurringIds.includes(c.id) ||
+                                    (c.recurrence_count > 0 && c.is_active !== false && !['resolved', 'approved', 'ignored'].includes(c.status))
+                                );
+                                
+                                if (recurringConflicts.length > 0) {
+                                    return (
+                                        <div className="space-y-3 max-h-[250px] overflow-y-auto">
+                                            {recurringConflicts.map((conflict) => (
+                                                <div 
+                                                    key={conflict.id}
+                                                    className="p-3 rounded-lg bg-zinc-800/50 border border-red-500/20"
+                                                >
+                                                    <div className="flex items-start justify-between">
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+                                                                    {conflict.recurrence_count}x recurred
+                                                                </Badge>
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    {CONFLICT_TYPE_LABELS[conflict.conflict_type] || conflict.conflict_type}
+                                                                </Badge>
+                                                            </div>
+                                                            <p className="text-sm text-white truncate">
+                                                                {conflict.node_a_label}
+                                                            </p>
+                                                            <p className="text-xs text-zinc-500 mt-1">
+                                                                Network: {conflict.network_name || 'Unknown'}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                                                            {!conflict.optimization_id && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => handleCreateTaskForConflict(conflict.id)}
+                                                                    disabled={creatingTask === conflict.id}
+                                                                    className="text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                                                                    title="Create optimization task for this recurring conflict"
+                                                                >
+                                                                    {creatingTask === conflict.id ? (
+                                                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                                                    ) : (
+                                                                        <>
+                                                                            <Plus className="h-3 w-3 mr-1" />
+                                                                            Task
+                                                                        </>
+                                                                    )}
+                                                                </Button>
+                                                            )}
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handleApproveConflict(conflict.id)}
+                                                                className="text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                                                                title="Approve & deactivate this conflict"
+                                                            >
+                                                                <CheckCircle className="h-3 w-3 mr-1" />
+                                                                Approve
+                                                            </Button>
+                                                            {conflict.optimization_id && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => window.location.href = `/optimizations/${conflict.optimization_id}`}
+                                                                >
+                                                                    <ExternalLink className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <p className="text-sm text-white truncate">
-                                                        {conflict.node_a_label}
-                                                    </p>
-                                                    <p className="text-xs text-zinc-500 mt-1">
-                                                        Network: {conflict.network_name || 'Unknown'}
-                                                    </p>
                                                 </div>
-                                                <div className="flex items-center gap-1">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleApproveConflict(conflict.id)}
-                                                        className="text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-                                                        title="Approve & deactivate this conflict"
-                                                    >
-                                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                                        Approve
-                                                    </Button>
-                                                    {conflict.linked_optimization && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => window.location.href = `/optimizations/${conflict.linked_optimization.id}`}
-                                                        >
-                                                            <ExternalLink className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-8 text-zinc-500">
-                                    <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50 text-emerald-500" />
-                                    <p>No recurring conflicts</p>
-                                    <p className="text-xs mt-1">Great! Resolved conflicts haven't reappeared</p>
-                                </div>
-                            )}
+                                    );
+                                } else {
+                                    return (
+                                        <div className="text-center py-8 text-zinc-500">
+                                            <CheckCircle className="h-8 w-8 mx-auto mb-2 opacity-50 text-emerald-500" />
+                                            <p>No recurring conflicts</p>
+                                            <p className="text-xs mt-1">Great! Resolved conflicts haven't reappeared</p>
+                                        </div>
+                                    );
+                                }
+                            })()}
                         </CardContent>
                     </Card>
                 </div>
