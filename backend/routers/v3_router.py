@@ -1876,7 +1876,7 @@ async def quarantine_domain(
             entity_id=asset_id,
             before_value=existing,
             after_value={**existing, **update_dict},
-            notes=f"Quarantined: {data.quarantine_category} - {data.quarantine_note or 'No note'}"
+            metadata={"notes": f"Quarantined: {data.quarantine_category} - {data.quarantine_note or 'No note'}"}
         )
     
     updated = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
