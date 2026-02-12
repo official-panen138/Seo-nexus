@@ -48,6 +48,51 @@ class AssetStatus(str, Enum):
     EXPIRED = "expired"
 
 
+class DomainLifecycleStatus(str, Enum):
+    """
+    Lifecycle status of a domain for monitoring purposes.
+    Only 'active' and 'expired_pending' are monitored in realtime.
+    """
+
+    ACTIVE = "active"  # Domain actively used - MONITORED
+    EXPIRED_PENDING = "expired_pending"  # Expired but decision not made - MONITORED
+    EXPIRED_RELEASED = "expired_released"  # Expired and intentionally NOT renewed - NOT monitored
+    INACTIVE = "inactive"  # No longer used in SEO networks - NOT monitored
+    ARCHIVED = "archived"  # Historical only - NOT monitored
+
+
+# Lifecycle statuses that should be included in realtime monitoring
+MONITORED_LIFECYCLE_STATUSES = [
+    DomainLifecycleStatus.ACTIVE,
+    DomainLifecycleStatus.EXPIRED_PENDING,
+]
+
+
+class QuarantineCategory(str, Enum):
+    """
+    Quarantine categories for problematic domains.
+    Quarantined domains are excluded from ALL monitoring, alerts, and notifications.
+    """
+
+    SPAM_MURNI = "spam_murni"
+    DMCA = "dmca"
+    ROLLBACK_RESTORE = "rollback_restore"
+    PENALIZED = "penalized"
+    MANUAL_REVIEW = "manual_review"
+    CUSTOM = "custom"  # Free-form custom category
+
+
+# Default quarantine category labels for UI
+QUARANTINE_CATEGORY_LABELS = {
+    "spam_murni": "Spam Murni",
+    "dmca": "DMCA",
+    "rollback_restore": "Rollback Restore",
+    "penalized": "Penalized",
+    "manual_review": "Manual Review",
+    "custom": "Custom",
+}
+
+
 class NetworkStatus(str, Enum):
     """Status of SEO network"""
 
