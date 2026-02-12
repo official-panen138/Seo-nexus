@@ -161,14 +161,16 @@ export default function AlertsPage() {
     const loadMetrics = async () => {
         setLoadingMetrics(true);
         try {
-            const [metricsRes, resolversRes, recurringRes] = await Promise.all([
-                conflictsAPI.getMetrics(periodDays),
-                conflictsAPI.getTopResolvers(periodDays, 5),
-                conflictsAPI.getRecurringConflicts(periodDays)
-            ]);
-            setMetrics(metricsRes.data);
-            setTopResolvers(resolversRes.data?.resolvers || []);
-            setRecurringConflicts(recurringRes.data?.conflicts || []);
+            const metricsRes = await conflictsAPI.getMetrics({ days: parseInt(periodDays) });
+            const metricsData = metricsRes.data;
+            setMetrics(metricsData);
+            
+            // Top resolvers come from the metrics endpoint
+            setTopResolvers(metricsData?.top_resolvers || []);
+            
+            // Recurring conflicts are tracked via recurring_conflicts count
+            // No separate endpoint needed - data is in metrics
+            setRecurringConflicts([]);
         } catch (err) {
             console.error('Failed to load metrics:', err);
         } finally {
