@@ -1002,6 +1002,7 @@ class SeoMonitoringCoverageStats(BaseModel):
     active_unmonitored: int
     released_count: int
     quarantined_count: int
+    not_renewed_count: int  # Domains expired and auto-transitioned to Not Renewed
     
     # Breakdown by domain_active_status
     expired_count: int
