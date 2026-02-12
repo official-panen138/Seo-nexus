@@ -479,6 +479,12 @@ export default function DomainsPage() {
                 params.view_mode = viewMode;
             }
             
+            // NEW: Sorting params
+            if (sortField) {
+                params.sort_by = sortField;
+                params.sort_direction = sortDirection;
+            }
+            
             const response = await assetDomainsAPI.getAll(params);
             
             // Handle paginated response
