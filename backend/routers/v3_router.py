@@ -1523,24 +1523,55 @@ async def get_asset_domains(
         is_used_in_seo = len(raw_networks) > 0
         asset["is_used_in_seo_network"] = is_used_in_seo
         
-        # Check if monitoring is required (used in SEO + active lifecycle + not quarantined)
+        # Get lifecycle status (default to 'active' for legacy domains)
         lifecycle = asset.get("domain_lifecycle_status", DomainLifecycleStatus.ACTIVE.value)
-        is_active_lifecycle = lifecycle in [
-            DomainLifecycleStatus.ACTIVE.value, 
-            DomainLifecycleStatus.EXPIRED_PENDING.value,
-            None  # Legacy domains
-        ]
-        is_not_quarantined = not asset.get("quarantine_category")
-        asset["requires_monitoring"] = is_used_in_seo and is_active_lifecycle and is_not_quarantined
+        if not lifecycle:
+            lifecycle = DomainLifecycleStatus.ACTIVE.value
+            asset["domain_lifecycle_status"] = lifecycle
+        
+        # Add lifecycle status label
+        asset["lifecycle_status_label"] = LIFECYCLE_STATUS_LABELS.get(lifecycle, lifecycle.title() if lifecycle else "Active")
+        
+        # ONLY active lifecycle requires monitoring
+        is_active_lifecycle = lifecycle == DomainLifecycleStatus.ACTIVE.value
+        asset["requires_monitoring"] = is_used_in_seo and is_active_lifecycle
         
         # Add quarantine category label
         qc = asset.get("quarantine_category")
         if qc:
             asset["quarantine_category_label"] = QUARANTINE_CATEGORY_LABELS.get(qc, qc)
         
-        # Ensure lifecycle status has a default
-        if not asset.get("domain_lifecycle_status"):
-            asset["domain_lifecycle_status"] = DomainLifecycleStatus.ACTIVE.value
+        # === LIFECYCLE VALIDATION WARNINGS ===
+        warnings = []
+        status = asset.get("status", "active")
+        expiration_date = asset.get("expiration_date")
+        
+        if expiration_date and is_active_lifecycle:
+            try:
+                exp_date = datetime.fromisoformat(expiration_date.replace('Z', '+00:00'))
+                if exp_date.tzinfo is None:
+                    exp_date = exp_date.replace(tzinfo=timezone.utc)
+                days_until = (exp_date - datetime.now(timezone.utc)).days
+                
+                if days_until < 0 or status == "expired":
+                    warnings.append({
+                        "warning_type": "expired_active",
+                        "message": "This domain is marked as Active but has expired. This may cause SEO risk or alert noise.",
+                        "suggestion": "Mark as Released or Quarantined"
+                    })
+            except:
+                pass
+        
+        # Check for down domain with active lifecycle
+        ping_status = asset.get("ping_status", "unknown")
+        if ping_status == "down" and is_active_lifecycle:
+            warnings.append({
+                "warning_type": "down_active",
+                "message": "This domain is marked as Active but is technically unavailable (DOWN).",
+                "suggestion": "Check domain status or consider marking as Released/Quarantined"
+            })
+        
+        asset["lifecycle_warnings"] = warnings
 
     # Batch fetch user names for quarantined_by and released_by
     user_ids_to_fetch = set()
