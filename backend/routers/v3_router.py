@@ -1803,10 +1803,12 @@ async def mark_domain_as_released(
     
     now = datetime.now(timezone.utc).isoformat()
     update_dict = {
-        "domain_lifecycle_status": DomainLifecycleStatus.EXPIRED_RELEASED.value,
+        "domain_lifecycle_status": DomainLifecycleStatus.RELEASED.value,
         "released_at": now,
         "released_by": current_user.get("id"),
         "monitoring_enabled": False,  # Disable monitoring
+        "quarantine_category": None,  # Clear any quarantine
+        "quarantine_note": None,
         "updated_at": now,
     }
     
@@ -1821,7 +1823,7 @@ async def mark_domain_as_released(
             entity_id=asset_id,
             before_value=existing,
             after_value={**existing, **update_dict},
-            metadata={"notes": f"Marked as released: {data.reason}" if data.reason else "Marked as released (not renewed)"}
+            metadata={"notes": f"Marked as released: {data.reason}" if data.reason else "Marked as released (intentionally retired)"}
         )
     
     updated = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
@@ -1839,11 +1841,12 @@ async def set_domain_lifecycle(
     Change domain lifecycle status - SUPER ADMIN ONLY.
     
     Valid statuses:
-    - active: Domain actively used (monitored)
-    - expired_pending: Expired but decision not made (monitored)
-    - expired_released: Intentionally not renewed (NOT monitored)
-    - inactive: No longer used in SEO networks (NOT monitored)
+    - active: Domain actively used (MONITORED)
+    - released: Intentionally retired/not renewed (NOT monitored)
+    - quarantined: Blocked due to issues (NOT monitored)
     - archived: Historical only (NOT monitored)
+    
+    Note: Only 'active' lifecycle domains are included in real-time monitoring.
     """
     # Super Admin check
     if current_user.get("role") != "super_admin":
@@ -1856,14 +1859,43 @@ async def set_domain_lifecycle(
     if not existing:
         raise HTTPException(status_code=404, detail="Asset domain not found")
     
+    # Validation: Cannot set active lifecycle for expired domains
+    status = existing.get("status", "active")
+    expiration_date = existing.get("expiration_date")
+    
+    if data.lifecycle_status == DomainLifecycleStatus.ACTIVE:
+        is_expired = status == "expired"
+        if not is_expired and expiration_date:
+            try:
+                exp_date = datetime.fromisoformat(expiration_date.replace('Z', '+00:00'))
+                if exp_date.tzinfo is None:
+                    exp_date = exp_date.replace(tzinfo=timezone.utc)
+                days_until = (exp_date - datetime.now(timezone.utc)).days
+                is_expired = days_until < 0
+            except:
+                pass
+        
+        if is_expired:
+            raise HTTPException(
+                status_code=400,
+                detail="Expired domains cannot have lifecycle 'Active'. Please mark as Released or Quarantined."
+            )
+    
+    # Validation: Quarantined lifecycle requires quarantine_category
+    if data.lifecycle_status == DomainLifecycleStatus.QUARANTINED and not data.quarantine_category:
+        raise HTTPException(
+            status_code=400,
+            detail="Quarantine category is required when setting lifecycle to 'Quarantined'"
+        )
+    
     now = datetime.now(timezone.utc).isoformat()
     update_dict = {
         "domain_lifecycle_status": data.lifecycle_status.value,
         "updated_at": now,
     }
     
-    # If setting to released, track who did it
-    if data.lifecycle_status == DomainLifecycleStatus.EXPIRED_RELEASED:
+    # Handle lifecycle-specific fields
+    if data.lifecycle_status == DomainLifecycleStatus.RELEASED:
         update_dict["released_at"] = now
         update_dict["released_by"] = current_user.get("id")
         update_dict["monitoring_enabled"] = False
