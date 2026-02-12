@@ -48,26 +48,76 @@ class AssetStatus(str, Enum):
     EXPIRED = "expired"
 
 
-class DomainLifecycleStatus(str, Enum):
+class DomainActiveStatus(str, Enum):
     """
-    Lifecycle represents the STRATEGIC usage state of a domain in SEO.
+    DOMAIN ACTIVE STATUS (Administrative - AUTO)
     
-    Status = technical condition (Active / Down / Expired)
-    Lifecycle = strategic decision (Active / Released / Quarantined / Archived)
+    Indicates administrative domain validity based on expiration date.
+    Answers: "Is this domain still active from a registration standpoint?"
     
-    ONLY 'active' lifecycle domains are included in real-time monitoring.
-    All other lifecycles are excluded from ALL alerts and notifications.
+    ❌ NOT editable manually
+    ✅ Computed automatically
+    ⏱ Date-based only (NOT technical)
+    
+    Has NO relation to uptime or monitoring - purely administrative (registration-based)
     """
 
-    ACTIVE = "active"  # Actively used in SEO - MONITORED
-    RELEASED = "released"  # Intentionally retired/not renewed - NOT monitored
-    QUARANTINED = "quarantined"  # Blocked due to issues (Spam, DMCA, Penalty) - NOT monitored
-    ARCHIVED = "archived"  # History only, no operational usage - NOT monitored
-    # PLANNED = "planned"  # Optional: Future planned domain
+    ACTIVE = "active"  # today < expiration_date
+    EXPIRED = "expired"  # today >= expiration_date
+
+
+class DomainMonitoringStatus(str, Enum):
+    """
+    DOMAIN MONITORING STATUS (Technical - AUTO)
+    
+    Represents real technical availability from monitoring services.
+    
+    ❌ NOT editable manually
+    🔄 Updated by monitoring engine
+    """
+
+    UP = "up"
+    DOWN = "down"
+    SOFT_BLOCKED = "soft_blocked"
+    JS_CHALLENGE = "js_challenge"  # Cloudflare, etc.
+    COUNTRY_BLOCK = "country_block"  # 403 / 451
+    CAPTCHA = "captcha"  # Bot Protection
+    UNKNOWN = "unknown"  # Monitoring not enabled yet
+
+
+# Monitoring status labels for UI
+MONITORING_STATUS_LABELS = {
+    "up": "Up",
+    "down": "Down",
+    "soft_blocked": "Soft Blocked",
+    "js_challenge": "JS Challenge",
+    "country_block": "Country Block",
+    "captcha": "Captcha / Bot Protection",
+    "unknown": "Unknown",
+}
+
+
+class DomainLifecycleStatus(str, Enum):
+    """
+    DOMAIN LIFECYCLE (Strategic - MANUAL)
+    
+    Represents business / SEO strategy decision for the domain.
+    Answers: "Is this domain intentionally used in SEO strategy?"
+    
+    ✅ Super Admin ONLY can edit
+    
+    LIFECYCLE vs MONITORING MATRIX:
+    - Active: ✅ Monitoring Allowed
+    - Released: ❌ Monitoring NOT Allowed
+    - Quarantined: ❌ Monitoring NOT Allowed
+    """
+
+    ACTIVE = "active"  # Used in SEO Networks - MONITORED
+    RELEASED = "released"  # Intentionally not renewed / abandoned - NOT monitored
+    QUARANTINED = "quarantined"  # Domain is problematic - NOT monitored
 
 
 # Only ACTIVE lifecycle is included in real-time monitoring
-# All other lifecycles are excluded from ALL alerts
 MONITORED_LIFECYCLE_STATUSES = [
     DomainLifecycleStatus.ACTIVE,
 ]
@@ -77,39 +127,42 @@ LIFECYCLE_STATUS_LABELS = {
     "active": "Active",
     "released": "Released",
     "quarantined": "Quarantined",
-    "archived": "Archived",
 }
 
-# Lifecycle tooltip text for UI
-LIFECYCLE_TOOLTIP = """Lifecycle determines strategic usage and monitoring behavior.
+# Lifecycle tooltip text for UI (MANDATORY)
+LIFECYCLE_TOOLTIP = """Lifecycle represents a strategic decision about domain usage.
+It is NOT related to uptime or expiration status.
 
-• Active: Included in monitoring & SEO alerts
-• Released: Intentionally retired, no alerts
-• Quarantined: Blocked due to issues
-• Archived: History only
+• Active: Used in SEO Networks, monitoring enabled
+• Released: Intentionally not renewed / abandoned
+• Quarantined: Domain is problematic (Spam, DMCA, etc.)
 
-⚠️ Domains with lifecycle ≠ Active are excluded from real-time monitoring."""
+⚠️ Only Active domains can be monitored."""
 
 
 class QuarantineCategory(str, Enum):
     """
-    Quarantine categories for problematic domains.
-    Quarantined domains are excluded from ALL monitoring, alerts, and notifications.
+    QUARANTINE CATEGORY (Super Admin ONLY)
+    
+    Explains WHY a domain is quarantined.
+    Master data - CRUD allowed for Super Admin, read-only for Admin/User.
     """
 
-    SPAM_MURNI = "spam_murni"
+    SPAM = "spam"  # Pure Spam
     DMCA = "dmca"
     MANUAL_PENALTY = "manual_penalty"
     ROLLBACK_RESTORE = "rollback_restore"
-    OTHER = "other"  # Custom reason with note
+    PENALIZED = "penalized"
+    OTHER = "other"
 
 
-# Default quarantine category labels for UI
+# Quarantine category labels for UI
 QUARANTINE_CATEGORY_LABELS = {
-    "spam_murni": "Spam Murni",
+    "spam": "Spam (Pure Spam)",
     "dmca": "DMCA",
     "manual_penalty": "Manual Penalty",
     "rollback_restore": "Rollback / Restore",
+    "penalized": "Penalized",
     "other": "Other",
 }
 
