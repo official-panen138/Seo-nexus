@@ -2043,11 +2043,17 @@ async def remove_domain_quarantine(
     if not existing:
         raise HTTPException(status_code=404, detail="Asset domain not found")
     
-    if not existing.get("quarantine_category"):
+    # Check if domain is quarantined (either by quarantine_category or lifecycle)
+    is_quarantined = (
+        existing.get("quarantine_category") or 
+        existing.get("domain_lifecycle_status") == DomainLifecycleStatus.QUARANTINED.value
+    )
+    if not is_quarantined:
         raise HTTPException(status_code=400, detail="Domain is not quarantined")
     
     now = datetime.now(timezone.utc).isoformat()
     update_dict = {
+        "domain_lifecycle_status": DomainLifecycleStatus.ACTIVE.value,  # Restore to active
         "quarantine_category": None,
         "quarantine_note": None,
         "quarantined_at": None,
@@ -2066,7 +2072,7 @@ async def remove_domain_quarantine(
             entity_id=asset_id,
             before_value=existing,
             after_value={**existing, **update_dict},
-            metadata={"notes": f"Quarantine removed: {data.reason}" if data.reason else "Quarantine removed"}
+            metadata={"notes": f"Quarantine removed, lifecycle restored to Active: {data.reason}" if data.reason else "Quarantine removed, lifecycle restored to Active"}
         )
     
     updated = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
