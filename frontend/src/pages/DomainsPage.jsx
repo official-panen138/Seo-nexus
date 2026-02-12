@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { domainsAPI, brandsAPI, groupsAPI, categoriesAPI, assetDomainsAPI, networksAPI, registrarsAPI, exportAPI, monitoringAPI } from '../lib/api';
+import { domainsAPI, brandsAPI, groupsAPI, categoriesAPI, assetDomainsAPI, networksAPI, registrarsAPI, exportAPI, importAPI, monitoringAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { DomainDetailPanel } from '../components/DomainDetailPanel';
 import { Button } from '../components/ui/button';
