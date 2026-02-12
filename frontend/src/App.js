@@ -22,7 +22,6 @@ import CategoriesPage from "./pages/CategoriesPage";
 import UsersPage from "./pages/UsersPage";
 import AuditLogsPage from "./pages/AuditLogsPage";
 import AlertsPage from "./pages/AlertsPage";
-import ConflictDashboardPage from "./pages/ConflictDashboardPage";
 import SettingsPage from "./pages/SettingsPage";
 import ActivityLogsPage from "./pages/ActivityLogsPage";
 import RegistrarsPage from "./pages/RegistrarsPage";
