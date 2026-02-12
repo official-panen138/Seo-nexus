@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../components/ui/switch';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Settings, Send, MessageCircle, CheckCircle, AlertCircle, Network, Bell, Palette, Clock, Upload, Image, Globe, Shield, Mail, Plus, X, Calendar, Eye, FileText, FlaskConical, TrendingUp } from 'lucide-react';
+import { Loader2, Settings, Send, MessageCircle, CheckCircle, AlertCircle, Network, Bell, Palette, Clock, Upload, Image, Globe, Shield, Mail, Plus, X, Calendar, Eye, FileText, FlaskConical, TrendingUp, Database, Edit, Trash2, ShieldAlert } from 'lucide-react';
 import NotificationTemplatesTab from '../components/NotificationTemplatesTab';
 
 
