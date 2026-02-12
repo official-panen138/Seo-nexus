@@ -102,6 +102,7 @@ export const MenuPermissionsProvider = ({ children }) => {
             '/settings/activity-types': 'activity_types',
             '/settings/scheduler': 'scheduler',
             '/settings/monitoring': 'monitoring',
+            '/settings/quarantine-categories': 'quarantine_categories',
             '/settings': 'settings'
         };
 
