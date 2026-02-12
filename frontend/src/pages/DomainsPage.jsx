@@ -324,7 +324,7 @@ export default function DomainsPage() {
         if (useV3) {
             loadPaginatedData();
         }
-    }, [useV3, currentPage, pageSize, debouncedSearch, filterBrand, filterCategory, filterStatus, filterMonitoring, viewMode, filterLifecycle, filterQuarantine, filterUsedInSeo]);
+    }, [useV3, currentPage, pageSize, debouncedSearch, filterBrand, filterCategory, filterStatus, filterMonitoring, filterMonitoringStatus, filterDomainActiveStatus, viewMode, filterLifecycle, filterQuarantine, filterUsedInSeo]);
 
     // Load reference data and coverage stats once
     useEffect(() => {
