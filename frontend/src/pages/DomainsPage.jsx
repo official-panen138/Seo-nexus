@@ -1256,8 +1256,8 @@ export default function DomainsPage() {
                                         <TableHead>Expiration</TableHead>
                                     </>
                                 ) : (
-                                    <TableHead>Status</TableHead>
                                     <>
+                                        <TableHead>Status</TableHead>
                                         <TableHead>Tier</TableHead>
                                         <TableHead>Index</TableHead>
                                         <TableHead>Network</TableHead>
