@@ -2225,100 +2225,263 @@ export default function DomainsPage() {
                     </DialogContent>
                 </Dialog>
 
-                {/* CSV Import Dialog */}
+                {/* CSV Import Dialog - Enhanced with Preview/Confirm Flow */}
                 <Dialog open={importDialogOpen} onOpenChange={(open) => {
                     setImportDialogOpen(open);
                     if (!open) resetImport();
                 }}>
-                    <DialogContent className="bg-card border-border max-w-2xl max-h-[85vh] overflow-y-auto">
+                    <DialogContent className="bg-card border-border max-w-4xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <FileSpreadsheet className="h-5 w-5" />
                                 Import Domains from CSV
+                                {importStep !== 'upload' && (
+                                    <Badge variant="outline" className="ml-2">
+                                        Step {importStep === 'preview' ? '2/3' : '3/3'}
+                                    </Badge>
+                                )}
                             </DialogTitle>
                             <DialogDescription>
-                                Upload a CSV file to bulk import domains. Download the template for the correct format.
+                                {importStep === 'upload' && 'Upload a CSV file to bulk import domains. Download the template for the correct format.'}
+                                {importStep === 'preview' && 'Review the validation results before confirming the import.'}
+                                {importStep === 'result' && 'Import completed. Review the results below.'}
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="space-y-6">
-                            {/* Template Download */}
-                            <div className="flex items-center justify-between p-4 bg-zinc-900 rounded-lg">
-                                <div>
-                                    <p className="text-sm font-medium">CSV Template</p>
-                                    <p className="text-xs text-zinc-500">Required column: domain_name</p>
-                                </div>
-                                <Button variant="outline" size="sm" onClick={downloadTemplate}>
-                                    Download Template
-                                </Button>
-                            </div>
-
-                            {/* File Upload */}
-                            <div className="space-y-2">
-                                <Label>Select CSV File</Label>
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept=".csv"
-                                    onChange={handleFileSelect}
-                                    className="block w-full text-sm text-zinc-400
-                                        file:mr-4 file:py-2 file:px-4
-                                        file:rounded-md file:border-0
-                                        file:text-sm file:font-medium
-                                        file:bg-zinc-800 file:text-white
-                                        hover:file:bg-zinc-700
-                                        cursor-pointer"
-                                />
-                            </div>
-
-                            {/* Preview */}
-                            {importData.length > 0 && !importResult && (
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label>Preview ({importData.length} domains)</Label>
-                                        <Button variant="ghost" size="sm" onClick={resetImport}>
-                                            <X className="h-4 w-4 mr-1" />
-                                            Clear
+                            {/* STEP 1: Upload */}
+                            {importStep === 'upload' && (
+                                <>
+                                    {/* Template Download */}
+                                    <div className="flex items-center justify-between p-4 bg-zinc-900 rounded-lg">
+                                        <div>
+                                            <p className="text-sm font-medium">CSV Template</p>
+                                            <p className="text-xs text-zinc-500">Columns: domain_name, brand_name, category_name, registrar_name, expiration_date, lifecycle_status, monitoring_enabled, notes</p>
+                                        </div>
+                                        <Button variant="outline" size="sm" onClick={downloadTemplate} data-testid="download-template-btn">
+                                            <Download className="h-4 w-4 mr-2" />
+                                            Download Template
                                         </Button>
                                     </div>
-                                    <div className="max-h-60 overflow-y-auto border border-border rounded-md">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Domain</TableHead>
-                                                    <TableHead>Brand</TableHead>
-                                                    <TableHead>Status</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {importData.slice(0, 10).map((item, i) => (
-                                                    <TableRow key={i}>
-                                                        <TableCell className="font-mono text-sm">{item.domain_name}</TableCell>
-                                                        <TableCell className="text-sm">{item.brand_name || '-'}</TableCell>
-                                                        <TableCell className="text-sm">{item.status}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                                {importData.length > 10 && (
-                                                    <TableRow>
-                                                        <TableCell colSpan={3} className="text-center text-zinc-500">
-                                                            ...and {importData.length - 10} more
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )}
-                                            </TableBody>
-                                        </Table>
+
+                                    {/* File Upload */}
+                                    <div className="space-y-2">
+                                        <Label>Select CSV File</Label>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".csv"
+                                            onChange={handleFileSelect}
+                                            className="block w-full text-sm text-zinc-400
+                                                file:mr-4 file:py-2 file:px-4
+                                                file:rounded-md file:border-0
+                                                file:text-sm file:font-medium
+                                                file:bg-zinc-800 file:text-white
+                                                hover:file:bg-zinc-700
+                                                cursor-pointer"
+                                            data-testid="import-file-input"
+                                        />
                                     </div>
-                                </div>
+
+                                    {/* CSV Preview (before backend validation) */}
+                                    {importData.length > 0 && (
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <Label>File loaded: {importData.length} rows</Label>
+                                                <Button variant="ghost" size="sm" onClick={resetImport}>
+                                                    <X className="h-4 w-4 mr-1" />
+                                                    Clear
+                                                </Button>
+                                            </div>
+                                            <div className="max-h-48 overflow-y-auto border border-border rounded-md">
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow>
+                                                            <TableHead>Domain</TableHead>
+                                                            <TableHead>Brand</TableHead>
+                                                            <TableHead>Expiration</TableHead>
+                                                            <TableHead>Lifecycle</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {importData.slice(0, 5).map((item, i) => (
+                                                            <TableRow key={i}>
+                                                                <TableCell className="font-mono text-sm">{item.domain_name}</TableCell>
+                                                                <TableCell className="text-sm">{item.brand_name || '-'}</TableCell>
+                                                                <TableCell className="text-sm">{item.expiration_date || '-'}</TableCell>
+                                                                <TableCell className="text-sm">{item.lifecycle_status || 'active'}</TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                        {importData.length > 5 && (
+                                                            <TableRow>
+                                                                <TableCell colSpan={4} className="text-center text-zinc-500">
+                                                                    ...and {importData.length - 5} more
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )}
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
 
-                            {/* Import Results */}
-                            {importResult && (
-                                <div className="space-y-4">
+                            {/* STEP 2: Preview (Backend Validation Results) */}
+                            {importStep === 'preview' && importPreview && (
+                                <>
+                                    {/* Summary Stats */}
                                     <div className="grid grid-cols-3 gap-4">
                                         <div className="p-4 bg-emerald-500/10 rounded-lg text-center">
+                                            <Plus className="h-6 w-6 text-emerald-500 mx-auto mb-1" />
+                                            <p className="text-2xl font-bold text-emerald-500">{importPreview.summary.new_count}</p>
+                                            <p className="text-xs text-zinc-500">New Domains</p>
+                                        </div>
+                                        <div className="p-4 bg-blue-500/10 rounded-lg text-center">
+                                            <Edit className="h-6 w-6 text-blue-500 mx-auto mb-1" />
+                                            <p className="text-2xl font-bold text-blue-500">{importPreview.summary.update_count}</p>
+                                            <p className="text-xs text-zinc-500">Will Update</p>
+                                        </div>
+                                        <div className="p-4 bg-red-500/10 rounded-lg text-center">
+                                            <XCircle className="h-6 w-6 text-red-500 mx-auto mb-1" />
+                                            <p className="text-2xl font-bold text-red-500">{importPreview.summary.error_count}</p>
+                                            <p className="text-xs text-zinc-500">Errors</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Import Options */}
+                                    <div className="flex items-center gap-6 p-4 bg-zinc-900 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <Switch 
+                                                checked={createNew} 
+                                                onCheckedChange={setCreateNew}
+                                                data-testid="create-new-switch"
+                                            />
+                                            <Label className="text-sm">Create new domains ({importPreview.summary.new_count})</Label>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Switch 
+                                                checked={updateExisting} 
+                                                onCheckedChange={setUpdateExisting}
+                                                data-testid="update-existing-switch"
+                                            />
+                                            <Label className="text-sm">Update existing ({importPreview.summary.update_count})</Label>
+                                        </div>
+                                    </div>
+
+                                    {/* Errors Section */}
+                                    {importPreview.errors.length > 0 && (
+                                        <div className="space-y-2">
+                                            <Label className="text-red-400 flex items-center gap-2">
+                                                <AlertCircle className="h-4 w-4" />
+                                                Invalid Rows ({importPreview.errors.length}) - These will NOT be imported
+                                            </Label>
+                                            <div className="max-h-32 overflow-y-auto border border-red-900/50 rounded-md p-2">
+                                                {importPreview.errors.map((err, i) => (
+                                                    <p key={i} className="text-xs text-red-400">
+                                                        Row {err.row}: <span className="font-mono">{err.domain_name}</span> - {err.errors.join(', ')}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* New Domains Preview */}
+                                    {importPreview.new_domains.length > 0 && createNew && (
+                                        <div className="space-y-2">
+                                            <Label className="text-emerald-400 flex items-center gap-2">
+                                                <Plus className="h-4 w-4" />
+                                                New Domains ({importPreview.new_domains.length})
+                                            </Label>
+                                            <div className="max-h-40 overflow-y-auto border border-emerald-900/30 rounded-md">
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow>
+                                                            <TableHead>Domain</TableHead>
+                                                            <TableHead>Brand</TableHead>
+                                                            <TableHead>Expiration</TableHead>
+                                                            <TableHead>Note</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {importPreview.new_domains.slice(0, 10).map((item, i) => (
+                                                            <TableRow key={i}>
+                                                                <TableCell className="font-mono text-sm">{item.domain_name}</TableCell>
+                                                                <TableCell className="text-sm">
+                                                                    {item.brand_name || '-'}
+                                                                    {item.brand_warning && (
+                                                                        <span className="ml-1 text-amber-400 text-xs">({item.brand_warning})</span>
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="text-sm">{item.expiration_date || '-'}</TableCell>
+                                                                <TableCell className="text-xs text-zinc-500">{item.category_warning || ''}</TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                        {importPreview.new_domains.length > 10 && (
+                                                            <TableRow>
+                                                                <TableCell colSpan={4} className="text-center text-zinc-500">
+                                                                    ...and {importPreview.new_domains.length - 10} more
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )}
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Update Domains Preview */}
+                                    {importPreview.updated_domains.length > 0 && updateExisting && (
+                                        <div className="space-y-2">
+                                            <Label className="text-blue-400 flex items-center gap-2">
+                                                <Edit className="h-4 w-4" />
+                                                Domains to Update ({importPreview.updated_domains.length})
+                                            </Label>
+                                            <div className="max-h-40 overflow-y-auto border border-blue-900/30 rounded-md">
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow>
+                                                            <TableHead>Domain</TableHead>
+                                                            <TableHead>Changes</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {importPreview.updated_domains.slice(0, 10).map((item, i) => (
+                                                            <TableRow key={i}>
+                                                                <TableCell className="font-mono text-sm">{item.domain_name}</TableCell>
+                                                                <TableCell className="text-xs text-zinc-400">
+                                                                    {item.changes?.length > 0 ? item.changes.join(', ') : 'No changes detected'}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                        {importPreview.updated_domains.length > 10 && (
+                                                            <TableRow>
+                                                                <TableCell colSpan={2} className="text-center text-zinc-500">
+                                                                    ...and {importPreview.updated_domains.length - 10} more
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )}
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {/* STEP 3: Result */}
+                            {importStep === 'result' && importResult && (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-4 gap-4">
+                                        <div className="p-4 bg-emerald-500/10 rounded-lg text-center">
                                             <CheckCircle className="h-6 w-6 text-emerald-500 mx-auto mb-1" />
-                                            <p className="text-2xl font-bold text-emerald-500">{importResult.imported}</p>
-                                            <p className="text-xs text-zinc-500">Imported</p>
+                                            <p className="text-2xl font-bold text-emerald-500">{importResult.created}</p>
+                                            <p className="text-xs text-zinc-500">Created</p>
+                                        </div>
+                                        <div className="p-4 bg-blue-500/10 rounded-lg text-center">
+                                            <Edit className="h-6 w-6 text-blue-500 mx-auto mb-1" />
+                                            <p className="text-2xl font-bold text-blue-500">{importResult.updated}</p>
+                                            <p className="text-xs text-zinc-500">Updated</p>
                                         </div>
                                         <div className="p-4 bg-amber-500/10 rounded-lg text-center">
                                             <AlertCircle className="h-6 w-6 text-amber-500 mx-auto mb-1" />
@@ -2341,30 +2504,66 @@ export default function DomainsPage() {
                                             ))}
                                         </div>
                                     )}
+
+                                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-center">
+                                        <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                                        <p className="text-emerald-400 font-medium">Import Complete!</p>
+                                        <p className="text-sm text-zinc-400 mt-1">
+                                            {importResult.created + importResult.updated} domains successfully processed
+                                        </p>
+                                    </div>
                                 </div>
                             )}
                         </div>
 
-                        <DialogFooter>
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    setImportDialogOpen(false);
-                                    resetImport();
-                                }}
-                            >
-                                {importResult ? 'Close' : 'Cancel'}
-                            </Button>
-                            {!importResult && (
+                        <DialogFooter className="flex justify-between">
+                            <div>
+                                {importStep === 'preview' && (
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => setImportStep('upload')}
+                                    >
+                                        <ChevronLeft className="h-4 w-4 mr-1" />
+                                        Back
+                                    </Button>
+                                )}
+                            </div>
+                            <div className="flex gap-2">
                                 <Button
-                                    onClick={handleImport}
-                                    disabled={importing || importData.length === 0}
-                                    className="bg-white text-black hover:bg-zinc-200"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setImportDialogOpen(false);
+                                        resetImport();
+                                    }}
                                 >
-                                    {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                    Import {importData.length} Domains
+                                    {importStep === 'result' ? 'Close' : 'Cancel'}
                                 </Button>
-                            )}
+                                
+                                {importStep === 'upload' && (
+                                    <Button
+                                        onClick={handleImportPreview}
+                                        disabled={importing || importData.length === 0}
+                                        className="bg-white text-black hover:bg-zinc-200"
+                                        data-testid="validate-import-btn"
+                                    >
+                                        {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                        Validate {importData.length} Rows
+                                    </Button>
+                                )}
+                                
+                                {importStep === 'preview' && (
+                                    <Button
+                                        onClick={handleImportConfirm}
+                                        disabled={importing || (!createNew && !updateExisting) || 
+                                            (importPreview?.summary.new_count === 0 && importPreview?.summary.update_count === 0)}
+                                        className="bg-emerald-600 hover:bg-emerald-700"
+                                        data-testid="confirm-import-btn"
+                                    >
+                                        {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                        Confirm Import
+                                    </Button>
+                                )}
+                            </div>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
