@@ -815,7 +815,7 @@ export default function SettingsPage() {
                                         </div>
                                         
                                         {/* Current Leaders List */}
-                                        {seoTelegramConfig.seo_leader_telegram_usernames?.length > 0 && (
+                                        {seoTelegramConfig.seo_leader_telegram_usernames?.length > 0 ? (
                                             <div className="flex flex-wrap gap-2">
                                                 {seoTelegramConfig.seo_leader_telegram_usernames.map((leader, idx) => (
                                                     <Badge 
@@ -826,11 +826,14 @@ export default function SettingsPage() {
                                                             const updated = seoTelegramConfig.seo_leader_telegram_usernames.filter((_, i) => i !== idx);
                                                             setSeoTelegramConfig({...seoTelegramConfig, seo_leader_telegram_usernames: updated});
                                                         }}
+                                                        title="Klik untuk hapus"
                                                     >
                                                         @{leader.replace('@', '')} ✕
                                                     </Badge>
                                                 ))}
                                             </div>
+                                        ) : (
+                                            <p className="text-xs text-zinc-600 italic">Belum ada SEO Leader yang ditambahkan</p>
                                         )}
                                         
                                         {/* Add New Leader */}
