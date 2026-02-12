@@ -1847,13 +1847,15 @@ async def mark_domain_as_released(
     current_user: dict = Depends(get_current_user_wrapper),
 ):
     """
-    Mark a domain as released (not renewed) - SUPER ADMIN ONLY.
+    Mark a domain as released (intentionally not renewed) - SUPER ADMIN ONLY.
     
     This action:
-    1. Sets domain_lifecycle_status to 'expired_released'
-    2. Removes domain from all realtime monitoring and alerts
-    3. Stops all expiration reminders
-    4. The domain becomes read-only and is excluded from monitoring forever
+    1. Sets lifecycle_status to 'released'
+    2. Disables monitoring immediately
+    3. Removes domain from all realtime monitoring dashboards
+    4. Stops all expiration reminders
+    
+    Note: Expired domains should be marked as Released.
     """
     # Super Admin check
     if current_user.get("role") != "super_admin":
@@ -1868,12 +1870,14 @@ async def mark_domain_as_released(
     
     now = datetime.now(timezone.utc).isoformat()
     update_dict = {
-        "domain_lifecycle_status": DomainLifecycleStatus.RELEASED.value,
+        "lifecycle_status": DomainLifecycleStatus.RELEASED.value,
         "released_at": now,
         "released_by": current_user.get("id"),
-        "monitoring_enabled": False,  # Disable monitoring
+        "monitoring_enabled": False,  # RULE 3: Released = no monitoring
         "quarantine_category": None,  # Clear any quarantine
         "quarantine_note": None,
+        "quarantined_at": None,
+        "quarantined_by": None,
         "updated_at": now,
     }
     
@@ -1888,7 +1892,7 @@ async def mark_domain_as_released(
             entity_id=asset_id,
             before_value=existing,
             after_value={**existing, **update_dict},
-            metadata={"notes": f"Marked as released: {data.reason}" if data.reason else "Marked as released (intentionally retired)"}
+            metadata={"notes": f"Marked as released: {data.reason}" if data.reason else "Marked as released (intentionally not renewed)"}
         )
     
     updated = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
@@ -1905,13 +1909,14 @@ async def set_domain_lifecycle(
     """
     Change domain lifecycle status - SUPER ADMIN ONLY.
     
-    Valid statuses:
-    - active: Domain actively used (MONITORED)
-    - released: Intentionally retired/not renewed (NOT monitored)
-    - quarantined: Blocked due to issues (NOT monitored)
-    - archived: Historical only (NOT monitored)
+    LIFECYCLE vs MONITORING MATRIX:
+    - active: ✅ Monitoring allowed
+    - released: ❌ Monitoring NOT allowed
+    - quarantined: ❌ Monitoring NOT allowed
     
-    Note: Only 'active' lifecycle domains are included in real-time monitoring.
+    RULE 2 - INVALID STATE PREVENTION:
+    ❌ Cannot set lifecycle to 'active' if domain_active_status = 'expired'
+    Backend MUST reject with HTTP 400
     """
     # Super Admin check
     if current_user.get("role") != "super_admin":
