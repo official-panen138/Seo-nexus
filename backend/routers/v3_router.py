@@ -596,7 +596,7 @@ async def enrich_asset_domain(asset: dict) -> dict:
                     message="This domain is marked as Active but has expired. This may cause SEO risk or alert noise.",
                     suggestion="Mark as Released or Quarantined"
                 ))
-        except:
+        except Exception:
             pass
     
     # Check for down domain with active lifecycle (if monitoring shows down for extended period)
