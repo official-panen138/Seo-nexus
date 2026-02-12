@@ -244,16 +244,16 @@ class TeamPerformanceAlertService:
     ) -> int:
         """Send performance alerts via Telegram."""
         try:
-            # Get Telegram config - try SEO telegram first, then domain monitoring
+            # Get Telegram config - try SEO telegram first, then main telegram
             telegram_config = await self.db.settings.find_one(
-                {"key": "telegram-seo"},
+                {"key": "telegram_seo"},
                 {"_id": 0, "value": 1}
             )
             
             if not telegram_config or not telegram_config.get("value"):
-                # Fallback to domain monitoring telegram
+                # Fallback to main telegram config
                 telegram_config = await self.db.settings.find_one(
-                    {"key": "domain_monitoring_telegram"},
+                    {"key": "telegram"},
                     {"_id": 0, "value": 1}
                 )
             
