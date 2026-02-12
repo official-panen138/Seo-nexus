@@ -1899,11 +1899,33 @@ async def set_domain_lifecycle(
         update_dict["released_at"] = now
         update_dict["released_by"] = current_user.get("id")
         update_dict["monitoring_enabled"] = False
+        update_dict["quarantine_category"] = None
+        update_dict["quarantine_note"] = None
     
-    # If reactivating, clear released tracking
-    if data.lifecycle_status == DomainLifecycleStatus.ACTIVE:
+    elif data.lifecycle_status == DomainLifecycleStatus.QUARANTINED:
+        update_dict["quarantine_category"] = data.quarantine_category
+        update_dict["quarantine_note"] = data.quarantine_note
+        update_dict["quarantined_at"] = now
+        update_dict["quarantined_by"] = current_user.get("id")
+        update_dict["monitoring_enabled"] = False
         update_dict["released_at"] = None
         update_dict["released_by"] = None
+    
+    elif data.lifecycle_status == DomainLifecycleStatus.ARCHIVED:
+        update_dict["monitoring_enabled"] = False
+        update_dict["quarantine_category"] = None
+        update_dict["quarantine_note"] = None
+        update_dict["released_at"] = None
+        update_dict["released_by"] = None
+    
+    elif data.lifecycle_status == DomainLifecycleStatus.ACTIVE:
+        # Reactivating - clear all release/quarantine tracking
+        update_dict["released_at"] = None
+        update_dict["released_by"] = None
+        update_dict["quarantine_category"] = None
+        update_dict["quarantine_note"] = None
+        update_dict["quarantined_at"] = None
+        update_dict["quarantined_by"] = None
     
     await db.asset_domains.update_one({"id": asset_id}, {"$set": update_dict})
     
