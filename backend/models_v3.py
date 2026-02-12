@@ -696,6 +696,21 @@ class AssetDomainBase(BaseModel):
     auto_renew: bool = False
     status: AssetStatus = AssetStatus.ACTIVE
 
+    # Domain Lifecycle Status (for monitoring scope)
+    # Only 'active' and 'expired_pending' domains are included in realtime monitoring
+    domain_lifecycle_status: DomainLifecycleStatus = DomainLifecycleStatus.ACTIVE
+
+    # Domain Quarantine (Super Admin only)
+    # Quarantined domains are EXCLUDED from all monitoring, alerts, and notifications
+    quarantine_category: Optional[str] = None  # null = not quarantined
+    quarantine_note: Optional[str] = None  # Custom note when quarantine_category is 'custom'
+    quarantined_at: Optional[str] = None  # Timestamp when domain was quarantined
+    quarantined_by: Optional[str] = None  # User ID who quarantined the domain
+
+    # Released domain tracking
+    released_at: Optional[str] = None  # Timestamp when domain was marked as released
+    released_by: Optional[str] = None  # User ID who marked domain as released
+
     # Monitoring - Availability (Ping/HTTP)
     monitoring_enabled: bool = False
     monitoring_interval: MonitoringInterval = MonitoringInterval.ONE_HOUR
