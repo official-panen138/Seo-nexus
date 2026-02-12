@@ -399,6 +399,7 @@ export default function DomainsPage() {
             
             if (debouncedSearch) params.search = debouncedSearch;
             if (filterBrand !== 'all') params.brand_id = filterBrand;
+            if (filterCategory !== 'all') params.category_id = filterCategory;
             if (filterStatus !== 'all') params.status = filterStatus;
             if (filterMonitoring === 'enabled') params.monitoring_enabled = true;
             if (filterMonitoring === 'disabled') params.monitoring_enabled = false;
