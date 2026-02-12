@@ -77,31 +77,40 @@ const ASSET_STATUS_COLORS = {
     'expired': 'text-red-400 border-red-400/30'
 };
 
-// Domain Lifecycle Status
+// Domain Lifecycle Status (Strategic, not Technical)
+// Status = technical condition (Active / Down / Expired)
+// Lifecycle = strategic decision (Active / Released / Quarantined / Archived)
 const LIFECYCLE_STATUS_LABELS = {
     'active': 'Active',
-    'expired_pending': 'Expired (Pending Decision)',
-    'expired_released': 'Released (Not Renewed)',
-    'inactive': 'Inactive',
+    'released': 'Released',
+    'quarantined': 'Quarantined',
     'archived': 'Archived'
 };
 
 const LIFECYCLE_STATUS_COLORS = {
     'active': 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10',
-    'expired_pending': 'text-amber-400 border-amber-400/30 bg-amber-500/10',
-    'expired_released': 'text-zinc-400 border-zinc-400/30 bg-zinc-500/10',
-    'inactive': 'text-zinc-400 border-zinc-400/30 bg-zinc-500/10',
+    'released': 'text-zinc-400 border-zinc-400/30 bg-zinc-500/10',
+    'quarantined': 'text-orange-400 border-orange-400/30 bg-orange-500/10',
     'archived': 'text-zinc-500 border-zinc-500/30 bg-zinc-600/10'
 };
+
+// Lifecycle tooltip text
+const LIFECYCLE_TOOLTIP = `Lifecycle determines strategic usage and monitoring behavior.
+
+• Active: Included in monitoring & SEO alerts
+• Released: Intentionally retired, no alerts
+• Quarantined: Blocked due to issues
+• Archived: History only
+
+⚠️ Domains with lifecycle ≠ Active are excluded from real-time monitoring.`;
 
 // Quarantine Categories
 const QUARANTINE_CATEGORY_LABELS = {
     'spam_murni': 'Spam Murni',
     'dmca': 'DMCA',
-    'rollback_restore': 'Rollback Restore',
-    'penalized': 'Penalized',
-    'manual_review': 'Manual Review',
-    'custom': 'Custom'
+    'manual_penalty': 'Manual Penalty',
+    'rollback_restore': 'Rollback / Restore',
+    'other': 'Other'
 };
 
 // SEO Networks Badges Component
