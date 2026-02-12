@@ -1561,69 +1561,71 @@ async def get_asset_domains(
             asset.get("registrar_id")
         ) or asset.get("registrar")
 
-        # Add SEO network usage
+        # Add SEO network usage - NO duplicates
         raw_networks = network_usage_map.get(asset["id"], [])
-        asset["seo_networks"] = [
-            NetworkUsageInfo(
-                network_id=n.get("network_id", ""),
-                network_name=n.get("network_name", "Unknown"),
-                role=n.get("role", "supporting"),
-                optimized_path=n.get("optimized_path"),
-            )
-            for n in raw_networks
-            if n.get("network_id")
-        ]
-
-        # Enrich lifecycle and quarantine info
-        is_used_in_seo = len(raw_networks) > 0
+        seen_networks = set()
+        unique_networks = []
+        for n in raw_networks:
+            nid = n.get("network_id", "")
+            if nid and nid not in seen_networks:
+                seen_networks.add(nid)
+                unique_networks.append(NetworkUsageInfo(
+                    network_id=nid,
+                    network_name=n.get("network_name", "Unknown"),
+                    role=n.get("role", "supporting"),
+                    optimized_path=n.get("optimized_path"),
+                ))
+        asset["seo_networks"] = unique_networks
+        is_used_in_seo = len(unique_networks) > 0
         asset["is_used_in_seo_network"] = is_used_in_seo
-        
-        # Get lifecycle status (default to 'active' for legacy domains)
-        lifecycle = asset.get("domain_lifecycle_status", DomainLifecycleStatus.ACTIVE.value)
+
+        # ===== 1. COMPUTE DOMAIN ACTIVE STATUS (AUTO) =====
+        domain_active_status_val, days_until = compute_domain_active_status(asset.get("expiration_date"))
+        asset["domain_active_status"] = domain_active_status_val
+        asset["domain_active_status_label"] = "Active" if domain_active_status_val == "active" else "Expired"
+        asset["days_until_expiration"] = days_until
+        is_expired = domain_active_status_val == "expired"
+
+        # ===== 2. MONITORING STATUS (AUTO) =====
+        mon_status = asset.get("monitoring_status", asset.get("ping_status", "unknown"))
+        asset["monitoring_status"] = mon_status
+        asset["monitoring_status_label"] = MONITORING_STATUS_LABELS.get(mon_status, mon_status.title() if mon_status else "Unknown")
+
+        # ===== 3. LIFECYCLE STATUS (MANUAL) =====
+        lifecycle = asset.get("lifecycle_status", DomainLifecycleStatus.ACTIVE.value)
         if not lifecycle:
             lifecycle = DomainLifecycleStatus.ACTIVE.value
-            asset["domain_lifecycle_status"] = lifecycle
-        
-        # Add lifecycle status label
+            asset["lifecycle_status"] = lifecycle
         asset["lifecycle_status_label"] = LIFECYCLE_STATUS_LABELS.get(lifecycle, lifecycle.title() if lifecycle else "Active")
-        
-        # ONLY active lifecycle requires monitoring
         is_active_lifecycle = lifecycle == DomainLifecycleStatus.ACTIVE.value
-        asset["requires_monitoring"] = is_used_in_seo and is_active_lifecycle
-        
-        # Add quarantine category label
+
+        # ===== 4. QUARANTINE CATEGORY =====
         qc = asset.get("quarantine_category")
         if qc:
             asset["quarantine_category_label"] = QUARANTINE_CATEGORY_LABELS.get(qc, qc)
+
+        # ===== MONITORING RULES =====
+        monitoring_allowed = is_active_lifecycle and not is_expired
+        asset["monitoring_allowed"] = monitoring_allowed
+        asset["requires_monitoring"] = is_used_in_seo and monitoring_allowed
         
-        # === LIFECYCLE VALIDATION WARNINGS ===
+        # ===== VALIDATION WARNINGS =====
         warnings = []
-        status = asset.get("status", "active")
-        expiration_date = asset.get("expiration_date")
         
-        if expiration_date and is_active_lifecycle:
-            try:
-                exp_date = datetime.fromisoformat(expiration_date.replace('Z', '+00:00'))
-                if exp_date.tzinfo is None:
-                    exp_date = exp_date.replace(tzinfo=timezone.utc)
-                days_until = (exp_date - datetime.now(timezone.utc)).days
-                
-                if days_until < 0 or status == "expired":
-                    warnings.append({
-                        "warning_type": "expired_active",
-                        "message": "This domain is marked as Active but has expired. This may cause SEO risk or alert noise.",
-                        "suggestion": "Mark as Released or Quarantined"
-                    })
-            except Exception:
-                pass
-        
-        # Check for down domain with active lifecycle
-        ping_status = asset.get("ping_status", "unknown")
-        if ping_status == "down" and is_active_lifecycle:
+        # RULE 2: Invalid state - Expired domain with Active lifecycle
+        if is_expired and is_active_lifecycle:
             warnings.append({
-                "warning_type": "down_active",
-                "message": "This domain is marked as Active but is technically unavailable (DOWN).",
-                "suggestion": "Check domain status or consider marking as Released/Quarantined"
+                "warning_type": "expired_active_lifecycle",
+                "message": "⚠️ Domain has expired and cannot be marked as Active.",
+                "suggestion": "Mark as Released"
+            })
+        
+        # Warning if monitoring enabled but not allowed
+        if asset.get("monitoring_enabled") and not monitoring_allowed:
+            warnings.append({
+                "warning_type": "monitoring_not_allowed",
+                "message": "Monitoring is enabled but not allowed for this domain.",
+                "suggestion": "Disable monitoring or change lifecycle"
             })
         
         asset["lifecycle_warnings"] = warnings
@@ -1648,6 +1650,14 @@ async def get_asset_domains(
                 asset["quarantined_by_name"] = user_map.get(asset["quarantined_by"])
             if asset.get("released_by"):
                 asset["released_by_name"] = user_map.get(asset["released_by"])
+
+    # Filter by domain_active_status if specified (post-processing since it's computed)
+    if domain_active_status:
+        assets = [a for a in assets if a.get("domain_active_status") == domain_active_status]
+    
+    # Filter by view_mode=expired (post-processing)
+    if view_mode == "expired":
+        assets = [a for a in assets if a.get("domain_active_status") == "expired"]
 
     # Return paginated response
     return {
