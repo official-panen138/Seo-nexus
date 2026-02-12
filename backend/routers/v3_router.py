@@ -6910,6 +6910,139 @@ async def resolve_conflict(
     return result
 
 
+@router.post("/conflicts/{conflict_id}/approve")
+async def approve_conflict(
+    conflict_id: str,
+    approval_note: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Super Admin approval of a conflict.
+    
+    IMPORTANT: Approval implies resolution.
+    This action will:
+    1. Set status to 'approved'
+    2. Mark conflict as inactive (is_active = false)
+    3. Reset recurrence_count to 0
+    4. Set resolved_at timestamp
+    5. Remove from all recurring/active conflict lists
+    
+    Approved conflicts will only appear in audit logs and history (read-only).
+    """
+    # Check permission - Super Admin only
+    user_role = current_user.get("role", "user")
+    if user_role != "super_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Only Super Admins can approve conflicts"
+        )
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Update the conflict with approval status
+    result = await db.stored_seo_conflicts.find_one_and_update(
+        {"id": conflict_id},
+        {
+            "$set": {
+                "status": "approved",
+                "is_active": False,  # Deactivate to prevent appearing in recurring
+                "recurrence_count": 0,  # Reset recurrence count
+                "resolved_at": now,
+                "approved_by": current_user.get("id", ""),
+                "approved_at": now,
+                "updated_at": now,
+            }
+        },
+        return_document=True
+    )
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Conflict not found")
+    
+    # Also complete/cancel any linked optimization
+    if result.get("optimization_id"):
+        await db.seo_optimizations.update_one(
+            {"id": result["optimization_id"]},
+            {
+                "$set": {
+                    "status": "completed",
+                    "completed_at": now,
+                    "completed_by": current_user.get("id", ""),
+                    "notes": f"Auto-completed due to conflict approval. {approval_note or ''}"
+                }
+            }
+        )
+    
+    return {
+        "success": True,
+        "message": "Conflict approved and deactivated",
+        "conflict_id": conflict_id,
+        "status": "approved",
+        "is_active": False,
+        "approved_by": current_user.get("id", ""),
+        "approved_at": now
+    }
+
+
+@router.post("/conflicts/migrate-approved")
+async def migrate_approved_conflicts(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    ONE-TIME MIGRATION: Fix legacy approved/resolved conflicts that are still active.
+    
+    This migration will:
+    1. Find all conflicts with status 'resolved' or 'approved' that have is_active=true
+    2. Set is_active = false
+    3. Reset recurrence_count = 0
+    4. Ensure resolved_at is set
+    
+    Super Admin only.
+    """
+    user_role = current_user.get("role", "user")
+    if user_role != "super_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Only Super Admins can run migrations"
+        )
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Find and update all legacy approved/resolved conflicts
+    result = await db.stored_seo_conflicts.update_many(
+        {
+            "status": {"$in": ["resolved", "approved", "ignored"]},
+            "$or": [
+                {"is_active": True},
+                {"is_active": {"$exists": False}},
+                {"recurrence_count": {"$gt": 0}}
+            ]
+        },
+        {
+            "$set": {
+                "is_active": False,
+                "recurrence_count": 0,
+                "updated_at": now,
+            },
+            "$setOnInsert": {
+                "resolved_at": now
+            }
+        }
+    )
+    
+    # Also ensure all conflicts have is_active field
+    await db.stored_seo_conflicts.update_many(
+        {"is_active": {"$exists": False}},
+        {"$set": {"is_active": True}}
+    )
+    
+    return {
+        "success": True,
+        "message": f"Migration complete. Fixed {result.modified_count} conflicts.",
+        "modified_count": result.modified_count
+    }
+
+
 @router.get("/conflicts/metrics")
 async def get_conflict_metrics(
     network_id: Optional[str] = None,
