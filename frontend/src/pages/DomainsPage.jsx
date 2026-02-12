@@ -825,13 +825,25 @@ export default function DomainsPage() {
         }
     };
 
-    // Export handlers
+    // Export handlers - Enhanced with all current filters
     const handleExport = async (format) => {
         try {
-            toast.info(`Exporting domains as ${format.toUpperCase()}...`);
-            const params = {};
-            if (filterBrand !== 'all') params.brand_id = filterBrand;
-            if (filterStatus !== 'all') params.status = filterStatus;
+            toast.info(`Exporting filtered domains as ${format.toUpperCase()}...`);
+            
+            // Pass ALL current filters to export
+            const params = {
+                format,
+                ...(filterBrand !== 'all' && { brand_id: filterBrand }),
+                ...(filterCategory !== 'all' && { category_id: filterCategory }),
+                ...(searchQuery && { search: searchQuery }),
+                ...(filterMonitoring !== 'all' && { monitoring_enabled: filterMonitoring === 'enabled' }),
+                ...(filterLifecycle !== 'all' && { lifecycle_status: filterLifecycle }),
+                ...(filterQuarantine !== 'all' && { quarantine_category: filterQuarantine }),
+                ...(filterMonitoringStatus !== 'all' && { monitoring_status: filterMonitoringStatus }),
+                ...(filterDomainActiveStatus !== 'all' && { domain_active_status: filterDomainActiveStatus }),
+                ...(filterUsedInSeo !== 'all' && { used_in_seo: filterUsedInSeo === 'yes' }),
+                ...(viewMode !== 'all' && { view_mode: viewMode }),
+            };
             
             const response = await exportAPI.assetDomains(format, params);
             
