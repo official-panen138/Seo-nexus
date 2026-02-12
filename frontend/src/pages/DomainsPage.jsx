@@ -2006,6 +2006,182 @@ export default function DomainsPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* Mark as Released Dialog */}
+                <Dialog open={releaseDialogOpen} onOpenChange={setReleaseDialogOpen}>
+                    <DialogContent className="bg-card border-border">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Archive className="h-5 w-5 text-zinc-400" />
+                                Mark Domain as Released
+                            </DialogTitle>
+                            <DialogDescription>
+                                This will mark the domain as released (not renewed). The domain will be:
+                                <ul className="list-disc list-inside mt-2 space-y-1 text-amber-400">
+                                    <li>Removed from all realtime monitoring & alerts</li>
+                                    <li>Stop receiving expiration reminders</li>
+                                    <li>Moved to Expired & Released view</li>
+                                </ul>
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div>
+                                <p className="text-sm text-zinc-400 mb-2">Domain: <span className="text-white font-mono">{selectedAsset?.domain_name}</span></p>
+                            </div>
+                            <div>
+                                <Label htmlFor="release-reason">Reason (Optional)</Label>
+                                <Textarea
+                                    id="release-reason"
+                                    value={releaseReason}
+                                    onChange={(e) => setReleaseReason(e.target.value)}
+                                    placeholder="e.g., Domain expired and not renewed..."
+                                    className="bg-black border-border mt-2"
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setReleaseDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button 
+                                onClick={handleMarkAsReleased}
+                                disabled={saving}
+                                className="bg-zinc-600 hover:bg-zinc-700"
+                            >
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Archive className="h-4 w-4 mr-2" />}
+                                Mark as Released
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Change Lifecycle Dialog */}
+                <Dialog open={lifecycleDialogOpen} onOpenChange={setLifecycleDialogOpen}>
+                    <DialogContent className="bg-card border-border">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Clock className="h-5 w-5 text-blue-400" />
+                                Change Lifecycle Status
+                            </DialogTitle>
+                            <DialogDescription>
+                                Change the lifecycle status for: <span className="text-white font-mono">{selectedAsset?.domain_name}</span>
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div>
+                                <Label>Lifecycle Status</Label>
+                                <Select value={selectedLifecycle} onValueChange={setSelectedLifecycle}>
+                                    <SelectTrigger className="w-full bg-black border-border mt-2">
+                                        <SelectValue placeholder="Select lifecycle status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(LIFECYCLE_STATUS_LABELS).map(([value, label]) => (
+                                            <SelectItem key={value} value={value}>{label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="lifecycle-reason">Reason (Optional)</Label>
+                                <Textarea
+                                    id="lifecycle-reason"
+                                    value={lifecycleReason}
+                                    onChange={(e) => setLifecycleReason(e.target.value)}
+                                    placeholder="Reason for lifecycle change..."
+                                    className="bg-black border-border mt-2"
+                                />
+                            </div>
+                            {selectedLifecycle && (
+                                <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
+                                    <p className="text-sm text-zinc-400">
+                                        {selectedLifecycle === 'active' && '✅ Domain will be included in realtime monitoring and alerts.'}
+                                        {selectedLifecycle === 'expired_pending' && '⏳ Domain will be monitored, but flagged as expired pending decision.'}
+                                        {selectedLifecycle === 'expired_released' && '🚫 Domain will be excluded from all monitoring and alerts.'}
+                                        {selectedLifecycle === 'inactive' && '💤 Domain will be excluded from monitoring (no longer used).'}
+                                        {selectedLifecycle === 'archived' && '📦 Domain will be archived (historical only).'}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setLifecycleDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button 
+                                onClick={handleSetLifecycle}
+                                disabled={saving || !selectedLifecycle}
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+                                Update Lifecycle
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Quarantine Dialog */}
+                <Dialog open={quarantineDialogOpen} onOpenChange={setQuarantineDialogOpen}>
+                    <DialogContent className="bg-card border-border">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <ShieldAlert className="h-5 w-5 text-orange-400" />
+                                Quarantine Domain
+                            </DialogTitle>
+                            <DialogDescription>
+                                Quarantine <span className="text-white font-mono">{selectedAsset?.domain_name}</span>. 
+                                Quarantined domains are excluded from all monitoring, alerts, and notifications.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div>
+                                <Label>Quarantine Category *</Label>
+                                <Select value={selectedQuarantineCategory} onValueChange={setSelectedQuarantineCategory}>
+                                    <SelectTrigger className="w-full bg-black border-border mt-2">
+                                        <SelectValue placeholder="Select quarantine category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {quarantineCategories.map((cat) => (
+                                            <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="quarantine-note">
+                                    Note {selectedQuarantineCategory === 'custom' ? '*' : '(Optional)'}
+                                </Label>
+                                <Textarea
+                                    id="quarantine-note"
+                                    value={quarantineNote}
+                                    onChange={(e) => setQuarantineNote(e.target.value)}
+                                    placeholder={selectedQuarantineCategory === 'custom' 
+                                        ? 'Custom quarantine reason (required)...' 
+                                        : 'Additional notes about quarantine...'}
+                                    className="bg-black border-border mt-2"
+                                />
+                            </div>
+                            <div className="p-3 rounded-lg bg-orange-900/20 border border-orange-500/30">
+                                <p className="text-sm text-orange-400 flex items-start gap-2">
+                                    <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                    Quarantined domains will NOT trigger any alerts or notifications until removed from quarantine.
+                                </p>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setQuarantineDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button 
+                                onClick={handleQuarantine}
+                                disabled={saving || !selectedQuarantineCategory || (selectedQuarantineCategory === 'custom' && !quarantineNote)}
+                                className="bg-orange-600 hover:bg-orange-700"
+                            >
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldAlert className="h-4 w-4 mr-2" />}
+                                Quarantine Domain
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </Layout>
     );
