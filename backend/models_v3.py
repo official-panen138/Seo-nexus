@@ -797,19 +797,21 @@ class MarkAsReleasedRequest(BaseModel):
 
 
 class SetQuarantineRequest(BaseModel):
-    """Request to quarantine a domain"""
-    quarantine_category: str  # One of QuarantineCategory values or custom
-    quarantine_note: Optional[str] = None  # Required if category is 'custom'
+    """Request to quarantine a domain - sets lifecycle to 'quarantined'"""
+    quarantine_category: str  # One of QuarantineCategory values
+    quarantine_note: Optional[str] = None  # Required if category is 'other'
 
 
 class RemoveQuarantineRequest(BaseModel):
-    """Request to remove quarantine from a domain"""
+    """Request to remove quarantine from a domain - sets lifecycle back to 'active'"""
     reason: Optional[str] = None
 
 
 class LifecycleChangeRequest(BaseModel):
     """Request to change domain lifecycle status"""
     lifecycle_status: DomainLifecycleStatus
+    quarantine_category: Optional[str] = None  # Required if lifecycle is 'quarantined'
+    quarantine_note: Optional[str] = None
     reason: Optional[str] = None
 
 
@@ -820,6 +822,13 @@ class NetworkUsageInfo(BaseModel):
     network_name: str
     role: str  # "main" or "supporting"
     optimized_path: Optional[str] = None
+
+
+class LifecycleValidationWarning(BaseModel):
+    """Warning when lifecycle contradicts technical status"""
+    warning_type: str  # "expired_active", "down_active"
+    message: str
+    suggestion: Optional[str] = None
 
 
 class AssetDomainResponse(AssetDomainBase):
@@ -836,7 +845,8 @@ class AssetDomainResponse(AssetDomainBase):
     monitoring_status: Optional[str] = None  # up/down/unknown
     days_until_expiration: Optional[int] = None  # Calculated field
 
-    # Lifecycle and quarantine display
+    # Lifecycle display
+    lifecycle_status_label: Optional[str] = None  # Human-readable lifecycle label
     quarantine_category_label: Optional[str] = None  # Human-readable quarantine label
     quarantined_by_name: Optional[str] = None  # Name of user who quarantined
     released_by_name: Optional[str] = None  # Name of user who released
@@ -847,6 +857,9 @@ class AssetDomainResponse(AssetDomainBase):
     # Computed fields for monitoring rules
     is_used_in_seo_network: bool = False  # Whether domain is used in any SEO network
     requires_monitoring: bool = False  # Whether monitoring should be required for this domain
+    
+    # Lifecycle validation warnings
+    lifecycle_warnings: List[LifecycleValidationWarning] = []
 
     created_at: str
     updated_at: str
@@ -856,16 +869,17 @@ class SeoMonitoringCoverageStats(BaseModel):
     """Statistics for SEO Monitoring Coverage panel"""
 
     domains_in_seo: int  # Total domains used in SEO networks
-    monitored: int  # Domains with monitoring_enabled = true
-    unmonitored: int  # Domains with monitoring_enabled = false
-    coverage_percentage: float  # (monitored / domains_in_seo) * 100
+    monitored: int  # Domains with monitoring_enabled = true AND lifecycle = active
+    unmonitored: int  # Domains with monitoring_enabled = false AND lifecycle = active
+    coverage_percentage: float  # (monitored / monitorable_domains) * 100
     
     # Breakdown by lifecycle
+    active_count: int  # Total active lifecycle domains in SEO
     active_monitored: int
     active_unmonitored: int
-    expired_pending_count: int
-    expired_released_count: int
+    released_count: int
     quarantined_count: int
+    archived_count: int
     
     # Root domain monitoring issues
     root_domains_missing_monitoring: int  # Root domains used via path but not monitored
