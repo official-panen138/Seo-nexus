@@ -99,22 +99,24 @@ MONITORING_STATUS_LABELS = {
 
 class DomainLifecycleStatus(str, Enum):
     """
-    DOMAIN LIFECYCLE (Strategic - MANUAL)
+    DOMAIN LIFECYCLE (Strategic - MANUAL/AUTO)
     
     Represents business / SEO strategy decision for the domain.
     Answers: "Is this domain intentionally used in SEO strategy?"
     
-    ✅ Super Admin ONLY can edit
+    ✅ Super Admin ONLY can edit (except Not Renewed which is auto-set)
     
     LIFECYCLE vs MONITORING MATRIX:
     - Active: ✅ Monitoring Allowed
     - Released: ❌ Monitoring NOT Allowed
     - Quarantined: ❌ Monitoring NOT Allowed
+    - Not Renewed: ❌ Monitoring NOT Allowed (auto-set when expired)
     """
 
     ACTIVE = "active"  # Used in SEO Networks - MONITORED
     RELEASED = "released"  # Intentionally not renewed / abandoned - NOT monitored
     QUARANTINED = "quarantined"  # Domain is problematic - NOT monitored
+    NOT_RENEWED = "not_renewed"  # Domain expired - auto-set, NOT monitored
 
 
 # Only ACTIVE lifecycle is included in real-time monitoring
@@ -127,15 +129,17 @@ LIFECYCLE_STATUS_LABELS = {
     "active": "Active",
     "released": "Released",
     "quarantined": "Quarantined",
+    "not_renewed": "Not Renewed",
 }
 
 # Lifecycle tooltip text for UI (MANDATORY)
-LIFECYCLE_TOOLTIP = """Lifecycle represents a strategic decision about domain usage.
-It is NOT related to uptime or expiration status.
+LIFECYCLE_TOOLTIP = """Describes how the domain is used in SEO strategy.
+Not related to availability or monitoring result.
 
 • Active: Used in SEO Networks, monitoring enabled
 • Released: Intentionally not renewed / abandoned
 • Quarantined: Domain is problematic (Spam, DMCA, etc.)
+• Not Renewed: Domain has expired (auto-set)
 
 ⚠️ Only Active domains can be monitored."""
 
