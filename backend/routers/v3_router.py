@@ -6940,7 +6940,7 @@ async def approve_conflict(
     now = datetime.now(timezone.utc).isoformat()
     
     # Update the conflict with approval status
-    result = await db.stored_seo_conflicts.find_one_and_update(
+    result = await db.seo_conflicts.find_one_and_update(
         {"id": conflict_id},
         {
             "$set": {
@@ -7009,7 +7009,7 @@ async def migrate_approved_conflicts(
     now = datetime.now(timezone.utc).isoformat()
     
     # Find and update all legacy approved/resolved conflicts
-    result = await db.stored_seo_conflicts.update_many(
+    result = await db.seo_conflicts.update_many(
         {
             "status": {"$in": ["resolved", "approved", "ignored"]},
             "$or": [
@@ -7031,7 +7031,7 @@ async def migrate_approved_conflicts(
     )
     
     # Also ensure all conflicts have is_active field
-    await db.stored_seo_conflicts.update_many(
+    await db.seo_conflicts.update_many(
         {"is_active": {"$exists": False}},
         {"$set": {"is_active": True}}
     )
