@@ -50,22 +50,45 @@ class AssetStatus(str, Enum):
 
 class DomainLifecycleStatus(str, Enum):
     """
-    Lifecycle status of a domain for monitoring purposes.
-    Only 'active' and 'expired_pending' are monitored in realtime.
+    Lifecycle represents the STRATEGIC usage state of a domain in SEO.
+    
+    Status = technical condition (Active / Down / Expired)
+    Lifecycle = strategic decision (Active / Released / Quarantined / Archived)
+    
+    ONLY 'active' lifecycle domains are included in real-time monitoring.
+    All other lifecycles are excluded from ALL alerts and notifications.
     """
 
-    ACTIVE = "active"  # Domain actively used - MONITORED
-    EXPIRED_PENDING = "expired_pending"  # Expired but decision not made - MONITORED
-    EXPIRED_RELEASED = "expired_released"  # Expired and intentionally NOT renewed - NOT monitored
-    INACTIVE = "inactive"  # No longer used in SEO networks - NOT monitored
-    ARCHIVED = "archived"  # Historical only - NOT monitored
+    ACTIVE = "active"  # Actively used in SEO - MONITORED
+    RELEASED = "released"  # Intentionally retired/not renewed - NOT monitored
+    QUARANTINED = "quarantined"  # Blocked due to issues (Spam, DMCA, Penalty) - NOT monitored
+    ARCHIVED = "archived"  # History only, no operational usage - NOT monitored
+    # PLANNED = "planned"  # Optional: Future planned domain
 
 
-# Lifecycle statuses that should be included in realtime monitoring
+# Only ACTIVE lifecycle is included in real-time monitoring
+# All other lifecycles are excluded from ALL alerts
 MONITORED_LIFECYCLE_STATUSES = [
     DomainLifecycleStatus.ACTIVE,
-    DomainLifecycleStatus.EXPIRED_PENDING,
 ]
+
+# Lifecycle labels for UI
+LIFECYCLE_STATUS_LABELS = {
+    "active": "Active",
+    "released": "Released",
+    "quarantined": "Quarantined",
+    "archived": "Archived",
+}
+
+# Lifecycle tooltip text for UI
+LIFECYCLE_TOOLTIP = """Lifecycle determines strategic usage and monitoring behavior.
+
+• Active: Included in monitoring & SEO alerts
+• Released: Intentionally retired, no alerts
+• Quarantined: Blocked due to issues
+• Archived: History only
+
+⚠️ Domains with lifecycle ≠ Active are excluded from real-time monitoring."""
 
 
 class QuarantineCategory(str, Enum):
@@ -76,20 +99,18 @@ class QuarantineCategory(str, Enum):
 
     SPAM_MURNI = "spam_murni"
     DMCA = "dmca"
+    MANUAL_PENALTY = "manual_penalty"
     ROLLBACK_RESTORE = "rollback_restore"
-    PENALIZED = "penalized"
-    MANUAL_REVIEW = "manual_review"
-    CUSTOM = "custom"  # Free-form custom category
+    OTHER = "other"  # Custom reason with note
 
 
 # Default quarantine category labels for UI
 QUARANTINE_CATEGORY_LABELS = {
     "spam_murni": "Spam Murni",
     "dmca": "DMCA",
-    "rollback_restore": "Rollback Restore",
-    "penalized": "Penalized",
-    "manual_review": "Manual Review",
-    "custom": "Custom",
+    "manual_penalty": "Manual Penalty",
+    "rollback_restore": "Rollback / Restore",
+    "other": "Other",
 }
 
 
