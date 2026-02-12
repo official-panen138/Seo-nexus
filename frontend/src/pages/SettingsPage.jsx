@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../lib/auth';
 import { useBranding } from '../lib/BrandingContext';
-import { settingsAPI, domainMonitoringTelegramAPI, emailAlertsAPI, weeklyDigestAPI, performanceAlertsAPI } from '../lib/api';
+import { settingsAPI, domainMonitoringTelegramAPI, emailAlertsAPI, weeklyDigestAPI, assetDomainsAPI, performanceAlertsAPI } from '../lib/api';
 import { Layout } from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
