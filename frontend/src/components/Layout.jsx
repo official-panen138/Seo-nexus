@@ -93,8 +93,11 @@ export const Layout = ({ children }) => {
     const filteredNavItems = navItems.filter(item => {
         if (item.type === 'divider') {
             // Show divider only if super admin or has access to admin menus
+            if (item.menuKey === '_divider_help') return true; // Always show help divider
             return isSuperAdmin || canAccessMenu('brands') || canAccessMenu('users');
         }
+        // Always show items with alwaysShow flag
+        if (item.alwaysShow) return true;
         return canAccessMenu(item.menuKey);
     });
 
