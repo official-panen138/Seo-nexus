@@ -10130,3 +10130,176 @@ async def get_metrics_dashboard(
         },
     }
 
+
+
+# ==================== TEAM PERFORMANCE ALERTS API ====================
+
+
+@router.get("/performance/thresholds")
+async def get_performance_thresholds(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get current team performance alert thresholds.
+    
+    Super Admin/Manager only.
+    """
+    if current_user.get("role") not in ["super_admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    from services.team_performance_alert_service import get_team_performance_service
+    
+    service = get_team_performance_service(db)
+    thresholds = await service.get_thresholds()
+    
+    return {
+        "thresholds": thresholds,
+        "description": {
+            "false_resolution_rate_percent": "Alert if false resolution rate exceeds this %",
+            "stale_conflict_days": "Alert if conflicts remain open longer than this many days",
+            "open_conflict_backlog": "Alert if more than this many conflicts are open",
+            "avg_resolution_hours": "Alert if average resolution time exceeds this many hours",
+            "check_interval_hours": "How often to run performance checks"
+        }
+    }
+
+
+@router.put("/performance/thresholds")
+async def update_performance_thresholds(
+    thresholds: Dict[str, Any] = Body(...),
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Update team performance alert thresholds.
+    
+    Super Admin only.
+    
+    Available thresholds:
+    - false_resolution_rate_percent: Alert if > this % (default: 15)
+    - stale_conflict_days: Alert if conflict open > this days (default: 7)
+    - open_conflict_backlog: Alert if > this many open (default: 10)
+    - avg_resolution_hours: Alert if avg > this hours (default: 48)
+    - check_interval_hours: How often to check (default: 24)
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admins can update thresholds")
+    
+    from services.team_performance_alert_service import get_team_performance_service
+    
+    # Validate thresholds
+    valid_keys = {
+        "false_resolution_rate_percent",
+        "stale_conflict_days", 
+        "open_conflict_backlog",
+        "avg_resolution_hours",
+        "check_interval_hours"
+    }
+    
+    filtered_thresholds = {k: v for k, v in thresholds.items() if k in valid_keys}
+    
+    service = get_team_performance_service(db)
+    await service.save_thresholds(filtered_thresholds)
+    
+    return {
+        "success": True,
+        "thresholds": await service.get_thresholds()
+    }
+
+
+@router.post("/performance/check")
+async def run_performance_check(
+    force: bool = False,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Manually trigger a team performance check.
+    
+    Super Admin/Manager only.
+    
+    Set force=true to bypass the check interval.
+    """
+    if current_user.get("role") not in ["super_admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    from services.team_performance_alert_service import get_team_performance_service
+    
+    service = get_team_performance_service(db)
+    
+    if force:
+        # Reset last check to force immediate run
+        await db.settings.delete_one({"key": "team_performance_last_check"})
+    
+    result = await service.check_performance_and_alert()
+    
+    return result
+
+
+@router.get("/performance/history")
+async def get_performance_alert_history(
+    days: int = 30,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get team performance alert history.
+    
+    Super Admin/Manager only.
+    """
+    if current_user.get("role") not in ["super_admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    from services.team_performance_alert_service import get_team_performance_service
+    
+    service = get_team_performance_service(db)
+    history = await service.get_alert_history(days=days)
+    
+    return {
+        "alerts": history,
+        "count": len(history),
+        "period_days": days
+    }
+
+
+@router.get("/performance/metrics")
+async def get_current_performance_metrics(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get current team performance metrics without sending alerts.
+    
+    Useful for displaying in dashboard before thresholds are breached.
+    """
+    if current_user.get("role") not in ["super_admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    from services.team_performance_alert_service import get_team_performance_service
+    
+    service = get_team_performance_service(db)
+    thresholds = await service.get_thresholds()
+    metrics = await service._gather_performance_metrics()
+    
+    # Add threshold comparison
+    metrics["threshold_status"] = {
+        "false_resolution_rate": {
+            "current": metrics["false_resolution_rate_percent"],
+            "threshold": thresholds["false_resolution_rate_percent"],
+            "breached": metrics["false_resolution_rate_percent"] > thresholds["false_resolution_rate_percent"]
+        },
+        "stale_conflicts": {
+            "current": len(metrics["stale_conflicts"]),
+            "threshold_days": thresholds["stale_conflict_days"],
+            "breached": len(metrics["stale_conflicts"]) > 0
+        },
+        "open_backlog": {
+            "current": metrics["open_count"],
+            "threshold": thresholds["open_conflict_backlog"],
+            "breached": metrics["open_count"] > thresholds["open_conflict_backlog"]
+        },
+        "avg_resolution_time": {
+            "current": metrics["avg_resolution_hours"],
+            "threshold": thresholds["avg_resolution_hours"],
+            "breached": metrics["avg_resolution_hours"] > thresholds["avg_resolution_hours"]
+        }
+    }
+    
+    return metrics
+
