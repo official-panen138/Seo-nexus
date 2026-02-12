@@ -689,6 +689,32 @@ export default function GroupsPage() {
                                             </div>
                                         </div>
                                         
+                                        {/* Domain Health Indicators */}
+                                        {(network.expired_domains_count > 0 || network.quarantined_domains_count > 0) && (
+                                            <div className="mt-2 flex items-center gap-3">
+                                                {network.expired_domains_count > 0 && (
+                                                    <div 
+                                                        className="flex items-center gap-1 text-xs text-red-400 px-2 py-1 bg-red-500/10 rounded-md" 
+                                                        title={`${network.expired_domains_count} expired domain${network.expired_domains_count !== 1 ? 's' : ''}`}
+                                                        data-testid={`expired-indicator-${network.id}`}
+                                                    >
+                                                        <AlertTriangle className="h-3 w-3" />
+                                                        <span>{network.expired_domains_count} expired</span>
+                                                    </div>
+                                                )}
+                                                {network.quarantined_domains_count > 0 && (
+                                                    <div 
+                                                        className="flex items-center gap-1 text-xs text-orange-400 px-2 py-1 bg-orange-500/10 rounded-md" 
+                                                        title={`${network.quarantined_domains_count} quarantined domain${network.quarantined_domains_count !== 1 ? 's' : ''}`}
+                                                        data-testid={`quarantined-indicator-${network.id}`}
+                                                    >
+                                                        <ShieldAlert className="h-3 w-3" />
+                                                        <span>{network.quarantined_domains_count} quarantined</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        
                                         {/* Ranking Mini Metrics */}
                                         {(network.ranking_nodes_count > 0 || network.tracked_urls_count > 0) && (
                                             <div className="mt-3 pt-3 border-t border-border flex items-center gap-4 text-xs">
