@@ -1027,53 +1027,32 @@ Hubungi Super Admin untuk update permission atau minta akses ke brand yang diper
 const DocumentImage = ({ sectionId, imageInfo }) => {
     if (!imageInfo) return null;
     
-    // Map section IDs to actual app routes for live screenshots
-    const routeMap = {
-        'overview': '/dashboard',
-        'login': '/login',
-        'register': '/register',
-        'navigation': '/dashboard',
-        'dashboard': '/dashboard',
-        'asset-domains': '/domains',
-        'seo-networks': '/groups',
-        'conflicts': '/alerts',
-        'monitoring': '/settings/monitoring',
-        'reports': '/reports',
-        'team-eval': '/reports/team-evaluation',
-        'users': '/users',
-        'settings': '/settings',
-    };
-
-    const route = routeMap[sectionId];
+    const imageUrl = sectionImages[sectionId];
     
     return (
         <div className="my-6 rounded-lg overflow-hidden border border-zinc-700 bg-zinc-800/50">
-            <div className="relative aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900">
-                {route ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                        <div className="bg-zinc-800 rounded-lg p-6 text-center max-w-md">
-                            <ImageIcon className="h-12 w-12 text-blue-400 mx-auto mb-3" />
-                            <p className="text-zinc-300 text-sm font-medium mb-2">{imageInfo.description}</p>
-                            <p className="text-zinc-500 text-xs mb-4">Untuk melihat tampilan sebenarnya:</p>
-                            <a 
-                                href={route}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                            >
-                                <ExternalLink className="h-4 w-4" />
-                                Buka Halaman {imageInfo.caption.replace('Gambar ', '').split(' - ')[1] || 'Terkait'}
-                            </a>
-                        </div>
+            <div className="relative bg-zinc-900">
+                {imageUrl ? (
+                    <img 
+                        src={imageUrl} 
+                        alt={imageInfo.description}
+                        className="w-full h-auto object-contain"
+                        loading="lazy"
+                        onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextElementSibling.style.display = 'flex';
+                        }}
+                    />
+                ) : null}
+                <div 
+                    className="hidden absolute inset-0 flex-col items-center justify-center p-4 bg-zinc-900"
+                    style={{ display: imageUrl ? 'none' : 'flex' }}
+                >
+                    <div className="bg-zinc-800 rounded-lg p-6 text-center max-w-md">
+                        <ImageIcon className="h-12 w-12 text-blue-400 mx-auto mb-3" />
+                        <p className="text-zinc-300 text-sm font-medium mb-2">{imageInfo.description}</p>
                     </div>
-                ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center p-8">
-                            <ImageIcon className="h-16 w-16 text-zinc-600 mx-auto mb-4" />
-                            <p className="text-zinc-500 text-sm">{imageInfo.description}</p>
-                        </div>
-                    </div>
-                )}
+                </div>
             </div>
             <div className="px-4 py-3 bg-zinc-800/80 border-t border-zinc-700">
                 <p className="text-sm text-zinc-400 text-center italic">{imageInfo.caption}</p>
