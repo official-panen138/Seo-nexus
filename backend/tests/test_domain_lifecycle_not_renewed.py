@@ -33,7 +33,7 @@ class TestDomainLifecycleNotRenewed:
         })
         
         if login_response.status_code == 200:
-            token = login_response.json().get("token")
+            token = login_response.json().get("access_token")  # API returns access_token, not token
             self.session.headers.update({"Authorization": f"Bearer {token}"})
         else:
             pytest.skip("Authentication failed - skipping tests")
@@ -91,7 +91,7 @@ class TestColumnSorting:
         })
         
         if login_response.status_code == 200:
-            token = login_response.json().get("token")
+            token = login_response.json().get("access_token")  # API returns access_token, not token
             self.session.headers.update({"Authorization": f"Bearer {token}"})
         else:
             pytest.skip("Authentication failed - skipping tests")
@@ -203,7 +203,7 @@ class TestViewModeNotRenewed:
         })
         
         if login_response.status_code == 200:
-            token = login_response.json().get("token")
+            token = login_response.json().get("access_token")  # API returns access_token, not token
             self.session.headers.update({"Authorization": f"Bearer {token}"})
         else:
             pytest.skip("Authentication failed - skipping tests")
@@ -252,7 +252,7 @@ class TestLifecycleRules:
         })
         
         if login_response.status_code == 200:
-            token = login_response.json().get("token")
+            token = login_response.json().get("access_token")  # API returns access_token, not token
             self.session.headers.update({"Authorization": f"Bearer {token}"})
         else:
             pytest.skip("Authentication failed - skipping tests")
