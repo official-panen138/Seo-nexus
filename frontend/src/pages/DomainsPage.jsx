@@ -597,10 +597,90 @@ export default function DomainsPage() {
         setFilterBrand('all');
         setFilterStatus('all');
         setFilterMonitoring('all');
+        setFilterLifecycle('all');
+        setFilterQuarantine('all');
+        setFilterUsedInSeo('all');
         setCurrentPage(1); // Reset to first page when clearing filters
     };
 
-    const hasActiveFilters = filterBrand !== 'all' || filterStatus !== 'all' || filterMonitoring !== 'all' || searchQuery !== '';
+    const hasActiveFilters = filterBrand !== 'all' || filterStatus !== 'all' || filterMonitoring !== 'all' || searchQuery !== '' || filterLifecycle !== 'all' || filterQuarantine !== 'all' || filterUsedInSeo !== 'all';
+
+    // Lifecycle & Quarantine handlers
+    const handleMarkAsReleased = async () => {
+        if (!selectedAsset) return;
+        setSaving(true);
+        try {
+            await assetDomainsAPI.markAsReleased(selectedAsset.id, { reason: releaseReason });
+            toast.success('Domain marked as released');
+            setReleaseDialogOpen(false);
+            setReleaseReason('');
+            setSelectedAsset(null);
+            loadPaginatedData();
+            loadCoverageStats();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to mark domain as released');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSetLifecycle = async () => {
+        if (!selectedAsset || !selectedLifecycle) return;
+        setSaving(true);
+        try {
+            await assetDomainsAPI.setLifecycle(selectedAsset.id, { 
+                lifecycle_status: selectedLifecycle,
+                reason: lifecycleReason 
+            });
+            toast.success('Lifecycle status updated');
+            setLifecycleDialogOpen(false);
+            setSelectedLifecycle('');
+            setLifecycleReason('');
+            setSelectedAsset(null);
+            loadPaginatedData();
+            loadCoverageStats();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to update lifecycle status');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleQuarantine = async () => {
+        if (!selectedAsset || !selectedQuarantineCategory) return;
+        setSaving(true);
+        try {
+            await assetDomainsAPI.quarantine(selectedAsset.id, {
+                quarantine_category: selectedQuarantineCategory,
+                quarantine_note: quarantineNote
+            });
+            toast.success('Domain quarantined');
+            setQuarantineDialogOpen(false);
+            setSelectedQuarantineCategory('');
+            setQuarantineNote('');
+            setSelectedAsset(null);
+            loadPaginatedData();
+            loadCoverageStats();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to quarantine domain');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleRemoveQuarantine = async (asset) => {
+        setSaving(true);
+        try {
+            await assetDomainsAPI.removeQuarantine(asset.id, {});
+            toast.success('Quarantine removed');
+            loadPaginatedData();
+            loadCoverageStats();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to remove quarantine');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     // Export handlers
     const handleExport = async (format) => {
