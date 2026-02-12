@@ -188,10 +188,9 @@ export default function AlertsPage() {
         
         setProcessing(true);
         try {
-            await conflictsAPI.createOptimizationTasks({ 
-                conflict_ids: newConflicts.map(c => c.id || c.conflict_id)
-            });
-            toast.success(`Created tasks for ${newConflicts.length} conflicts`);
+            // Use the process endpoint which detects and creates optimizations
+            const result = await conflictsAPI.process();
+            toast.success(`Processed ${result.data?.conflicts_processed || 0} conflicts, created ${result.data?.optimizations_created || 0} optimizations`);
             loadConflicts();
         } catch (err) {
             toast.error(err.response?.data?.detail || 'Failed to create tasks');
