@@ -49,6 +49,27 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## What's Been Implemented
 
+### Merged SEO Conflicts Dashboard (Feb 12, 2026) - COMPLETE
+**Feature:** Merged two separate conflict dashboards (SEO Conflicts + Resolution Dashboard) into one unified page.
+
+**Before:** Two separate pages with overlapping functionality
+- `/alerts` - Basic conflicts list with tabs
+- `/conflicts/dashboard` - Detailed metrics, charts, top resolvers
+
+**After:** Single unified dashboard at `/alerts` with all features:
+- Top metrics: Total Conflicts, Resolution Rate, Avg Resolution Time, Recurring Conflicts
+- Extended metrics: False Resolution Rate, Avg Recurrence Interval, Resolution Time Breakdown
+- Analysis cards: Conflicts by Severity, Conflicts by Type, Top Resolvers
+- Tracked Conflicts table with tabs (All, Detected, In Progress, Resolved)
+- Period selector (7/14/30/90 days)
+- Create Optimization Tasks button
+
+**Files Updated:**
+- `/app/frontend/src/pages/AlertsPage.jsx` - Completely rewritten to merge both dashboards
+- `/app/frontend/src/App.js` - `/conflicts/dashboard` now redirects to AlertsPage
+
+---
+
 ### Telegram Expiration Alert - SEO Structure Section (Feb 12, 2026) - COMPLETE
 **Feature:** Updated Domain Expiration Alert Telegram notifications to use "🧭 STRUKTUR SEO TERKINI" section header (consistent with other SEO notifications).
 
