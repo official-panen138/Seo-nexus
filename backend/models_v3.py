@@ -1092,6 +1092,7 @@ class StoredConflict(BaseModel):
     conflict_type: str  # ConflictType value
     severity: str  # ConflictSeverity value
     status: str = ConflictStatus.DETECTED.value
+    is_active: bool = True  # Active conflicts can appear in recurring/alerts, inactive cannot
     
     # Network info
     network_id: str
@@ -1124,6 +1125,10 @@ class StoredConflict(BaseModel):
     detected_at: str
     updated_at: Optional[str] = None
     resolved_at: Optional[str] = None
+    
+    # Approval tracking
+    approved_by: Optional[str] = None
+    approved_at: Optional[str] = None
     
     # Metrics
     recurrence_count: int = 0  # How many times this conflict was re-detected
