@@ -1407,16 +1407,18 @@ async def get_asset_domains(
         query["category_id"] = category_id
     if registrar_id:
         query["registrar_id"] = registrar_id
-    if status:
-        query["status"] = status.value
     if monitoring_enabled is not None:
         query["monitoring_enabled"] = monitoring_enabled
     if search:
         query["domain_name"] = {"$regex": search, "$options": "i"}
 
-    # Lifecycle filter
+    # Lifecycle filter (strategic)
     if lifecycle_status:
-        query["domain_lifecycle_status"] = lifecycle_status.value
+        query["lifecycle_status"] = lifecycle_status.value
+    
+    # Monitoring status filter (technical)
+    if monitoring_status:
+        query["monitoring_status"] = monitoring_status
     
     # Quarantine filters
     if quarantine_category:
@@ -1426,24 +1428,25 @@ async def get_asset_domains(
             # Quarantined = has quarantine_category OR lifecycle = quarantined
             query["$or"] = [
                 {"quarantine_category": {"$ne": None}},
-                {"domain_lifecycle_status": DomainLifecycleStatus.QUARANTINED.value}
+                {"lifecycle_status": DomainLifecycleStatus.QUARANTINED.value}
             ]
         else:
             query["$and"] = [
                 {"$or": [{"quarantine_category": None}, {"quarantine_category": {"$exists": False}}]},
-                {"domain_lifecycle_status": {"$ne": DomainLifecycleStatus.QUARANTINED.value}}
+                {"lifecycle_status": {"$ne": DomainLifecycleStatus.QUARANTINED.value}}
             ]
 
     # Handle special view modes
     if view_mode == "released":
-        query["domain_lifecycle_status"] = DomainLifecycleStatus.RELEASED.value
+        query["lifecycle_status"] = DomainLifecycleStatus.RELEASED.value
     elif view_mode == "quarantined":
         query["$or"] = [
             {"quarantine_category": {"$ne": None}},
-            {"domain_lifecycle_status": DomainLifecycleStatus.QUARANTINED.value}
+            {"lifecycle_status": DomainLifecycleStatus.QUARANTINED.value}
         ]
-    elif view_mode == "archived":
-        query["domain_lifecycle_status"] = DomainLifecycleStatus.ARCHIVED.value
+    elif view_mode == "expired":
+        # This will be computed in post-processing since domain_active_status is computed
+        pass  # Handle in enrichment
 
     # Filter by network_id if provided (domains used in a specific SEO network)
     domain_ids_in_seo = None
@@ -1466,7 +1469,7 @@ async def get_asset_domains(
             query["id"] = {"$in": domain_ids_in_seo}
             query["monitoring_enabled"] = False
             # Only active lifecycle should appear in unmonitored list
-            query["domain_lifecycle_status"] = {"$in": [
+            query["lifecycle_status"] = {"$in": [
                 DomainLifecycleStatus.ACTIVE.value,
                 None  # Legacy domains without lifecycle status
             ]}
