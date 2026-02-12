@@ -1865,12 +1865,13 @@ export default function DomainsPage() {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label>Expiration Date</Label>
+                                            <Label>Expiration Date <span className="text-red-500">*</span></Label>
                                             <Input
                                                 type="date"
                                                 value={form.expiration_date}
                                                 onChange={(e) => setForm({...form, expiration_date: e.target.value})}
                                                 className="bg-black border-border"
+                                                required
                                             />
                                         </div>
 
