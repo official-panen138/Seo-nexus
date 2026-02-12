@@ -70,6 +70,9 @@ async def lifespan(app: FastAPI):
     logger.info("Starting SEO-NOC application...")
     await initialize_default_categories()
 
+    # Seed default super admin if needed
+    await seed_default_super_admin()
+
     # Create database indexes for performance
     await create_database_indexes()
 
