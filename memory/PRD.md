@@ -56,6 +56,11 @@ Build a full-stack SEO Network Operations Center combining:
 - `/app/documentation/IMAGE_MAPPING.md` - Screenshot mapping guide
 - `/app/documentation/README.md` - Usage instructions
 
+**In-App User Manual:**
+- Route: `/user-manual`
+- Menu: Added to sidebar navigation (accessible by all users)
+- Features: Expandable TOC, Search, Section navigation, Tables, Code blocks
+
 **Documentation Sections:**
 - **Bagian A**: Getting Started (Overview, Requirements, Login, Register, Navigation, Glossary)
 - **Bagian B**: Role & Permissions (Super Admin, Admin, Viewer, Brand Scoping, Menu Access)
