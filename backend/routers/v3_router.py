@@ -499,17 +499,46 @@ def normalize_path(path: str | None) -> str | None:
     return path
 
 
+def compute_domain_active_status(expiration_date: Optional[str]) -> tuple:
+    """
+    Compute domain_active_status based on expiration_date (AUTO - NOT editable).
+    
+    Returns tuple: (status: str, days_until: int or None)
+    - Active: today < expiration_date
+    - Expired: today >= expiration_date
+    
+    Has NO relation to uptime or monitoring - purely administrative.
+    """
+    if not expiration_date:
+        return "active", None
+    
+    try:
+        exp_date = datetime.fromisoformat(expiration_date.replace('Z', '+00:00'))
+        if exp_date.tzinfo is None:
+            exp_date = exp_date.replace(tzinfo=timezone.utc)
+        days_until = (exp_date - datetime.now(timezone.utc)).days
+        
+        if days_until < 0:
+            return "expired", days_until
+        return "active", days_until
+    except Exception:
+        return "active", None
+
+
 async def enrich_asset_domain(asset: dict) -> dict:
     """
-    Enrich asset domain with brand/category/registrar names, lifecycle info, and validation warnings.
+    Enrich asset domain with computed fields and validation warnings.
     
-    Lifecycle determines strategic usage:
-    - Active: Included in monitoring & alerts
-    - Released: Intentionally retired, no alerts
-    - Quarantined: Blocked due to issues
-    - Archived: History only
+    DOMAIN STATUS, MONITORING & LIFECYCLE (FINAL SPECIFICATION):
     
-    Only 'active' lifecycle domains are monitored.
+    1. domain_active_status (AUTO): Active/Expired based on expiration_date
+    2. monitoring_status (AUTO): Technical availability from monitoring
+    3. lifecycle_status (MANUAL): Strategic decision (Super Admin only)
+    4. quarantine_category: Why domain is quarantined
+    
+    AUTOMATIC RULES:
+    - Expired domains CANNOT have lifecycle_status = Active
+    - Only lifecycle_status = Active allows monitoring
     """
     if asset.get("brand_id"):
         brand = await db.brands.find_one(
