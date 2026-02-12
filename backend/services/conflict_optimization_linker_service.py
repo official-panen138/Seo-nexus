@@ -590,8 +590,17 @@ class ConflictOptimizationLinkerService:
             }
         
         total = len(conflicts)
-        resolved = [c for c in conflicts if c.get("status") == "resolved"]
-        recurring = [c for c in conflicts if c.get("recurrence_count", 0) > 0]
+        # Resolved includes both 'resolved' and 'approved' status
+        resolved = [c for c in conflicts if c.get("status") in ("resolved", "approved")]
+        
+        # CRITICAL FIX: Recurring conflicts must exclude resolved/approved/inactive
+        # Only count ACTIVE conflicts with recurrence_count > 0
+        recurring = [
+            c for c in conflicts 
+            if c.get("recurrence_count", 0) > 0 
+            and c.get("is_active", True) == True
+            and c.get("status") not in ("resolved", "approved", "ignored")
+        ]
         
         # Calculate resolution times
         resolution_times = []
