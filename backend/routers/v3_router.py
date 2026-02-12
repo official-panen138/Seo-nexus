@@ -3051,8 +3051,9 @@ async def update_optimization(
         conflict_update = {"updated_at": datetime.now(timezone.utc).isoformat()}
         
         if new_status == "completed":
-            # When optimization is completed, mark conflict as RESOLVED
+            # When optimization is completed, mark conflict as RESOLVED and INACTIVE
             conflict_update["status"] = "resolved"
+            conflict_update["is_active"] = False  # P0: Deactivate to remove from recurring list
             conflict_update["resolved_at"] = datetime.now(timezone.utc).isoformat()
             conflict_update["resolved_by"] = current_user.get("id")
             
@@ -3071,8 +3072,9 @@ async def update_optimization(
             conflict_update["status"] = "under_review"
             
         elif new_status == "reverted":
-            # If optimization is reverted, conflict goes back to detected
+            # If optimization is reverted, conflict goes back to detected and becomes active again
             conflict_update["status"] = "detected"
+            conflict_update["is_active"] = True  # Reactivate on revert
             conflict_update["resolved_at"] = None
             conflict_update["resolved_by"] = None
         
