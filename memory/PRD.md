@@ -49,6 +49,38 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## What's Been Implemented
 
+### Domain Status, Monitoring & Lifecycle Refactor V2 (Feb 12, 2026) - COMPLETE
+**Feature:** Complete separation of domain statuses with column sorting and tooltips.
+
+**Core Concepts (MUST FOLLOW):**
+| Concept | Type | Description |
+|---------|------|-------------|
+| `Monitoring Toggle` | CONTROL | Human decision (ON/OFF) - enables/disables monitoring |
+| `Monitoring Status` | RESULT | System-generated (Up/Down/Soft Blocked/Unknown) - NEVER editable |
+| `Domain Active Status` | BUSINESS | Time-based (Active/Expired) - computed from expiration_date |
+| `Lifecycle` | STRATEGIC | SEO strategy (Active/Released/Quarantined/Not Renewed) |
+
+**Automatic Rules:**
+1. **Auto-transition:** When `domain_active_status=Expired` → `lifecycle_status=Not Renewed` (forced)
+2. **Monitoring Matrix:** Only `lifecycle=Active` AND `domain_active_status=Active` allows monitoring
+3. **Invalid State Blocking:** Cannot set `lifecycle=Active` when domain is expired (HTTP 400)
+
+**Column Sorting:**
+- Sortable: Domain, Brand, Domain Active Status, Monitoring Status, Lifecycle, SEO Networks, Expiration
+- Default sort: "critical" - prioritizes Down → Soft Blocked → Quarantined → Expired → A-Z
+
+**View Mode Tabs:**
+- All Domains, Unmonitored in SEO, Released, Quarantined, **Not Renewed** (new)
+
+**Tooltips (MANDATORY):**
+- Monitoring Toggle: "Enable or disable technical monitoring for this domain..."
+- Monitoring Status: "Latest technical check result. Unknown means monitoring is disabled..."
+- Lifecycle: "Describes how the domain is used in SEO strategy..."
+
+**Tests:** 100% pass rate (backend + frontend)
+
+---
+
 ### Domain Status, Monitoring & Lifecycle Refactor (Feb 12, 2026) - COMPLETE
 **Feature:** Complete separation of domain statuses into three distinct concepts for noise-free SEO operations.
 
