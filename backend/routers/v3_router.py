@@ -1419,6 +1419,50 @@ async def get_asset_domains(
             if n.get("network_id")
         ]
 
+        # Enrich lifecycle and quarantine info
+        is_used_in_seo = len(raw_networks) > 0
+        asset["is_used_in_seo_network"] = is_used_in_seo
+        
+        # Check if monitoring is required (used in SEO + active lifecycle + not quarantined)
+        lifecycle = asset.get("domain_lifecycle_status", DomainLifecycleStatus.ACTIVE.value)
+        is_active_lifecycle = lifecycle in [
+            DomainLifecycleStatus.ACTIVE.value, 
+            DomainLifecycleStatus.EXPIRED_PENDING.value,
+            None  # Legacy domains
+        ]
+        is_not_quarantined = not asset.get("quarantine_category")
+        asset["requires_monitoring"] = is_used_in_seo and is_active_lifecycle and is_not_quarantined
+        
+        # Add quarantine category label
+        qc = asset.get("quarantine_category")
+        if qc:
+            asset["quarantine_category_label"] = QUARANTINE_CATEGORY_LABELS.get(qc, qc)
+        
+        # Ensure lifecycle status has a default
+        if not asset.get("domain_lifecycle_status"):
+            asset["domain_lifecycle_status"] = DomainLifecycleStatus.ACTIVE.value
+
+    # Batch fetch user names for quarantined_by and released_by
+    user_ids_to_fetch = set()
+    for asset in assets:
+        if asset.get("quarantined_by"):
+            user_ids_to_fetch.add(asset["quarantined_by"])
+        if asset.get("released_by"):
+            user_ids_to_fetch.add(asset["released_by"])
+    
+    if user_ids_to_fetch:
+        users = await db.users.find(
+            {"id": {"$in": list(user_ids_to_fetch)}}, 
+            {"_id": 0, "id": 1, "name": 1, "email": 1}
+        ).to_list(100)
+        user_map = {u["id"]: u.get("name") or u.get("email", "Unknown") for u in users}
+        
+        for asset in assets:
+            if asset.get("quarantined_by"):
+                asset["quarantined_by_name"] = user_map.get(asset["quarantined_by"])
+            if asset.get("released_by"):
+                asset["released_by_name"] = user_map.get(asset["released_by"])
+
     # Return paginated response
     return {
         "data": [AssetDomainResponse(**a) for a in assets],
