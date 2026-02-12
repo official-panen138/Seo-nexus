@@ -271,18 +271,20 @@ export default function DomainsPage() {
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, filterBrand, filterStatus, filterMonitoring, pageSize]);
+    }, [debouncedSearch, filterBrand, filterStatus, filterMonitoring, pageSize, viewMode, filterLifecycle, filterQuarantine, filterUsedInSeo]);
 
     // Load data when pagination or filters change
     useEffect(() => {
         if (useV3) {
             loadPaginatedData();
         }
-    }, [useV3, currentPage, pageSize, debouncedSearch, filterBrand, filterStatus, filterMonitoring]);
+    }, [useV3, currentPage, pageSize, debouncedSearch, filterBrand, filterStatus, filterMonitoring, viewMode, filterLifecycle, filterQuarantine, filterUsedInSeo]);
 
-    // Load reference data once
+    // Load reference data and coverage stats once
     useEffect(() => {
         loadReferenceData();
+        loadCoverageStats();
+        loadQuarantineCategories();
     }, [useV3]);
 
     // Debounce search input
@@ -292,6 +294,30 @@ export default function DomainsPage() {
         }, 400);
         return () => clearTimeout(timer);
     }, [searchQuery]);
+
+    // Load coverage stats
+    const loadCoverageStats = async () => {
+        if (!useV3) return;
+        setLoadingCoverage(true);
+        try {
+            const response = await monitoringAPI.getCoverage();
+            setCoverageStats(response.data);
+        } catch (err) {
+            console.error('Failed to load coverage stats:', err);
+        } finally {
+            setLoadingCoverage(false);
+        }
+    };
+
+    // Load quarantine categories
+    const loadQuarantineCategories = async () => {
+        try {
+            const response = await assetDomainsAPI.getQuarantineCategories();
+            setQuarantineCategories(response.data.categories || []);
+        } catch (err) {
+            console.error('Failed to load quarantine categories:', err);
+        }
+    };
 
     // Handle 'edit' URL parameter to open edit dialog directly
     useEffect(() => {
