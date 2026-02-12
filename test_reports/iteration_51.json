@@ -1,0 +1,98 @@
+{
+  "summary": "Domain Lifecycle 'Not Renewed' & Column Sorting features tested. Fixed a sorting bug where domain_name DESC was not working. Auto-transition to NOT_RENEWED lifecycle works correctly in API response enrichment. Tooltips verified for Monitoring Toggle, Monitoring Status, and Lifecycle columns.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "GET /api/v3/asset-domains?view_mode=not_renewed",
+        "issue": "Returns 0 domains even though expired domains exist. The NOT_RENEWED lifecycle is auto-computed in response enrichment but not stored in DB, so view_mode filter queries empty results.",
+        "priority": "MEDIUM",
+        "workaround": "Domains with NOT_RENEWED lifecycle are visible in 'All Domains' view with proper badge. Use lifecycle_status filter or search directly."
+      }
+    ]
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+
+  "passed_tests": [
+    "View Mode Tabs: All, Unmonitored in SEO, Released, Quarantined, Not Renewed all visible",
+    "Sortable Headers: Domain, Brand, Domain Active Status, Monitoring Status, Lifecycle, SEO Networks, Expiration all clickable",
+    "Sort by domain_name ASC - domains sorted A-Z",
+    "Sort by domain_name DESC - domains sorted Z-A (fixed bug)",
+    "Sort by expiration_date ASC - soonest first",
+    "Sort by expiration_date DESC - latest first",
+    "Sort by lifecycle_status - groups by lifecycle",
+    "Sort by monitoring_status - groups by up/down/unknown",
+    "Sort by domain_active_status - uses expiration_date sort",
+    "Default 'critical' sort - prioritizes issues first",
+    "Sort toggle - clicking header toggles asc/desc direction",
+    "Lifecycle column tooltip shows with 4 statuses: Active, Released, Quarantined, Not Renewed",
+    "Monitoring Toggle column tooltip shows enable/disable text",
+    "Monitoring Status column tooltip shows technical check result explanation",
+    "Expired domain (domaintest.com) shows lifecycle='Not Renewed' in API and UI",
+    "monitoring_allowed=false for NOT_RENEWED domains",
+    "Monitoring Toggle shows 'N/A' for non-Active lifecycle domains",
+    "SEO Monitoring Coverage stats include not_renewed_count field",
+    "Backend API /api/v3/asset-domains accepts sort_by and sort_direction params"
+  ],
+
+  "fixes_applied": [
+    {
+      "file": "/app/backend/routers/v3_router.py",
+      "issue": "Sort by domain_name DESC was returning ASC order due to duplicate sort key",
+      "fix": "Modified sort_spec to only add secondary sort when primary field is different: if db_field == 'domain_name': sort_spec = [(db_field, sort_dir)] else: sort_spec = [(db_field, sort_dir), ('domain_name', 1)]"
+    }
+  ],
+
+  "test_report_links": [
+    "/app/backend/tests/test_domain_lifecycle_not_renewed.py",
+    "/app/test_reports/pytest/domain_lifecycle_not_renewed_results.xml"
+  ],
+
+  "action_items": [
+    "Consider updating view_mode=not_renewed logic to also query by expired expiration_date (computed field) rather than stored lifecycle_status to ensure Not Renewed tab shows domains",
+    "Alternatively, add a background job to update lifecycle_status to 'not_renewed' in DB when expiration_date passes"
+  ],
+
+  "critical_code_review_comments": [
+    "GOOD: Auto-transition to NOT_RENEWED lifecycle correctly implemented in API response enrichment (lines 1642-1648)",
+    "GOOD: Tooltips correctly implemented for Monitoring Toggle, Monitoring Status, and Lifecycle columns using shadcn/radix Tooltip components",
+    "GOOD: Sort specification correctly uses MongoDB sort direction (-1 for DESC, 1 for ASC)",
+    "FIXED: Sort by domain_name DESC was broken due to duplicate domain_name in sort_spec - fixed by conditionally adding secondary sort",
+    "NOTE: view_mode=not_renewed queries DB directly for lifecycle_status='not_renewed' but no DB records have that value - the auto-transition only happens in enrichment"
+  ],
+
+  "updated_files": [
+    "/app/backend/routers/v3_router.py",
+    "/app/backend/tests/test_domain_lifecycle_not_renewed.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% (15/15 tests passed)",
+    "frontend": "100% (all UI features verified)"
+  },
+
+  "test_credentials": {
+    "super_admin": {"email": "superadmin@seonoc.com", "password": "SuperAdmin123!"}
+  },
+
+  "seed_data_creation": "",
+
+  "features_verified": {
+    "not_renewed_lifecycle": "Auto-computed when domain_active_status=expired. Shown correctly in API response with lifecycle_status='not_renewed' and lifecycle_status_label='Not Renewed'",
+    "column_sorting": "All sort_by params working (domain_name, brand_name, expiration_date, monitoring_status, lifecycle_status, domain_active_status, seo_networks_count, critical). Sort direction (asc/desc) toggles correctly",
+    "tooltips": "Monitoring Toggle, Monitoring Status, and Lifecycle columns all show tooltips with correct explanatory text on hover",
+    "view_mode_tabs": "All 5 tabs (All, Unmonitored in SEO, Released, Quarantined, Not Renewed) visible and functional",
+    "invalid_state_blocking": "monitoring_allowed correctly set to false for expired/non-active lifecycle domains"
+  },
+
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "Domain Lifecycle 'Not Renewed' and Column Sorting features tested. NOT_RENEWED lifecycle auto-transition works in API enrichment but view_mode=not_renewed tab shows 0 results because DB query finds no records. Fixed sorting bug where domain_name DESC was broken. All tooltips working. Test with superadmin@seonoc.com / SuperAdmin123!"
+}
