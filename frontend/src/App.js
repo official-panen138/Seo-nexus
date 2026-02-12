@@ -161,7 +161,7 @@ function AppRoutes() {
             } />
             <Route path="/conflicts/dashboard" element={
                 <MenuProtectedRoute menuKey="alert_center">
-                    <ConflictDashboardPage />
+                    <AlertsPage />
                 </MenuProtectedRoute>
             } />
             <Route path="/reports" element={
