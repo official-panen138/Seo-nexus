@@ -2100,17 +2100,25 @@ async def remove_domain_quarantine(
     if not existing:
         raise HTTPException(status_code=404, detail="Asset domain not found")
     
-    # Check if domain is quarantined (either by quarantine_category or lifecycle)
+    # Check if domain is quarantined
     is_quarantined = (
         existing.get("quarantine_category") or 
-        existing.get("domain_lifecycle_status") == DomainLifecycleStatus.QUARANTINED.value
+        existing.get("lifecycle_status") == DomainLifecycleStatus.QUARANTINED.value
     )
     if not is_quarantined:
         raise HTTPException(status_code=400, detail="Domain is not quarantined")
     
+    # RULE 2: Cannot restore to Active if domain is expired
+    domain_active_status, _ = compute_domain_active_status(existing.get("expiration_date"))
+    if domain_active_status == "expired":
+        raise HTTPException(
+            status_code=400,
+            detail="⚠️ Domain has expired. Cannot restore to Active lifecycle. Please mark as Released instead."
+        )
+    
     now = datetime.now(timezone.utc).isoformat()
     update_dict = {
-        "domain_lifecycle_status": DomainLifecycleStatus.ACTIVE.value,  # Restore to active
+        "lifecycle_status": DomainLifecycleStatus.ACTIVE.value,  # Restore to active
         "quarantine_category": None,
         "quarantine_note": None,
         "quarantined_at": None,
