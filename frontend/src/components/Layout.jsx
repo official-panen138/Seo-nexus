@@ -31,7 +31,8 @@ import {
     Building,
     Radio,
     Clock,
-    BarChart3
+    BarChart3,
+    ShieldAlert
 } from 'lucide-react';
 
 // Nav items with menuKey for permission checking
@@ -53,6 +54,7 @@ const navItems = [
     { path: '/settings/monitoring', label: 'Monitoring', icon: Radio, menuKey: 'monitoring' },
     { path: '/settings/activity-types', label: 'Activity Types', icon: Zap, menuKey: 'activity_types' },
     { path: '/settings/scheduler', label: 'Scheduler', icon: Clock, menuKey: 'scheduler' },
+    { path: '/settings/quarantine-categories', label: 'Quarantine Categories', icon: ShieldAlert, menuKey: 'quarantine_categories' },
     { path: '/settings', label: 'Settings', icon: Settings, menuKey: 'settings' },
 ];
 

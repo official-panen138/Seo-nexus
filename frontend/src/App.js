@@ -30,6 +30,7 @@ import MonitoringSettingsPage from "./pages/MonitoringSettingsPage";
 import SchedulerDashboardPage from "./pages/SchedulerDashboardPage";
 import MetricsDashboardPage from "./pages/MetricsDashboardPage";
 import AccessDeniedPage from "./pages/AccessDeniedPage";
+import QuarantineCategoriesPage from "./pages/QuarantineCategoriesPage";
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -221,6 +222,11 @@ function AppRoutes() {
             <Route path="/settings/scheduler" element={
                 <MenuProtectedRoute menuKey="scheduler">
                     <SchedulerDashboardPage />
+                </MenuProtectedRoute>
+            } />
+            <Route path="/settings/quarantine-categories" element={
+                <MenuProtectedRoute menuKey="quarantine_categories">
+                    <QuarantineCategoriesPage />
                 </MenuProtectedRoute>
             } />
             <Route path="/metrics" element={
