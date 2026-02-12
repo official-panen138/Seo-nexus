@@ -2492,7 +2492,7 @@ async def get_networks(
                     if isinstance(exp_date, str):
                         try:
                             exp_date = datetime.fromisoformat(exp_date.replace('Z', '+00:00'))
-                        except:
+                        except (ValueError, TypeError):
                             exp_date = None
                     if exp_date and exp_date <= now:
                         expired_count += 1
