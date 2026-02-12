@@ -1221,7 +1221,7 @@ export default function DomainsPage() {
                                 <TableSkeleton />
                             ) : filteredData.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={useV3 ? 9 : 8} className="h-32 text-center">
+                                    <TableCell colSpan={useV3 ? 10 : 9} className="h-32 text-center">
                                         <div className="empty-state py-8">
                                             <Globe className="empty-state-icon mx-auto" />
                                             <p className="empty-state-title">No domains found</p>
@@ -1271,6 +1271,11 @@ export default function DomainsPage() {
                                             <Badge variant="outline" className="font-normal">
                                                 {item.brand_name || '-'}
                                             </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="text-sm text-zinc-400">
+                                                {item.category_name || '-'}
+                                            </span>
                                         </TableCell>
                                         <TableCell>
                                             {useV3 ? (
