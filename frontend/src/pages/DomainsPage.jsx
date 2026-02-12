@@ -2143,12 +2143,40 @@ export default function DomainsPage() {
                             {selectedLifecycle && (
                                 <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800">
                                     <p className="text-sm text-zinc-400">
-                                        {selectedLifecycle === 'active' && '✅ Domain will be included in realtime monitoring and alerts.'}
-                                        {selectedLifecycle === 'expired_pending' && '⏳ Domain will be monitored, but flagged as expired pending decision.'}
-                                        {selectedLifecycle === 'expired_released' && '🚫 Domain will be excluded from all monitoring and alerts.'}
-                                        {selectedLifecycle === 'inactive' && '💤 Domain will be excluded from monitoring (no longer used).'}
-                                        {selectedLifecycle === 'archived' && '📦 Domain will be archived (historical only).'}
+                                        {selectedLifecycle === 'active' && '✅ Domain will be included in real-time monitoring and alerts.'}
+                                        {selectedLifecycle === 'released' && '🚫 Domain will be excluded from all monitoring and alerts (intentionally retired).'}
+                                        {selectedLifecycle === 'quarantined' && '⚠️ Domain will be blocked due to issues and excluded from monitoring.'}
+                                        {selectedLifecycle === 'archived' && '📦 Domain will be archived (historical only, no monitoring).'}
                                     </p>
+                                </div>
+                            )}
+                            {selectedLifecycle === 'quarantined' && (
+                                <div className="space-y-2">
+                                    <Label>Quarantine Category *</Label>
+                                    <Select 
+                                        value={selectedQuarantineCategory} 
+                                        onValueChange={setSelectedQuarantineCategory}
+                                    >
+                                        <SelectTrigger className="w-full bg-black border-border">
+                                            <SelectValue placeholder="Select category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {quarantineCategories.map((cat) => (
+                                                <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {selectedQuarantineCategory === 'other' && (
+                                        <div className="mt-2">
+                                            <Label>Note *</Label>
+                                            <Textarea
+                                                value={quarantineNote}
+                                                onChange={(e) => setQuarantineNote(e.target.value)}
+                                                placeholder="Describe the quarantine reason..."
+                                                className="bg-black border-border mt-1"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -2158,7 +2186,7 @@ export default function DomainsPage() {
                             </Button>
                             <Button 
                                 onClick={handleSetLifecycle}
-                                disabled={saving || !selectedLifecycle}
+                                disabled={saving || !selectedLifecycle || (selectedLifecycle === 'quarantined' && !selectedQuarantineCategory)}
                                 className="bg-blue-600 hover:bg-blue-700"
                             >
                                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
