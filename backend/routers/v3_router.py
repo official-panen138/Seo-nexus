@@ -2011,14 +2011,15 @@ async def quarantine_domain(
     """
     Quarantine a domain - SUPER ADMIN ONLY.
     
-    Quarantined domains are EXCLUDED from:
+    Sets lifecycle_status = 'quarantined' and disables monitoring.
+    
+    RULE 3: Quarantined domains are EXCLUDED from:
     - Monitoring alerts
     - Telegram notifications
     - Expiration reminders
+    - SEO monitoring dashboards
     
-    The domain still appears in Asset Domain list with a warning badge.
-    
-    Categories: spam_murni, dmca, rollback_restore, penalized, manual_review, custom
+    Categories: spam, dmca, manual_penalty, rollback_restore, penalized, other
     """
     # Super Admin check
     if current_user.get("role") != "super_admin":
