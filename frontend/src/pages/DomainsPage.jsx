@@ -1231,10 +1231,10 @@ export default function DomainsPage() {
                                 <TableHead>Domain</TableHead>
                                 <TableHead>Brand</TableHead>
                                 <TableHead>Category</TableHead>
-                                <TableHead>Status</TableHead>
                                 {useV3 ? (
                                     <>
-                                        <TableHead>SEO Networks</TableHead>
+                                        <TableHead>Domain Active Status</TableHead>
+                                        <TableHead>Monitoring Status</TableHead>
                                         <TableHead>
                                             <div className="flex items-center gap-1">
                                                 Lifecycle
@@ -1250,10 +1250,13 @@ export default function DomainsPage() {
                                                 </TooltipProvider>
                                             </div>
                                         </TableHead>
-                                        <TableHead>Monitoring</TableHead>
+                                        <TableHead>Quarantine</TableHead>
+                                        <TableHead>SEO Networks</TableHead>
+                                        <TableHead>Monitoring Toggle</TableHead>
                                         <TableHead>Expiration</TableHead>
                                     </>
                                 ) : (
+                                    <TableHead>Status</TableHead>
                                     <>
                                         <TableHead>Tier</TableHead>
                                         <TableHead>Index</TableHead>
