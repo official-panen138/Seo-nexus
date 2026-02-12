@@ -234,6 +234,11 @@ function AppRoutes() {
                     <MetricsDashboardPage />
                 </MenuProtectedRoute>
             } />
+            <Route path="/user-manual" element={
+                <ProtectedRoute>
+                    <UserManualPage />
+                </ProtectedRoute>
+            } />
             
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
