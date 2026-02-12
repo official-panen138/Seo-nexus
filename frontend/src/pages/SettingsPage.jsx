@@ -136,18 +136,9 @@ export default function SettingsPage() {
     const [savingPerformance, setSavingPerformance] = useState(false);
     const [runningPerformanceCheck, setRunningPerformanceCheck] = useState(false);
 
-    // Master Data - Quarantine Categories state
-    const [quarantineCategories, setQuarantineCategories] = useState([]);
-    const [loadingCategories, setLoadingCategories] = useState(false);
-    const [savingCategory, setSavingCategory] = useState(false);
-    const [editingCategory, setEditingCategory] = useState(null);
-    const [newCategory, setNewCategory] = useState({ value: '', label: '' });
-    const [showAddCategory, setShowAddCategory] = useState(false);
-
     useEffect(() => {
         loadSettings();
         loadTestDomains();
-        loadQuarantineCategories();
     }, []);
     
     const loadTestDomains = async () => {
