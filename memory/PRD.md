@@ -1889,66 +1889,49 @@ if message_thread_id and ("thread" in error_text or "topic" in error_text):
 
 ---
 
-### Domain Lifecycle & Quarantine Management System (Feb 12, 2026) - COMPLETE
+### Domain Lifecycle & Quarantine Management System (Feb 12, 2026) - REVISED & COMPLETE
 
-**Feature:** Production-ready Domain Monitoring Overhaul for noise-free, scalable SEO network monitoring
+**Feature:** Revised Domain Monitoring system with clear separation of Status (technical) vs Lifecycle (strategic)
 
-**P0 Requirements (Critical) - ALL IMPLEMENTED:**
+**Core Concept:**
+- **Status** = Technical condition (Active / Down / Expired)
+- **Lifecycle** = Strategic decision (Active / Released / Quarantined / Archived)
+- Only **Active** lifecycle domains are included in real-time monitoring
+- All other lifecycles are excluded from ALL alerts and notifications
 
-**1. Domain Lifecycle Status:**
-- New field `domain_lifecycle_status` with values: `active`, `expired_pending`, `expired_released`, `inactive`, `archived`
-- **Only `active` and `expired_pending` are included in realtime monitoring and alerts**
-- `expired_released`, `inactive`, `archived` domains are excluded from all monitoring
-- Mark as Released action: Sets status to `expired_released`, disables monitoring
+**Lifecycle Values:**
+- `active` - Actively used in SEO (MONITORED)
+- `released` - Intentionally retired/not renewed (NOT monitored)
+- `quarantined` - Blocked due to issues (NOT monitored)
+- `archived` - History only, no operational usage (NOT monitored)
 
-**2. Domain Quarantine:**
-- New field `quarantine_category` with predefined categories: `spam_murni`, `dmca`, `rollback_restore`, `penalized`, `manual_review`, `custom`
-- Quarantined domains are **EXCLUDED from all monitoring, alerts, and notifications**
-- Quarantine badge (orange shield icon) shown in UI
-- Read-only status for quarantined domains
+**Validation Rules Implemented:**
+1. **Invalid State Prevention**: Cannot set lifecycle to "Active" if domain is expired
+2. **Auto-Suggestion**: System suggests marking expired domains as Released/Quarantined
+3. **Quarantine Requirement**: Quarantine category required when setting lifecycle to Quarantined
 
-**3. Super Admin Only Permissions:**
-- Only Super Admin can change lifecycle status
-- Only Super Admin can quarantine/unquarantine domains
-- Regular Admin sees read-only lifecycle/quarantine info
+**UI Warnings:**
+- Warning banner (⚠️) shown when lifecycle contradicts status
+- Examples: Active lifecycle + Expired status, Active lifecycle + DOWN status
+- Tooltip on Lifecycle column explaining the concept
 
-**4. Server-Side Pagination & Filtering:**
-- New filters: `lifecycle_status`, `quarantine_category`, `is_quarantined`, `used_in_seo`
-- Special view modes: `released`, `quarantined`, `unmonitored`
-- Efficient server-side query with brand scoping
+**Quarantine Categories:**
+- Spam Murni
+- DMCA  
+- Manual Penalty
+- Rollback / Restore
+- Other (custom with required note)
 
-**5. SEO Monitoring Coverage Panel:**
-- Real-time stats without caching: domains_in_seo, monitored, unmonitored, coverage %
-- Released count, quarantined count, root domains missing monitoring
-- Auto-updates on any domain change
+**API Changes:**
+- `GET /api/v3/lifecycle-info` - Returns lifecycle labels and tooltip
+- `GET /api/v3/monitoring/coverage` - Updated to only count Active lifecycle as monitorable
+- `POST /api/v3/asset-domains/{id}/quarantine` - Now sets lifecycle to 'quarantined'
+- `POST /api/v3/asset-domains/{id}/remove-quarantine` - Restores lifecycle to 'active'
+- `POST /api/v3/asset-domains/{id}/set-lifecycle` - Includes validation rules
 
-**6. Frontend View Mode Tabs:**
-- "All Domains" - Full list with all filters
-- "Unmonitored in SEO" - Domains in SEO networks without monitoring enabled
-- "Released" - Domains marked as expired_released
-- "Quarantined" - Domains with quarantine_category set
+**Data Migration:** Migrated existing data from old values (expired_released → released, expired_pending → active, inactive → archived)
 
-**API Endpoints Added:**
-- `GET /api/v3/monitoring/coverage` - Real-time SEO monitoring coverage stats
-- `GET /api/v3/quarantine-categories` - List available quarantine categories
-- `POST /api/v3/asset-domains/{id}/quarantine` - Quarantine a domain (Super Admin only)
-- `POST /api/v3/asset-domains/{id}/remove-quarantine` - Remove quarantine (Super Admin only)
-- `POST /api/v3/asset-domains/{id}/mark-released` - Mark domain as released (Super Admin only)
-- `POST /api/v3/asset-domains/{id}/set-lifecycle` - Change lifecycle status (Super Admin only)
-- `GET /api/v3/asset-domains` enhanced with: `lifecycle_status`, `quarantine_category`, `is_quarantined`, `used_in_seo`, `view_mode` filters
-
-**Models Updated:**
-- `DomainLifecycleStatus` enum added
-- `QuarantineCategory` enum added
-- `AssetDomainBase` extended with: `domain_lifecycle_status`, `quarantine_category`, `quarantine_note`, `quarantined_at`, `quarantined_by`, `released_at`, `released_by`
-- `AssetDomainResponse` extended with: `is_used_in_seo_network`, `requires_monitoring`, `quarantine_category_label`
-- `SeoMonitoringCoverageStats` model added
-
-**Frontend Changes:**
-- `DomainsPage.jsx`: Added SEO Monitoring Coverage panel, view mode tabs, lifecycle column, quarantine badges, Super Admin action dropdown
-- `api.js`: Added `monitoringAPI.getCoverage()`, `assetDomainsAPI.markAsReleased()`, `assetDomainsAPI.setLifecycle()`, `assetDomainsAPI.quarantine()`, `assetDomainsAPI.removeQuarantine()`, `assetDomainsAPI.getQuarantineCategories()`
-
-**Tests:** 96% backend, 100% frontend - `/app/test_reports/iteration_49.json`
+**Tests:** Backend and frontend verified working
 
 ---
 
