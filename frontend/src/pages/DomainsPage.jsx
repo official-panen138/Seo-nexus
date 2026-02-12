@@ -575,6 +575,12 @@ export default function DomainsPage() {
             toast.error('Domain name and brand are required');
             return;
         }
+        
+        // V3: Expiration date is mandatory (used to compute domain_active_status)
+        if (useV3 && !form.expiration_date) {
+            toast.error('Expiration date is required (used to determine domain active status)');
+            return;
+        }
 
         setSaving(true);
         try {
@@ -584,7 +590,7 @@ export default function DomainsPage() {
                     brand_id: form.brand_id,
                     category_id: form.category_id || null,
                     registrar_id: form.registrar_id || null,
-                    expiration_date: form.expiration_date ? new Date(form.expiration_date).toISOString() : null,
+                    expiration_date: new Date(form.expiration_date).toISOString(),  // Now mandatory
                     auto_renew: form.auto_renew,
                     // Note: domain_active_status is auto-computed from expiration_date, not sent in payload
                     monitoring_enabled: form.monitoring_enabled,
