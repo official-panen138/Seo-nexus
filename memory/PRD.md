@@ -91,6 +91,17 @@ Build a full-stack SEO Network Operations Center combining:
 
 **Tests:** 100% pass rate (28/28 backend, 100% frontend)
 
+### SEO Network Health Indicators (Feb 12, 2026) - COMPLETE
+**Feature:** Visual health indicators on SEO Network cards showing domain issues.
+
+**Implementation:**
+- Added `expired_domains_count` field to network response (computed from expiration dates)
+- Added `quarantined_domains_count` field (computed from lifecycle_status and quarantine_category)
+- Network cards now display:
+  - 🔴 "{N} expired" badge if any domains are expired
+  - 🟠 "{N} quarantined" badge if any domains are quarantined
+- Helps quickly identify networks that need attention
+
 ---
 
 ### SEO-Aware Domain Monitoring + Structured Alert Output (Feb 10, 2026) - COMPLETE
