@@ -283,14 +283,14 @@ export default function DomainsPage() {
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, filterBrand, filterStatus, filterMonitoring, pageSize, viewMode, filterLifecycle, filterQuarantine, filterUsedInSeo]);
+    }, [debouncedSearch, filterBrand, filterCategory, filterStatus, filterMonitoring, pageSize, viewMode, filterLifecycle, filterQuarantine, filterUsedInSeo]);
 
     // Load data when pagination or filters change
     useEffect(() => {
         if (useV3) {
             loadPaginatedData();
         }
-    }, [useV3, currentPage, pageSize, debouncedSearch, filterBrand, filterStatus, filterMonitoring, viewMode, filterLifecycle, filterQuarantine, filterUsedInSeo]);
+    }, [useV3, currentPage, pageSize, debouncedSearch, filterBrand, filterCategory, filterStatus, filterMonitoring, viewMode, filterLifecycle, filterQuarantine, filterUsedInSeo]);
 
     // Load reference data and coverage stats once
     useEffect(() => {
