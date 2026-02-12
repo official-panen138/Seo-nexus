@@ -1333,23 +1333,13 @@ async def get_asset_domains(
     """
     Get asset domains with SERVER-SIDE PAGINATION - BRAND SCOPED.
 
-    New filters:
-    - lifecycle_status: Filter by domain lifecycle (active, expired_pending, expired_released, inactive, archived)
-    - quarantine_category: Filter by quarantine category
-    - is_quarantined: true = only quarantined, false = only non-quarantined
-    - used_in_seo: true = only domains in SEO networks, false = only unused domains
-    - view_mode: Special views - 'released' (expired_released), 'quarantined', 'unmonitored' (in SEO but monitoring disabled)
+    Lifecycle filters (strategic state):
+    - lifecycle_status: Filter by domain lifecycle (active, released, quarantined, archived)
+    - view_mode: Special views - 'released', 'quarantined', 'archived', 'unmonitored'
 
-    Returns paginated response with meta information:
-    {
-        "data": [...],
-        "meta": {
-            "page": 1,
-            "limit": 25,
-            "total": 1284,
-            "total_pages": 52
-        }
-    }
+    Note: Only 'active' lifecycle domains are included in real-time monitoring.
+
+    Returns paginated response with meta information.
     """
     import math
 
@@ -1372,7 +1362,7 @@ async def get_asset_domains(
     if search:
         query["domain_name"] = {"$regex": search, "$options": "i"}
 
-    # New lifecycle filter
+    # Lifecycle filter
     if lifecycle_status:
         query["domain_lifecycle_status"] = lifecycle_status.value
     
@@ -1381,18 +1371,27 @@ async def get_asset_domains(
         query["quarantine_category"] = quarantine_category
     if is_quarantined is not None:
         if is_quarantined:
-            query["quarantine_category"] = {"$ne": None}
-        else:
+            # Quarantined = has quarantine_category OR lifecycle = quarantined
             query["$or"] = [
-                {"quarantine_category": None},
-                {"quarantine_category": {"$exists": False}}
+                {"quarantine_category": {"$ne": None}},
+                {"domain_lifecycle_status": DomainLifecycleStatus.QUARANTINED.value}
+            ]
+        else:
+            query["$and"] = [
+                {"$or": [{"quarantine_category": None}, {"quarantine_category": {"$exists": False}}]},
+                {"domain_lifecycle_status": {"$ne": DomainLifecycleStatus.QUARANTINED.value}}
             ]
 
     # Handle special view modes
     if view_mode == "released":
-        query["domain_lifecycle_status"] = DomainLifecycleStatus.EXPIRED_RELEASED.value
+        query["domain_lifecycle_status"] = DomainLifecycleStatus.RELEASED.value
     elif view_mode == "quarantined":
-        query["quarantine_category"] = {"$ne": None}
+        query["$or"] = [
+            {"quarantine_category": {"$ne": None}},
+            {"domain_lifecycle_status": DomainLifecycleStatus.QUARANTINED.value}
+        ]
+    elif view_mode == "archived":
+        query["domain_lifecycle_status"] = DomainLifecycleStatus.ARCHIVED.value
 
     # Filter by network_id if provided (domains used in a specific SEO network)
     domain_ids_in_seo = None
@@ -1411,18 +1410,20 @@ async def get_asset_domains(
         domain_ids_in_seo = list(set([e["asset_domain_id"] for e in all_structure_entries]))
         
         if view_mode == "unmonitored":
-            # Unmonitored = in SEO network + monitoring disabled + active lifecycle + not quarantined
+            # Unmonitored = in SEO network + monitoring disabled + ONLY active lifecycle
             query["id"] = {"$in": domain_ids_in_seo}
             query["monitoring_enabled"] = False
+            # Only active lifecycle should appear in unmonitored list
             query["domain_lifecycle_status"] = {"$in": [
                 DomainLifecycleStatus.ACTIVE.value,
-                DomainLifecycleStatus.EXPIRED_PENDING.value,
                 None  # Legacy domains without lifecycle status
             ]}
-            query["$or"] = [
-                {"quarantine_category": None},
-                {"quarantine_category": {"$exists": False}}
-            ]
+            # Exclude quarantined
+            if "$or" not in query:
+                query["$or"] = [
+                    {"quarantine_category": None},
+                    {"quarantine_category": {"$exists": False}}
+                ]
         elif used_in_seo:
             query["id"] = {"$in": domain_ids_in_seo}
         else:
