@@ -691,6 +691,51 @@ export default function DomainsPage() {
 
     const hasActiveFilters = filterBrand !== 'all' || filterCategory !== 'all' || filterStatus !== 'all' || filterMonitoring !== 'all' || filterMonitoringStatus !== 'all' || filterDomainActiveStatus !== 'all' || searchQuery !== '' || filterLifecycle !== 'all' || filterQuarantine !== 'all' || filterUsedInSeo !== 'all';
 
+    // Sorting handler
+    const handleSort = (field) => {
+        if (sortField === field) {
+            // Toggle direction
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            // New field, set default direction
+            setSortField(field);
+            setSortDirection('asc');
+        }
+        setCurrentPage(1);  // Reset to first page when sorting
+    };
+
+    // Sortable header component
+    const SortableHeader = ({ field, children, tooltip }) => (
+        <div 
+            className="flex items-center gap-1 cursor-pointer select-none hover:text-zinc-200 transition-colors"
+            onClick={() => handleSort(field)}
+            data-testid={`sort-${field}`}
+        >
+            {children}
+            {tooltip && (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Info className="h-3 w-3 text-zinc-500" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs whitespace-pre-line text-xs">
+                            {tooltip}
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            )}
+            {sortField === field ? (
+                sortDirection === 'asc' ? (
+                    <ArrowUp className="h-3.5 w-3.5 text-blue-400" />
+                ) : (
+                    <ArrowDown className="h-3.5 w-3.5 text-blue-400" />
+                )
+            ) : (
+                <ArrowUpDown className="h-3.5 w-3.5 text-zinc-600" />
+            )}
+        </div>
+    );
+
     // Lifecycle & Quarantine handlers
     const handleMarkAsReleased = async () => {
         if (!selectedAsset) return;
