@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="3" failures="18" skipped="4" tests="25" time="1.758" timestamp="2026-02-12T12:24:12.054840+00:00" hostname="agent-env-ae269aeb-6eb0-44f5-afd4-080c0cbf87c7"><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestQuarantineCategories" name="test_get_quarantine_categories_returns_200" time="0.377"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:78: in test_get_quarantine_categories_returns_200
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestQuarantineCategories" name="test_quarantine_categories_contains_expected_categories" time="0.012"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:83: in test_quarantine_categories_contains_expected_categories
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestSeoMonitoringCoverage" name="test_monitoring_coverage_returns_200" time="0.010"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:106: in test_monitoring_coverage_returns_200
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestSeoMonitoringCoverage" name="test_monitoring_coverage_contains_required_fields" time="0.012"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:111: in test_monitoring_coverage_contains_required_fields
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestSeoMonitoringCoverage" name="test_coverage_percentage_is_valid" time="0.052"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:136: in test_coverage_percentage_is_valid
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestAssetDomainsFilters" name="test_filter_by_lifecycle_status" time="0.010"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:155: in test_filter_by_lifecycle_status
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestAssetDomainsFilters" name="test_filter_by_quarantine_category" time="0.011"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:164: in test_filter_by_quarantine_category
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestAssetDomainsFilters" name="test_filter_is_quarantined_true" time="0.011"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:179: in test_filter_is_quarantined_true
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestAssetDomainsFilters" name="test_filter_is_quarantined_false" time="0.050"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:193: in test_filter_is_quarantined_false
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestAssetDomainsFilters" name="test_filter_used_in_seo_true" time="0.010"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:203: in test_filter_used_in_seo_true
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestViewModes" name="test_view_mode_released" time="0.015"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:221: in test_view_mode_released
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestViewModes" name="test_view_mode_quarantined" time="0.051"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:236: in test_view_mode_quarantined
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestViewModes" name="test_view_mode_unmonitored" time="0.052"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:250: in test_view_mode_unmonitored
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestDomainQuarantineManagement" name="test_quarantine_domain_super_admin" time="0.061"><error message="failed on setup with &quot;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code&quot;">backend/tests/test_domain_lifecycle_quarantine.py:274: in test_domain
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestDomainQuarantineManagement" name="test_quarantine_domain_regular_admin_forbidden" time="0.271"><error message="failed on setup with &quot;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code&quot;">backend/tests/test_domain_lifecycle_quarantine.py:274: in test_domain
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestDomainQuarantineManagement" name="test_remove_quarantine_super_admin" time="0.004"><error message="failed on setup with &quot;assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code&quot;">backend/tests/test_domain_lifecycle_quarantine.py:274: in test_domain
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestDomainQuarantineManagement" name="test_remove_quarantine_regular_admin_forbidden" time="0.075"><skipped type="pytest.skip" message="No quarantined domains to test">/app/backend/tests/test_domain_lifecycle_quarantine.py:352: No quarantined domains to test</skipped></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestDomainLifecycleManagement" name="test_mark_released_super_admin" time="0.009"><skipped type="pytest.skip" message="No active domains available for testing">/app/backend/tests/test_domain_lifecycle_quarantine.py:396: No active domains available for testing</skipped></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestDomainLifecycleManagement" name="test_mark_released_regular_admin_forbidden" time="0.011"><skipped type="pytest.skip" message="No domains available for testing">/app/backend/tests/test_domain_lifecycle_quarantine.py:429: No domains available for testing</skipped></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestDomainLifecycleManagement" name="test_set_lifecycle_super_admin" time="0.050"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:448: in test_set_lifecycle_super_admin
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestDomainLifecycleManagement" name="test_set_lifecycle_regular_admin_forbidden" time="0.015"><skipped type="pytest.skip" message="No domains available for testing">/app/backend/tests/test_domain_lifecycle_quarantine.py:482: No domains available for testing</skipped></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestDomainResponseEnrichment" name="test_domain_response_includes_lifecycle_fields" time="0.010"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:504: in test_domain_response_includes_lifecycle_fields
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestDomainResponseEnrichment" name="test_quarantined_domain_has_label" time="0.059"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:526: in test_quarantined_domain_has_label
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestExistingQuarantinedDomains" name="test_domaina_is_quarantined" time="0.054"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:546: in test_domaina_is_quarantined
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_domain_lifecycle_quarantine.TestExistingQuarantinedDomains" name="test_expiring_7days_test_is_released" time="0.012"><failure message="assert 401 == 200&#10; +  where 401 = &lt;Response [401]&gt;.status_code">backend/tests/test_domain_lifecycle_quarantine.py:565: in test_expiring_7days_test_is_released
+    assert response.status_code == 200
+E   assert 401 == 200
+E    +  where 401 = &lt;Response [401]&gt;.status_code</failure></testcase></testsuite></testsuites>
