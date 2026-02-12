@@ -65,7 +65,7 @@ On fresh deployment or migration, a default Super Admin account is automatically
 
 | Field | Default Value |
 |-------|---------------|
-| Email | `admin@seonoc.local` |
+| Email | `admin@seonoc.com` |
 | Password | `Admin@123!` |
 | Name | `Super Admin` |
 
