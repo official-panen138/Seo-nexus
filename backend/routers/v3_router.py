@@ -497,7 +497,17 @@ def normalize_path(path: str | None) -> str | None:
 
 
 async def enrich_asset_domain(asset: dict) -> dict:
-    """Enrich asset domain with brand/category/registrar names and lifecycle info"""
+    """
+    Enrich asset domain with brand/category/registrar names, lifecycle info, and validation warnings.
+    
+    Lifecycle determines strategic usage:
+    - Active: Included in monitoring & alerts
+    - Released: Intentionally retired, no alerts
+    - Quarantined: Blocked due to issues
+    - Archived: History only
+    
+    Only 'active' lifecycle domains are monitored.
+    """
     if asset.get("brand_id"):
         brand = await db.brands.find_one(
             {"id": asset["brand_id"]}, {"_id": 0, "name": 1}
@@ -547,23 +557,58 @@ async def enrich_asset_domain(asset: dict) -> dict:
     # Determine if used in SEO and if monitoring is required
     asset["is_used_in_seo_network"] = len(structure_entries) > 0
     
+    # Get lifecycle status (default to 'active' for legacy domains)
     lifecycle = asset.get("domain_lifecycle_status", DomainLifecycleStatus.ACTIVE.value)
-    is_active_lifecycle = lifecycle in [
-        DomainLifecycleStatus.ACTIVE.value, 
-        DomainLifecycleStatus.EXPIRED_PENDING.value,
-        None
-    ]
-    is_not_quarantined = not asset.get("quarantine_category")
-    asset["requires_monitoring"] = asset["is_used_in_seo_network"] and is_active_lifecycle and is_not_quarantined
+    if not lifecycle:
+        lifecycle = DomainLifecycleStatus.ACTIVE.value
+        asset["domain_lifecycle_status"] = lifecycle
+    
+    # Add lifecycle status label
+    asset["lifecycle_status_label"] = LIFECYCLE_STATUS_LABELS.get(lifecycle, lifecycle.title())
+    
+    # ONLY active lifecycle domains require monitoring
+    is_active_lifecycle = lifecycle == DomainLifecycleStatus.ACTIVE.value
+    asset["requires_monitoring"] = asset["is_used_in_seo_network"] and is_active_lifecycle
     
     # Add quarantine category label
     qc = asset.get("quarantine_category")
     if qc:
         asset["quarantine_category_label"] = QUARANTINE_CATEGORY_LABELS.get(qc, qc)
     
-    # Ensure lifecycle status has a default
-    if not asset.get("domain_lifecycle_status"):
-        asset["domain_lifecycle_status"] = DomainLifecycleStatus.ACTIVE.value
+    # === LIFECYCLE VALIDATION WARNINGS ===
+    warnings = []
+    
+    # Check for expired domain with active lifecycle
+    status = asset.get("status", "active")
+    expiration_date = asset.get("expiration_date")
+    
+    if expiration_date and is_active_lifecycle:
+        try:
+            from datetime import datetime, timezone
+            exp_date = datetime.fromisoformat(expiration_date.replace('Z', '+00:00'))
+            if exp_date.tzinfo is None:
+                exp_date = exp_date.replace(tzinfo=timezone.utc)
+            days_until = (exp_date - datetime.now(timezone.utc)).days
+            
+            if days_until < 0 or status == "expired":
+                warnings.append(LifecycleValidationWarning(
+                    warning_type="expired_active",
+                    message="This domain is marked as Active but has expired. This may cause SEO risk or alert noise.",
+                    suggestion="Mark as Released or Quarantined"
+                ))
+        except:
+            pass
+    
+    # Check for down domain with active lifecycle (if monitoring shows down for extended period)
+    ping_status = asset.get("ping_status", "unknown")
+    if ping_status == "down" and is_active_lifecycle:
+        warnings.append(LifecycleValidationWarning(
+            warning_type="down_active",
+            message="This domain is marked as Active but is technically unavailable (DOWN). This may cause alert noise.",
+            suggestion="Check domain status or consider marking as Released/Quarantined"
+        ))
+    
+    asset["lifecycle_warnings"] = [w.model_dump() for w in warnings]
     
     # Enrich user names for quarantine and release
     if asset.get("quarantined_by"):
