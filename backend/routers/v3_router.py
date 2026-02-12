@@ -79,10 +79,13 @@ from models_v3 import (
     OptimizationComplaintResponse,
     ComplaintPriority,
     # New models for Domain Lifecycle & Quarantine
+    DomainActiveStatus,
+    DomainMonitoringStatus,
     DomainLifecycleStatus,
     QuarantineCategory,
     MONITORED_LIFECYCLE_STATUSES,
     QUARANTINE_CATEGORY_LABELS,
+    MONITORING_STATUS_LABELS,
     LIFECYCLE_STATUS_LABELS,
     LIFECYCLE_TOOLTIP,
     MarkAsReleasedRequest,
