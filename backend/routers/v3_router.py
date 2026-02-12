@@ -1804,7 +1804,7 @@ async def set_domain_lifecycle(
             entity_id=asset_id,
             before_value=existing,
             after_value={**existing, **update_dict},
-            notes=f"Lifecycle changed to {data.lifecycle_status.value}: {data.reason}" if data.reason else f"Lifecycle changed to {data.lifecycle_status.value}"
+            metadata={"notes": f"Lifecycle changed to {data.lifecycle_status.value}: {data.reason}" if data.reason else f"Lifecycle changed to {data.lifecycle_status.value}"}
         )
     
     updated = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
