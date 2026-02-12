@@ -1094,6 +1094,10 @@ class StoredConflict(BaseModel):
     status: str = ConflictStatus.DETECTED.value
     is_active: bool = True  # Active conflicts can appear in recurring/alerts, inactive cannot
     
+    # FINGERPRINT for recurrence detection (P0 requirement)
+    # Format: hash(network_id + conflict_type + domain_id + normalized_path + tier + target)
+    fingerprint: Optional[str] = None
+    
     # Network info
     network_id: str
     network_name: Optional[str] = None
@@ -1106,10 +1110,16 @@ class StoredConflict(BaseModel):
     node_a_id: str
     node_a_path: Optional[str] = None
     node_a_label: str
+    node_a_tier: Optional[int] = None  # Tier level for fingerprint
     
     node_b_id: Optional[str] = None
     node_b_path: Optional[str] = None
     node_b_label: Optional[str] = None
+    node_b_tier: Optional[int] = None
+    
+    # Target info for fingerprint
+    target_node_id: Optional[str] = None
+    target_path: Optional[str] = None
     
     # Affected nodes list
     affected_nodes: List[str] = []
@@ -1122,17 +1132,24 @@ class StoredConflict(BaseModel):
     optimization_id: Optional[str] = None
     
     # Timestamps
-    detected_at: str
+    detected_at: str  # First detection (used for resolution time calc)
+    first_detected_at: Optional[str] = None  # Original first detection for recurring conflicts
     updated_at: Optional[str] = None
     resolved_at: Optional[str] = None
     
     # Approval tracking
     approved_by: Optional[str] = None
     approved_at: Optional[str] = None
+    resolved_by: Optional[str] = None  # User who resolved (for Top Resolvers)
     
-    # Metrics
-    recurrence_count: int = 0  # How many times this conflict was re-detected
+    # Recurrence metrics
+    recurrence_count: int = 0  # How many times this fingerprint reappeared after resolution
     last_recurrence_at: Optional[str] = None
+    recurrence_history: List[str] = []  # Timestamps of each recurrence
+    
+    # False resolution tracking
+    is_false_resolution: bool = False  # If reappeared within threshold days
+    false_resolution_detected_at: Optional[str] = None
 
 
 class ConflictResolutionCreate(BaseModel):
