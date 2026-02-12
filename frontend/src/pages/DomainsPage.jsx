@@ -586,7 +586,7 @@ export default function DomainsPage() {
                     registrar_id: form.registrar_id || null,
                     expiration_date: form.expiration_date ? new Date(form.expiration_date).toISOString() : null,
                     auto_renew: form.auto_renew,
-                    status: form.status,
+                    // Note: domain_active_status is auto-computed from expiration_date, not sent in payload
                     monitoring_enabled: form.monitoring_enabled,
                     monitoring_interval: form.monitoring_interval,
                     notes: form.notes
