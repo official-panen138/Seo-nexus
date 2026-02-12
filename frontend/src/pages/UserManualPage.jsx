@@ -17,7 +17,8 @@ import {
     Bookmark,
     CheckCircle,
     Info,
-    Image as ImageIcon
+    Image as ImageIcon,
+    ExternalLink
 } from 'lucide-react';
 
 // Flatten all sections for navigation
