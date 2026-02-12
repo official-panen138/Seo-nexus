@@ -651,13 +651,15 @@ export default function DomainsPage() {
         setFilterCategory('all');
         setFilterStatus('all');
         setFilterMonitoring('all');
+        setFilterMonitoringStatus('all');
+        setFilterDomainActiveStatus('all');
         setFilterLifecycle('all');
         setFilterQuarantine('all');
         setFilterUsedInSeo('all');
         setCurrentPage(1); // Reset to first page when clearing filters
     };
 
-    const hasActiveFilters = filterBrand !== 'all' || filterCategory !== 'all' || filterStatus !== 'all' || filterMonitoring !== 'all' || searchQuery !== '' || filterLifecycle !== 'all' || filterQuarantine !== 'all' || filterUsedInSeo !== 'all';
+    const hasActiveFilters = filterBrand !== 'all' || filterCategory !== 'all' || filterStatus !== 'all' || filterMonitoring !== 'all' || filterMonitoringStatus !== 'all' || filterDomainActiveStatus !== 'all' || searchQuery !== '' || filterLifecycle !== 'all' || filterQuarantine !== 'all' || filterUsedInSeo !== 'all';
 
     // Lifecycle & Quarantine handlers
     const handleMarkAsReleased = async () => {
