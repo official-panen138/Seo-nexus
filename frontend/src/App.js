@@ -30,6 +30,7 @@ import SchedulerDashboardPage from "./pages/SchedulerDashboardPage";
 import MetricsDashboardPage from "./pages/MetricsDashboardPage";
 import AccessDeniedPage from "./pages/AccessDeniedPage";
 import QuarantineCategoriesPage from "./pages/QuarantineCategoriesPage";
+import UserManualPage from "./pages/UserManualPage";
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
