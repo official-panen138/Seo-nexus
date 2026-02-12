@@ -2056,20 +2056,20 @@ export default function DomainsPage() {
                     </DialogContent>
                 </Dialog>
 
-                {/* Mark as Released Dialog */}
+                {/* Release Domain Dialog */}
                 <Dialog open={releaseDialogOpen} onOpenChange={setReleaseDialogOpen}>
                     <DialogContent className="bg-card border-border">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <Archive className="h-5 w-5 text-zinc-400" />
-                                Mark Domain as Released
+                                Release Domain
                             </DialogTitle>
                             <DialogDescription>
-                                This will mark the domain as released (not renewed). The domain will be:
+                                This will set the domain lifecycle to "Released" (intentionally retired). The domain will be:
                                 <ul className="list-disc list-inside mt-2 space-y-1 text-amber-400">
-                                    <li>Removed from all realtime monitoring & alerts</li>
-                                    <li>Stop receiving expiration reminders</li>
-                                    <li>Moved to Expired & Released view</li>
+                                    <li>Excluded from all real-time monitoring & alerts</li>
+                                    <li>Excluded from expiration reminders</li>
+                                    <li>Moved to the "Released" tab</li>
                                 </ul>
                             </DialogDescription>
                         </DialogHeader>
@@ -2083,7 +2083,7 @@ export default function DomainsPage() {
                                     id="release-reason"
                                     value={releaseReason}
                                     onChange={(e) => setReleaseReason(e.target.value)}
-                                    placeholder="e.g., Domain expired and not renewed..."
+                                    placeholder="e.g., Domain expired and will not be renewed..."
                                     className="bg-black border-border mt-2"
                                 />
                             </div>
@@ -2098,7 +2098,7 @@ export default function DomainsPage() {
                                 className="bg-zinc-600 hover:bg-zinc-700"
                             >
                                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Archive className="h-4 w-4 mr-2" />}
-                                Mark as Released
+                                Release Domain
                             </Button>
                         </DialogFooter>
                     </DialogContent>
