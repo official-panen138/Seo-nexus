@@ -436,8 +436,8 @@ export const menuPermissionsAPI = {
 
 // V3 Export API
 export const exportAPI = {
-    assetDomains: (format = 'json', params = {}) => apiV3.get(`/export/asset-domains?format=${format}`, { 
-        params,
+    assetDomains: (format = 'csv', params = {}) => apiV3.get(`/export/asset-domains`, { 
+        params: { format, ...params },
         responseType: format === 'csv' ? 'blob' : 'json'
     }),
     network: (networkId, format = 'json') => apiV3.get(`/export/networks/${networkId}?format=${format}`, {
@@ -453,10 +453,19 @@ export const exportAPI = {
     })
 };
 
-// V3 Import API
+// V3 Import API (Enhanced with Preview/Confirm flow)
 export const importAPI = {
+    // Legacy import
     domains: (data) => apiV3.post('/import/domains', data),
     domainsTemplate: () => apiV3.get('/import/template'),
+    
+    // Enhanced import with preview
+    domainsPreview: (domains) => apiV3.post('/import/domains/preview', { domains }),
+    domainsConfirm: (domains, createNew = true, updateExisting = true) => 
+        apiV3.post('/import/domains/confirm', { domains, create_new: createNew, update_existing: updateExisting }),
+    domainsTemplateCSV: () => apiV3.get('/import/domains/template', { responseType: 'blob' }),
+    
+    // Node imports
     nodes: (data) => apiV3.post('/import/nodes', data),
     nodesTemplate: () => apiV3.get('/import/nodes/template')
 };
