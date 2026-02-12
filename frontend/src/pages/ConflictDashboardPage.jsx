@@ -421,7 +421,7 @@ export default function ConflictDashboardPage() {
                                             </div>
                                             <div className="flex-1">
                                                 <p className="text-sm text-white truncate">
-                                                    {userId === 'system' ? 'System (Auto)' : userId}
+                                                    {userId === 'system' ? 'System (Auto)' : users[userId] || userId.split('-')[0] + '...'}
                                                 </p>
                                             </div>
                                             <Badge variant="outline" className="text-emerald-400 border-emerald-500/30">
