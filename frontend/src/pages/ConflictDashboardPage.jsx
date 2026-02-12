@@ -20,7 +20,11 @@ import {
     ArrowRight,
     ExternalLink,
     Loader2,
-    Plus
+    Plus,
+    XCircle,
+    Timer,
+    AlertOctagon,
+    Info
 } from 'lucide-react';
 
 // Status colors and flow
@@ -39,6 +43,11 @@ const STATUS_FLOW = {
         label: 'Resolved', 
         color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
         description: 'Conflict fixed and verified'
+    },
+    approved: { 
+        label: 'Approved', 
+        color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+        description: 'Approved by Super Admin (auto-resolved)'
     },
     ignored: { 
         label: 'Ignored', 
