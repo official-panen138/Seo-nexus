@@ -1636,6 +1636,165 @@ Tier 2:
                         <TabsContent value="templates" className="space-y-6" data-testid="notification-templates-content">
                             <NotificationTemplatesTab />
                         </TabsContent>
+
+                        {/* Performance Alerts Tab */}
+                        <TabsContent value="performance" className="space-y-6" data-testid="performance-alerts-content">
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-emerald-500/10">
+                                            <TrendingUp className="h-5 w-5 text-emerald-500" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-lg">Team Performance Alerts</CardTitle>
+                                            <CardDescription>
+                                                Configure thresholds for automatic team performance alerts via Telegram.
+                                                Alerts are sent daily at 9:00 AM when thresholds are breached.
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    {/* Threshold Settings */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-zinc-400">False Resolution Rate Threshold (%)</Label>
+                                            <Input
+                                                type="number"
+                                                value={performanceThresholds.false_resolution_rate_percent}
+                                                onChange={(e) => setPerformanceThresholds({
+                                                    ...performanceThresholds,
+                                                    false_resolution_rate_percent: parseFloat(e.target.value) || 0
+                                                })}
+                                                className="bg-zinc-800 border-zinc-700"
+                                            />
+                                            <p className="text-xs text-zinc-500">Alert if false resolution rate exceeds this %</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-zinc-400">Stale Conflict Days</Label>
+                                            <Input
+                                                type="number"
+                                                value={performanceThresholds.stale_conflict_days}
+                                                onChange={(e) => setPerformanceThresholds({
+                                                    ...performanceThresholds,
+                                                    stale_conflict_days: parseInt(e.target.value) || 7
+                                                })}
+                                                className="bg-zinc-800 border-zinc-700"
+                                            />
+                                            <p className="text-xs text-zinc-500">Alert if conflicts remain open longer than this</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-zinc-400">Open Conflict Backlog</Label>
+                                            <Input
+                                                type="number"
+                                                value={performanceThresholds.open_conflict_backlog}
+                                                onChange={(e) => setPerformanceThresholds({
+                                                    ...performanceThresholds,
+                                                    open_conflict_backlog: parseInt(e.target.value) || 10
+                                                })}
+                                                className="bg-zinc-800 border-zinc-700"
+                                            />
+                                            <p className="text-xs text-zinc-500">Alert if more than this many conflicts are open</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-zinc-400">Avg Resolution Time (hours)</Label>
+                                            <Input
+                                                type="number"
+                                                value={performanceThresholds.avg_resolution_hours}
+                                                onChange={(e) => setPerformanceThresholds({
+                                                    ...performanceThresholds,
+                                                    avg_resolution_hours: parseFloat(e.target.value) || 48
+                                                })}
+                                                className="bg-zinc-800 border-zinc-700"
+                                            />
+                                            <p className="text-xs text-zinc-500">Alert if average resolution time exceeds this</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Save Button */}
+                                    <div className="flex items-center gap-4">
+                                        <Button
+                                            onClick={async () => {
+                                                setSavingPerformance(true);
+                                                try {
+                                                    await performanceAlertsAPI.updateThresholds(performanceThresholds);
+                                                    toast.success('Performance thresholds saved');
+                                                } catch (err) {
+                                                    toast.error('Failed to save thresholds');
+                                                } finally {
+                                                    setSavingPerformance(false);
+                                                }
+                                            }}
+                                            disabled={savingPerformance}
+                                            className="bg-emerald-600 hover:bg-emerald-700"
+                                        >
+                                            {savingPerformance ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                            Save Thresholds
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            onClick={async () => {
+                                                setRunningPerformanceCheck(true);
+                                                try {
+                                                    const res = await performanceAlertsAPI.runCheck(true);
+                                                    setPerformanceMetrics(res.data);
+                                                    if (res.data.alerts?.length > 0) {
+                                                        toast.warning(`${res.data.alerts.length} threshold(s) breached`);
+                                                    } else {
+                                                        toast.success('All metrics within thresholds');
+                                                    }
+                                                } catch (err) {
+                                                    toast.error('Failed to run performance check');
+                                                } finally {
+                                                    setRunningPerformanceCheck(false);
+                                                }
+                                            }}
+                                            disabled={runningPerformanceCheck}
+                                        >
+                                            {runningPerformanceCheck ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                            Run Check Now
+                                        </Button>
+                                    </div>
+
+                                    {/* Current Metrics Display */}
+                                    {performanceMetrics && (
+                                        <div className="border-t border-zinc-800 pt-4 mt-4">
+                                            <h4 className="text-sm font-medium text-white mb-3">Last Check Results</h4>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                <div className="p-3 rounded-lg bg-zinc-800/50">
+                                                    <p className="text-xs text-zinc-500">Open Conflicts</p>
+                                                    <p className="text-lg font-bold text-white">{performanceMetrics.metrics?.open_count || 0}</p>
+                                                </div>
+                                                <div className="p-3 rounded-lg bg-zinc-800/50">
+                                                    <p className="text-xs text-zinc-500">Resolved (30d)</p>
+                                                    <p className="text-lg font-bold text-white">{performanceMetrics.metrics?.resolved_count_30d || 0}</p>
+                                                </div>
+                                                <div className="p-3 rounded-lg bg-zinc-800/50">
+                                                    <p className="text-xs text-zinc-500">False Resolution Rate</p>
+                                                    <p className="text-lg font-bold text-white">{performanceMetrics.metrics?.false_resolution_rate_percent || 0}%</p>
+                                                </div>
+                                                <div className="p-3 rounded-lg bg-zinc-800/50">
+                                                    <p className="text-xs text-zinc-500">Avg Resolution</p>
+                                                    <p className="text-lg font-bold text-white">{performanceMetrics.metrics?.avg_resolution_hours || 0}h</p>
+                                                </div>
+                                            </div>
+                                            {performanceMetrics.alerts?.length > 0 && (
+                                                <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                                                    <p className="text-sm font-medium text-amber-400 mb-2">Threshold Breaches:</p>
+                                                    <ul className="space-y-1">
+                                                        {performanceMetrics.alerts.map((alert, idx) => (
+                                                            <li key={idx} className="text-sm text-zinc-300">
+                                                                • {alert.message}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
                     </Tabs>
                 </div>
             </div>
