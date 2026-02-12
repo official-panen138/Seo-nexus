@@ -255,7 +255,11 @@ export const assetDomainsAPI = {
     quarantine: (assetId, data) => apiV3.post(`/asset-domains/${assetId}/quarantine`, data),
     removeQuarantine: (assetId, data = {}) => apiV3.post(`/asset-domains/${assetId}/remove-quarantine`, data),
     // Get quarantine categories
-    getQuarantineCategories: () => apiV3.get('/quarantine-categories')
+    getQuarantineCategories: () => apiV3.get('/quarantine-categories'),
+    // CRUD for quarantine categories (Super Admin only)
+    createQuarantineCategory: (data) => apiV3.post('/quarantine-categories', data),
+    updateQuarantineCategory: (categoryId, data) => apiV3.put(`/quarantine-categories/${categoryId}`, data),
+    deleteQuarantineCategory: (categoryId) => apiV3.delete(`/quarantine-categories/${categoryId}`)
 };
 
 // V3 SEO Networks API
