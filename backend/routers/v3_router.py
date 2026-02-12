@@ -8620,7 +8620,7 @@ async def export_asset_domains(
                 exp_date = datetime.fromisoformat(exp_date_str.replace('Z', '+00:00'))
                 if exp_date <= now:
                     computed_domain_active_status = "expired"
-            except:
+            except (ValueError, TypeError):
                 pass
         
         # Apply domain_active_status filter in post-processing if specified
@@ -8712,7 +8712,6 @@ async def import_domains_preview(
     registrars = {r["name"].lower(): r for r in await db.registrars.find({}, {"_id": 0}).to_list(1000)}
     
     # Get existing domains
-    domain_names = [d.domain_name.lower() for d in request.domains]
     existing_domains = await db.asset_domains.find(
         {"domain_name": {"$in": [d.domain_name for d in request.domains]}},
         {"_id": 0}
@@ -8752,7 +8751,7 @@ async def import_domains_preview(
                     try:
                         exp_date = datetime.strptime(date_str.split("T")[0] if "T" in date_str else date_str, fmt.split("T")[0])
                         break
-                    except:
+                    except ValueError:
                         continue
                 if not exp_date:
                     errors.append(f"Invalid date format: {item.expiration_date}")
@@ -8837,7 +8836,7 @@ async def import_domains_preview(
                 if item.brand_name and brand_id and existing.get("brand_id") != brand_id:
                     changes.append(f"brand: {existing.get('brand_id', 'none')} → {brand_id}")
                 if item.category_name and category_id and existing.get("category_id") != category_id:
-                    changes.append(f"category changed")
+                    changes.append("category changed")
                 if exp_date:
                     old_exp = existing.get("expiration_date", "")
                     new_exp = exp_date.strftime("%Y-%m-%d")
@@ -8922,9 +8921,9 @@ async def import_domains_confirm(
                         try:
                             exp_date = datetime.strptime(date_str.split("T")[0] if "T" in date_str else date_str, fmt)
                             break
-                        except:
+                        except ValueError:
                             continue
-                except:
+                except (ValueError, AttributeError):
                     pass
             
             # Parse lifecycle
