@@ -1741,7 +1741,7 @@ async def mark_domain_as_released(
             entity_id=asset_id,
             before_value=existing,
             after_value={**existing, **update_dict},
-            notes=f"Marked as released: {data.reason}" if data.reason else "Marked as released (not renewed)"
+            metadata={"notes": f"Marked as released: {data.reason}" if data.reason else "Marked as released (not renewed)"}
         )
     
     updated = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
