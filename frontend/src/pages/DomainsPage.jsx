@@ -1499,7 +1499,7 @@ export default function DomainsPage() {
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end">
                                                                     {/* Lifecycle actions */}
-                                                                    {item.domain_lifecycle_status !== 'released' && (
+                                                                    {item.lifecycle_status !== 'released' && (
                                                                         <DropdownMenuItem
                                                                             onClick={() => {
                                                                                 setSelectedAsset(item);
@@ -1514,7 +1514,7 @@ export default function DomainsPage() {
                                                                     <DropdownMenuItem
                                                                         onClick={() => {
                                                                             setSelectedAsset(item);
-                                                                            setSelectedLifecycle(item.domain_lifecycle_status || 'active');
+                                                                            setSelectedLifecycle(item.lifecycle_status || 'active');
                                                                             setLifecycleDialogOpen(true);
                                                                         }}
                                                                         data-testid={`change-lifecycle-${item.id}`}
@@ -1526,7 +1526,7 @@ export default function DomainsPage() {
                                                                     <DropdownMenuSeparator />
                                                                     
                                                                     {/* Quarantine actions */}
-                                                                    {item.domain_lifecycle_status !== 'quarantined' && !item.quarantine_category ? (
+                                                                    {item.lifecycle_status !== 'quarantined' && !item.quarantine_category ? (
                                                                         <DropdownMenuItem
                                                                             onClick={() => {
                                                                                 setSelectedAsset(item);
