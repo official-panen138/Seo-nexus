@@ -1929,27 +1929,17 @@ async def set_domain_lifecycle(
     if not existing:
         raise HTTPException(status_code=404, detail="Asset domain not found")
     
-    # Validation: Cannot set active lifecycle for expired domains
-    status = existing.get("status", "active")
-    expiration_date = existing.get("expiration_date")
+    # Compute domain_active_status to check if expired
+    domain_active_status, _ = compute_domain_active_status(existing.get("expiration_date"))
+    is_expired = domain_active_status == "expired"
     
-    if data.lifecycle_status == DomainLifecycleStatus.ACTIVE:
-        is_expired = status == "expired"
-        if not is_expired and expiration_date:
-            try:
-                exp_date = datetime.fromisoformat(expiration_date.replace('Z', '+00:00'))
-                if exp_date.tzinfo is None:
-                    exp_date = exp_date.replace(tzinfo=timezone.utc)
-                days_until = (exp_date - datetime.now(timezone.utc)).days
-                is_expired = days_until < 0
-            except Exception:
-                pass
-        
-        if is_expired:
-            raise HTTPException(
-                status_code=400,
-                detail="Expired domains cannot have lifecycle 'Active'. Please mark as Released or Quarantined."
-            )
+    # RULE 2 - INVALID STATE PREVENTION
+    # ❌ Cannot set lifecycle to 'active' if domain_active_status = 'expired'
+    if data.lifecycle_status == DomainLifecycleStatus.ACTIVE and is_expired:
+        raise HTTPException(
+            status_code=400,
+            detail="⚠️ Domain has expired and cannot be marked as Active. Please mark as Released."
+        )
     
     # Validation: Quarantined lifecycle requires quarantine_category
     if data.lifecycle_status == DomainLifecycleStatus.QUARANTINED and not data.quarantine_category:
@@ -1960,31 +1950,27 @@ async def set_domain_lifecycle(
     
     now = datetime.now(timezone.utc).isoformat()
     update_dict = {
-        "domain_lifecycle_status": data.lifecycle_status.value,
+        "lifecycle_status": data.lifecycle_status.value,
         "updated_at": now,
     }
     
+    # RULE 3 - LIFECYCLE vs MONITORING MATRIX
     # Handle lifecycle-specific fields
     if data.lifecycle_status == DomainLifecycleStatus.RELEASED:
         update_dict["released_at"] = now
         update_dict["released_by"] = current_user.get("id")
-        update_dict["monitoring_enabled"] = False
+        update_dict["monitoring_enabled"] = False  # ❌ Released = no monitoring
         update_dict["quarantine_category"] = None
         update_dict["quarantine_note"] = None
+        update_dict["quarantined_at"] = None
+        update_dict["quarantined_by"] = None
     
     elif data.lifecycle_status == DomainLifecycleStatus.QUARANTINED:
         update_dict["quarantine_category"] = data.quarantine_category
         update_dict["quarantine_note"] = data.quarantine_note
         update_dict["quarantined_at"] = now
         update_dict["quarantined_by"] = current_user.get("id")
-        update_dict["monitoring_enabled"] = False
-        update_dict["released_at"] = None
-        update_dict["released_by"] = None
-    
-    elif data.lifecycle_status == DomainLifecycleStatus.ARCHIVED:
-        update_dict["monitoring_enabled"] = False
-        update_dict["quarantine_category"] = None
-        update_dict["quarantine_note"] = None
+        update_dict["monitoring_enabled"] = False  # ❌ Quarantined = no monitoring
         update_dict["released_at"] = None
         update_dict["released_by"] = None
     
