@@ -924,40 +924,60 @@ class NetworkUsageInfo(BaseModel):
 
 
 class LifecycleValidationWarning(BaseModel):
-    """Warning when lifecycle contradicts technical status"""
-    warning_type: str  # "expired_active", "down_active"
+    """Warning when lifecycle contradicts domain_active_status"""
+    warning_type: str  # "expired_active_lifecycle", "monitoring_not_allowed"
     message: str
     suggestion: Optional[str] = None
 
 
 class AssetDomainResponse(AssetDomainBase):
-    """Response model for asset domain"""
+    """
+    Response model for asset domain
+    
+    UI REQUIREMENTS (MANDATORY) - Table Columns:
+    - Domain
+    - Brand
+    - Category
+    - Domain Active Status (computed)
+    - Monitoring Status (technical)
+    - Lifecycle (strategic)
+    - Quarantine Category (if any)
+    - SEO Networks (NO duplicates)
+    - Monitoring Toggle (ON/OFF)
+    - Expiration Date
+    """
 
     model_config = ConfigDict(extra="ignore")
     id: str
-    legacy_id: Optional[str] = None  # Traceability to V2
+    legacy_id: Optional[str] = None
     brand_name: Optional[str] = None
     category_name: Optional[str] = None
-    registrar_name: Optional[str] = None  # Enriched from registrar_id
+    registrar_name: Optional[str] = None
 
-    # Monitoring status display
-    monitoring_status: Optional[str] = None  # up/down/unknown
-    days_until_expiration: Optional[int] = None  # Calculated field
+    # Computed domain active status (Administrative - AUTO)
+    domain_active_status: str = "active"  # "active" or "expired"
+    domain_active_status_label: Optional[str] = None
+    days_until_expiration: Optional[int] = None
 
-    # Lifecycle display
-    lifecycle_status_label: Optional[str] = None  # Human-readable lifecycle label
-    quarantine_category_label: Optional[str] = None  # Human-readable quarantine label
-    quarantined_by_name: Optional[str] = None  # Name of user who quarantined
-    released_by_name: Optional[str] = None  # Name of user who released
+    # Monitoring status display (Technical - AUTO)
+    monitoring_status: str = "unknown"
+    monitoring_status_label: Optional[str] = None
 
-    # SEO Network usage - derived from seo_structure_entries
+    # Lifecycle display (Strategic - MANUAL)
+    lifecycle_status_label: Optional[str] = None
+    quarantine_category_label: Optional[str] = None
+    quarantined_by_name: Optional[str] = None
+    released_by_name: Optional[str] = None
+
+    # SEO Network usage - NO duplicates
     seo_networks: List[NetworkUsageInfo] = []
 
     # Computed fields for monitoring rules
-    is_used_in_seo_network: bool = False  # Whether domain is used in any SEO network
-    requires_monitoring: bool = False  # Whether monitoring should be required for this domain
+    is_used_in_seo_network: bool = False
+    requires_monitoring: bool = False  # True if used in SEO + lifecycle=active + not expired
+    monitoring_allowed: bool = True  # False if lifecycle != active or domain is expired
     
-    # Lifecycle validation warnings
+    # Validation warnings
     lifecycle_warnings: List[LifecycleValidationWarning] = []
 
     created_at: str
@@ -967,21 +987,23 @@ class AssetDomainResponse(AssetDomainBase):
 class SeoMonitoringCoverageStats(BaseModel):
     """Statistics for SEO Monitoring Coverage panel"""
 
-    domains_in_seo: int  # Total domains used in SEO networks
-    monitored: int  # Domains with monitoring_enabled = true AND lifecycle = active
-    unmonitored: int  # Domains with monitoring_enabled = false AND lifecycle = active
-    coverage_percentage: float  # (monitored / monitorable_domains) * 100
+    domains_in_seo: int
+    monitored: int
+    unmonitored: int
+    coverage_percentage: float
     
     # Breakdown by lifecycle
-    active_count: int  # Total active lifecycle domains in SEO
+    active_count: int
     active_monitored: int
     active_unmonitored: int
     released_count: int
     quarantined_count: int
-    archived_count: int
+    
+    # Breakdown by domain_active_status
+    expired_count: int
     
     # Root domain monitoring issues
-    root_domains_missing_monitoring: int  # Root domains used via path but not monitored
+    root_domains_missing_monitoring: int
 
 
 # ==================== SEO NETWORK MODELS ====================
