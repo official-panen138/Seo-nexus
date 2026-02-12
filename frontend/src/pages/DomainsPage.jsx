@@ -1389,7 +1389,7 @@ export default function DomainsPage() {
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end">
                                                                     {/* Lifecycle actions */}
-                                                                    {item.domain_lifecycle_status !== 'expired_released' && (
+                                                                    {item.domain_lifecycle_status !== 'released' && (
                                                                         <DropdownMenuItem
                                                                             onClick={() => {
                                                                                 setSelectedAsset(item);
@@ -1398,7 +1398,7 @@ export default function DomainsPage() {
                                                                             data-testid={`mark-released-${item.id}`}
                                                                         >
                                                                             <Archive className="h-4 w-4 mr-2 text-zinc-400" />
-                                                                            Mark as Released
+                                                                            Release Domain
                                                                         </DropdownMenuItem>
                                                                     )}
                                                                     <DropdownMenuItem
@@ -1416,7 +1416,7 @@ export default function DomainsPage() {
                                                                     <DropdownMenuSeparator />
                                                                     
                                                                     {/* Quarantine actions */}
-                                                                    {!item.quarantine_category ? (
+                                                                    {item.domain_lifecycle_status !== 'quarantined' && !item.quarantine_category ? (
                                                                         <DropdownMenuItem
                                                                             onClick={() => {
                                                                                 setSelectedAsset(item);
