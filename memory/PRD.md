@@ -1812,6 +1812,83 @@ if message_thread_id and ("thread" in error_text or "topic" in error_text):
 
 ---
 
+### Conflict Resolution Dashboard - Production-Grade Overhaul (Feb 12, 2026) - COMPLETE
+
+**Issue:** The dashboard provided inaccurate and misleading metrics, requiring a full production-grade overhaul.
+
+**P0 Requirements (Critical Fixes) - ALL IMPLEMENTED:**
+
+**1. Fix Recurring Conflict Logic with Fingerprints:**
+- Created `generate_conflict_fingerprint()` function
+- Fingerprint = hash(network_id + conflict_type + domain_id + normalized_path + tier + target_path)
+- Accurately tracks when same structural conflict reappears after resolution
+- Only ACTIVE, UNRESOLVED conflicts with recurrence > 0 shown in recurring list
+
+**2. Fix Top Resolvers Data Integrity:**
+- Excludes `null` and `system` users from leaderboard
+- Only counts valid human users who resolved `conflict_resolution` type tasks
+- Returns array of objects with `user_id`, `name`, `email`, `resolved_count`
+
+**3. Fix Status Source of Truth:**
+- `_derive_true_status()` derives conflict status from linked optimization
+- Optimization `completed` → Conflict `resolved`
+- Optimization `in_progress` → Conflict `under_review`
+- Optimization `reverted` → Conflict `detected` (reactivated)
+
+**4. Fix Average Resolution Time Calculation:**
+- Uses `first_detected_at` → `optimization.completed_at`
+- Falls back to `detected_at` → `resolved_at` if optimization data unavailable
+
+**5. Data Migration Script:**
+- `POST /api/v3/conflicts/migrate-approved` endpoint (Super Admin only)
+- Backfills `fingerprint` for all conflicts
+- Sets `first_detected_at` from `detected_at`
+- Marks resolved/approved conflicts as `is_active = false`
+- Resets `recurrence_count` for terminal status conflicts
+
+**6. UX Improvement:**
+- Info text explaining approved conflicts are auto-resolved and removed from recurring list
+
+**P1 Requirements (Important Improvements) - ALL IMPLEMENTED:**
+
+**1. False Resolution Rate Metric:**
+- `false_resolution_rate_percent`: Conflicts that reappeared within 7 days
+- `false_resolution_count`: Raw count of false resolutions
+
+**2. Average Recurrence Interval:**
+- `avg_recurrence_interval_days`: Average time between resolution and reappearance
+- Shows "N/A" if no recurrences detected
+
+**3. Resolution Time Breakdown:**
+- `resolution_times_breakdown`: {under_1_hour, 1_to_24_hours, 1_to_7_days, over_7_days}
+- Visual representation in dashboard with colored dots
+
+**4. Recurring Conflict CTA:**
+- `recurring_conflict_ids` array returned for frontend CTA list
+- "Create Task" button shown for recurring conflicts without linked optimizations
+
+**New Files Created:**
+- `/app/backend/services/conflict_metrics_service.py` - Core metrics logic
+- `/app/backend/migrations/conflict_fingerprint_migration.py` - Standalone migration script
+
+**Files Modified:**
+- `/app/backend/routers/v3_router.py` - Updated `GET /conflicts/metrics` endpoint, enhanced migration endpoint
+- `/app/frontend/src/pages/ConflictDashboardPage.jsx` - Updated UI with all P0/P1 metrics
+
+**API Changes:**
+- `GET /api/v3/conflicts/metrics` now returns:
+  - `resolution_rate_percent`, `avg_resolution_time_hours`
+  - `resolution_times_breakdown` object
+  - `recurring_conflicts` (count), `recurring_conflict_ids` (array)
+  - `false_resolution_count`, `false_resolution_rate_percent`
+  - `avg_recurrence_interval_days`
+  - `top_resolvers` array with user details (not just user_id counts)
+  - `by_severity`, `by_type` breakdown objects
+
+**Tests:** 100% pass rate (15/15 backend, 100% frontend) - `/app/test_reports/iteration_48.json`
+
+---
+
 ## Prioritized Backlog
 
 ### P1 - Completed
