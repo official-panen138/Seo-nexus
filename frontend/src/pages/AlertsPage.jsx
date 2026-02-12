@@ -174,19 +174,21 @@ export default function AlertsPage() {
     };
 
     // Stored conflict stats for tabs
+    // Include 'approved' in resolved count since approved = auto-resolved
     const storedStats = {
         all: storedConflicts.length,
         detected: storedConflicts.filter(c => c.status === 'detected').length,
         in_progress: storedConflicts.filter(c => c.status === 'under_review').length,
-        resolved: storedConflicts.filter(c => c.status === 'resolved').length
+        resolved: storedConflicts.filter(c => ['resolved', 'approved'].includes(c.status)).length
     };
 
     // Filter stored conflicts based on active tab
+    // FRONTEND SAFETY GUARD: Approved conflicts go to resolved tab
     const filteredStoredConflicts = storedConflicts.filter(c => {
         if (activeTab === 'all') return true;
         if (activeTab === 'detected') return c.status === 'detected';
         if (activeTab === 'in_progress') return c.status === 'under_review';
-        if (activeTab === 'resolved') return c.status === 'resolved';
+        if (activeTab === 'resolved') return ['resolved', 'approved'].includes(c.status);
         return true;
     });
 
