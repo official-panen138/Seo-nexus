@@ -1,60 +1,47 @@
 <analysis>**original_problem_statement:**
 The user's primary objective is to build a production-ready, noise-free, and scalable SEO Domain Monitoring & Asset Domain management system.
 
-**PRODUCT REQUIREMENTS (LATEST - DOMAIN LIFECYCLE REFACTOR):**
+**PRODUCT REQUIREMENTS (LATEST - DOMAIN LIFECYCLE REFACTOR & SORTING):**
 
 *   **P0 - STATUS & LIFECYCLE SEPARATION (FINAL SPEC):**
     1.  ** (Auto-computed):** An administrative status based *only* on the domain's expiration date ( or ). It is not manually editable.
     2.  ** (Technical, Auto):** Represents the real-time technical availability (, , , etc.), updated by the monitoring engine.
-    3.  ** (Strategic, Manual):** A Super Admin-controlled field representing the business decision for a domain (, , ).
-    4.  ** (Manual):** A Super Admin-managed reason for quarantine (, , , etc.).
+    3.  ** (Strategic, Manual):** A Super Admin-controlled field representing the business decision for a domain (, , , ).
+    4.  ** (Manual):** A Super Admin-managed reason for quarantine (, , , etc.), managed via a dedicated settings page.
 
 *   **P0 - AUTOMATIC RULES (MANDATORY):**
-    1.  **Auto-Release on Expiration:** When  becomes , the system must automatically set  to  and disable all monitoring and alerts for that domain.
+    1.  **Auto-Transition on Expiration:** When  becomes , the system must automatically set  to  and force the  to OFF.
     2.  **Invalid State Prevention:** The system must reject (HTTP 400) any attempt to set  to  if the domain's  is .
-    3.  **Monitoring Matrix:** Monitoring is **ONLY** allowed if  is . It is forbidden for  and  domains.
+    3.  **Monitoring Matrix:** The  is **ONLY** allowed to be ON if  is . It is forbidden for , , and  domains.
     4.  **SEO Network Enforcement:** If a domain (or its path) is used in an SEO Network, its root domain **MUST** be monitored.
 
 *   **P0 - UI & UX:**
-    1.  **Table Columns:** The Asset Domains table must include , ,  (with a tooltip), and .
-    2.  **Filters & Pagination:** Implement server-side search and filtering for the new status fields, along with pagination.
-    3.  **Category Management:** Add a Category column and a corresponding filter to the Asset Domains page.
+    1.  **Table Columns:** The Asset Domains table must include sortable columns for , , , , etc.
+    2.  **Tooltips:** Add tooltips to , , and  to explain their distinct purposes.
+    3.  **Table Sorting:** Implement server-side sorting. The default sort order must be critical-first (e.g.,  status,  status,  lifecycle).
+    4.  **SEO Network Health:** Display health indicators (counts of expired and quarantined domains) on SEO Network cards.
+    5.  **Quarantine Category Management:** Provide a dedicated settings page with full CRUD functionality for  master data.
 
 *   **P0 - PERMISSIONS:**
-    1.  Only  roles can manage  and . Other roles are view-only.
+    1.  Only  roles can manage , , and the . Other roles are view-only.
 
 **User's preferred language**: English. The user has also requested specific Indonesian phrases (e.g., ) to be used in certain UI elements.
 
 **what currently exists?**
-A full-stack SEO monitoring application with a FastAPI backend, React frontend, and MongoDB database. It includes a Conflict Resolution Dashboard, Team Performance Alerts (via Telegram), and an Asset Domain management system. The domain management system has been through multiple iterations and is currently undergoing a major refactor to align with the user's final specifications.
+A full-stack SEO monitoring application with a FastAPI backend, React frontend, and MongoDB database. Key features include a Conflict Resolution Dashboard, Team Performance Alerts (via Telegram), and a comprehensive Asset Domain management system. The domain management system has recently undergone a major refactor to implement a clear, multi-faceted status system (, , ) with server-side sorting, advanced filtering, and DB-driven master data management for quarantine categories.
 
 **Last working item**:
-    - Last item agent was working: The agent was in the middle of a comprehensive refactor of the Domain Status, Monitoring, and Lifecycle system based on the user's latest and final specification. This refactor aims to clearly separate a domain's administrative status, technical monitoring status, and strategic lifecycle. The backend models and API endpoints were updated to reflect this new logic, and data migrations were performed. The agent had just started updating the frontend .
-    - Status: IN PROGRESS
+    - Last item agent was working: The user requested to move the Quarantine Category management UI from a tab within the main Settings page to its own dedicated page with a new item in the main sidebar menu. The agent acknowledged the request but has not yet started the implementation.
+    - Status: NOT STARTED
     - Agent Testing Done: N
-    - Which testing method agent to use? both. This is a fundamental refactor of a core feature. The backend testing agent is required to validate the new automatic rules (e.g., auto-release on expiration), API logic, and permission enforcement. The frontend testing agent is needed to verify the new table structure, filters, and UI behaviors.
+    - Which testing method agent to use? frontend testing agent. The agent should be instructed to verify that a new sidebar menu item for Quarantine Categories is present, that it navigates to a new dedicated page, and that the existing CRUD functionality (add, edit, delete categories) works correctly on this new page.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: Finalize the Domain Lifecycle Refactor. (P0)
-  - Issue 2: User needs to verify the Team Performance Alerts feature. (P1)
+  - Issue 1: User needs to verify the Team Performance Alerts feature. (P1)
   
   Issues Detail:
   - Issue 1: 
-     - Attempted fixes: The agent has already updated the backend models (), API endpoints (), and run data migrations to align with the new three-part status system (, , ). The frontend () update has started but is incomplete, causing the page to fail to load.
-     - Next debug checklist: 
-        1. Resume work on .
-        2. Update the component's state,  hooks, and data-fetching functions () to use the new field names from the API (, , ).
-        3. Update the table columns to display the new data structure as requested (, , etc.).
-        4. Update filter components to target the new fields.
-        5. Ensure the  tooltip is implemented.
-        6. Verify all UI/UX requirements from the final spec are met.
-     - Why fix this issue and what will be achieved with the fix?: This will complete the user's mandatory refactor, resulting in a stable, noise-free, and logically consistent domain management system that prevents false alerts and correctly reflects the strategic intent behind each domain.
-     - Status:  IN PROGRESS
-     - Is recurring issue? Y (This is the third iteration of this feature based on evolving user requirements).
-     - Should Test frontend/backend/both after fix?: both
-     - Blocked on other issue: None
-  - Issue 2: 
      - Attempted fixes: The feature was built and a bug was fixed. However, end-to-end testing is blocked pending user configuration.
      - Next debug checklist: User needs to configure their Telegram Bot Token and Chat ID in the settings and trigger a test alert.
      - Why fix this issue and what will be achieved with the fix?: This will validate the Team Performance Alerts feature, a key enhancement from a previous session.
@@ -64,38 +51,52 @@ A full-stack SEO monitoring application with a FastAPI backend, React frontend, 
      - Blocked on other issue: None
 
 **In progress Task List**:
-  - Task 1: Complete Frontend Implementation for Domain Lifecycle Refactor (P0)
+  - Task 1: Move Quarantine Category Settings to a Dedicated Page (P0)
  
  Task Detail:
   - Task 1: 
-     - Where to resume: . The agent had just started updating the file to use the new field names from the refactored backend API but did not complete the work. The UI is currently broken.
-     - What will be achieved with this?: A fully functional and stable Asset Domains page that reflects the new, logically separated status system (, , ) and includes all required UI elements like new columns, filters, and tooltips.
-     - Status:  IN PROGRESS
-     - Should Test frontend/backend/both after fix?: both
+     - Where to resume: Create a new React component for the dedicated Quarantine Category settings page. Create a new route for it in . Add a new link to the  component. Finally, remove the Master Data tab and its associated logic from .
+     - What will be achieved with this?: This will improve the user experience by giving the frequently used Quarantine Category management feature its own dedicated entry point in the main application navigation, as requested by the user.
+     - Status:  NOT STARTED
+     - Should Test frontend/backend/both after fix?: frontend
      - Blocked on something: None
 
 **Upcoming and Future Tasks**
     **Upcoming Tasks:**
-    - There are no new upcoming tasks. The priority is to complete the in-progress Domain Lifecycle Refactor.
+    - There are no new upcoming tasks. The priority is to complete the in-progress UI refactor for Quarantine Category settings.
 
     **Future Tasks:**
     -   **Email Notifications (P2):** Deferred by user in favor of Telegram.
     -   **Advanced Auto-Assign Logic (P2):** Deferred until real usage patterns are observed.
-    -   **Refactor  (P2):** Low priority; can be refactored progressively when related code is touched.
+    -   **Refactor  (P2):** This file is large and could be broken down into smaller, more focused routers.
 
 **Completed work in this session**
-- **Domain Monitoring Overhaul (First Iteration):** Implemented a system with domain lifecycle and quarantine features. This was later superseded by a major refactor.
-- **Added Category Feature:** Added a Category column and a corresponding filter to the Asset Domains table.
-- **Domain Lifecycle Refactor (In-Progress):**
-  - Updated backend models and APIs to enforce a strict separation between  (administrative),  (technical), and  (strategic).
-  - Implemented automatic rules, such as auto-releasing expired domains.
-  - Ran data migrations to update existing data to the new schema and field names.
-- **Bug Fixes:**
-  - Fixed an Internal Server Error caused by an incorrect parameter ( vs. ) in the .
-  - Resolved an environment loading issue by fixing a missing closing quote in the  file.
+- **Domain Lifecycle Refactor (Complete):**
+  - Finished the frontend implementation for the major refactor in , fixing the previously broken UI.
+  - Added new columns (, ) and associated filters.
+  - Implemented the  lifecycle status with backend logic to auto-transition expired domains.
+  - Added server-side sorting for the Asset Domains table with a critical-first default order.
+  - Added UI tooltips to , , and  columns for better user understanding.
+- **Master Data Management for Quarantine Categories:**
+  - Created a full CRUD settings page for Quarantine Categories, migrating the data from a hardcoded  to a  collection in MongoDB.
+  - Implemented all necessary backend API endpoints and frontend UI components.
+- **SEO Network Health Indicators:**
+  - Added health indicators (expired & quarantined domain counts) to SEO Network cards on the .
+  - Updated the backend API to provide these statistics.
+- **Asset Domain Form Enhancements:**
+  - Removed the legacy Status dropdown from the Add/Edit Domain form.
+  - Made the Expiration Date field mandatory with frontend validation.
+- **Testing and Bug Fixes:**
+  - Successfully used the testing agent to validate the domain refactor and sorting features.
+  - Fixed a bug where the Not Renewed tab was not showing correct data.
 
 **Earlier issues found/mentioned but not fixed**
-   - None.
+   - Issue 1:
+     - Description: The pagination total count for asset domains is inaccurate when filtering by computed fields (like ). The backend applies this filter *after* calculating the total count based on the paginated subset, not the entire dataset.
+     - Debug checklist: In , in the  function, the post-processing filter logic for  needs to be applied before the  is determined. This may require refactoring the query pipeline.
+     - Why to solve this issue and what will be achieved with this?: To provide an accurate total count in the UI, which improves user trust and avoids confusion during data export or analysis.
+     - Should Test frontend/backend/both after fix: backend
+     - Is recurring issue? N
 
 **Known issue recurrence from previous fork**
   - None.
@@ -107,66 +108,73 @@ A full-stack SEO monitoring application with a FastAPI backend, React frontend, 
 -   **Backend:** FastAPI, Python
 -   **Frontend:** React, Vite, Shadcn UI
 -   **Database:** MongoDB
--   **Core Concept:** The new architecture strictly separates a domain's status into three distinct concepts:  (administrative),  (technical), and  (strategic).
+-   **Core Concept:** A strict separation of a domain's status into  (administrative),  (technical), and  (strategic).
+-   **Master Data:** Management of application enums (like Quarantine Categories) in the database via dedicated UI and API endpoints, rather than hardcoding them.
 
 **key DB schema**
 -   **asset_domains**: 
--   **team_performance_thresholds**: 
+-   **quarantine_categories**: 
 
 **changes in tech stack**
 -   No changes to the core tech stack.
 
 **All files of reference**
--   ****: The Pydantic models were significantly refactored to introduce , , , and  enums and update the  models accordingly.
--   ****: Heavily modified to implement the new status logic, filters, automatic rules (auto-release), and validation for all asset domain endpoints.
--   ****: Undergoing a major rewrite to support the new data model, table columns, filters, and UI/UX requirements. This file is currently in an incomplete and non-functional state.
--   ****: Updated to add new functions for lifecycle management and to modify parameters for fetching domains.
+-   ****: The main API router. Heavily modified to add server-side sorting, new status logic, CRUD endpoints for quarantine categories, and health stats for SEO networks.
+-   ****: Contains Pydantic models. Updated to add the  lifecycle status and new models for the  collection.
+-   ****: The main domain management UI. Overhauled to add sorting, new columns, tooltips, and tabbed views for different lifecycle statuses.
+-   ****: Currently houses the Quarantine Category CRUD interface, which is the subject of the next refactoring task.
+-   ****: Displays SEO Network cards. Updated to show the new domain health indicators.
 
 **Areas that need refactoring**:
--   : This file remains large and complex. It is a candidate for being broken down into smaller, more focused routers in the future.
+-   ****: The Master Data tab and its associated logic for quarantine categories need to be removed from this file and moved to a new, dedicated component.
+-   ****: This file remains large and is a candidate for being broken down into smaller, more focused routers in the future.
 
 **key api endpoints**
--   : Updated with new filters for , , and .
--   : Endpoint to set the strategic lifecycle status.
--   : Endpoint to set the quarantine status and category.
--   : Endpoint providing monitoring coverage statistics, updated to respect the new lifecycle rules.
+-   : Updated with  and  query parameters.
+-   : Updated to return  and .
+-   **CRUD for Quarantine Categories**:
+    -   
+    -   
+    -   
+    -   
 
 **Critical Info for New Agent**
-1.  **Follow the Final Spec:** The user's message #433 contains the **FINAL** and **MANDATORY** specification for the Domain Status & Lifecycle system. All previous implementations and definitions are obsolete. This document is the single source of truth for the current task. Any deviation will be considered a bug.
-2.  **Frontend is Broken:** The immediate task is to fix . It's failing to load because it hasn't been fully updated to work with the refactored backend API.
-3.  **Data Model Has Changed:** Be aware that the primary fields for domain status are now , , and . The old fields are gone. The backend computes  automatically based on the expiration date.
+1.  **Immediate Task (P0):** The user's highest priority is to move the Quarantine Category management UI out of the Settings page and into its own dedicated page, accessible from the main sidebar. Do not start any other task before this one.
+2.  **Follow the Specification:** The user has provided multiple, detailed specifications for the domain management system (see ). These are the non-negotiable source of truth. All implementation must strictly adhere to them.
+3.  **Backend Logic is Authoritative:** All status logic (, , etc.) is handled by the backend. The frontend is responsible for displaying this data and providing the correct controls, not for computing statuses.
+4.  **DB-Driven Categories:** Quarantine Categories are no longer a hardcoded Enum. They are managed in the  MongoDB collection. The frontend should fetch these dynamically.
 
 **documents and test reports created in this job**
--    (Note: This is for the *previous* implementation and is no longer fully relevant to the refactored code).
--    (Updated to reflect the first iteration of the feature).
+-   
+-    (Updated with the new Domain Lifecycle features)
 
 **Last 10 User Messages and any pending HUMAN messages** 
-1.  **User:** Provides a comprehensive and final specification for refactoring the Domain Status, Monitoring, and Lifecycle system, declaring it the single source of truth. **Status: IN PROGRESS**
-2.  **User:** Asks to add a filter for Domain Categories. **Status: COMPLETED**
-3.  **User:** Provides an image and asks to add a Domain Categories column to the table. **Status: COMPLETED**
-4.  **Agent:** Finishes the revised lifecycle implementation and is about to summarize. **Status: Interrupted by new user request.**
-5.  **User:** Provides detailed feedback and revised requirements for the Domain Lifecycle feature, emphasizing the separation of technical status and strategic lifecycle. **Status: COMPLETED** (Led to the current refactor).
-6.  **Agent:** Calls the finish tool, summarizing the completion of the first iteration of the Domain Monitoring Overhaul. **Status: Obsolete** (superseded by user feedback).
-7.  **Agent:** Receives a successful test report from the testing agent for the first iteration of the feature. **Status: Obsolete**.
-8.  **Agent:** Calls the testing agent to perform comprehensive testing on the initial implementation. **Status: Completed**.
-9.  **User:** Confirms approval of the agent's plan for the Domain Monitoring Overhaul. **Status: Completed**.
-10. **Agent:** Proposes a plan for the Domain Monitoring Overhaul. **Status: Completed**.
+1.  **User:** Requests to move the Quarantine Category settings to a dedicated side menu item. **Status: NOT STARTED**
+2.  **Agent:** Finishes implementation of the mandatory expiration date. **Status: COMPLETED**
+3.  **User:** Asks to make the Expiration Date field mandatory when adding a domain. **Status: COMPLETED**
+4.  **Agent:** Finishes implementation of SEO Network health indicators and removal of the legacy status dropdown. **Status: COMPLETED**
+5.  **User:** Requests visual health indicators on SEO Network cards and asks to remove the manual status dropdown from the domain edit form. **Status: COMPLETED**
+6.  **Agent:** Finishes the Domain Status & Lifecycle Refactor. **Status: COMPLETED** (but followed by new user requests).
+7.  **Agent:** Finishes the implementation of sorting and the Not Renewed status. **Status: COMPLETED**
+8.  **User:** Provides a new, comprehensive spec for sorting, tooltips, and the Not Renewed lifecycle status, declaring it mandatory. **Status: COMPLETED**
+9.  **Agent:** Successfully implements the master data management for Quarantine Categories. **Status: COMPLETED**
+10. **User:** Requests a settings menu to perform CRUD operations on Quarantine Categories. **Status: COMPLETED**
 
 **Project Health Check:**
--   **Broken:** The main Asset Domains page () is non-functional and shows a Failed to load domains error. This is expected, as the frontend code is out of sync with the recently refactored backend API.
+-   **Broken:** None. The application is in a stable and functional state.
 -   **Mocked:** None.
 
 **3rd Party Integrations**
 -   **Telegram**: Used for sending SEO notifications and Team Performance Alerts.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES, for the initial feature implementation. However, the current major refactor has **not** been tested.
+-   **Testing agent used after significant changes:** YES, successfully used for the domain lifecycle and sorting refactor.
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** None.
--   **Known regressions:** The entire  page is currently non-functional due to the in-progress refactor.
+-   **Known regressions:** None.
 
 **Credentials to test flow:**
 Login with  / .
 
 **What agent forgot to execute**
-The agent has been closely following the user's instructions and has not forgotten any tasks. The current work is simply incomplete due to the complexity of the requested refactor.</analysis>
+The agent has been closely following the user's requests. The only outstanding item is a minor, known bug (inaccurate pagination count for filtered computed fields) that was consciously de-prioritized to focus on user-requested features. This is documented under Earlier issues found/mentioned but not fixed.</analysis>

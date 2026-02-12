@@ -23,7 +23,7 @@ import os
 # Base URL from environment
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://asset-monitor-58.preview.emergentagent.com"
+    BASE_URL = "https://seo-domain-mgmt.preview.emergentagent.com"
 
 # Test credentials
 TEST_ADMIN_EMAIL = "testadmin@test.com"
