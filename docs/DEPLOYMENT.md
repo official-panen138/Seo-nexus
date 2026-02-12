@@ -57,6 +57,48 @@ Detailed production deployment configurations for SEO-NOC V3.
 
 ---
 
+## Default Super Admin Setup
+
+On fresh deployment or migration, a default Super Admin account is automatically created if no Super Admin exists.
+
+### Default Credentials
+
+| Field | Default Value |
+|-------|---------------|
+| Email | `admin@seonoc.local` |
+| Password | `Admin@123!` |
+| Name | `Super Admin` |
+
+### Customize Default Admin (Environment Variables)
+
+Add these to your `backend/.env` file BEFORE first deployment:
+
+```bash
+# Optional: Customize default super admin credentials
+DEFAULT_ADMIN_EMAIL=youradmin@yourdomain.com
+DEFAULT_ADMIN_PASSWORD=YourSecurePassword123!
+DEFAULT_ADMIN_NAME=Your Admin Name
+```
+
+### Manual Seeding (Optional)
+
+You can also run the seed script manually:
+
+```bash
+cd backend
+python migrations/seed_default_admin.py
+```
+
+### Security Notes
+
+1. **Change the default password immediately** after first login
+2. The system auto-creates Super Admin only if:
+   - No Super Admin user exists in the database
+3. If you upgrade an existing user to Super Admin, their password remains unchanged
+4. Logs will show the default password on first creation - secure your deployment logs
+
+---
+
 ## 2. Docker Production Setup
 
 ### 2.1 Production docker-compose.yml
