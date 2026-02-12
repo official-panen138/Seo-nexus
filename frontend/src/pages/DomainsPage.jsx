@@ -941,6 +941,90 @@ export default function DomainsPage() {
                     </div>
                 </div>
 
+                {/* SEO Monitoring Coverage Panel */}
+                {useV3 && coverageStats && (
+                    <div className="mb-6">
+                        <Card className="bg-card border-border">
+                            <CardHeader className="pb-2">
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                        <Activity className="h-4 w-4 text-blue-400" />
+                                        SEO Monitoring Coverage
+                                    </CardTitle>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        onClick={loadCoverageStats}
+                                        className="text-zinc-400 h-7"
+                                        disabled={loadingCoverage}
+                                    >
+                                        <RefreshCw className={cn("h-3 w-3", loadingCoverage && "animate-spin")} />
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
+                                    <div className="text-center">
+                                        <p className="text-2xl font-bold text-white">{coverageStats.domains_in_seo}</p>
+                                        <p className="text-xs text-zinc-500">Domains in SEO</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-2xl font-bold text-emerald-400">{coverageStats.monitored}</p>
+                                        <p className="text-xs text-zinc-500">Monitored</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-2xl font-bold text-amber-400">{coverageStats.unmonitored}</p>
+                                        <p className="text-xs text-zinc-500">Unmonitored</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className={cn(
+                                            "text-2xl font-bold",
+                                            coverageStats.coverage_percentage >= 90 ? "text-emerald-400" :
+                                            coverageStats.coverage_percentage >= 70 ? "text-amber-400" : "text-red-400"
+                                        )}>{coverageStats.coverage_percentage}%</p>
+                                        <p className="text-xs text-zinc-500">Coverage</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-2xl font-bold text-zinc-400">{coverageStats.expired_released_count}</p>
+                                        <p className="text-xs text-zinc-500">Released</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-2xl font-bold text-orange-400">{coverageStats.quarantined_count}</p>
+                                        <p className="text-xs text-zinc-500">Quarantined</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className={cn(
+                                            "text-2xl font-bold",
+                                            coverageStats.root_domains_missing_monitoring > 0 ? "text-red-400" : "text-emerald-400"
+                                        )}>{coverageStats.root_domains_missing_monitoring}</p>
+                                        <p className="text-xs text-zinc-500">Root Missing</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
+                {/* View Mode Tabs */}
+                {useV3 && (
+                    <Tabs value={viewMode} onValueChange={setViewMode} className="mb-6">
+                        <TabsList className="bg-zinc-900">
+                            <TabsTrigger value="all" data-testid="tab-all">
+                                All Domains
+                            </TabsTrigger>
+                            <TabsTrigger value="unmonitored" data-testid="tab-unmonitored" className="text-amber-400 data-[state=active]:text-amber-400">
+                                Unmonitored in SEO
+                            </TabsTrigger>
+                            <TabsTrigger value="released" data-testid="tab-released" className="text-zinc-400 data-[state=active]:text-zinc-400">
+                                Released
+                            </TabsTrigger>
+                            <TabsTrigger value="quarantined" data-testid="tab-quarantined" className="text-orange-400 data-[state=active]:text-orange-400">
+                                Quarantined
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                )}
+
                 {/* Search and Filters */}
                 <div className="mb-6 space-y-4">
                     <div className="flex flex-col sm:flex-row gap-3">
@@ -964,7 +1048,7 @@ export default function DomainsPage() {
                             Filters
                             {hasActiveFilters && (
                                 <Badge variant="secondary" className="ml-2 h-5 px-1.5">
-                                    {[filterBrand, filterStatus, filterMonitoring]
+                                    {[filterBrand, filterStatus, filterMonitoring, filterLifecycle, filterQuarantine, filterUsedInSeo]
                                         .filter(f => f !== 'all').length}
                                 </Badge>
                             )}
@@ -972,7 +1056,7 @@ export default function DomainsPage() {
                     </div>
 
                     {showFilters && (
-                        <div className="filters-bar animate-fade-in">
+                        <div className="filters-bar animate-fade-in flex-wrap">
                             <Select value={filterBrand} onValueChange={setFilterBrand}>
                                 <SelectTrigger className="w-[150px] bg-black border-border" data-testid="filter-brand">
                                     <SelectValue placeholder="Brand" />
@@ -1014,6 +1098,47 @@ export default function DomainsPage() {
                                         <SelectItem value="disabled">Not Monitored</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            )}
+
+                            {useV3 && viewMode === 'all' && (
+                                <>
+                                    <Select value={filterLifecycle} onValueChange={setFilterLifecycle}>
+                                        <SelectTrigger className="w-[180px] bg-black border-border" data-testid="filter-lifecycle">
+                                            <SelectValue placeholder="Lifecycle" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Lifecycle</SelectItem>
+                                            {Object.entries(LIFECYCLE_STATUS_LABELS).map(([k, v]) => (
+                                                <SelectItem key={k} value={k}>{v}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+
+                                    <Select value={filterQuarantine} onValueChange={setFilterQuarantine}>
+                                        <SelectTrigger className="w-[160px] bg-black border-border" data-testid="filter-quarantine">
+                                            <SelectValue placeholder="Quarantine" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All</SelectItem>
+                                            <SelectItem value="not_quarantined">Not Quarantined</SelectItem>
+                                            <SelectItem value="quarantined">Quarantined</SelectItem>
+                                            {quarantineCategories.map(cat => (
+                                                <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+
+                                    <Select value={filterUsedInSeo} onValueChange={setFilterUsedInSeo}>
+                                        <SelectTrigger className="w-[140px] bg-black border-border" data-testid="filter-used-seo">
+                                            <SelectValue placeholder="In SEO" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All</SelectItem>
+                                            <SelectItem value="yes">In SEO Network</SelectItem>
+                                            <SelectItem value="no">Not in SEO</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </>
                             )}
 
                             {hasActiveFilters && (
