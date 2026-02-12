@@ -49,6 +49,50 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## What's Been Implemented
 
+### Domain Status, Monitoring & Lifecycle Refactor (Feb 12, 2026) - COMPLETE
+**Feature:** Complete separation of domain statuses into three distinct concepts for noise-free SEO operations.
+
+**1. Three-Part Status System:**
+| Field | Type | Purpose |
+|-------|------|---------|
+| `domain_active_status` | AUTO | Administrative status based on expiration_date (Active/Expired) |
+| `monitoring_status` | AUTO | Technical availability from monitoring engine (Up/Down/JS Challenge/etc.) |
+| `lifecycle_status` | MANUAL | Strategic SEO decision (Active/Released/Quarantined) - Super Admin only |
+| `quarantine_category` | MANUAL | Reason for quarantine (Spam/DMCA/Manual Penalty/etc.) |
+
+**2. Automatic Rules (Mandatory):**
+- Auto-Release on Expiration: When `domain_active_status=Expired`, system auto-sets `lifecycle_status=Released`
+- Invalid State Prevention: Cannot set `lifecycle_status=Active` if domain is expired (HTTP 400)
+- Monitoring Matrix: Only `lifecycle_status=Active` domains can be monitored
+
+**3. Table Columns (Asset Domains Page):**
+- Domain, Brand, Category, Domain Active Status, Monitoring Status, Lifecycle (with tooltip), Quarantine Category, SEO Networks, Monitoring Toggle, Expiration, Actions
+
+**4. Filters:**
+- Domain Active Status (Active/Expired)
+- Monitoring Status (Up/Down/Soft Blocked/JS Challenge/Country Block/Captcha/Unknown)
+- Lifecycle (Active/Released/Quarantined)
+- Quarantine Category
+- Monitoring Toggle (ON/OFF)
+- Used in SEO Network
+
+**5. View Mode Tabs:**
+- All Domains, Unmonitored in SEO, Released, Quarantined
+
+**6. Super Admin Actions:**
+- Change Lifecycle, Quarantine Domain, Remove Quarantine, Release Domain, Delete Domain
+
+**API Endpoints:**
+- `GET /api/v3/asset-domains` - List with filters: domain_active_status, monitoring_status, lifecycle_status, quarantine_category
+- `POST /api/v3/asset-domains/{id}/set-lifecycle` - Change lifecycle status
+- `POST /api/v3/asset-domains/{id}/quarantine` - Quarantine domain
+- `POST /api/v3/asset-domains/{id}/remove-quarantine` - Remove quarantine
+- `POST /api/v3/asset-domains/{id}/mark-released` - Mark as released
+
+**Tests:** 100% pass rate (28/28 backend, 100% frontend)
+
+---
+
 ### SEO-Aware Domain Monitoring + Structured Alert Output (Feb 10, 2026) - COMPLETE
 **Feature:** Transform domain monitoring into a true SEO Incident Response System
 
