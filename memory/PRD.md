@@ -49,6 +49,27 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## What's Been Implemented
 
+### Quarantine Categories - Dedicated Settings Page (Feb 12, 2026) - COMPLETE
+**Feature:** Moved Quarantine Category management from Settings page "Master Data" tab to a dedicated page with its own sidebar entry.
+
+**Implementation:**
+- Created new `QuarantineCategoriesPage.jsx` at `/app/frontend/src/pages/QuarantineCategoriesPage.jsx`
+- Added sidebar menu item "Quarantine Categories" with ShieldAlert icon in `Layout.jsx`
+- Added route `/settings/quarantine-categories` in `App.js` with menu permission check
+- Removed "Master Data" tab from `SettingsPage.jsx`
+- Added path mapping in `menuPermissions.jsx` for the new route
+
+**Features:**
+- Full CRUD for quarantine categories (Add, Edit, Delete)
+- Super Admin only access (with permission check)
+- Auto-converts category value to lowercase with underscores
+- Toast notifications for all actions
+- Proper loading states and error handling
+
+**Tests:** 100% pass rate (13/13 frontend tests)
+
+---
+
 ### Domain Status, Monitoring & Lifecycle Refactor V2 (Feb 12, 2026) - COMPLETE
 **Feature:** Complete separation of domain statuses with column sorting and tooltips.
 
