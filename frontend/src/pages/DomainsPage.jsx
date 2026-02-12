@@ -1343,32 +1343,52 @@ export default function DomainsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Domain</TableHead>
-                                <TableHead>Brand</TableHead>
+                                <TableHead>
+                                    <SortableHeader field="domain_name">Domain</SortableHeader>
+                                </TableHead>
+                                <TableHead>
+                                    <SortableHeader field="brand_name">Brand</SortableHeader>
+                                </TableHead>
                                 <TableHead>Category</TableHead>
                                 {useV3 ? (
                                     <>
-                                        <TableHead>Domain Active Status</TableHead>
-                                        <TableHead>Monitoring Status</TableHead>
+                                        <TableHead>
+                                            <SortableHeader field="domain_active_status">
+                                                Domain Active Status
+                                            </SortableHeader>
+                                        </TableHead>
+                                        <TableHead>
+                                            <SortableHeader field="monitoring_status" tooltip={MONITORING_STATUS_TOOLTIP}>
+                                                Monitoring Status
+                                            </SortableHeader>
+                                        </TableHead>
+                                        <TableHead>
+                                            <SortableHeader field="lifecycle_status" tooltip={LIFECYCLE_TOOLTIP}>
+                                                Lifecycle
+                                            </SortableHeader>
+                                        </TableHead>
+                                        <TableHead>Quarantine</TableHead>
+                                        <TableHead>
+                                            <SortableHeader field="seo_networks_count">SEO Networks</SortableHeader>
+                                        </TableHead>
                                         <TableHead>
                                             <div className="flex items-center gap-1">
-                                                Lifecycle
+                                                <span>Monitoring Toggle</span>
                                                 <TooltipProvider>
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <Info className="h-3.5 w-3.5 text-zinc-500 cursor-help" />
                                                         </TooltipTrigger>
                                                         <TooltipContent className="max-w-xs whitespace-pre-line text-xs">
-                                                            {LIFECYCLE_TOOLTIP}
+                                                            {MONITORING_TOGGLE_TOOLTIP}
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </TooltipProvider>
                                             </div>
                                         </TableHead>
-                                        <TableHead>Quarantine</TableHead>
-                                        <TableHead>SEO Networks</TableHead>
-                                        <TableHead>Monitoring Toggle</TableHead>
-                                        <TableHead>Expiration</TableHead>
+                                        <TableHead>
+                                            <SortableHeader field="expiration_date">Expiration</SortableHeader>
+                                        </TableHead>
                                     </>
                                 ) : (
                                     <>
