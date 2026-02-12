@@ -842,7 +842,18 @@ class AssetDomainCreate(AssetDomainBase):
 
 
 class AssetDomainUpdate(BaseModel):
-    """Model for updating an asset domain"""
+    """
+    Model for updating an asset domain
+    
+    NOTE: The following fields are AUTO-computed and should NOT be set manually:
+    - domain_active_status: Computed from expiration_date
+    - monitoring_status: Updated by monitoring engine
+    
+    The following require Super Admin permissions:
+    - lifecycle_status
+    - quarantine_category
+    - quarantine_note
+    """
 
     domain_name: Optional[str] = None
     brand_id: Optional[str] = None
@@ -853,39 +864,50 @@ class AssetDomainUpdate(BaseModel):
     buy_date: Optional[str] = None
     expiration_date: Optional[str] = None
     auto_renew: Optional[bool] = None
-    status: Optional[AssetStatus] = None
-    # Lifecycle and quarantine fields - managed via separate endpoints (Super Admin only)
-    domain_lifecycle_status: Optional[DomainLifecycleStatus] = None
+    
+    # Lifecycle and quarantine - Super Admin only
+    lifecycle_status: Optional[DomainLifecycleStatus] = None
     quarantine_category: Optional[str] = None
     quarantine_note: Optional[str] = None
+    
+    # Monitoring configuration
     monitoring_enabled: Optional[bool] = None
     monitoring_interval: Optional[MonitoringInterval] = None
-    last_checked_at: Optional[str] = None
-    last_ping_status: Optional[str] = None
-    last_http_code: Optional[int] = None
-    expiration_alert_sent_at: Optional[str] = None
+    
+    # Legacy fields
+    status: Optional[AssetStatus] = None
     notes: Optional[str] = None
 
 
 # Models for lifecycle and quarantine management (Super Admin only)
 class MarkAsReleasedRequest(BaseModel):
-    """Request to mark a domain as released (not renewed)"""
+    """Request to mark a domain as released (intentionally not renewed)"""
     reason: Optional[str] = None
 
 
 class SetQuarantineRequest(BaseModel):
-    """Request to quarantine a domain - sets lifecycle to 'quarantined'"""
+    """
+    Request to quarantine a domain
+    Sets lifecycle_status = 'quarantined' and disables monitoring
+    """
     quarantine_category: str  # One of QuarantineCategory values
     quarantine_note: Optional[str] = None  # Required if category is 'other'
 
 
 class RemoveQuarantineRequest(BaseModel):
-    """Request to remove quarantine from a domain - sets lifecycle back to 'active'"""
+    """
+    Request to remove quarantine from a domain
+    Sets lifecycle_status back to 'active'
+    """
     reason: Optional[str] = None
 
 
 class LifecycleChangeRequest(BaseModel):
-    """Request to change domain lifecycle status"""
+    """
+    Request to change domain lifecycle status (Super Admin only)
+    
+    RULE: Cannot set lifecycle to 'active' if domain_active_status = 'expired'
+    """
     lifecycle_status: DomainLifecycleStatus
     quarantine_category: Optional[str] = None  # Required if lifecycle is 'quarantined'
     quarantine_note: Optional[str] = None
