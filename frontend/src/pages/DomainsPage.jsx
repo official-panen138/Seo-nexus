@@ -1327,26 +1327,36 @@ export default function DomainsPage() {
                                                 {item.category_name || '-'}
                                             </span>
                                         </TableCell>
-                                        <TableCell>
-                                            {useV3 ? (
-                                                <Badge variant="outline" className={ASSET_STATUS_COLORS[item.status] || ''}>
-                                                    {ASSET_STATUS_LABELS[item.status] || item.status}
-                                                </Badge>
-                                            ) : (
-                                                <span className="text-sm text-zinc-400">
-                                                    {STATUS_LABELS[item.domain_status]}
-                                                </span>
-                                            )}
-                                        </TableCell>
                                         {useV3 ? (
                                             <>
+                                                {/* Domain Active Status (Administrative - AUTO) */}
                                                 <TableCell>
-                                                    <SeoNetworksBadges networks={item.seo_networks || []} />
+                                                    <Badge 
+                                                        variant="outline" 
+                                                        className={DOMAIN_ACTIVE_STATUS_COLORS[item.domain_active_status] || DOMAIN_ACTIVE_STATUS_COLORS.active}
+                                                        data-testid={`domain-active-status-${item.id}`}
+                                                    >
+                                                        {item.domain_active_status_label || DOMAIN_ACTIVE_STATUS_LABELS[item.domain_active_status] || 'Active'}
+                                                    </Badge>
                                                 </TableCell>
+                                                {/* Monitoring Status (Technical - AUTO) */}
+                                                <TableCell>
+                                                    <span 
+                                                        className={`text-xs px-2 py-1 rounded-full ${MONITORING_STATUS_COLORS[item.monitoring_status] || MONITORING_STATUS_COLORS.unknown}`}
+                                                        data-testid={`monitoring-status-${item.id}`}
+                                                    >
+                                                        {item.monitoring_status_label || MONITORING_STATUS_LABELS[item.monitoring_status] || 'Unknown'}
+                                                    </span>
+                                                </TableCell>
+                                                {/* Lifecycle Status (Strategic - MANUAL) */}
                                                 <TableCell>
                                                     <div className="flex items-center gap-1">
-                                                        <Badge variant="outline" className={LIFECYCLE_STATUS_COLORS[item.domain_lifecycle_status] || LIFECYCLE_STATUS_COLORS.active}>
-                                                            {item.lifecycle_status_label || LIFECYCLE_STATUS_LABELS[item.domain_lifecycle_status] || 'Active'}
+                                                        <Badge 
+                                                            variant="outline" 
+                                                            className={LIFECYCLE_STATUS_COLORS[item.lifecycle_status] || LIFECYCLE_STATUS_COLORS.active}
+                                                            data-testid={`lifecycle-status-${item.id}`}
+                                                        >
+                                                            {item.lifecycle_status_label || LIFECYCLE_STATUS_LABELS[item.lifecycle_status] || 'Active'}
                                                         </Badge>
                                                         {/* Lifecycle validation warnings */}
                                                         {item.lifecycle_warnings && item.lifecycle_warnings.length > 0 && (
@@ -1372,25 +1382,61 @@ export default function DomainsPage() {
                                                         )}
                                                     </div>
                                                 </TableCell>
+                                                {/* Quarantine Category */}
+                                                <TableCell>
+                                                    {item.quarantine_category ? (
+                                                        <Badge 
+                                                            variant="outline" 
+                                                            className="text-orange-400 border-orange-400/30 bg-orange-500/10"
+                                                            data-testid={`quarantine-category-${item.id}`}
+                                                        >
+                                                            {item.quarantine_category_label || QUARANTINE_CATEGORY_LABELS[item.quarantine_category] || item.quarantine_category}
+                                                        </Badge>
+                                                    ) : (
+                                                        <span className="text-zinc-500 text-sm">—</span>
+                                                    )}
+                                                </TableCell>
+                                                {/* SEO Networks */}
+                                                <TableCell>
+                                                    <SeoNetworksBadges networks={item.seo_networks || []} />
+                                                </TableCell>
+                                                {/* Monitoring Toggle (ON/OFF) */}
                                                 <TableCell>
                                                     <span className={`text-xs px-2 py-1 rounded-full ${
-                                                        item.monitoring_enabled 
-                                                            ? 'bg-emerald-500/10 text-emerald-400' 
-                                                            : item.requires_monitoring
-                                                                ? 'bg-red-500/10 text-red-400'
-                                                                : 'bg-zinc-500/10 text-zinc-500'
-                                                    }`}>
-                                                        {item.monitoring_enabled ? (item.ping_status === 'up' ? '● UP' : item.ping_status === 'down' ? '● DOWN' : 'ON') : item.requires_monitoring ? '⚠ OFF' : 'OFF'}
+                                                        !item.monitoring_allowed 
+                                                            ? 'bg-zinc-500/10 text-zinc-500'
+                                                            : item.monitoring_enabled 
+                                                                ? 'bg-emerald-500/10 text-emerald-400' 
+                                                                : item.requires_monitoring
+                                                                    ? 'bg-red-500/10 text-red-400'
+                                                                    : 'bg-zinc-500/10 text-zinc-500'
+                                                    }`} data-testid={`monitoring-toggle-${item.id}`}>
+                                                        {!item.monitoring_allowed 
+                                                            ? 'N/A' 
+                                                            : item.monitoring_enabled 
+                                                                ? 'ON' 
+                                                                : item.requires_monitoring 
+                                                                    ? '⚠ OFF' 
+                                                                    : 'OFF'}
                                                     </span>
                                                 </TableCell>
+                                                {/* Expiration Date */}
                                                 <TableCell>
-                                                    <span className="text-sm text-zinc-400">
+                                                    <span className={`text-sm ${item.domain_active_status === 'expired' ? 'text-red-400' : 'text-zinc-400'}`}>
                                                         {item.expiration_date ? formatDate(item.expiration_date) : '-'}
+                                                        {item.days_until_expiration !== null && item.days_until_expiration <= 7 && item.days_until_expiration >= 0 && (
+                                                            <span className="ml-1 text-xs text-amber-400">({item.days_until_expiration}d)</span>
+                                                        )}
                                                     </span>
                                                 </TableCell>
                                             </>
                                         ) : (
                                             <>
+                                                <TableCell>
+                                                    <span className="text-sm text-zinc-400">
+                                                        {STATUS_LABELS[item.domain_status]}
+                                                    </span>
+                                                </TableCell>
                                                 <TableCell>
                                                     <span className={`badge-tier ${getTierBadgeClass(item.tier_level)}`}>
                                                         {TIER_LABELS[item.tier_level]}
