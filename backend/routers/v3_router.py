@@ -647,7 +647,6 @@ async def enrich_asset_domain(asset: dict) -> dict:
             message="Monitoring is enabled but not allowed for this domain.",
             suggestion="Disable monitoring or change lifecycle to Active"
         ))
-        ))
     
     asset["lifecycle_warnings"] = [w.model_dump() for w in warnings]
     
