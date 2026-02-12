@@ -639,14 +639,22 @@ export default function DomainsPage() {
         if (!selectedAsset || !selectedLifecycle) return;
         setSaving(true);
         try {
-            await assetDomainsAPI.setLifecycle(selectedAsset.id, { 
+            const payload = { 
                 lifecycle_status: selectedLifecycle,
-                reason: lifecycleReason 
-            });
+                reason: lifecycleReason
+            };
+            // If setting to quarantined, include quarantine fields
+            if (selectedLifecycle === 'quarantined') {
+                payload.quarantine_category = selectedQuarantineCategory;
+                payload.quarantine_note = quarantineNote;
+            }
+            await assetDomainsAPI.setLifecycle(selectedAsset.id, payload);
             toast.success('Lifecycle status updated');
             setLifecycleDialogOpen(false);
             setSelectedLifecycle('');
             setLifecycleReason('');
+            setSelectedQuarantineCategory('');
+            setQuarantineNote('');
             setSelectedAsset(null);
             loadPaginatedData();
             loadCoverageStats();
