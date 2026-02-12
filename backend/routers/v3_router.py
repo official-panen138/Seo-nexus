@@ -2264,6 +2264,7 @@ async def get_seo_monitoring_coverage(
     released_count = 0
     quarantined_count = 0
     expired_count = 0
+    not_renewed_count = 0
     
     for d in domains_in_seo:
         lifecycle = d.get("lifecycle_status", "active")
@@ -2288,6 +2289,10 @@ async def get_seo_monitoring_coverage(
         
         if lifecycle == DomainLifecycleStatus.RELEASED.value:
             released_count += 1
+            continue
+        
+        if lifecycle == DomainLifecycleStatus.NOT_RENEWED.value:
+            not_renewed_count += 1
             continue
         
         # Count active lifecycle domains (only these are monitorable)
@@ -2348,6 +2353,7 @@ async def get_seo_monitoring_coverage(
         released_count=released_count,
         quarantined_count=quarantined_count,
         expired_count=expired_count,
+        not_renewed_count=not_renewed_count,
         root_domains_missing_monitoring=root_domains_missing_monitoring,
     )
 
