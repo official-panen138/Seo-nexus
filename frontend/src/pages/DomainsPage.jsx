@@ -68,6 +68,33 @@ const ASSET_STATUS_COLORS = {
     'expired': 'text-red-400 border-red-400/30'
 };
 
+// Domain Lifecycle Status
+const LIFECYCLE_STATUS_LABELS = {
+    'active': 'Active',
+    'expired_pending': 'Expired (Pending Decision)',
+    'expired_released': 'Released (Not Renewed)',
+    'inactive': 'Inactive',
+    'archived': 'Archived'
+};
+
+const LIFECYCLE_STATUS_COLORS = {
+    'active': 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10',
+    'expired_pending': 'text-amber-400 border-amber-400/30 bg-amber-500/10',
+    'expired_released': 'text-zinc-400 border-zinc-400/30 bg-zinc-500/10',
+    'inactive': 'text-zinc-400 border-zinc-400/30 bg-zinc-500/10',
+    'archived': 'text-zinc-500 border-zinc-500/30 bg-zinc-600/10'
+};
+
+// Quarantine Categories
+const QUARANTINE_CATEGORY_LABELS = {
+    'spam_murni': 'Spam Murni',
+    'dmca': 'DMCA',
+    'rollback_restore': 'Rollback Restore',
+    'penalized': 'Penalized',
+    'manual_review': 'Manual Review',
+    'custom': 'Custom'
+};
+
 // SEO Networks Badges Component
 const SeoNetworksBadges = ({ networks }) => {
     if (!networks || networks.length === 0) {
