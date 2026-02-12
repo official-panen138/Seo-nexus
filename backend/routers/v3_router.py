@@ -101,6 +101,7 @@ from models_v3 import (
 )
 from services.seo_optimization_telegram_service import SeoOptimizationTelegramService
 from services.conflict_optimization_linker_service import get_conflict_linker_service
+from services.conflict_metrics_service import get_conflict_metrics_service
 
 logger = logging.getLogger(__name__)
 
