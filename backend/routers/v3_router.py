@@ -1872,7 +1872,7 @@ async def set_domain_lifecycle(
                     exp_date = exp_date.replace(tzinfo=timezone.utc)
                 days_until = (exp_date - datetime.now(timezone.utc)).days
                 is_expired = days_until < 0
-            except:
+            except Exception:
                 pass
         
         if is_expired:
