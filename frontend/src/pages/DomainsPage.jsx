@@ -52,7 +52,10 @@ import {
     Ban,
     Activity,
     Info,
-    AlertTriangle
+    AlertTriangle,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
