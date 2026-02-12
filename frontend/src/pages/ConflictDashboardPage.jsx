@@ -141,24 +141,11 @@ export default function ConflictDashboardPage() {
 
     const getResolutionRate = () => {
         if (!metrics || metrics.total_conflicts === 0) return 0;
-        return ((metrics.resolved_count / metrics.total_conflicts) * 100).toFixed(1);
+        return metrics.resolution_rate_percent || ((metrics.resolved_count / metrics.total_conflicts) * 100).toFixed(1);
     };
 
-    // FRONTEND SAFETY GUARD: Recurring conflicts filter
-    // ONLY show active, unresolved conflicts with recurrence > 0
-    // This is a safety net - backend should already filter these out
-    const recurringConflicts = storedConflicts.filter(c => 
-        c.recurrence_count > 0 
-        && c.is_active !== false  // Exclude inactive conflicts
-        && !['resolved', 'approved', 'ignored'].includes(c.status)  // Exclude terminal statuses
-    );
-
-    // Get top resolvers from metrics
-    const topResolvers = metrics?.by_resolver 
-        ? Object.entries(metrics.by_resolver)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
-        : [];
+    // Get top resolvers from new API format
+    const topResolvers = metrics?.top_resolvers || [];
 
     // Handle Super Admin approval
     const handleApproveConflict = async (conflictId) => {
