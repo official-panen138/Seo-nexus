@@ -197,7 +197,8 @@ const INITIAL_FORM_V2 = {
 };
 
 export default function DomainsPage() {
-    const { canEdit } = useAuth();
+    const { canEdit, user } = useAuth();
+    const isSuperAdmin = user?.role === 'super_admin';
     const [searchParams, setSearchParams] = useSearchParams();
     const [assets, setAssets] = useState([]);
     const [domains, setDomains] = useState([]); // V2 fallback
@@ -236,6 +237,27 @@ export default function DomainsPage() {
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterMonitoring, setFilterMonitoring] = useState('all');
     const [showFilters, setShowFilters] = useState(false);
+    
+    // NEW: View mode tabs (all, released, quarantined, unmonitored)
+    const [viewMode, setViewMode] = useState('all');
+    const [filterLifecycle, setFilterLifecycle] = useState('all');
+    const [filterQuarantine, setFilterQuarantine] = useState('all');
+    const [filterUsedInSeo, setFilterUsedInSeo] = useState('all');
+    
+    // NEW: SEO Monitoring Coverage Stats
+    const [coverageStats, setCoverageStats] = useState(null);
+    const [loadingCoverage, setLoadingCoverage] = useState(false);
+    
+    // NEW: Lifecycle/Quarantine action dialogs
+    const [lifecycleDialogOpen, setLifecycleDialogOpen] = useState(false);
+    const [quarantineDialogOpen, setQuarantineDialogOpen] = useState(false);
+    const [releaseDialogOpen, setReleaseDialogOpen] = useState(false);
+    const [quarantineCategories, setQuarantineCategories] = useState([]);
+    const [selectedQuarantineCategory, setSelectedQuarantineCategory] = useState('');
+    const [quarantineNote, setQuarantineNote] = useState('');
+    const [releaseReason, setReleaseReason] = useState('');
+    const [selectedLifecycle, setSelectedLifecycle] = useState('');
+    const [lifecycleReason, setLifecycleReason] = useState('');
     
     // SERVER-SIDE PAGINATION STATE
     const [currentPage, setCurrentPage] = useState(1);
