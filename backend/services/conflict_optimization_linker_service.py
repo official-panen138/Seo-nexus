@@ -10,6 +10,7 @@ Features:
 3. Permission Enforcement - Only managers can update
 4. Notification Integration - Telegram alerts on detection/resolution
 5. Metrics Tracking - Time-to-resolution, conflicts per manager, recurrence
+6. Fingerprint-based Recurrence Detection - Detects same conflict reappearing
 
 Conflict Status Flow:
 - detected → under_review (when optimization exists)
@@ -17,12 +18,16 @@ Conflict Status Flow:
 """
 
 import uuid
+import hashlib
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 logger = logging.getLogger(__name__)
+
+# False resolution threshold (days)
+FALSE_RESOLUTION_THRESHOLD_DAYS = 7
 
 
 # Conflict type labels for readable titles
@@ -46,6 +51,45 @@ SEVERITY_PRIORITY = {
     "medium": "medium",
     "low": "low",
 }
+
+
+def generate_conflict_fingerprint(
+    network_id: str,
+    conflict_type: str,
+    domain_id: Optional[str],
+    node_path: Optional[str],
+    tier: Optional[int],
+    target_path: Optional[str]
+) -> str:
+    """
+    Generate a unique fingerprint for conflict recurrence detection.
+    
+    The fingerprint is based on structural identity, not temporary IDs.
+    If the same structural conflict reappears, it will have the same fingerprint.
+    """
+    # Normalize path: lowercase, strip leading/trailing slashes
+    normalized_path = ""
+    if node_path:
+        normalized_path = node_path.lower().strip("/")
+    
+    normalized_target = ""
+    if target_path:
+        normalized_target = target_path.lower().strip("/")
+    
+    # Build fingerprint string
+    fingerprint_parts = [
+        network_id or "",
+        conflict_type or "",
+        domain_id or "",
+        normalized_path,
+        str(tier) if tier is not None else "",
+        normalized_target
+    ]
+    
+    fingerprint_string = "|".join(fingerprint_parts)
+    
+    # Generate hash
+    return hashlib.sha256(fingerprint_string.encode()).hexdigest()[:32]
 
 
 class ConflictOptimizationLinkerService:
