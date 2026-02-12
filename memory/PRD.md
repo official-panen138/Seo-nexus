@@ -49,6 +49,40 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## What's Been Implemented
 
+### Telegram Expiration Alert - SEO Structure Section (Feb 12, 2026) - COMPLETE
+**Feature:** Updated Domain Expiration Alert Telegram notifications to use "🧭 STRUKTUR SEO TERKINI" section header (consistent with other SEO notifications).
+
+**Implementation:**
+- Updated `_format_expiration_alert_seo_aware` in `/app/backend/services/monitoring_service.py`
+- Changed "🔗 FULL SEO STRUCTURE" to "🧭 STRUKTUR SEO TERKINI" for consistency with Domain Down alerts and other SEO notifications
+
+---
+
+### Enhanced Import/Export Asset Domains (Feb 12, 2026) - COMPLETE
+**Feature:** Comprehensive import/export functionality for asset domains with validation preview.
+
+**Export:**
+- CSV format with all required fields (Domain, Brand, Category, Domain Active Status, Monitoring Status, Lifecycle, Quarantine Category, SEO Networks comma-separated, Expiration Date, Monitoring Enabled ON/OFF)
+- Respects ALL current filters (exports only filtered/visible data)
+- Includes registrar and notes fields
+
+**Import:**
+- CSV upload with mandatory validation preview before confirm
+- 3-step flow: Upload → Preview → Result
+- Shows separate sections: New domains (green), Updated domains (blue), Errors (red)
+- Toggle switches to select Create New / Update Existing
+- Invalid rows displayed with clear error messages and NOT imported
+- No silent overwrite - conflicts shown clearly
+- Supports date formats: YYYY-MM-DD, YYYY/MM/DD, DD-MM-YYYY, DD/MM/YYYY
+
+**Backend Endpoints:**
+- `GET /api/v3/export/asset-domains` - Enhanced export with all filters
+- `POST /api/v3/import/domains/preview` - Validation without commit
+- `POST /api/v3/import/domains/confirm` - Apply validated changes
+- `GET /api/v3/import/domains/template` - Download CSV template
+
+---
+
 ### Quarantine Categories - Dedicated Settings Page (Feb 12, 2026) - COMPLETE
 **Feature:** Moved Quarantine Category management from Settings page "Master Data" tab to a dedicated page with its own sidebar entry.
 
