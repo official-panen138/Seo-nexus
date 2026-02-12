@@ -482,11 +482,13 @@ class ConflictOptimizationLinkerService:
         if not conflict:
             return {"success": False, "error": "Conflict not found"}
         
-        # Update conflict status
+        # Update conflict status - resolution also deactivates the conflict
         await self.db.seo_conflicts.update_one(
             {"id": conflict_id},
             {"$set": {
                 "status": "resolved",
+                "is_active": False,  # Deactivate to prevent appearing in recurring
+                "recurrence_count": 0,  # Reset recurrence count
                 "resolved_at": now,
                 "updated_at": now,
                 "resolution_note": resolution_note,
@@ -497,7 +499,7 @@ class ConflictOptimizationLinkerService:
         # Send resolution notification
         await self._send_resolution_notification(conflict, resolved_by_user_id)
         
-        return {"success": True, "status": "resolved"}
+        return {"success": True, "status": "resolved", "is_active": False}
     
     async def _send_resolution_notification(
         self,
