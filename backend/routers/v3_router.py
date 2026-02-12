@@ -2465,7 +2465,7 @@ async def create_quarantine_category(
     await db.quarantine_categories.insert_one(category)
     
     # Return without _id
-    del category["_id"] if "_id" in category else None
+    category.pop("_id", None)
     return {"message": "Category created successfully", "category": category}
 
 
