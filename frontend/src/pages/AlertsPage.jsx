@@ -706,11 +706,11 @@ export default function AlertsPage() {
                                                         </span>
                                                     </td>
                                                     <td className="py-3">
-                                                        {conflict.task_id ? (
+                                                        {(conflict.optimization_id || conflict.linked_optimization?.id) ? (
                                                             <Button
                                                                 variant="outline"
                                                                 size="sm"
-                                                                onClick={() => window.location.href = `/tasks/${conflict.task_id}`}
+                                                                onClick={() => window.location.href = `/optimizations/${conflict.optimization_id || conflict.linked_optimization?.id}`}
                                                                 data-testid={`view-task-${conflict.id}`}
                                                             >
                                                                 <ClipboardList className="h-3 w-3 mr-1" />
