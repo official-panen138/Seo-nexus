@@ -1129,6 +1129,73 @@ async def initialize_default_categories():
         logger.info(f"Initialized {len(categories)} default categories")
 
 
+# Default Super Admin credentials (can be overridden by environment variables)
+DEFAULT_ADMIN_EMAIL = os.environ.get("DEFAULT_ADMIN_EMAIL", "admin@seonoc.local")
+DEFAULT_ADMIN_PASSWORD = os.environ.get("DEFAULT_ADMIN_PASSWORD", "Admin@123!")
+DEFAULT_ADMIN_NAME = os.environ.get("DEFAULT_ADMIN_NAME", "Super Admin")
+
+
+async def seed_default_super_admin():
+    """
+    Seed default super admin user if no super_admin exists.
+    This runs on every server startup but is safe - it won't create duplicates.
+    """
+    try:
+        # Check if any super_admin exists
+        existing_super_admin = await db.users.find_one({"role": "super_admin"})
+        
+        if existing_super_admin:
+            logger.info(f"Super Admin exists: {existing_super_admin.get('email')}")
+            return
+        
+        # Check if the default admin email already exists
+        existing_user = await db.users.find_one({"email": DEFAULT_ADMIN_EMAIL})
+        
+        if existing_user:
+            # User exists but is not super_admin - upgrade to super_admin
+            logger.info(f"Upgrading {DEFAULT_ADMIN_EMAIL} to Super Admin role")
+            await db.users.update_one(
+                {"email": DEFAULT_ADMIN_EMAIL},
+                {
+                    "$set": {
+                        "role": "super_admin",
+                        "status": "active",
+                        "brand_scope_ids": None,
+                        "updated_at": datetime.now(timezone.utc)
+                    }
+                }
+            )
+            logger.info(f"User upgraded to Super Admin!")
+            return
+        
+        # Create new default super admin
+        logger.info("Creating default Super Admin user...")
+        
+        new_admin = {
+            "id": str(uuid.uuid4()),
+            "email": DEFAULT_ADMIN_EMAIL,
+            "name": DEFAULT_ADMIN_NAME,
+            "password": hash_password(DEFAULT_ADMIN_PASSWORD),
+            "role": "super_admin",
+            "status": "active",
+            "brand_scope_ids": None,
+            "telegram_username": None,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+            "approved_by": "system",
+            "approved_at": datetime.now(timezone.utc),
+            "menu_permissions": None
+        }
+        
+        await db.users.insert_one(new_admin)
+        
+        logger.info(f"Default Super Admin created: {DEFAULT_ADMIN_EMAIL}")
+        logger.warning(f"Default password is: {DEFAULT_ADMIN_PASSWORD} - CHANGE IT AFTER FIRST LOGIN!")
+        
+    except Exception as e:
+        logger.error(f"Failed to seed default admin: {e}")
+
+
 # ==================== AUTH ENDPOINTS ====================
 
 
