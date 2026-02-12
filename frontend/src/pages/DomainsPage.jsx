@@ -996,7 +996,7 @@ export default function DomainsPage() {
                                         <p className="text-xs text-zinc-500">Coverage</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-2xl font-bold text-zinc-400">{coverageStats.expired_released_count}</p>
+                                        <p className="text-2xl font-bold text-zinc-400">{coverageStats.released_count}</p>
                                         <p className="text-xs text-zinc-500">Released</p>
                                     </div>
                                     <div className="text-center">
