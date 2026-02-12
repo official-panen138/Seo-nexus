@@ -72,6 +72,7 @@ const SEVERITY_COLORS = {
 export default function ConflictDashboardPage() {
     const [metrics, setMetrics] = useState(null);
     const [storedConflicts, setStoredConflicts] = useState([]);
+    const [users, setUsers] = useState({});
     const [loading, setLoading] = useState(true);
     const [creatingTask, setCreatingTask] = useState(null);
     const [periodDays, setPeriodDays] = useState('30');
@@ -83,13 +84,21 @@ export default function ConflictDashboardPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [metricsRes, conflictsRes] = await Promise.all([
+            const [metricsRes, conflictsRes, usersRes] = await Promise.all([
                 conflictsAPI.getMetrics({ days: parseInt(periodDays) }),
-                conflictsAPI.getStored({ limit: 50 })
+                conflictsAPI.getStored({ limit: 50 }),
+                usersAPI.getAll().catch(() => ({ data: [] }))
             ]);
             
             setMetrics(metricsRes.data);
             setStoredConflicts(conflictsRes.data?.conflicts || []);
+            
+            // Build users lookup map (id -> name)
+            const usersMap = {};
+            (usersRes.data || []).forEach(user => {
+                usersMap[user.id] = user.name || user.email || user.id;
+            });
+            setUsers(usersMap);
         } catch (err) {
             console.error('Failed to load conflict data:', err);
             toast.error('Failed to load conflict metrics');
