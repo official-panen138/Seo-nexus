@@ -106,7 +106,9 @@ export const alertsAPI = {
 
 // Domain Monitoring API (SEO-aware monitoring stats)
 export const monitoringAPI = {
-    getStats: () => api.get('/v3/monitoring/stats')
+    getStats: () => api.get('/v3/monitoring/stats'),
+    // New: SEO Monitoring Coverage
+    getCoverage: (params = {}) => apiV3.get('/monitoring/coverage', { params })
 };
 
 // SEO Conflicts API (V3 - uses seo_structure_entries, not legacy domains collection)
