@@ -1898,6 +1898,12 @@ if message_thread_id and ("thread" in error_text or "topic" in error_text):
   - Full structure lines (`STRUKTUR SEO TERKINI`) display correctly with tier hierarchy
   - Non-SEO domains gracefully show "not used in SEO" without errors
 
+- ✅ **Team Performance Alerts (Feb 12, 2026):** Automatic performance monitoring with Telegram alerts
+  - Configurable thresholds: false resolution rate, stale conflict days, backlog, avg resolution time
+  - Daily automatic checks at 9:00 AM
+  - Manual check via Settings > Performance Alerts tab
+  - Alert history tracking in database
+
 ### P2 - Future
 - **Email Notifications:** Optional email notifications for conflict detection/resolution
 - **Advanced Auto-Assign:** Complex assignment rules by tier, workload, or expertise
