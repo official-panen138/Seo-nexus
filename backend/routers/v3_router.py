@@ -565,79 +565,88 @@ async def enrich_asset_domain(asset: dict) -> dict:
     else:
         asset["registrar_name"] = asset.get("registrar")  # Legacy fallback
 
-    # Enrich SEO network usage
+    # ===== 1. COMPUTE DOMAIN ACTIVE STATUS (AUTO) =====
+    # Based on expiration_date - NOT editable manually
+    domain_active_status, days_until = compute_domain_active_status(asset.get("expiration_date"))
+    asset["domain_active_status"] = domain_active_status
+    asset["domain_active_status_label"] = "Active" if domain_active_status == "active" else "Expired"
+    asset["days_until_expiration"] = days_until
+    is_expired = domain_active_status == "expired"
+
+    # ===== 2. MONITORING STATUS (AUTO) =====
+    # Get from monitoring_status field or legacy ping_status
+    monitoring_status = asset.get("monitoring_status", asset.get("ping_status", "unknown"))
+    asset["monitoring_status"] = monitoring_status
+    asset["monitoring_status_label"] = MONITORING_STATUS_LABELS.get(monitoring_status, monitoring_status.title() if monitoring_status else "Unknown")
+
+    # ===== 3. LIFECYCLE STATUS (MANUAL) =====
+    lifecycle = asset.get("lifecycle_status", DomainLifecycleStatus.ACTIVE.value)
+    if not lifecycle:
+        lifecycle = DomainLifecycleStatus.ACTIVE.value
+        asset["lifecycle_status"] = lifecycle
+    asset["lifecycle_status_label"] = LIFECYCLE_STATUS_LABELS.get(lifecycle, lifecycle.title())
+    
+    is_active_lifecycle = lifecycle == DomainLifecycleStatus.ACTIVE.value
+
+    # ===== 4. QUARANTINE CATEGORY =====
+    qc = asset.get("quarantine_category")
+    if qc:
+        asset["quarantine_category_label"] = QUARANTINE_CATEGORY_LABELS.get(qc, qc)
+
+    # ===== SEO NETWORK USAGE =====
     structure_entries = await db.seo_structure_entries.find(
         {"asset_domain_id": asset["id"]}, {"_id": 0, "network_id": 1, "domain_role": 1, "optimized_path": 1}
     ).to_list(100)
     
-    network_ids = [e["network_id"] for e in structure_entries]
+    # Deduplicate networks
+    network_ids = list(set([e["network_id"] for e in structure_entries]))
     networks = await db.seo_networks.find(
         {"id": {"$in": network_ids}}, {"_id": 0, "id": 1, "name": 1}
     ).to_list(100)
     network_map = {n["id"]: n["name"] for n in networks}
     
-    asset["seo_networks"] = [
-        NetworkUsageInfo(
-            network_id=e["network_id"],
-            network_name=network_map.get(e["network_id"], "Unknown"),
-            role=e.get("domain_role", "supporting"),
-            optimized_path=e.get("optimized_path")
-        )
-        for e in structure_entries
-    ]
+    # NO duplicates in seo_networks list
+    seen_networks = set()
+    unique_network_usages = []
+    for e in structure_entries:
+        nid = e["network_id"]
+        if nid not in seen_networks:
+            seen_networks.add(nid)
+            unique_network_usages.append(NetworkUsageInfo(
+                network_id=nid,
+                network_name=network_map.get(nid, "Unknown"),
+                role=e.get("domain_role", "supporting"),
+                optimized_path=e.get("optimized_path")
+            ))
+    asset["seo_networks"] = unique_network_usages
+    asset["is_used_in_seo_network"] = len(unique_network_usages) > 0
+
+    # ===== MONITORING RULES =====
+    # Monitoring is ONLY allowed if lifecycle_status = Active AND domain is not expired
+    monitoring_allowed = is_active_lifecycle and not is_expired
+    asset["monitoring_allowed"] = monitoring_allowed
     
-    # Determine if used in SEO and if monitoring is required
-    asset["is_used_in_seo_network"] = len(structure_entries) > 0
-    
-    # Get lifecycle status (default to 'active' for legacy domains)
-    lifecycle = asset.get("domain_lifecycle_status", DomainLifecycleStatus.ACTIVE.value)
-    if not lifecycle:
-        lifecycle = DomainLifecycleStatus.ACTIVE.value
-        asset["domain_lifecycle_status"] = lifecycle
-    
-    # Add lifecycle status label
-    asset["lifecycle_status_label"] = LIFECYCLE_STATUS_LABELS.get(lifecycle, lifecycle.title())
-    
-    # ONLY active lifecycle domains require monitoring
-    is_active_lifecycle = lifecycle == DomainLifecycleStatus.ACTIVE.value
-    asset["requires_monitoring"] = asset["is_used_in_seo_network"] and is_active_lifecycle
-    
-    # Add quarantine category label
-    qc = asset.get("quarantine_category")
-    if qc:
-        asset["quarantine_category_label"] = QUARANTINE_CATEGORY_LABELS.get(qc, qc)
-    
-    # === LIFECYCLE VALIDATION WARNINGS ===
+    # Domain requires monitoring if: used in SEO + lifecycle=active + not expired
+    asset["requires_monitoring"] = asset["is_used_in_seo_network"] and monitoring_allowed
+
+    # ===== VALIDATION WARNINGS =====
     warnings = []
     
-    # Check for expired domain with active lifecycle
-    status = asset.get("status", "active")
-    expiration_date = asset.get("expiration_date")
-    
-    if expiration_date and is_active_lifecycle:
-        try:
-            from datetime import datetime, timezone
-            exp_date = datetime.fromisoformat(expiration_date.replace('Z', '+00:00'))
-            if exp_date.tzinfo is None:
-                exp_date = exp_date.replace(tzinfo=timezone.utc)
-            days_until = (exp_date - datetime.now(timezone.utc)).days
-            
-            if days_until < 0 or status == "expired":
-                warnings.append(LifecycleValidationWarning(
-                    warning_type="expired_active",
-                    message="This domain is marked as Active but has expired. This may cause SEO risk or alert noise.",
-                    suggestion="Mark as Released or Quarantined"
-                ))
-        except Exception:
-            pass
-    
-    # Check for down domain with active lifecycle (if monitoring shows down for extended period)
-    ping_status = asset.get("ping_status", "unknown")
-    if ping_status == "down" and is_active_lifecycle:
+    # RULE 2: Invalid state - Expired domain with Active lifecycle
+    if is_expired and is_active_lifecycle:
         warnings.append(LifecycleValidationWarning(
-            warning_type="down_active",
-            message="This domain is marked as Active but is technically unavailable (DOWN). This may cause alert noise.",
-            suggestion="Check domain status or consider marking as Released/Quarantined"
+            warning_type="expired_active_lifecycle",
+            message="⚠️ Domain has expired and cannot be marked as Active. This is an invalid state.",
+            suggestion="Mark as Released (domain intentionally not renewed)"
+        ))
+    
+    # Warning if monitoring enabled but not allowed
+    if asset.get("monitoring_enabled") and not monitoring_allowed:
+        warnings.append(LifecycleValidationWarning(
+            warning_type="monitoring_not_allowed",
+            message="Monitoring is enabled but not allowed for this domain.",
+            suggestion="Disable monitoring or change lifecycle to Active"
+        ))
         ))
     
     asset["lifecycle_warnings"] = [w.model_dump() for w in warnings]
