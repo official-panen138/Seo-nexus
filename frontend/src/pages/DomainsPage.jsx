@@ -1299,11 +1299,6 @@ export default function DomainsPage() {
                                                 </TableCell>
                                             </>
                                         )}
-                                        <TableCell>
-                                            <span className="text-sm text-zinc-500">
-                                                {formatDate(item.created_at)}
-                                            </span>
-                                        </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-1">
                                                 {!useV3 && (
@@ -1329,18 +1324,105 @@ export default function DomainsPage() {
                                                         >
                                                             <Edit className="h-4 w-4" />
                                                         </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => {
-                                                                setSelectedAsset(item);
-                                                                setDeleteDialogOpen(true);
-                                                            }}
-                                                            className="h-8 w-8 hover:bg-red-500/10 hover:text-red-500"
-                                                            data-testid={`delete-domain-${item.id}`}
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
+                                                        
+                                                        {/* Lifecycle & Quarantine Actions (Super Admin only) */}
+                                                        {useV3 && isSuperAdmin && (
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8 hover:bg-white/5"
+                                                                        data-testid={`domain-actions-${item.id}`}
+                                                                    >
+                                                                        <MoreHorizontal className="h-4 w-4" />
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end">
+                                                                    {/* Lifecycle actions */}
+                                                                    {item.domain_lifecycle_status !== 'expired_released' && (
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => {
+                                                                                setSelectedAsset(item);
+                                                                                setReleaseDialogOpen(true);
+                                                                            }}
+                                                                            data-testid={`mark-released-${item.id}`}
+                                                                        >
+                                                                            <Archive className="h-4 w-4 mr-2 text-zinc-400" />
+                                                                            Mark as Released
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => {
+                                                                            setSelectedAsset(item);
+                                                                            setSelectedLifecycle(item.domain_lifecycle_status || 'active');
+                                                                            setLifecycleDialogOpen(true);
+                                                                        }}
+                                                                        data-testid={`change-lifecycle-${item.id}`}
+                                                                    >
+                                                                        <Clock className="h-4 w-4 mr-2 text-blue-400" />
+                                                                        Change Lifecycle
+                                                                    </DropdownMenuItem>
+                                                                    
+                                                                    <DropdownMenuSeparator />
+                                                                    
+                                                                    {/* Quarantine actions */}
+                                                                    {!item.quarantine_category ? (
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => {
+                                                                                setSelectedAsset(item);
+                                                                                setQuarantineDialogOpen(true);
+                                                                            }}
+                                                                            className="text-orange-400"
+                                                                            data-testid={`quarantine-${item.id}`}
+                                                                        >
+                                                                            <ShieldAlert className="h-4 w-4 mr-2" />
+                                                                            Quarantine Domain
+                                                                        </DropdownMenuItem>
+                                                                    ) : (
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => handleRemoveQuarantine(item)}
+                                                                            className="text-emerald-400"
+                                                                            data-testid={`unquarantine-${item.id}`}
+                                                                        >
+                                                                            <ShieldOff className="h-4 w-4 mr-2" />
+                                                                            Remove Quarantine
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    
+                                                                    <DropdownMenuSeparator />
+                                                                    
+                                                                    {/* Delete */}
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => {
+                                                                            setSelectedAsset(item);
+                                                                            setDeleteDialogOpen(true);
+                                                                        }}
+                                                                        className="text-red-400"
+                                                                        data-testid={`delete-action-${item.id}`}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                                        Delete Domain
+                                                                    </DropdownMenuItem>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        )}
+                                                        
+                                                        {/* Simple delete for non-super-admin */}
+                                                        {(!useV3 || !isSuperAdmin) && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => {
+                                                                    setSelectedAsset(item);
+                                                                    setDeleteDialogOpen(true);
+                                                                }}
+                                                                className="h-8 w-8 hover:bg-red-500/10 hover:text-red-500"
+                                                                data-testid={`delete-domain-${item.id}`}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
                                                     </>
                                                 )}
                                             </div>
