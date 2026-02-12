@@ -464,6 +464,9 @@ export default function ConflictDashboardPage() {
                                 <Repeat className="h-5 w-5 text-red-400" />
                                 Recurring Conflicts
                             </CardTitle>
+                            <p className="text-xs text-zinc-500 mt-1">
+                                Approved conflicts are automatically resolved and removed from this list.
+                            </p>
                         </CardHeader>
                         <CardContent>
                             {recurringConflicts.length > 0 ? (
@@ -490,15 +493,27 @@ export default function ConflictDashboardPage() {
                                                         Network: {conflict.network_name || 'Unknown'}
                                                     </p>
                                                 </div>
-                                                {conflict.linked_optimization && (
+                                                <div className="flex items-center gap-1">
                                                     <Button
-                                                        variant="ghost"
+                                                        variant="outline"
                                                         size="sm"
-                                                        onClick={() => window.location.href = `/optimizations/${conflict.linked_optimization.id}`}
+                                                        onClick={() => handleApproveConflict(conflict.id)}
+                                                        className="text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                                                        title="Approve & deactivate this conflict"
                                                     >
-                                                        <ExternalLink className="h-4 w-4" />
+                                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                                        Approve
                                                     </Button>
-                                                )}
+                                                    {conflict.linked_optimization && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => window.location.href = `/optimizations/${conflict.linked_optimization.id}`}
+                                                        >
+                                                            <ExternalLink className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
