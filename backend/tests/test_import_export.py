@@ -121,8 +121,8 @@ class TestImportPreviewAPI(TestAuth):
         
         data = response.json()
         assert "new_domains" in data, "Missing new_domains in response"
-        assert "update_domains" in data, "Missing update_domains in response"
-        assert "error_domains" in data, "Missing error_domains in response"
+        assert "updated_domains" in data, "Missing updated_domains in response"
+        assert "errors" in data, "Missing errors in response"
         assert "summary" in data, "Missing summary in response"
         
         # Verify summary counts
