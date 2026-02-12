@@ -2541,6 +2541,7 @@ export default function DomainsPage() {
                                 
                                 {importStep === 'upload' && (
                                     <Button
+                                        type="button"
                                         onClick={handleImportPreview}
                                         disabled={importing || importData.length === 0}
                                         className="bg-white text-black hover:bg-zinc-200"
@@ -2553,6 +2554,7 @@ export default function DomainsPage() {
                                 
                                 {importStep === 'preview' && (
                                     <Button
+                                        type="button"
                                         onClick={handleImportConfirm}
                                         disabled={importing || (!createNew && !updateExisting) || 
                                             (importPreview?.summary.new_count === 0 && importPreview?.summary.update_count === 0)}
