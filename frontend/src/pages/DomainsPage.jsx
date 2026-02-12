@@ -317,7 +317,7 @@ export default function DomainsPage() {
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, filterBrand, filterCategory, filterStatus, filterMonitoring, pageSize, viewMode, filterLifecycle, filterQuarantine, filterUsedInSeo]);
+    }, [debouncedSearch, filterBrand, filterCategory, filterStatus, filterMonitoring, filterMonitoringStatus, filterDomainActiveStatus, pageSize, viewMode, filterLifecycle, filterQuarantine, filterUsedInSeo]);
 
     // Load data when pagination or filters change
     useEffect(() => {
