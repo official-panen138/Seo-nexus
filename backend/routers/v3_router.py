@@ -2278,7 +2278,7 @@ async def get_seo_monitoring_coverage(
         active_unmonitored=active_unmonitored,
         released_count=released_count,
         quarantined_count=quarantined_count,
-        archived_count=archived_count,
+        expired_count=expired_count,
         root_domains_missing_monitoring=root_domains_missing_monitoring,
     )
 
@@ -2297,6 +2297,7 @@ async def get_lifecycle_info(
         ],
         "tooltip": LIFECYCLE_TOOLTIP,
         "monitored_statuses": [s.value for s in MONITORED_LIFECYCLE_STATUSES],
+        "monitoring_status_labels": MONITORING_STATUS_LABELS,
     }
 
 
