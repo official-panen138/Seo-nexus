@@ -1084,6 +1084,10 @@ class SeoNetworkResponse(SeoNetworkBase):
     )
     last_optimization_at: Optional[str] = None  # Most recent optimization date
 
+    # Domain Health Indicators
+    expired_domains_count: int = 0  # Domains in network with expired status
+    quarantined_domains_count: int = 0  # Domains in network with quarantined lifecycle
+
     created_at: str
     updated_at: str
 
