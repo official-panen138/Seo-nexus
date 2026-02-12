@@ -1,102 +1,86 @@
 <analysis>**original_problem_statement:**
-The user's primary objective is to build a production-ready, noise-free, and scalable SEO Domain Monitoring & Asset Domain management system.
+The user's primary objective is to build a production-ready, scalable SEO Domain Monitoring & Asset Domain management system.
 
-**PRODUCT REQUIREMENTS (LATEST - DOMAIN LIFECYCLE REFACTOR & SORTING):**
+The most recent user requests were:
+1.  **Merge Dashboards:** The user found two similar dashboards (SEO Conflicts and Resolution Dashboard) and requested they be merged into a single, unified page to simplify the UI.
+2.  **Update Telegram Notifications:** Add the 🧭 STRUKTUR SEO TERKINI section to the Domain Expiration alerts sent via Telegram.
+3.  **Enhance Import/Export:** Implement a robust CSV import/export feature for Asset Domains, including a mandatory validation preview step for imports and ensuring exports respect the current table filters.
+4.  **Bulk Menu Access Control:** The user briefly mentioned a Bulk Menu Access Control update but has not yet provided detailed requirements.
 
-*   **P0 - STATUS & LIFECYCLE SEPARATION (FINAL SPEC):**
-    1.  ** (Auto-computed):** An administrative status based *only* on the domain's expiration date ( or ). It is not manually editable.
-    2.  ** (Technical, Auto):** Represents the real-time technical availability (, , , etc.), updated by the monitoring engine.
-    3.  ** (Strategic, Manual):** A Super Admin-controlled field representing the business decision for a domain (, , , ).
-    4.  ** (Manual):** A Super Admin-managed reason for quarantine (, , , etc.), managed via a dedicated settings page.
-
-*   **P0 - AUTOMATIC RULES (MANDATORY):**
-    1.  **Auto-Transition on Expiration:** When  becomes , the system must automatically set  to  and force the  to OFF.
-    2.  **Invalid State Prevention:** The system must reject (HTTP 400) any attempt to set  to  if the domain's  is .
-    3.  **Monitoring Matrix:** The  is **ONLY** allowed to be ON if  is . It is forbidden for , , and  domains.
-    4.  **SEO Network Enforcement:** If a domain (or its path) is used in an SEO Network, its root domain **MUST** be monitored.
-
-*   **P0 - UI & UX:**
-    1.  **Table Columns:** The Asset Domains table must include sortable columns for , , , , etc.
-    2.  **Tooltips:** Add tooltips to , , and  to explain their distinct purposes.
-    3.  **Table Sorting:** Implement server-side sorting. The default sort order must be critical-first (e.g.,  status,  status,  lifecycle).
-    4.  **SEO Network Health:** Display health indicators (counts of expired and quarantined domains) on SEO Network cards.
-    5.  **Quarantine Category Management:** Provide a dedicated settings page with full CRUD functionality for  master data.
-
-*   **P0 - PERMISSIONS:**
-    1.  Only  roles can manage , , and the . Other roles are view-only.
-
-**User's preferred language**: English. The user has also requested specific Indonesian phrases (e.g., ) to be used in certain UI elements.
+**User's preferred language**: English. The user also uses specific Indonesian phrases for UI text.
 
 **what currently exists?**
-A full-stack SEO monitoring application with a FastAPI backend, React frontend, and MongoDB database. Key features include a Conflict Resolution Dashboard, Team Performance Alerts (via Telegram), and a comprehensive Asset Domain management system. The domain management system has recently undergone a major refactor to implement a clear, multi-faceted status system (, , ) with server-side sorting, advanced filtering, and DB-driven master data management for quarantine categories.
+A full-stack SEO monitoring application with a FastAPI backend, React frontend, and MongoDB database. Key features include a unified Conflict Resolution Dashboard (Alert Center), Team Performance Alerts via Telegram, and a comprehensive Asset Domain management system. Recent updates include an enhanced import/export system with validation, a dedicated page for managing Quarantine Categories, and updated Telegram notification templates.
 
 **Last working item**:
-    - Last item agent was working: The user requested to move the Quarantine Category management UI from a tab within the main Settings page to its own dedicated page with a new item in the main sidebar menu. The agent acknowledged the request but has not yet started the implementation.
-    - Status: NOT STARTED
+    - Last item agent was working: Merging the  and  into a single, unified conflict resolution dashboard. The agent created the new page, combined the UI components, and updated the routing.
+    - Status: BLOCKED
     - Agent Testing Done: N
-    - Which testing method agent to use? frontend testing agent. The agent should be instructed to verify that a new sidebar menu item for Quarantine Categories is present, that it navigates to a new dedicated page, and that the existing CRUD functionality (add, edit, delete categories) works correctly on this new page.
-    - User Testing Done: N
+    - Which testing method agent to use? frontend testing agent. Instruct the agent to navigate to the /alerts page and verify: 1. All UI components from both original dashboards (metrics, charts, tables) are present. 2. The page loads data without errors. 3. Critically, confirm that the Failed to load conflicts toast message **does not** appear. If it does, capture console logs.
+    - User Testing Done: Y (The user reported the error via a screenshot).
 
 **All Pending/In progress Issue list**:
-  - Issue 1: User needs to verify the Team Performance Alerts feature. (P1)
+  - Issue 1: Failed to load conflicts Toast Error on Unified Dashboard (P0)
+  - Issue 2: Inaccurate Pagination Count on Filter (P1)
+  - Issue 3: User Verification for Team Performance Alerts (P1)
   
   Issues Detail:
   - Issue 1: 
-     - Attempted fixes: The feature was built and a bug was fixed. However, end-to-end testing is blocked pending user configuration.
-     - Next debug checklist: User needs to configure their Telegram Bot Token and Chat ID in the settings and trigger a test alert.
-     - Why fix this issue and what will be achieved with the fix?: This will validate the Team Performance Alerts feature, a key enhancement from a previous session.
+     - Attempted fixes: The agent merged the two dashboards into . When a screenshot showed a Failed to load conflicts toast message, the agent checked the API response (which was successful), suspected a hot-reload or intermittent issue, and did not investigate the frontend error handling logic that was triggering the toast.
+     - Next debug checklist: 
+        1. In , examine the  function and the associated  hooks.
+        2. Specifically, look at the  block that triggers .
+        3. Add  inside the catch block to identify why it's being triggered even when the network request succeeds. The issue is likely in how the component handles the initial loading state or an empty response.
+     - Why fix this issue and what will be achieved with the fix?: This is a blocker reported by the user. Fixing it will complete the dashboard merge task and provide a clean, error-free user experience on a critical page.
+     - Status:  BLOCKED
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix?: frontend
+     - Blocked on other issue: None
+  - Issue 2: 
+     - Attempted fixes: None. This is a known low-priority bug from a previous session.
+     - Next debug checklist: In , refactor the  function. The post-processing filter logic for computed fields like  must be applied *before* the  is calculated.
+     - Why fix this issue and what will be achieved with the fix?: Provides an accurate total count in the UI, which improves user trust and avoids confusion.
+     - Status:  NOT STARTED
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix?: backend
+     - Blocked on other issue: None
+  - Issue 3: 
+     - Attempted fixes: The feature was built and a bug was fixed.
+     - Next debug checklist: The user needs to configure their Telegram Bot Token and Chat ID in the settings and trigger a test alert to provide final verification.
+     - Why fix this issue and what will be achieved with the fix?: This will validate the Team Performance Alerts feature, a key enhancement.
      - Status:  USER VERIFICATION PENDING
      - Is recurring issue? N
-     - Should Test frontend/backend/both after fix?: NA (User is testing)
+     - Should Test frontend/backend/both after fix?: NA
      - Blocked on other issue: None
 
 **In progress Task List**:
-  - Task 1: Move Quarantine Category Settings to a Dedicated Page (P0)
- 
- Task Detail:
-  - Task 1: 
-     - Where to resume: Create a new React component for the dedicated Quarantine Category settings page. Create a new route for it in . Add a new link to the  component. Finally, remove the Master Data tab and its associated logic from .
-     - What will be achieved with this?: This will improve the user experience by giving the frequently used Quarantine Category management feature its own dedicated entry point in the main application navigation, as requested by the user.
-     - Status:  NOT STARTED
-     - Should Test frontend/backend/both after fix?: frontend
-     - Blocked on something: None
+- None.
 
 **Upcoming and Future Tasks**
     **Upcoming Tasks:**
-    - There are no new upcoming tasks. The priority is to complete the in-progress UI refactor for Quarantine Category settings.
-
+    - **Bulk Menu Access Control (P1):** The user mentioned this feature but did not provide details. The next agent must ask the user for the requirements for this feature before starting any implementation.
+    
     **Future Tasks:**
-    -   **Email Notifications (P2):** Deferred by user in favor of Telegram.
-    -   **Advanced Auto-Assign Logic (P2):** Deferred until real usage patterns are observed.
-    -   **Refactor  (P2):** This file is large and could be broken down into smaller, more focused routers.
+    - **Email Notifications (P2):** Deferred by user.
+    - **Advanced Auto-Assign Logic (P2):** Deferred by user.
+    - **Refactor  (P2):** The file is large and could be broken down into smaller routers.
 
 **Completed work in this session**
-- **Domain Lifecycle Refactor (Complete):**
-  - Finished the frontend implementation for the major refactor in , fixing the previously broken UI.
-  - Added new columns (, ) and associated filters.
-  - Implemented the  lifecycle status with backend logic to auto-transition expired domains.
-  - Added server-side sorting for the Asset Domains table with a critical-first default order.
-  - Added UI tooltips to , , and  columns for better user understanding.
-- **Master Data Management for Quarantine Categories:**
-  - Created a full CRUD settings page for Quarantine Categories, migrating the data from a hardcoded  to a  collection in MongoDB.
-  - Implemented all necessary backend API endpoints and frontend UI components.
-- **SEO Network Health Indicators:**
-  - Added health indicators (expired & quarantined domain counts) to SEO Network cards on the .
-  - Updated the backend API to provide these statistics.
-- **Asset Domain Form Enhancements:**
-  - Removed the legacy Status dropdown from the Add/Edit Domain form.
-  - Made the Expiration Date field mandatory with frontend validation.
-- **Testing and Bug Fixes:**
-  - Successfully used the testing agent to validate the domain refactor and sorting features.
-  - Fixed a bug where the Not Renewed tab was not showing correct data.
+- **Conflict Dashboard Consolidation (In Progress):** Merged  and  into a single UI. The task is blocked by a frontend toast error.
+- **Telegram Notification Update (DONE):**
+  - Updated  to ensure the Domain Expiration alert includes the 🧭 STRUKTUR SEO TERKINI section.
+  - Verified the change by triggering a test alert to the user's Telegram.
+- **Enhanced Import/Export for Asset Domains (DONE):**
+  - **Backend:** Implemented new endpoints in  for a two-step import process:  for validation and  to apply changes. Updated the  endpoint to respect query filters.
+  - **Frontend:** Overhauled the import dialog in  to include file upload, a validation preview table, and a final confirmation step. Validated with the testing agent.
+- **Quarantine Category Page Refactor (DONE):**
+  - Created a new page: .
+  - Added a new route in  and a new link in .
+  - Removed the old Master Data tab from .
+  - Verified the complete CRUD functionality on the new page using the testing agent.
 
 **Earlier issues found/mentioned but not fixed**
-   - Issue 1:
-     - Description: The pagination total count for asset domains is inaccurate when filtering by computed fields (like ). The backend applies this filter *after* calculating the total count based on the paginated subset, not the entire dataset.
-     - Debug checklist: In , in the  function, the post-processing filter logic for  needs to be applied before the  is determined. This may require refactoring the query pipeline.
-     - Why to solve this issue and what will be achieved with this?: To provide an accurate total count in the UI, which improves user trust and avoids confusion during data export or analysis.
-     - Should Test frontend/backend/both after fix: backend
-     - Is recurring issue? N
+   - The pagination inaccuracy issue is now listed in the **All Pending/In progress Issue list**.
 
 **Known issue recurrence from previous fork**
   - None.
@@ -105,13 +89,14 @@ A full-stack SEO monitoring application with a FastAPI backend, React frontend, 
 
 
 **Key Technical Concepts**
--   **Backend:** FastAPI, Python
--   **Frontend:** React, Vite, Shadcn UI
--   **Database:** MongoDB
--   **Core Concept:** A strict separation of a domain's status into  (administrative),  (technical), and  (strategic).
--   **Master Data:** Management of application enums (like Quarantine Categories) in the database via dedicated UI and API endpoints, rather than hardcoding them.
+- **Backend:** FastAPI, Python
+- **Frontend:** React, Vite, Shadcn UI
+- **Database:** MongoDB
+- **UI/UX:** Consolidation of related features into unified dashboards to reduce redundancy.
+- **Data Handling:** Multi-step data import process with server-side validation before final commit.
 
 **key DB schema**
+- No changes to schema in this session.
 -   **asset_domains**: 
 -   **quarantine_categories**: 
 
@@ -119,62 +104,61 @@ A full-stack SEO monitoring application with a FastAPI backend, React frontend, 
 -   No changes to the core tech stack.
 
 **All files of reference**
--   ****: The main API router. Heavily modified to add server-side sorting, new status logic, CRUD endpoints for quarantine categories, and health stats for SEO networks.
--   ****: Contains Pydantic models. Updated to add the  lifecycle status and new models for the  collection.
--   ****: The main domain management UI. Overhauled to add sorting, new columns, tooltips, and tabbed views for different lifecycle statuses.
--   ****: Currently houses the Quarantine Category CRUD interface, which is the subject of the next refactoring task.
--   ****: Displays SEO Network cards. Updated to show the new domain health indicators.
+-   ****: The newly merged (but buggy) unified dashboard. **Immediate focus for debugging.**
+-   ****: Contains the new import/preview/confirm and updated export endpoints.
+-   ****: Contains the new multi-step import dialog and updated export handler.
+-   ****: The new, fully functional page for managing quarantine categories.
+-   ****: Obsolete. This file should be deleted.
+-   ****: Contains the logic for formatting and sending Telegram alerts.
 
 **Areas that need refactoring**:
--   ****: The Master Data tab and its associated logic for quarantine categories need to be removed from this file and moved to a new, dedicated component.
--   ****: This file remains large and is a candidate for being broken down into smaller, more focused routers in the future.
+-   **Delete **: This component is now redundant and has been replaced by the unified .
+-   ****: Remains a candidate for future refactoring into smaller, more focused routers.
 
 **key api endpoints**
--   : Updated with  and  query parameters.
--   : Updated to return  and .
--   **CRUD for Quarantine Categories**:
-    -   
-    -   
-    -   
-    -   
+-   : **(NEW)** Validates a CSV file of domains and returns a preview of changes.
+-   : **(NEW)** Applies the changes from a validated import.
+-   : **(UPDATED)** Exports domains to CSV, respecting active filters.
+-   : Provides all statistics for the unified dashboard.
+-   : Test endpoint used to verify Telegram notification changes.
 
 **Critical Info for New Agent**
-1.  **Immediate Task (P0):** The user's highest priority is to move the Quarantine Category management UI out of the Settings page and into its own dedicated page, accessible from the main sidebar. Do not start any other task before this one.
-2.  **Follow the Specification:** The user has provided multiple, detailed specifications for the domain management system (see ). These are the non-negotiable source of truth. All implementation must strictly adhere to them.
-3.  **Backend Logic is Authoritative:** All status logic (, , etc.) is handled by the backend. The frontend is responsible for displaying this data and providing the correct controls, not for computing statuses.
-4.  **DB-Driven Categories:** Quarantine Categories are no longer a hardcoded Enum. They are managed in the  MongoDB collection. The frontend should fetch these dynamically.
+1.  **Highest Priority (P0):** Fix the Failed to load conflicts toast error on the unified dashboard at . The user has reported this directly. Do not move to other tasks until this is resolved and verified.
+2.  **Follow Up on Next Task:** After fixing the dashboard, you must ask the user for requirements regarding the Bulk Menu Access Control feature they mentioned.
+3.  **Obsolete Page:** The file  and its corresponding route are now obsolete and should be removed from the project.
 
 **documents and test reports created in this job**
--   
--    (Updated with the new Domain Lifecycle features)
+-    (For Quarantine Categories page)
+-    (For Import/Export feature)
 
 **Last 10 User Messages and any pending HUMAN messages** 
-1.  **User:** Requests to move the Quarantine Category settings to a dedicated side menu item. **Status: NOT STARTED**
-2.  **Agent:** Finishes implementation of the mandatory expiration date. **Status: COMPLETED**
-3.  **User:** Asks to make the Expiration Date field mandatory when adding a domain. **Status: COMPLETED**
-4.  **Agent:** Finishes implementation of SEO Network health indicators and removal of the legacy status dropdown. **Status: COMPLETED**
-5.  **User:** Requests visual health indicators on SEO Network cards and asks to remove the manual status dropdown from the domain edit form. **Status: COMPLETED**
-6.  **Agent:** Finishes the Domain Status & Lifecycle Refactor. **Status: COMPLETED** (but followed by new user requests).
-7.  **Agent:** Finishes the implementation of sorting and the Not Renewed status. **Status: COMPLETED**
-8.  **User:** Provides a new, comprehensive spec for sorting, tooltips, and the Not Renewed lifecycle status, declaring it mandatory. **Status: COMPLETED**
-9.  **Agent:** Successfully implements the master data management for Quarantine Categories. **Status: COMPLETED**
-10. **User:** Requests a settings menu to perform CRUD operations on Quarantine Categories. **Status: COMPLETED**
+1.  **User:** Reports an error (have erorr) with a screenshot of the new dashboard showing the Failed to load conflicts toast. **Status: PENDING FIX**
+2.  **User:** Requests to merge the two similar conflict dashboards into one. **Status: IN PROGRESS (BLOCKED)**
+3.  **User:** Asks the agent to send a test Telegram message. **Status: COMPLETED**
+4.  **User:** Requests an update to the default notification template. **Status: COMPLETED**
+5.  **User:** Requests to add the SEO Structure to Telegram expiration alerts. **Status: COMPLETED**
+6.  **Agent:** Asks for details on Bulk Menu Access Control. **Status: PENDING USER RESPONSE**
+7.  **User:** Provides details for the Import/Export feature. **Status: COMPLETED**
+8.  **User:** Confirms the plan to move the Quarantine Category page. **Status: COMPLETED**
+9.  **User:** Requests the Bulk Menu Access Control update and Import / Export Asset Domains features. **Status: PARTIALLY COMPLETED**
+10. **Agent:** Finishes the Quarantine Category page refactor. **Status: COMPLETED**
 
 **Project Health Check:**
--   **Broken:** None. The application is in a stable and functional state.
+-   **Broken:** The unified Alert Center () is functionally broken due to a persistent error toast that prevents a clean user experience.
 -   **Mocked:** None.
 
 **3rd Party Integrations**
 -   **Telegram**: Used for sending SEO notifications and Team Performance Alerts.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES, successfully used for the domain lifecycle and sorting refactor.
+-   **Testing agent used after significant changes:** YES. Used successfully for the Quarantine Category page and the Import/Export feature. It was not used for the final dashboard merge.
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** None.
--   **Known regressions:** None.
+-   **Known regressions:** The new unified dashboard displays an erroneous error message.
 
 **Credentials to test flow:**
 Login with  / .
 
 **What agent forgot to execute**
-The agent has been closely following the user's requests. The only outstanding item is a minor, known bug (inaccurate pagination count for filtered computed fields) that was consciously de-prioritized to focus on user-requested features. This is documented under Earlier issues found/mentioned but not fixed.</analysis>
+- The agent failed to properly debug the root cause of the Failed to load conflicts toast on the frontend, assuming it was an intermittent issue instead of investigating the component's error handling logic.
+- The agent did not get clarification on the Bulk Menu Access Control feature request before moving on to other tasks prompted by the user.</analysis>

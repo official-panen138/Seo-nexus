@@ -12,7 +12,7 @@ import os
 from datetime import datetime, timedelta
 
 BASE_URL = os.environ.get(
-    "REACT_APP_BACKEND_URL", "https://seo-domain-mgmt.preview.emergentagent.com"
+    "REACT_APP_BACKEND_URL", "https://seo-monitor-3.preview.emergentagent.com"
 )
 
 
