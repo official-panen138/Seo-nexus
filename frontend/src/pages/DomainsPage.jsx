@@ -1183,6 +1183,7 @@ export default function DomainsPage() {
                             <TableRow>
                                 <TableHead>Domain</TableHead>
                                 <TableHead>Brand</TableHead>
+                                <TableHead>Category</TableHead>
                                 <TableHead>Status</TableHead>
                                 {useV3 ? (
                                     <>
