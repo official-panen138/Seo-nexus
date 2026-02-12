@@ -124,6 +124,18 @@ export default function SettingsPage() {
     const [sendingDigest, setSendingDigest] = useState(false);
     const [loadingPreview, setLoadingPreview] = useState(false);
 
+    // Performance Alerts state
+    const [performanceThresholds, setPerformanceThresholds] = useState({
+        false_resolution_rate_percent: 15.0,
+        stale_conflict_days: 7,
+        open_conflict_backlog: 10,
+        avg_resolution_hours: 48.0,
+        check_interval_hours: 24
+    });
+    const [performanceMetrics, setPerformanceMetrics] = useState(null);
+    const [savingPerformance, setSavingPerformance] = useState(false);
+    const [runningPerformanceCheck, setRunningPerformanceCheck] = useState(false);
+
     useEffect(() => {
         loadSettings();
         loadTestDomains();
