@@ -1680,6 +1680,396 @@ async def delete_asset_domain(
     return {"message": "Asset domain deleted"}
 
 
+# ==================== DOMAIN LIFECYCLE & QUARANTINE ENDPOINTS ====================
+
+
+@router.post("/asset-domains/{asset_id}/mark-released", response_model=AssetDomainResponse)
+async def mark_domain_as_released(
+    asset_id: str,
+    data: MarkAsReleasedRequest = Body(default=MarkAsReleasedRequest()),
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Mark a domain as released (not renewed) - SUPER ADMIN ONLY.
+    
+    This action:
+    1. Sets domain_lifecycle_status to 'expired_released'
+    2. Removes domain from all realtime monitoring and alerts
+    3. Stops all expiration reminders
+    4. The domain becomes read-only and is excluded from monitoring forever
+    """
+    # Super Admin check
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(
+            status_code=403, 
+            detail="Only Super Admin can mark domains as released"
+        )
+    
+    existing = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Asset domain not found")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    update_dict = {
+        "domain_lifecycle_status": DomainLifecycleStatus.EXPIRED_RELEASED.value,
+        "released_at": now,
+        "released_by": current_user.get("id"),
+        "monitoring_enabled": False,  # Disable monitoring
+        "updated_at": now,
+    }
+    
+    await db.asset_domains.update_one({"id": asset_id}, {"$set": update_dict})
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.ASSET_DOMAIN,
+            entity_id=asset_id,
+            before_value=existing,
+            after_value={**existing, **update_dict},
+            notes=f"Marked as released: {data.reason}" if data.reason else "Marked as released (not renewed)"
+        )
+    
+    updated = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
+    updated = await enrich_asset_domain(updated)
+    return AssetDomainResponse(**updated)
+
+
+@router.post("/asset-domains/{asset_id}/set-lifecycle", response_model=AssetDomainResponse)
+async def set_domain_lifecycle(
+    asset_id: str,
+    data: LifecycleChangeRequest,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Change domain lifecycle status - SUPER ADMIN ONLY.
+    
+    Valid statuses:
+    - active: Domain actively used (monitored)
+    - expired_pending: Expired but decision not made (monitored)
+    - expired_released: Intentionally not renewed (NOT monitored)
+    - inactive: No longer used in SEO networks (NOT monitored)
+    - archived: Historical only (NOT monitored)
+    """
+    # Super Admin check
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(
+            status_code=403, 
+            detail="Only Super Admin can change domain lifecycle status"
+        )
+    
+    existing = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Asset domain not found")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    update_dict = {
+        "domain_lifecycle_status": data.lifecycle_status.value,
+        "updated_at": now,
+    }
+    
+    # If setting to released, track who did it
+    if data.lifecycle_status == DomainLifecycleStatus.EXPIRED_RELEASED:
+        update_dict["released_at"] = now
+        update_dict["released_by"] = current_user.get("id")
+        update_dict["monitoring_enabled"] = False
+    
+    # If reactivating, clear released tracking
+    if data.lifecycle_status == DomainLifecycleStatus.ACTIVE:
+        update_dict["released_at"] = None
+        update_dict["released_by"] = None
+    
+    await db.asset_domains.update_one({"id": asset_id}, {"$set": update_dict})
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.ASSET_DOMAIN,
+            entity_id=asset_id,
+            before_value=existing,
+            after_value={**existing, **update_dict},
+            notes=f"Lifecycle changed to {data.lifecycle_status.value}: {data.reason}" if data.reason else f"Lifecycle changed to {data.lifecycle_status.value}"
+        )
+    
+    updated = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
+    updated = await enrich_asset_domain(updated)
+    return AssetDomainResponse(**updated)
+
+
+@router.post("/asset-domains/{asset_id}/quarantine", response_model=AssetDomainResponse)
+async def quarantine_domain(
+    asset_id: str,
+    data: SetQuarantineRequest,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Quarantine a domain - SUPER ADMIN ONLY.
+    
+    Quarantined domains are EXCLUDED from:
+    - Monitoring alerts
+    - Telegram notifications
+    - Expiration reminders
+    
+    The domain still appears in Asset Domain list with a warning badge.
+    
+    Categories: spam_murni, dmca, rollback_restore, penalized, manual_review, custom
+    """
+    # Super Admin check
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(
+            status_code=403, 
+            detail="Only Super Admin can quarantine domains"
+        )
+    
+    existing = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Asset domain not found")
+    
+    # Validate category
+    valid_categories = [c.value for c in QuarantineCategory]
+    if data.quarantine_category not in valid_categories:
+        # Allow custom categories
+        if data.quarantine_category != "custom":
+            data.quarantine_category = "custom"
+    
+    # Require note for custom category
+    if data.quarantine_category == "custom" and not data.quarantine_note:
+        raise HTTPException(
+            status_code=400,
+            detail="Quarantine note is required for custom category"
+        )
+    
+    now = datetime.now(timezone.utc).isoformat()
+    update_dict = {
+        "quarantine_category": data.quarantine_category,
+        "quarantine_note": data.quarantine_note,
+        "quarantined_at": now,
+        "quarantined_by": current_user.get("id"),
+        "monitoring_enabled": False,  # Disable monitoring for quarantined domains
+        "updated_at": now,
+    }
+    
+    await db.asset_domains.update_one({"id": asset_id}, {"$set": update_dict})
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.ASSET_DOMAIN,
+            entity_id=asset_id,
+            before_value=existing,
+            after_value={**existing, **update_dict},
+            notes=f"Quarantined: {data.quarantine_category} - {data.quarantine_note or 'No note'}"
+        )
+    
+    updated = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
+    updated = await enrich_asset_domain(updated)
+    return AssetDomainResponse(**updated)
+
+
+@router.post("/asset-domains/{asset_id}/remove-quarantine", response_model=AssetDomainResponse)
+async def remove_domain_quarantine(
+    asset_id: str,
+    data: RemoveQuarantineRequest = Body(default=RemoveQuarantineRequest()),
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Remove quarantine from a domain - SUPER ADMIN ONLY.
+    
+    This clears the quarantine status and allows the domain to be monitored again.
+    """
+    # Super Admin check
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(
+            status_code=403, 
+            detail="Only Super Admin can remove domain quarantine"
+        )
+    
+    existing = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Asset domain not found")
+    
+    if not existing.get("quarantine_category"):
+        raise HTTPException(status_code=400, detail="Domain is not quarantined")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    update_dict = {
+        "quarantine_category": None,
+        "quarantine_note": None,
+        "quarantined_at": None,
+        "quarantined_by": None,
+        "updated_at": now,
+    }
+    
+    await db.asset_domains.update_one({"id": asset_id}, {"$set": update_dict})
+    
+    # Log activity
+    if activity_log_service:
+        await activity_log_service.log(
+            actor=current_user["email"],
+            action_type=ActionType.UPDATE,
+            entity_type=EntityType.ASSET_DOMAIN,
+            entity_id=asset_id,
+            before_value=existing,
+            after_value={**existing, **update_dict},
+            notes=f"Quarantine removed: {data.reason}" if data.reason else "Quarantine removed"
+        )
+    
+    updated = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
+    updated = await enrich_asset_domain(updated)
+    return AssetDomainResponse(**updated)
+
+
+@router.get("/monitoring/coverage", response_model=SeoMonitoringCoverageStats)
+async def get_seo_monitoring_coverage(
+    brand_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get SEO Monitoring Coverage statistics.
+    
+    This endpoint returns real-time stats without caching:
+    - Total domains in SEO networks
+    - Monitored vs unmonitored counts
+    - Coverage percentage
+    - Breakdown by lifecycle status
+    - Root domains missing monitoring (for path-based nodes)
+    """
+    # Build base query with brand scope
+    query = build_brand_filter(current_user)
+    if brand_id:
+        require_brand_access(brand_id, current_user)
+        query["brand_id"] = brand_id
+    
+    # Get all domains used in SEO networks
+    all_structure_entries = await db.seo_structure_entries.find(
+        {}, {"_id": 0, "asset_domain_id": 1, "optimized_path": 1, "network_id": 1}
+    ).to_list(100000)
+    
+    domain_ids_in_seo = list(set([e["asset_domain_id"] for e in all_structure_entries]))
+    
+    # Build query for domains in SEO
+    seo_query = {**query, "id": {"$in": domain_ids_in_seo}}
+    
+    # Get domains in SEO networks
+    domains_in_seo = await db.asset_domains.find(
+        seo_query,
+        {"_id": 0, "id": 1, "domain_name": 1, "monitoring_enabled": 1, 
+         "domain_lifecycle_status": 1, "quarantine_category": 1}
+    ).to_list(100000)
+    
+    total_in_seo = len(domains_in_seo)
+    
+    # Count by monitoring status (only for active/pending lifecycle and non-quarantined)
+    monitored = 0
+    unmonitored = 0
+    active_monitored = 0
+    active_unmonitored = 0
+    expired_pending_count = 0
+    expired_released_count = 0
+    quarantined_count = 0
+    
+    for d in domains_in_seo:
+        lifecycle = d.get("domain_lifecycle_status", "active")
+        is_quarantined = d.get("quarantine_category") is not None
+        is_monitoring_enabled = d.get("monitoring_enabled", False)
+        
+        if is_quarantined:
+            quarantined_count += 1
+            continue
+        
+        if lifecycle == DomainLifecycleStatus.EXPIRED_RELEASED.value:
+            expired_released_count += 1
+            continue
+        
+        if lifecycle == DomainLifecycleStatus.EXPIRED_PENDING.value:
+            expired_pending_count += 1
+        
+        # Count active lifecycle domains
+        if lifecycle in [DomainLifecycleStatus.ACTIVE.value, DomainLifecycleStatus.EXPIRED_PENDING.value, None]:
+            if is_monitoring_enabled:
+                monitored += 1
+                active_monitored += 1
+            else:
+                unmonitored += 1
+                active_unmonitored += 1
+    
+    # Calculate coverage percentage (exclude quarantined and released from denominator)
+    monitorable_domains = total_in_seo - quarantined_count - expired_released_count
+    coverage_percentage = (monitored / monitorable_domains * 100) if monitorable_domains > 0 else 100.0
+    
+    # Find root domains missing monitoring (domains used via path but root not monitored)
+    # First, find all unique root domains from structure entries with paths
+    root_domains_with_paths = set()
+    for entry in all_structure_entries:
+        if entry.get("optimized_path") and entry["optimized_path"] != "/":
+            root_domains_with_paths.add(entry["asset_domain_id"])
+    
+    # Check which of these root domains don't have monitoring enabled
+    root_domains_missing_monitoring = 0
+    if root_domains_with_paths:
+        root_domain_docs = await db.asset_domains.find(
+            {"id": {"$in": list(root_domains_with_paths)}},
+            {"_id": 0, "id": 1, "monitoring_enabled": 1, "domain_lifecycle_status": 1, "quarantine_category": 1}
+        ).to_list(10000)
+        
+        for d in root_domain_docs:
+            lifecycle = d.get("domain_lifecycle_status", "active")
+            is_quarantined = d.get("quarantine_category") is not None
+            is_monitoring_enabled = d.get("monitoring_enabled", False)
+            
+            # Only count as missing if domain is active and not quarantined
+            if (not is_monitoring_enabled and 
+                not is_quarantined and 
+                lifecycle in [DomainLifecycleStatus.ACTIVE.value, DomainLifecycleStatus.EXPIRED_PENDING.value, None]):
+                root_domains_missing_monitoring += 1
+    
+    return SeoMonitoringCoverageStats(
+        domains_in_seo=total_in_seo,
+        monitored=monitored,
+        unmonitored=unmonitored,
+        coverage_percentage=round(coverage_percentage, 1),
+        active_monitored=active_monitored,
+        active_unmonitored=active_unmonitored,
+        expired_pending_count=expired_pending_count,
+        expired_released_count=expired_released_count,
+        quarantined_count=quarantined_count,
+        root_domains_missing_monitoring=root_domains_missing_monitoring,
+    )
+
+
+@router.get("/quarantine-categories")
+async def get_quarantine_categories(
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Get available quarantine categories.
+    Returns both predefined and custom categories (from existing quarantined domains).
+    """
+    # Get predefined categories
+    categories = [
+        {"value": c.value, "label": QUARANTINE_CATEGORY_LABELS.get(c.value, c.value)}
+        for c in QuarantineCategory
+    ]
+    
+    # Get custom categories from existing quarantined domains
+    custom_categories = await db.asset_domains.distinct(
+        "quarantine_category",
+        {"quarantine_category": {"$nin": [c.value for c in QuarantineCategory], "$ne": None}}
+    )
+    
+    for custom in custom_categories:
+        if custom:
+            categories.append({"value": custom, "label": custom})
+    
+    return {"categories": categories}
+
+
 # ==================== SEO NETWORKS ENDPOINTS ====================
 
 
