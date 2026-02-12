@@ -66,6 +66,27 @@ Build a full-stack SEO Network Operations Center combining:
 
 ---
 
+### Bug Fix: Create Optimization Tasks & View Task Buttons (Feb 13, 2026) - COMPLETE
+**Issue:** On the SEO Conflicts dashboard:
+1. "Create Optimization Tasks" button was calling a non-existent API method
+2. "View Task" / "Action" column always showed "No task" even when optimization was linked
+
+**Root Causes:**
+1. Frontend called `conflictsAPI.createOptimizationTasks()` which doesn't exist. The correct method is `conflictsAPI.process()`.
+2. Frontend checked for `conflict.task_id` field, but the API returns `optimization_id` and `linked_optimization` instead.
+
+**Fix Applied:**
+- Changed `createOptimizationTasks()` to `conflictsAPI.process()` with proper response handling
+- Changed "View Task" condition from `conflict.task_id` to `(conflict.optimization_id || conflict.linked_optimization?.id)`
+- Fixed navigation URL from `/tasks/` to `/optimizations/`
+
+**Verification:**
+- "Create Optimization Tasks" now works - processed 5 conflicts, created 4 optimizations
+- "View Task" buttons now appear for all conflicts with linked optimizations
+- Clicking "View Task" navigates correctly to the optimization detail page
+
+---
+
 ### Merged SEO Conflicts Dashboard (Feb 12, 2026) - COMPLETE
 **Feature:** Merged two separate conflict dashboards (SEO Conflicts + Resolution Dashboard) into one unified page.
 
