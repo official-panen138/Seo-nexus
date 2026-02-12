@@ -245,6 +245,7 @@ export default function DomainsPage() {
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
     const [filterBrand, setFilterBrand] = useState('all');
+    const [filterCategory, setFilterCategory] = useState('all');
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterMonitoring, setFilterMonitoring] = useState('all');
     const [showFilters, setShowFilters] = useState(false);
