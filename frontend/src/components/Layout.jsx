@@ -32,7 +32,8 @@ import {
     Radio,
     Clock,
     BarChart3,
-    ShieldAlert
+    ShieldAlert,
+    BookOpen
 } from 'lucide-react';
 
 // Nav items with menuKey for permission checking
@@ -56,6 +57,8 @@ const navItems = [
     { path: '/settings/scheduler', label: 'Scheduler', icon: Clock, menuKey: 'scheduler' },
     { path: '/settings/quarantine-categories', label: 'Quarantine Categories', icon: ShieldAlert, menuKey: 'quarantine_categories' },
     { path: '/settings', label: 'Settings', icon: Settings, menuKey: 'settings' },
+    { type: 'divider', menuKey: '_divider_help' },
+    { path: '/user-manual', label: 'User Manual', icon: BookOpen, menuKey: 'user_manual', alwaysShow: true },
 ];
 
 export const Layout = ({ children }) => {
