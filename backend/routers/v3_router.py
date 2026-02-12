@@ -1978,24 +1978,27 @@ async def quarantine_domain(
     # Validate category
     valid_categories = [c.value for c in QuarantineCategory]
     if data.quarantine_category not in valid_categories:
-        # Allow custom categories
-        if data.quarantine_category != "custom":
-            data.quarantine_category = "custom"
+        # Allow 'other' as custom category
+        if data.quarantine_category != "other":
+            data.quarantine_category = "other"
     
-    # Require note for custom category
-    if data.quarantine_category == "custom" and not data.quarantine_note:
+    # Require note for 'other' category
+    if data.quarantine_category == "other" and not data.quarantine_note:
         raise HTTPException(
             status_code=400,
-            detail="Quarantine note is required for custom category"
+            detail="Quarantine note is required for 'Other' category"
         )
     
     now = datetime.now(timezone.utc).isoformat()
     update_dict = {
+        "domain_lifecycle_status": DomainLifecycleStatus.QUARANTINED.value,  # Set lifecycle to quarantined
         "quarantine_category": data.quarantine_category,
         "quarantine_note": data.quarantine_note,
         "quarantined_at": now,
         "quarantined_by": current_user.get("id"),
         "monitoring_enabled": False,  # Disable monitoring for quarantined domains
+        "released_at": None,  # Clear any released tracking
+        "released_by": None,
         "updated_at": now,
     }
     
@@ -2010,7 +2013,7 @@ async def quarantine_domain(
             entity_id=asset_id,
             before_value=existing,
             after_value={**existing, **update_dict},
-            metadata={"notes": f"Quarantined: {data.quarantine_category} - {data.quarantine_note or 'No note'}"}
+            metadata={"notes": f"Quarantined: {QUARANTINE_CATEGORY_LABELS.get(data.quarantine_category, data.quarantine_category)} - {data.quarantine_note or 'No note'}"}
         )
     
     updated = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
@@ -2027,7 +2030,7 @@ async def remove_domain_quarantine(
     """
     Remove quarantine from a domain - SUPER ADMIN ONLY.
     
-    This clears the quarantine status and allows the domain to be monitored again.
+    This clears the quarantine status and sets lifecycle back to 'active'.
     """
     # Super Admin check
     if current_user.get("role") != "super_admin":
