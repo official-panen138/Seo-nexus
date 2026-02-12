@@ -552,10 +552,6 @@ export default function SettingsPage() {
                                 <TrendingUp className="h-4 w-4" />
                                 Performance Alerts
                             </TabsTrigger>
-                            <TabsTrigger value="master-data" className="flex items-center gap-2" data-testid="master-data-tab">
-                                <Database className="h-4 w-4" />
-                                Master Data
-                            </TabsTrigger>
                         </TabsList>
                         
                         {/* Branding Tab */}
