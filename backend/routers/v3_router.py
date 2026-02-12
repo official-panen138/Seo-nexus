@@ -8506,88 +8506,624 @@ async def get_import_template(current_user: dict = Depends(get_current_user_wrap
     }
 
 
-# ==================== EXPORT ENDPOINTS ====================
+# ==================== ENHANCED EXPORT/IMPORT ENDPOINTS ====================
 
 
 @router.get("/export/asset-domains")
 async def export_asset_domains(
-    format: str = Query("json", enum=["json", "csv"]),
+    format: str = Query("csv", enum=["json", "csv"]),
+    # All current filters - same as get_asset_domains
     brand_id: Optional[str] = None,
-    status: Optional[str] = None,
+    category_id: Optional[str] = None,
+    registrar_id: Optional[str] = None,
+    monitoring_enabled: Optional[bool] = None,
+    search: Optional[str] = None,
+    lifecycle_status: Optional[str] = None,
+    quarantine_category: Optional[str] = None,
+    monitoring_status: Optional[str] = None,
+    domain_active_status: Optional[str] = None,
+    view_mode: Optional[str] = None,
+    used_in_seo: Optional[bool] = None,
     current_user: dict = Depends(get_current_user_wrapper),
 ):
-    """Export asset domains to JSON or CSV"""
-    query = {}
+    """
+    Export asset domains to CSV with FULL filter support.
+    
+    Exports with all current filters applied (respects what is visible in table).
+    
+    Required export fields:
+    - Domain, Brand, Category, Domain Active Status, Monitoring Status,
+    - Lifecycle, Quarantine Category, SEO Networks (comma-separated),
+    - Expiration Date, Monitoring Enabled (ON/OFF)
+    """
+    # Build query same as get_asset_domains
+    query = build_brand_filter(current_user)
+    
     if brand_id:
+        require_brand_access(brand_id, current_user)
         query["brand_id"] = brand_id
-    if status:
-        query["status"] = status
-
-    assets = await db.asset_domains.find(query, {"_id": 0}).to_list(10000)
-
-    # Enrich with names
-    brands = {
-        b["id"]: b["name"]
-        for b in await db.brands.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)
-    }
-    categories = {
-        c["id"]: c["name"]
-        for c in await db.categories.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(
-            1000
-        )
-    }
-    registrars = {
-        r["id"]: r["name"]
-        for r in await db.registrars.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(
-            1000
-        )
-    }
-
+    if category_id:
+        query["category_id"] = category_id
+    if registrar_id:
+        query["registrar_id"] = registrar_id
+    if monitoring_enabled is not None:
+        query["monitoring_enabled"] = monitoring_enabled
+    if search:
+        query["domain_name"] = {"$regex": search, "$options": "i"}
+    if lifecycle_status:
+        query["lifecycle_status"] = lifecycle_status
+    if monitoring_status:
+        query["monitoring_status"] = monitoring_status
+    if quarantine_category:
+        query["quarantine_category"] = quarantine_category
+    
+    # Handle view modes
+    if view_mode == "released":
+        query["lifecycle_status"] = DomainLifecycleStatus.RELEASED.value
+    elif view_mode == "quarantined":
+        query["$or"] = [
+            {"quarantine_category": {"$ne": None}},
+            {"lifecycle_status": DomainLifecycleStatus.QUARANTINED.value}
+        ]
+    elif view_mode == "not_renewed":
+        now = datetime.now(timezone.utc)
+        query["$or"] = [
+            {"lifecycle_status": DomainLifecycleStatus.NOT_RENEWED.value},
+            {"expiration_date": {"$lte": now.isoformat()}}
+        ]
+    
+    # Handle used_in_seo filter
+    domain_ids_in_seo = None
+    if used_in_seo is not None or view_mode == "unmonitored":
+        all_structure_entries = await db.seo_structure_entries.find(
+            {}, {"_id": 0, "asset_domain_id": 1}
+        ).to_list(100000)
+        domain_ids_in_seo = list(set([e["asset_domain_id"] for e in all_structure_entries]))
+        
+        if view_mode == "unmonitored":
+            query["id"] = {"$in": domain_ids_in_seo}
+            query["monitoring_enabled"] = False
+            query["lifecycle_status"] = {"$in": [DomainLifecycleStatus.ACTIVE.value, None]}
+        elif used_in_seo:
+            query["id"] = {"$in": domain_ids_in_seo}
+        else:
+            query["id"] = {"$nin": domain_ids_in_seo}
+    
+    # Fetch all matching domains
+    assets = await db.asset_domains.find(query, {"_id": 0}).to_list(50000)
+    
+    # Build lookups for enrichment
+    brands = {b["id"]: b["name"] for b in await db.brands.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)}
+    categories = {c["id"]: c["name"] for c in await db.categories.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)}
+    registrars = {r["id"]: r["name"] for r in await db.registrars.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)}
+    
+    # Build SEO network lookup
+    asset_ids = [a["id"] for a in assets]
+    network_usage_pipeline = [
+        {"$match": {"asset_domain_id": {"$in": asset_ids}}},
+        {"$lookup": {"from": "seo_networks", "localField": "network_id", "foreignField": "id", "as": "network"}},
+        {"$unwind": {"path": "$network", "preserveNullAndEmptyArrays": True}},
+        {"$group": {"_id": "$asset_domain_id", "networks": {"$push": "$network.name"}}}
+    ]
+    network_usage = await db.seo_structure_entries.aggregate(network_usage_pipeline).to_list(50000)
+    network_map = {n["_id"]: [x for x in n["networks"] if x] for n in network_usage}
+    
+    # Enrich and compute fields
+    now = datetime.now(timezone.utc)
+    export_rows = []
     for asset in assets:
-        asset["brand_name"] = brands.get(asset.get("brand_id"), "")
-        asset["category_name"] = categories.get(asset.get("category_id"), "")
-        asset["registrar_name"] = registrars.get(
-            asset.get("registrar_id")
-        ) or asset.get("registrar", "")
-
+        # Compute domain_active_status from expiration_date
+        exp_date_str = asset.get("expiration_date")
+        computed_domain_active_status = "active"
+        if exp_date_str:
+            try:
+                exp_date = datetime.fromisoformat(exp_date_str.replace('Z', '+00:00'))
+                if exp_date <= now:
+                    computed_domain_active_status = "expired"
+            except:
+                pass
+        
+        # Apply domain_active_status filter in post-processing if specified
+        if domain_active_status and computed_domain_active_status != domain_active_status:
+            continue
+        
+        # Get SEO Networks as comma-separated string
+        seo_networks = network_map.get(asset["id"], [])
+        seo_networks_str = ", ".join(seo_networks) if seo_networks else ""
+        
+        export_rows.append({
+            "domain_name": asset.get("domain_name", ""),
+            "brand_name": brands.get(asset.get("brand_id"), ""),
+            "category_name": categories.get(asset.get("category_id"), ""),
+            "domain_active_status": computed_domain_active_status.upper(),
+            "monitoring_status": (asset.get("monitoring_status") or "unknown").upper(),
+            "lifecycle_status": (asset.get("lifecycle_status") or "active").upper(),
+            "quarantine_category": asset.get("quarantine_category") or "",
+            "seo_networks": seo_networks_str,
+            "expiration_date": asset.get("expiration_date") or "",
+            "monitoring_enabled": "ON" if asset.get("monitoring_enabled") else "OFF",
+            "registrar_name": registrars.get(asset.get("registrar_id")) or asset.get("registrar", ""),
+            "notes": asset.get("notes", "")
+        })
+    
     if format == "csv":
         import csv
         import io
-
+        
         output = io.StringIO()
         fieldnames = [
-            "domain_name",
-            "brand_name",
-            "category_name",
-            "registrar_name",
-            "status",
-            "expiration_date",
-            "auto_renew",
-            "monitoring_enabled",
-            "ping_status",
-            "http_status",
-            "notes",
-            "created_at",
+            "domain_name", "brand_name", "category_name", "domain_active_status",
+            "monitoring_status", "lifecycle_status", "quarantine_category",
+            "seo_networks", "expiration_date", "monitoring_enabled", "registrar_name", "notes"
         ]
         writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
-        writer.writerows(assets)
-
+        writer.writerows(export_rows)
+        
         from fastapi.responses import Response
-
+        
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         return Response(
             content=output.getvalue(),
             media_type="text/csv",
-            headers={
-                "Content-Disposition": "attachment; filename=asset_domains_export.csv"
-            },
+            headers={"Content-Disposition": f"attachment; filename=asset_domains_export_{timestamp}.csv"}
         )
-
+    
     return {
-        "data": assets,
-        "total": len(assets),
-        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "data": export_rows,
+        "total": len(export_rows),
+        "exported_at": datetime.now(timezone.utc).isoformat()
     }
+
+
+# ==================== IMPORT PREVIEW/CONFIRM ENDPOINTS ====================
+
+class ImportDomainItem(PydanticBaseModel):
+    domain_name: str
+    brand_name: Optional[str] = None
+    category_name: Optional[str] = None
+    registrar_name: Optional[str] = None
+    expiration_date: Optional[str] = None
+    lifecycle_status: Optional[str] = None
+    monitoring_enabled: Optional[str] = None  # "ON" or "OFF"
+    notes: Optional[str] = None
+
+
+class ImportPreviewRequest(PydanticBaseModel):
+    domains: List[ImportDomainItem]
+
+
+@router.post("/import/domains/preview")
+async def import_domains_preview(
+    request: ImportPreviewRequest,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Preview import - validates CSV data WITHOUT committing.
+    
+    Returns categorized preview:
+    - new_domains: Domains that will be created
+    - updated_domains: Domains that exist and will be updated
+    - errors: Invalid rows that cannot be imported
+    """
+    # Build lookups
+    brands = {b["name"].lower(): b for b in await db.brands.find({}, {"_id": 0}).to_list(1000)}
+    categories = {c["name"].lower(): c for c in await db.categories.find({}, {"_id": 0}).to_list(1000)}
+    registrars = {r["name"].lower(): r for r in await db.registrars.find({}, {"_id": 0}).to_list(1000)}
+    
+    # Get existing domains
+    domain_names = [d.domain_name.lower() for d in request.domains]
+    existing_domains = await db.asset_domains.find(
+        {"domain_name": {"$in": [d.domain_name for d in request.domains]}},
+        {"_id": 0}
+    ).to_list(50000)
+    existing_map = {d["domain_name"].lower(): d for d in existing_domains}
+    
+    # Valid lifecycle statuses
+    valid_lifecycle = {"active", "released", "quarantined", "not_renewed"}
+    
+    result = {
+        "new_domains": [],
+        "updated_domains": [],
+        "errors": [],
+        "summary": {
+            "total_rows": len(request.domains),
+            "new_count": 0,
+            "update_count": 0,
+            "error_count": 0
+        }
+    }
+    
+    for idx, item in enumerate(request.domains):
+        row_num = idx + 2  # +2 for header row and 0-indexing
+        errors = []
+        
+        # Validate domain name
+        if not item.domain_name or not item.domain_name.strip():
+            errors.append("Domain name is required")
+        
+        # Validate expiration date format
+        exp_date = None
+        if item.expiration_date:
+            try:
+                # Support multiple date formats
+                date_str = item.expiration_date.strip()
+                for fmt in ["%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%d/%m/%Y", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%SZ"]:
+                    try:
+                        exp_date = datetime.strptime(date_str.split("T")[0] if "T" in date_str else date_str, fmt.split("T")[0])
+                        break
+                    except:
+                        continue
+                if not exp_date:
+                    errors.append(f"Invalid date format: {item.expiration_date}")
+            except Exception as e:
+                errors.append(f"Invalid date: {str(e)}")
+        
+        # Validate lifecycle status
+        lifecycle = None
+        if item.lifecycle_status:
+            lifecycle_lower = item.lifecycle_status.lower().strip()
+            if lifecycle_lower not in valid_lifecycle:
+                errors.append(f"Invalid lifecycle status: {item.lifecycle_status}. Valid: active, released, quarantined, not_renewed")
+            else:
+                lifecycle = lifecycle_lower
+        
+        # Validate monitoring_enabled
+        monitoring = None
+        if item.monitoring_enabled:
+            mon_lower = item.monitoring_enabled.upper().strip()
+            if mon_lower not in {"ON", "OFF", "TRUE", "FALSE", "1", "0", "YES", "NO"}:
+                errors.append(f"Invalid monitoring_enabled: {item.monitoring_enabled}. Use ON/OFF")
+            else:
+                monitoring = mon_lower in {"ON", "TRUE", "1", "YES"}
+        
+        # Check if brand exists (warn if not)
+        brand_id = None
+        brand_warning = None
+        if item.brand_name:
+            brand = brands.get(item.brand_name.lower().strip())
+            if brand:
+                brand_id = brand["id"]
+            else:
+                brand_warning = f"Brand '{item.brand_name}' will be created"
+        
+        # Check if category exists
+        category_id = None
+        category_warning = None
+        if item.category_name:
+            category = categories.get(item.category_name.lower().strip())
+            if category:
+                category_id = category["id"]
+            else:
+                category_warning = f"Category '{item.category_name}' not found - will be skipped"
+        
+        # Check if registrar exists
+        registrar_id = None
+        if item.registrar_name:
+            registrar = registrars.get(item.registrar_name.lower().strip())
+            if registrar:
+                registrar_id = registrar["id"]
+        
+        if errors:
+            result["errors"].append({
+                "row": row_num,
+                "domain_name": item.domain_name,
+                "errors": errors
+            })
+            result["summary"]["error_count"] += 1
+        else:
+            existing = existing_map.get(item.domain_name.lower().strip())
+            
+            preview_item = {
+                "row": row_num,
+                "domain_name": item.domain_name.strip(),
+                "brand_name": item.brand_name or "",
+                "brand_id": brand_id,
+                "brand_warning": brand_warning,
+                "category_name": item.category_name or "",
+                "category_id": category_id,
+                "category_warning": category_warning,
+                "registrar_name": item.registrar_name or "",
+                "registrar_id": registrar_id,
+                "expiration_date": exp_date.strftime("%Y-%m-%d") if exp_date else "",
+                "lifecycle_status": lifecycle or "active",
+                "monitoring_enabled": monitoring if monitoring is not None else False,
+                "notes": item.notes or ""
+            }
+            
+            if existing:
+                # Show what will change
+                changes = []
+                if item.brand_name and brand_id and existing.get("brand_id") != brand_id:
+                    changes.append(f"brand: {existing.get('brand_id', 'none')} → {brand_id}")
+                if item.category_name and category_id and existing.get("category_id") != category_id:
+                    changes.append(f"category changed")
+                if exp_date:
+                    old_exp = existing.get("expiration_date", "")
+                    new_exp = exp_date.strftime("%Y-%m-%d")
+                    if old_exp and not old_exp.startswith(new_exp):
+                        changes.append(f"expiration: {old_exp[:10]} → {new_exp}")
+                if lifecycle and existing.get("lifecycle_status") != lifecycle:
+                    changes.append(f"lifecycle: {existing.get('lifecycle_status', 'active')} → {lifecycle}")
+                if monitoring is not None and existing.get("monitoring_enabled") != monitoring:
+                    changes.append(f"monitoring: {'ON' if existing.get('monitoring_enabled') else 'OFF'} → {'ON' if monitoring else 'OFF'}")
+                
+                preview_item["existing_id"] = existing["id"]
+                preview_item["changes"] = changes
+                result["updated_domains"].append(preview_item)
+                result["summary"]["update_count"] += 1
+            else:
+                result["new_domains"].append(preview_item)
+                result["summary"]["new_count"] += 1
+    
+    return result
+
+
+class ImportConfirmRequest(PydanticBaseModel):
+    domains: List[ImportDomainItem]
+    create_new: bool = True
+    update_existing: bool = True
+
+
+@router.post("/import/domains/confirm")
+async def import_domains_confirm(
+    request: ImportConfirmRequest,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Confirm import - applies validated changes.
+    
+    - create_new: If true, creates new domains
+    - update_existing: If true, updates existing domains
+    """
+    # Only super admin can import
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can import domains")
+    
+    # Build lookups
+    brands = {b["name"].lower(): b for b in await db.brands.find({}, {"_id": 0}).to_list(1000)}
+    categories = {c["name"].lower(): c for c in await db.categories.find({}, {"_id": 0}).to_list(1000)}
+    registrars = {r["name"].lower(): r for r in await db.registrars.find({}, {"_id": 0}).to_list(1000)}
+    
+    # Get existing domains
+    existing_domains = await db.asset_domains.find(
+        {"domain_name": {"$in": [d.domain_name for d in request.domains]}},
+        {"_id": 0}
+    ).to_list(50000)
+    existing_map = {d["domain_name"].lower(): d for d in existing_domains}
+    
+    valid_lifecycle = {"active", "released", "quarantined", "not_renewed"}
+    
+    result = {
+        "created": 0,
+        "updated": 0,
+        "skipped": 0,
+        "errors": [],
+        "details": []
+    }
+    
+    now = datetime.now(timezone.utc).isoformat()
+    
+    for item in request.domains:
+        try:
+            # Skip invalid domain names
+            if not item.domain_name or not item.domain_name.strip():
+                continue
+            
+            domain_name = item.domain_name.strip()
+            existing = existing_map.get(domain_name.lower())
+            
+            # Parse expiration date
+            exp_date = None
+            if item.expiration_date:
+                try:
+                    date_str = item.expiration_date.strip()
+                    for fmt in ["%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%d/%m/%Y"]:
+                        try:
+                            exp_date = datetime.strptime(date_str.split("T")[0] if "T" in date_str else date_str, fmt)
+                            break
+                        except:
+                            continue
+                except:
+                    pass
+            
+            # Parse lifecycle
+            lifecycle = "active"
+            if item.lifecycle_status and item.lifecycle_status.lower().strip() in valid_lifecycle:
+                lifecycle = item.lifecycle_status.lower().strip()
+            
+            # Parse monitoring
+            monitoring = False
+            if item.monitoring_enabled:
+                mon_lower = item.monitoring_enabled.upper().strip()
+                monitoring = mon_lower in {"ON", "TRUE", "1", "YES"}
+            
+            # Get brand (create if needed)
+            brand_id = None
+            if item.brand_name:
+                brand = brands.get(item.brand_name.lower().strip())
+                if brand:
+                    brand_id = brand["id"]
+                else:
+                    # Create new brand
+                    new_brand = {
+                        "id": str(uuid.uuid4()),
+                        "name": item.brand_name.strip(),
+                        "created_at": now,
+                        "updated_at": now
+                    }
+                    await db.brands.insert_one(new_brand)
+                    brand_id = new_brand["id"]
+                    brands[item.brand_name.lower().strip()] = new_brand
+            
+            # Get category
+            category_id = None
+            if item.category_name:
+                category = categories.get(item.category_name.lower().strip())
+                if category:
+                    category_id = category["id"]
+            
+            # Get registrar
+            registrar_id = None
+            if item.registrar_name:
+                registrar = registrars.get(item.registrar_name.lower().strip())
+                if registrar:
+                    registrar_id = registrar["id"]
+            
+            if existing:
+                # Update existing domain
+                if not request.update_existing:
+                    result["skipped"] += 1
+                    result["details"].append({
+                        "domain": domain_name,
+                        "status": "skipped",
+                        "reason": "update_existing is false"
+                    })
+                    continue
+                
+                update_data = {"updated_at": now}
+                if brand_id:
+                    update_data["brand_id"] = brand_id
+                if category_id:
+                    update_data["category_id"] = category_id
+                if registrar_id:
+                    update_data["registrar_id"] = registrar_id
+                if exp_date:
+                    update_data["expiration_date"] = exp_date.strftime("%Y-%m-%dT00:00:00Z")
+                if item.lifecycle_status:
+                    update_data["lifecycle_status"] = lifecycle
+                if item.monitoring_enabled:
+                    update_data["monitoring_enabled"] = monitoring
+                if item.notes:
+                    update_data["notes"] = item.notes
+                
+                await db.asset_domains.update_one(
+                    {"id": existing["id"]},
+                    {"$set": update_data}
+                )
+                
+                # Log activity
+                if activity_log_service:
+                    await activity_log_service.log(
+                        actor=current_user["email"],
+                        action_type=ActionType.UPDATE,
+                        entity_type=EntityType.ASSET_DOMAIN,
+                        entity_id=existing["id"],
+                        before_value=existing,
+                        after_value={**existing, **update_data},
+                        metadata={"source": "csv_import"}
+                    )
+                
+                result["updated"] += 1
+                result["details"].append({
+                    "domain": domain_name,
+                    "status": "updated",
+                    "id": existing["id"]
+                })
+            else:
+                # Create new domain
+                if not request.create_new:
+                    result["skipped"] += 1
+                    result["details"].append({
+                        "domain": domain_name,
+                        "status": "skipped",
+                        "reason": "create_new is false"
+                    })
+                    continue
+                
+                new_asset = {
+                    "id": str(uuid.uuid4()),
+                    "legacy_id": None,
+                    "domain_name": domain_name,
+                    "brand_id": brand_id,
+                    "category_id": category_id,
+                    "registrar_id": registrar_id,
+                    "registrar": item.registrar_name or "",
+                    "expiration_date": exp_date.strftime("%Y-%m-%dT00:00:00Z") if exp_date else None,
+                    "auto_renew": False,
+                    "lifecycle_status": lifecycle,
+                    "monitoring_enabled": monitoring,
+                    "monitoring_status": "unknown",
+                    "monitoring_interval": "1hour",
+                    "last_check": None,
+                    "ping_status": "unknown",
+                    "http_status": None,
+                    "http_status_code": None,
+                    "notes": item.notes or "",
+                    "created_at": now,
+                    "updated_at": now
+                }
+                
+                await db.asset_domains.insert_one(new_asset)
+                
+                # Log activity
+                if activity_log_service:
+                    await activity_log_service.log(
+                        actor=current_user["email"],
+                        action_type=ActionType.CREATE,
+                        entity_type=EntityType.ASSET_DOMAIN,
+                        entity_id=new_asset["id"],
+                        after_value=new_asset,
+                        metadata={"source": "csv_import"}
+                    )
+                
+                result["created"] += 1
+                result["details"].append({
+                    "domain": domain_name,
+                    "status": "created",
+                    "id": new_asset["id"]
+                })
+        
+        except Exception as e:
+            result["errors"].append({
+                "domain": item.domain_name,
+                "error": str(e)
+            })
+    
+    return result
+
+
+@router.get("/import/domains/template")
+async def get_enhanced_import_template(current_user: dict = Depends(get_current_user_wrapper)):
+    """Get enhanced CSV template for import with all supported fields"""
+    import csv
+    import io
+    
+    output = io.StringIO()
+    fieldnames = [
+        "domain_name", "brand_name", "category_name", "registrar_name",
+        "expiration_date", "lifecycle_status", "monitoring_enabled", "notes"
+    ]
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerow({
+        "domain_name": "example.com",
+        "brand_name": "MyBrand",
+        "category_name": "Money Site",
+        "registrar_name": "GoDaddy",
+        "expiration_date": "2026-12-31",
+        "lifecycle_status": "active",
+        "monitoring_enabled": "ON",
+        "notes": "Main site"
+    })
+    writer.writerow({
+        "domain_name": "example2.com",
+        "brand_name": "MyBrand",
+        "category_name": "PBN",
+        "registrar_name": "Namecheap",
+        "expiration_date": "2027-06-15",
+        "lifecycle_status": "active",
+        "monitoring_enabled": "OFF",
+        "notes": "Tier 1 support"
+    })
+    
+    from fastapi.responses import Response
+    
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=domain_import_template.csv"}
+    )
 
 
 @router.get("/export/networks/{network_id}")
