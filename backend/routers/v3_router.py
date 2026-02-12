@@ -2402,7 +2402,7 @@ async def get_quarantine_categories(
     categories = await db.quarantine_categories.find({}, {"_id": 0}).sort("order", 1).to_list(100)
     
     if not categories:
-        # Seed with default categories
+        # Seed with default categories (only if collection is empty)
         default_categories = [
             {"id": str(uuid.uuid4()), "value": "spam", "label": "Spam (Pure Spam)", "order": 1, "is_default": True},
             {"id": str(uuid.uuid4()), "value": "dmca", "label": "DMCA", "order": 2, "is_default": True},
@@ -2411,8 +2411,17 @@ async def get_quarantine_categories(
             {"id": str(uuid.uuid4()), "value": "penalized", "label": "Penalized", "order": 5, "is_default": True},
             {"id": str(uuid.uuid4()), "value": "other", "label": "Other", "order": 6, "is_default": True},
         ]
-        await db.quarantine_categories.insert_many(default_categories)
-        categories = default_categories
+        
+        # Use upsert to avoid duplicates
+        for cat in default_categories:
+            await db.quarantine_categories.update_one(
+                {"value": cat["value"]},
+                {"$setOnInsert": cat},
+                upsert=True
+            )
+        
+        # Re-fetch after seeding
+        categories = await db.quarantine_categories.find({}, {"_id": 0}).sort("order", 1).to_list(100)
     
     return {"categories": categories}
 
