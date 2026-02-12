@@ -1,94 +1,101 @@
 <analysis>**original_problem_statement:**
-The user's initial goal was to enhance an SEO monitoring application. This involved structuring monitoring alerts, automating the creation of Optimization Tasks from detected SEO conflicts, building a Conflict Resolution Dashboard, and fixing various UI/UX bugs.
+The user's primary objective is to build a production-ready, noise-free, and scalable SEO Domain Monitoring & Asset Domain management system.
 
-The most recent and critical request is a complete, production-grade overhaul of the **Conflict Resolution Dashboard** to ensure data accuracy and provide fair team performance metrics.
+**PRODUCT REQUIREMENTS (LATEST - DOMAIN LIFECYCLE REFACTOR):**
 
-**PRODUCT REQUIREMENTS (LATEST):**
+*   **P0 - STATUS & LIFECYCLE SEPARATION (FINAL SPEC):**
+    1.  ** (Auto-computed):** An administrative status based *only* on the domain's expiration date ( or ). It is not manually editable.
+    2.  ** (Technical, Auto):** Represents the real-time technical availability (, , , etc.), updated by the monitoring engine.
+    3.  ** (Strategic, Manual):** A Super Admin-controlled field representing the business decision for a domain (, , ).
+    4.  ** (Manual):** A Super Admin-managed reason for quarantine (, , , etc.).
 
-*   **P0 - CRITICAL FIXES:**
-    1.  **Fix Recurring Conflict Logic:** Implement a Conflict Fingerprint (based on , , , , , ) to accurately track when a resolved conflict reappears.
-    2.  **Fix Top Resolvers Data Integrity:** Exclude  or  users from the leaderboard. The leaderboard must only count valid users who resolved  type tasks.
-    3.  **Fix Conflict Status Source of Truth:** A conflict's status (, , ) must be derived directly from its linked optimization task's status, not just from scan results.
-    4.  **Fix Average Resolution Time Calculation:** Time must be calculated from  to  to prevent false KPIs.
-    5.  **Data Migration:** Create a one-time migration script to update all historical approved conflicts to be  and , and to backfill fingerprints for existing conflicts.
-    6.  **UX Improvement:** Add UI text explaining that approved conflicts are auto-resolved.
+*   **P0 - AUTOMATIC RULES (MANDATORY):**
+    1.  **Auto-Release on Expiration:** When  becomes , the system must automatically set  to  and disable all monitoring and alerts for that domain.
+    2.  **Invalid State Prevention:** The system must reject (HTTP 400) any attempt to set  to  if the domain's  is .
+    3.  **Monitoring Matrix:** Monitoring is **ONLY** allowed if  is . It is forbidden for  and  domains.
+    4.  **SEO Network Enforcement:** If a domain (or its path) is used in an SEO Network, its root domain **MUST** be monitored.
 
-*   **P1 - IMPORTANT IMPROVEMENTS:**
-    1.  **Add False Resolution Metric:** Add a False Resolution Rate metric, which triggers if a conflict with the same fingerprint reappears within 7 days of resolution.
-    2.  **Add Average Recurrence Interval:** Add a metric for the average time between a conflict's resolution and its reappearance.
-    3.  **Improve Recurring Conflict CTA:** If recurring conflicts exist, show a Create Optimization Task button.
+*   **P0 - UI & UX:**
+    1.  **Table Columns:** The Asset Domains table must include , ,  (with a tooltip), and .
+    2.  **Filters & Pagination:** Implement server-side search and filtering for the new status fields, along with pagination.
+    3.  **Category Management:** Add a Category column and a corresponding filter to the Asset Domains page.
 
-**User's preferred language**: English. The user has requested specific Indonesian phrases (e.g., ) to be used in alert outputs. The next agent MUST continue to use English for conversation but ensure these specific phrases are present in the application's output as requested.
+*   **P0 - PERMISSIONS:**
+    1.  Only  roles can manage  and . Other roles are view-only.
+
+**User's preferred language**: English. The user has also requested specific Indonesian phrases (e.g., ) to be used in certain UI elements.
 
 **what currently exists?**
-A full-stack application with a FastAPI backend, React frontend, and MongoDB database. It includes domain monitoring, SEO network management, conflict detection, and an optimization task system. A Conflict Resolution Dashboard exists but is undergoing a major overhaul to improve its logic and data accuracy. The system now also supports configurable application branding (title, logo, tagline) from a settings page.
+A full-stack SEO monitoring application with a FastAPI backend, React frontend, and MongoDB database. It includes a Conflict Resolution Dashboard, Team Performance Alerts (via Telegram), and an Asset Domain management system. The domain management system has been through multiple iterations and is currently undergoing a major refactor to align with the user's final specifications.
 
 **Last working item**:
-    - Last item agent was working: The agent was in the process of implementing the production-grade overhaul for the **Conflict Resolution Dashboard**. The work started with updating the backend model and services to support a  for accurately tracking recurring conflicts. Specifically, the agent was modifying .
+    - Last item agent was working: The agent was in the middle of a comprehensive refactor of the Domain Status, Monitoring, and Lifecycle system based on the user's latest and final specification. This refactor aims to clearly separate a domain's administrative status, technical monitoring status, and strategic lifecycle. The backend models and API endpoints were updated to reflect this new logic, and data migrations were performed. The agent had just started updating the frontend .
     - Status: IN PROGRESS
     - Agent Testing Done: N
-    - Which testing method agent to use? both. First, use the backend testing agent to validate the new metrics, fingerprint logic, and status synchronization via API endpoints. After backend is confirmed, use the frontend testing agent to verify that the  correctly displays all the new and corrected data.
+    - Which testing method agent to use? both. This is a fundamental refactor of a core feature. The backend testing agent is required to validate the new automatic rules (e.g., auto-release on expiration), API logic, and permission enforcement. The frontend testing agent is needed to verify the new table structure, filters, and UI behaviors.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  - Issue 1: The Conflict Resolution Dashboard provides inaccurate and misleading metrics, requiring a full production-grade overhaul. (P0)
+  - Issue 1: Finalize the Domain Lifecycle Refactor. (P0)
+  - Issue 2: User needs to verify the Team Performance Alerts feature. (P1)
   
   Issues Detail:
   - Issue 1: 
-     - Attempted fixes: The agent started the overhaul by adding new fields (, , , , ) to the  model in . The agent also began modifying the  in  to generate and use these fingerprints.
+     - Attempted fixes: The agent has already updated the backend models (), API endpoints (), and run data migrations to align with the new three-part status system (, , ). The frontend () update has started but is incomplete, causing the page to fail to load.
      - Next debug checklist: 
-        1.  Complete the implementation of  to generate fingerprints and calculate the new metrics (False Resolution Rate, Recurrence Interval).
-        2.  Update the conflict processing logic (likely in ) to generate and save a  for every new conflict.
-        3.  Update the main dashboard endpoint ( in ) to use the new service and provide accurate data for Top Resolvers, Average Resolution Time, and all new metrics.
-        4.  Ensure the status synchronization logic correctly derives conflict status from linked optimizations.
-        5.  Create and run a one-time data migration script to backfill  and other new fields for all existing conflicts in the  collection.
-        6.  Update the frontend component  to consume the new API response and display all the corrected and new metrics accurately.
-     - Why fix this issue and what will be achieved with the fix?: The dashboard is a critical tool for monitoring SEO health and team performance. This fix will ensure the data is trustworthy, preventing incorrect evaluations and allowing managers to identify recurring problems effectively.
+        1. Resume work on .
+        2. Update the component's state,  hooks, and data-fetching functions () to use the new field names from the API (, , ).
+        3. Update the table columns to display the new data structure as requested (, , etc.).
+        4. Update filter components to target the new fields.
+        5. Ensure the  tooltip is implemented.
+        6. Verify all UI/UX requirements from the final spec are met.
+     - Why fix this issue and what will be achieved with the fix?: This will complete the user's mandatory refactor, resulting in a stable, noise-free, and logically consistent domain management system that prevents false alerts and correctly reflects the strategic intent behind each domain.
      - Status:  IN PROGRESS
-     - Is recurring issue? Y
-     - Should Test frontend/backend/both after fix?: Both
+     - Is recurring issue? Y (This is the third iteration of this feature based on evolving user requirements).
+     - Should Test frontend/backend/both after fix?: both
+     - Blocked on other issue: None
+  - Issue 2: 
+     - Attempted fixes: The feature was built and a bug was fixed. However, end-to-end testing is blocked pending user configuration.
+     - Next debug checklist: User needs to configure their Telegram Bot Token and Chat ID in the settings and trigger a test alert.
+     - Why fix this issue and what will be achieved with the fix?: This will validate the Team Performance Alerts feature, a key enhancement from a previous session.
+     - Status:  USER VERIFICATION PENDING
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix?: NA (User is testing)
      - Blocked on other issue: None
 
 **In progress Task List**:
-  - Task 1:  Complete the production-grade overhaul of the Conflict Resolution Dashboard (P0 + P1)
-
+  - Task 1: Complete Frontend Implementation for Domain Lifecycle Refactor (P0)
+ 
  Task Detail:
   - Task 1: 
-     - Where to resume: Continue editing  to fully implement the fingerprint-based recurrence logic and other metric calculations.
-     - What will be achieved with this?: A reliable and accurate dashboard that serves as the source of truth for SEO conflict management and team accountability.
+     - Where to resume: . The agent had just started updating the file to use the new field names from the refactored backend API but did not complete the work. The UI is currently broken.
+     - What will be achieved with this?: A fully functional and stable Asset Domains page that reflects the new, logically separated status system (, , ) and includes all required UI elements like new columns, filters, and tooltips.
      - Status:  IN PROGRESS
-     - Should Test frontend/backend/both after fix?: Both
+     - Should Test frontend/backend/both after fix?: both
      - Blocked on something: None
 
 **Upcoming and Future Tasks**
-    - **Future Tasks:**
-        - **P1: Email Notifications:** Implement optional email notifications for conflict detection and resolution.
-        - **P2: Advanced Auto-Assign Logic:** Enhance task assignment with rules based on tier, workload, or expertise, instead of just assigning to the project manager.
+    **Upcoming Tasks:**
+    - There are no new upcoming tasks. The priority is to complete the in-progress Domain Lifecycle Refactor.
+
+    **Future Tasks:**
+    -   **Email Notifications (P2):** Deferred by user in favor of Telegram.
+    -   **Advanced Auto-Assign Logic (P2):** Deferred until real usage patterns are observed.
+    -   **Refactor  (P2):** Low priority; can be refactored progressively when related code is touched.
 
 **Completed work in this session**
-- **Conflict & Alerts UI/UX Overhaul:**
-  - Redesigned the Alerts page () to show a detailed, filterable table of stored conflicts, fixing the user's initial view all button complaint.
-  - Fixed dashboard stat cards on the Alerts page to reflect correct conflict counts.
-- **Critical Alert Banner Fixes:**
-  - Enhanced the dashboard's critical alert banner to display the names of affected domains.
-  - Made the banner compact to handle multiple alerts without breaking the layout.
-  - Fixed the View Alerts link to navigate to the correct monitoring page ().
-  - Implemented logic to make the banner disappear automatically once underlying issues are resolved (i.e., the domain is back up).
-- **Dashboard & Monitoring Widget Fixes:**
-  - Fixed the Monitoring Status widget on the main dashboard to correctly query  and display data.
-  - Corrected the View All link in the Recent Alerts widget to point to the monitoring page.
-  - Fixed the Top Resolvers list to show user names and the Recurring Conflicts list to hide resolved items (this was a preliminary fix, now superseded by the new P0 task).
-- **System-Wide Fixes & Features:**
-  - Implemented a comprehensive fix for the Recurring Conflict logic by introducing an  status, an  flag, and a data migration script.
-  - Implemented a configurable application branding system (title, description, logo, tagline) managed from the Settings page.
-  - Verified and confirmed that existing backend logic correctly prevents the deletion of asset domains that are in use by an SEO Network.
-  - Removed the Made with Emergent badge via CSS.
-  - Created initial documentation structure under .
-- **Verification Task:**
-  - Verified that test mode alerts for domains in SEO networks do not show Unknown, confirming the logic works as per original requirements.
+- **Domain Monitoring Overhaul (First Iteration):** Implemented a system with domain lifecycle and quarantine features. This was later superseded by a major refactor.
+- **Added Category Feature:** Added a Category column and a corresponding filter to the Asset Domains table.
+- **Domain Lifecycle Refactor (In-Progress):**
+  - Updated backend models and APIs to enforce a strict separation between  (administrative),  (technical), and  (strategic).
+  - Implemented automatic rules, such as auto-releasing expired domains.
+  - Ran data migrations to update existing data to the new schema and field names.
+- **Bug Fixes:**
+  - Fixed an Internal Server Error caused by an incorrect parameter ( vs. ) in the .
+  - Resolved an environment loading issue by fixing a missing closing quote in the  file.
 
 **Earlier issues found/mentioned but not fixed**
-   - All previously mentioned issues have been addressed or superseded by the new, more detailed requirements for the Conflict Resolution Dashboard.
+   - None.
 
 **Known issue recurrence from previous fork**
   - None.
@@ -98,79 +105,68 @@ A full-stack application with a FastAPI backend, React frontend, and MongoDB dat
 
 **Key Technical Concepts**
 -   **Backend:** FastAPI, Python
--   **Frontend:** React, Vite, Redux Toolkit (RTK Query), Shadcn UI
+-   **Frontend:** React, Vite, Shadcn UI
 -   **Database:** MongoDB
--   **Task Scheduling:** 
--   **Conflict Fingerprinting:** A new core concept using a hash of a conflict's unique attributes (, , , etc.) to reliably detect recurrences.
+-   **Core Concept:** The new architecture strictly separates a domain's status into three distinct concepts:  (administrative),  (technical), and  (strategic).
 
 **key DB schema**
--   **stored_seo_conflicts**: 
--   **seo_optimizations**: 
--   **branding_settings**: 
+-   **asset_domains**: 
+-   **team_performance_thresholds**: 
 
 **changes in tech stack**
 -   No changes to the core tech stack.
 
 **All files of reference**
--   ****: Heavily modified to include fields for fingerprinting and advanced metrics.
--   ****: A new service being built to house the logic for fingerprinting and calculating all dashboard metrics.
--   ****: Modified multiple times for dashboard fixes; will need further updates for the new metrics.
--   ****: Modified to add an  endpoint.
--   ****: Modified for preliminary fixes; will require a major update to display all the new P0/P1 metrics.
--   ****: Significantly refactored to show a detailed conflict table.
--   ****: Updated to fix the critical alert banner.
--   ****: Updated to support configurable application branding.
--   ****: New file to provide branding settings globally.
--   ****: New directory for application documentation.
+-   ****: The Pydantic models were significantly refactored to introduce , , , and  enums and update the  models accordingly.
+-   ****: Heavily modified to implement the new status logic, filters, automatic rules (auto-release), and validation for all asset domain endpoints.
+-   ****: Undergoing a major rewrite to support the new data model, table columns, filters, and UI/UX requirements. This file is currently in an incomplete and non-functional state.
+-   ****: Updated to add new functions for lifecycle management and to modify parameters for fetching domains.
 
 **Areas that need refactoring**:
-- The main router file, , is still very large and should be progressively broken down into smaller, domain-specific routers.
+-   : This file remains large and complex. It is a candidate for being broken down into smaller, more focused routers in the future.
 
 **key api endpoints**
--   : The primary endpoint for the Conflict Resolution Dashboard, which is being overhauled.
--   : A new endpoint to approve a conflict, which marks it as resolved and inactive.
--   : Updates an optimization and triggers status syncs for linked conflicts.
--   : Retrieves application branding settings.
--   : Updates application branding settings.
+-   : Updated with new filters for , , and .
+-   : Endpoint to set the strategic lifecycle status.
+-   : Endpoint to set the quarantine status and category.
+-   : Endpoint providing monitoring coverage statistics, updated to respect the new lifecycle rules.
 
 **Critical Info for New Agent**
--   The absolute top priority is completing the production-grade overhaul of the **Conflict Resolution Dashboard** as detailed in the user's latest request. All other tasks are secondary.
--   The core of this overhaul is the **Conflict Fingerprint**. This is not an optional feature; it's mandatory for accurately tracking recurring issues.
--   The user has approved specific P0 and P1 requirements. You must implement all of them. Refer to the  section for the full list.
--   A data migration script is a required deliverable for this task to backfill fingerprints and update the status of historical conflicts.
+1.  **Follow the Final Spec:** The user's message #433 contains the **FINAL** and **MANDATORY** specification for the Domain Status & Lifecycle system. All previous implementations and definitions are obsolete. This document is the single source of truth for the current task. Any deviation will be considered a bug.
+2.  **Frontend is Broken:** The immediate task is to fix . It's failing to load because it hasn't been fully updated to work with the refactored backend API.
+3.  **Data Model Has Changed:** Be aware that the primary fields for domain status are now , , and . The old fields are gone. The backend computes  automatically based on the expiration date.
 
 **documents and test reports created in this job**
--   : Directory containing  and .
--    (updated)
--    (updated)
+-    (Note: This is for the *previous* implementation and is no longer fully relevant to the refactored code).
+-    (Updated to reflect the first iteration of the feature).
 
 **Last 10 User Messages and any pending HUMAN messages** 
-1.  **User:** Provides extremely detailed P0 and P1 requirements for making the Conflict Resolution Dashboard production-grade, focusing on fingerprinting, data integrity, and accurate metrics. **Status: IN PROGRESS (Current Task)**
-2.  **Agent:** Asks clarifying questions about the new dashboard requirements (fingerprint fields, thresholds, priorities). **Status: Completed**
-3.  **User:** Confirms the agent's proposed specifications for the dashboard overhaul. **Status: Completed**
-4.  **User:** Reports that Top Resolvers shows incorrect data (user IDs) and Recurring Conflicts still shows resolved items. **Status: Completed** (A preliminary fix was done, but is now being replaced by the full P0 overhaul).
-5.  **User:** Asks for documentation on how to use the app. **Status: Completed** (Agent created initial docs).
-6.  **User:** Asks for an explanation of SEO Conflicts. **Status: Completed** (Agent added a doc).
-7.  **User:** Reports the View All link in the Recent Alerts widget is inappropriate. **Status: Completed**
-8.  **User:** Reports the Monitoring Status widget is not working. **Status: Completed**
-9.  **User:** Requests a feature to prevent deleting Asset Domains if they are in use by an SEO Network. **Status: Completed** (Agent verified this protection already exists).
-10. **User:** Reports that the critical alert banner does not update after a fix. **Status: Completed**
+1.  **User:** Provides a comprehensive and final specification for refactoring the Domain Status, Monitoring, and Lifecycle system, declaring it the single source of truth. **Status: IN PROGRESS**
+2.  **User:** Asks to add a filter for Domain Categories. **Status: COMPLETED**
+3.  **User:** Provides an image and asks to add a Domain Categories column to the table. **Status: COMPLETED**
+4.  **Agent:** Finishes the revised lifecycle implementation and is about to summarize. **Status: Interrupted by new user request.**
+5.  **User:** Provides detailed feedback and revised requirements for the Domain Lifecycle feature, emphasizing the separation of technical status and strategic lifecycle. **Status: COMPLETED** (Led to the current refactor).
+6.  **Agent:** Calls the finish tool, summarizing the completion of the first iteration of the Domain Monitoring Overhaul. **Status: Obsolete** (superseded by user feedback).
+7.  **Agent:** Receives a successful test report from the testing agent for the first iteration of the feature. **Status: Obsolete**.
+8.  **Agent:** Calls the testing agent to perform comprehensive testing on the initial implementation. **Status: Completed**.
+9.  **User:** Confirms approval of the agent's plan for the Domain Monitoring Overhaul. **Status: Completed**.
+10. **Agent:** Proposes a plan for the Domain Monitoring Overhaul. **Status: Completed**.
 
 **Project Health Check:**
--   **Broken:** The logic and data presentation on the Conflict Resolution Dashboard are considered critically flawed by the user. This is the main focus of the current work.
--   **Mocked:** No mocked services.
+-   **Broken:** The main Asset Domains page () is non-functional and shows a Failed to load domains error. This is expected, as the frontend code is out of sync with the recently refactored backend API.
+-   **Mocked:** None.
 
 **3rd Party Integrations**
--   **Telegram**: Used for sending monitoring alerts and conflict notifications.
+-   **Telegram**: Used for sending SEO notifications and Team Performance Alerts.
 
 **Testing status**
--   **Testing agent used after significant changes:** NO
+-   **Testing agent used after significant changes:** YES, for the initial feature implementation. However, the current major refactor has **not** been tested.
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** None
--   **Known regressions:** None reported, but the dashboard overhaul is a high-risk change.
+-   **Test files created:** None.
+-   **Known regressions:** The entire  page is currently non-functional due to the in-progress refactor.
 
 **Credentials to test flow:**
-Use  /  for login. The agent has successfully used test credentials by finding them in the backend seed/test data. A valid user should have an email format.
+Login with  / .
 
 **What agent forgot to execute**
--   The agent has a detailed plan from the user for the dashboard overhaul but has only just started the implementation. The full scope of the user's request (P0 and P1 tasks) is yet to be completed. A data migration script is a critical part of this task and has not been created yet.</analysis>
+The agent has been closely following the user's instructions and has not forgotten any tasks. The current work is simply incomplete due to the complexity of the requested refactor.</analysis>

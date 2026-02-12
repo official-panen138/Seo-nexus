@@ -13,7 +13,7 @@ import requests
 import os
 
 BASE_URL = os.environ.get(
-    "REACT_APP_BACKEND_URL", "https://domain-monitor-3.preview.emergentagent.com"
+    "REACT_APP_BACKEND_URL", "https://asset-monitor-58.preview.emergentagent.com"
 )
 
 
