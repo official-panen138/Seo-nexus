@@ -1501,7 +1501,6 @@ async def get_asset_domains(
     # Build sort specification
     # Direction: 1 = asc, -1 = desc
     sort_dir = 1 if sort_direction == "asc" else -1
-    logger.info(f"[SORT DEBUG] sort_by={sort_by}, sort_direction={sort_direction}, sort_dir={sort_dir}")
     
     # Define sort field mapping (handle computed fields specially)
     sort_field_map = {
