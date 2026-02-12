@@ -481,4 +481,13 @@ export const notificationTemplatesAPI = {
     validate: (templateBody) => apiV3.post('/settings/notification-templates/validate', { template_body: templateBody })
 };
 
+// Team Performance Alerts API
+export const performanceAlertsAPI = {
+    getThresholds: () => apiV3.get('/performance/thresholds'),
+    updateThresholds: (thresholds) => apiV3.put('/performance/thresholds', thresholds),
+    runCheck: (force = false) => apiV3.post(`/performance/check?force=${force}`),
+    getHistory: (days = 30) => apiV3.get(`/performance/history?days=${days}`),
+    getMetrics: () => apiV3.get('/performance/metrics')
+};
+
 export default api;
