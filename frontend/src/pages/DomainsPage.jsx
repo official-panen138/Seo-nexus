@@ -1165,21 +1165,51 @@ export default function DomainsPage() {
 
                             {useV3 && (
                                 <Select value={filterMonitoring} onValueChange={setFilterMonitoring}>
-                                    <SelectTrigger className="w-[150px] bg-black border-border" data-testid="filter-monitoring">
-                                        <SelectValue placeholder="Monitoring" />
+                                    <SelectTrigger className="w-[150px] bg-black border-border" data-testid="filter-monitoring-toggle">
+                                        <SelectValue placeholder="Mon. Toggle" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All</SelectItem>
-                                        <SelectItem value="enabled">Monitored</SelectItem>
-                                        <SelectItem value="disabled">Not Monitored</SelectItem>
+                                        <SelectItem value="all">Mon. Toggle</SelectItem>
+                                        <SelectItem value="enabled">ON</SelectItem>
+                                        <SelectItem value="disabled">OFF</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            )}
+
+                            {useV3 && (
+                                <>
+                                    {/* Domain Active Status filter (Administrative - AUTO) */}
+                                    <Select value={filterDomainActiveStatus} onValueChange={setFilterDomainActiveStatus}>
+                                        <SelectTrigger className="w-[150px] bg-black border-border" data-testid="filter-domain-active">
+                                            <SelectValue placeholder="Domain Active" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Active Status</SelectItem>
+                                            {Object.entries(DOMAIN_ACTIVE_STATUS_LABELS).map(([k, v]) => (
+                                                <SelectItem key={k} value={k}>{v}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+
+                                    {/* Monitoring Status filter (Technical - AUTO) */}
+                                    <Select value={filterMonitoringStatus} onValueChange={setFilterMonitoringStatus}>
+                                        <SelectTrigger className="w-[150px] bg-black border-border" data-testid="filter-monitoring-status">
+                                            <SelectValue placeholder="Monitoring Status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Mon. Status</SelectItem>
+                                            {Object.entries(MONITORING_STATUS_LABELS).map(([k, v]) => (
+                                                <SelectItem key={k} value={k}>{v}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </>
                             )}
 
                             {useV3 && viewMode === 'all' && (
                                 <>
                                     <Select value={filterLifecycle} onValueChange={setFilterLifecycle}>
-                                        <SelectTrigger className="w-[180px] bg-black border-border" data-testid="filter-lifecycle">
+                                        <SelectTrigger className="w-[150px] bg-black border-border" data-testid="filter-lifecycle">
                                             <SelectValue placeholder="Lifecycle" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -1195,7 +1225,7 @@ export default function DomainsPage() {
                                             <SelectValue placeholder="Quarantine" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">All</SelectItem>
+                                            <SelectItem value="all">All Quarantine</SelectItem>
                                             <SelectItem value="not_quarantined">Not Quarantined</SelectItem>
                                             <SelectItem value="quarantined">Quarantined</SelectItem>
                                             {quarantineCategories.map(cat => (
