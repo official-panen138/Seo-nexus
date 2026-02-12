@@ -1369,6 +1369,9 @@ async def get_asset_domains(
     domain_active_status: Optional[str] = Query(default=None, description="Filter by domain_active_status: active, expired"),
     # Special view modes
     view_mode: Optional[str] = Query(default=None, description="Special view: 'released', 'quarantined', 'unmonitored', 'expired'"),
+    # Sorting
+    sort_by: Optional[str] = Query(default="critical", description="Sort field: domain_name, brand_name, domain_active_status, monitoring_status, lifecycle_status, expiration_date, seo_networks_count, critical"),
+    sort_direction: Optional[str] = Query(default="asc", description="Sort direction: asc, desc"),
     page: int = Query(default=1, ge=1, description="Page number (1-based)"),
     limit: int = Query(default=25, ge=1, le=100, description="Items per page"),
     current_user: dict = Depends(get_current_user_wrapper),
