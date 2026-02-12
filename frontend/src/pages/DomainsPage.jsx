@@ -1070,7 +1070,7 @@ export default function DomainsPage() {
                             Filters
                             {hasActiveFilters && (
                                 <Badge variant="secondary" className="ml-2 h-5 px-1.5">
-                                    {[filterBrand, filterStatus, filterMonitoring, filterLifecycle, filterQuarantine, filterUsedInSeo]
+                                    {[filterBrand, filterCategory, filterStatus, filterMonitoring, filterLifecycle, filterQuarantine, filterUsedInSeo]
                                         .filter(f => f !== 'all').length}
                                 </Badge>
                             )}
@@ -1087,6 +1087,18 @@ export default function DomainsPage() {
                                     <SelectItem value="all">All Brands</SelectItem>
                                     {brands.map(b => (
                                         <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            <Select value={filterCategory} onValueChange={setFilterCategory}>
+                                <SelectTrigger className="w-[150px] bg-black border-border" data-testid="filter-category">
+                                    <SelectValue placeholder="Category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Categories</SelectItem>
+                                    {categories.map(c => (
+                                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
