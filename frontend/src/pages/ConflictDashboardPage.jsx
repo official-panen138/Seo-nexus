@@ -273,7 +273,7 @@ export default function ConflictDashboardPage() {
                                         {formatHours(metrics?.avg_resolution_time_hours)}
                                     </p>
                                     <p className="text-xs text-zinc-500 mt-2">
-                                        Time from detection to resolved
+                                        From first detection to completion
                                     </p>
                                 </div>
                                 <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center">
@@ -293,11 +293,94 @@ export default function ConflictDashboardPage() {
                                         {metrics?.recurring_conflicts || 0}
                                     </p>
                                     <p className="text-xs text-zinc-500 mt-2">
-                                        Conflicts that reappeared after resolution
+                                        Active conflicts that reappeared
                                     </p>
                                 </div>
                                 <div className="h-12 w-12 rounded-full bg-red-500/20 flex items-center justify-center">
                                     <Repeat className="h-6 w-6 text-red-400" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* P1 Metrics Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* False Resolution Rate */}
+                    <Card className="bg-card border-border" data-testid="false-resolution-card">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-zinc-400">False Resolution Rate</p>
+                                    <p className="text-2xl font-bold text-white mt-1">
+                                        {metrics?.false_resolution_rate_percent || 0}%
+                                    </p>
+                                    <p className="text-xs text-zinc-500 mt-2">
+                                        Reappeared within 7 days of resolution
+                                    </p>
+                                </div>
+                                <div className="h-10 w-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                                    <XCircle className="h-5 w-5 text-orange-400" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Avg Recurrence Interval */}
+                    <Card className="bg-card border-border" data-testid="recurrence-interval-card">
+                        <CardContent className="pt-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-zinc-400">Avg Recurrence Interval</p>
+                                    <p className="text-2xl font-bold text-white mt-1">
+                                        {metrics?.avg_recurrence_interval_days 
+                                            ? `${metrics.avg_recurrence_interval_days} days`
+                                            : 'N/A'
+                                        }
+                                    </p>
+                                    <p className="text-xs text-zinc-500 mt-2">
+                                        Time between resolution and reappearance
+                                    </p>
+                                </div>
+                                <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                    <Timer className="h-5 w-5 text-purple-400" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Resolution Time Breakdown */}
+                    <Card className="bg-card border-border" data-testid="resolution-breakdown-card">
+                        <CardContent className="pt-6">
+                            <p className="text-sm text-zinc-400 mb-3">Resolution Time Breakdown</p>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                    <span className="text-zinc-400">&lt;1 hr:</span>
+                                    <span className="text-white font-medium">
+                                        {metrics?.resolution_times_breakdown?.under_1_hour || 0}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                    <span className="text-zinc-400">1-24 hrs:</span>
+                                    <span className="text-white font-medium">
+                                        {metrics?.resolution_times_breakdown?.['1_to_24_hours'] || 0}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                                    <span className="text-zinc-400">1-7 days:</span>
+                                    <span className="text-white font-medium">
+                                        {metrics?.resolution_times_breakdown?.['1_to_7_days'] || 0}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                    <span className="text-zinc-400">&gt;7 days:</span>
+                                    <span className="text-white font-medium">
+                                        {metrics?.resolution_times_breakdown?.over_7_days || 0}
+                                    </span>
                                 </div>
                             </div>
                         </CardContent>
