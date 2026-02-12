@@ -2048,13 +2048,13 @@ async def quarantine_domain(
     
     now = datetime.now(timezone.utc).isoformat()
     update_dict = {
-        "domain_lifecycle_status": DomainLifecycleStatus.QUARANTINED.value,  # Set lifecycle to quarantined
+        "lifecycle_status": DomainLifecycleStatus.QUARANTINED.value,  # Set lifecycle to quarantined
         "quarantine_category": data.quarantine_category,
         "quarantine_note": data.quarantine_note,
         "quarantined_at": now,
         "quarantined_by": current_user.get("id"),
-        "monitoring_enabled": False,  # Disable monitoring for quarantined domains
-        "released_at": None,  # Clear any released tracking
+        "monitoring_enabled": False,  # RULE 3: Quarantined = no monitoring
+        "released_at": None,
         "released_by": None,
         "updated_at": now,
     }
