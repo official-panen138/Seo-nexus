@@ -878,7 +878,7 @@ export default function DomainsPage() {
         }
     };
 
-    // CSV Import handlers
+    // CSV Import handlers - Enhanced with Preview/Confirm flow
     const handleFileSelect = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -893,7 +893,27 @@ export default function DomainsPage() {
                 return;
             }
             
-            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            // Support quoted CSV fields
+            const parseCSVLine = (line) => {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current.trim());
+                return result;
+            };
+            
+            const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/"/g, ''));
             const domainIndex = headers.indexOf('domain_name');
             
             if (domainIndex === -1) {
@@ -903,44 +923,64 @@ export default function DomainsPage() {
             
             const data = [];
             for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(v => v.trim());
+                const values = parseCSVLine(lines[i]).map(v => v.replace(/"/g, ''));
                 if (values[domainIndex]) {
                     data.push({
                         domain_name: values[domainIndex],
                         brand_name: values[headers.indexOf('brand_name')] || '',
-                        registrar: values[headers.indexOf('registrar')] || '',
+                        category_name: values[headers.indexOf('category_name')] || '',
+                        registrar_name: values[headers.indexOf('registrar_name')] || values[headers.indexOf('registrar')] || '',
                         expiration_date: values[headers.indexOf('expiration_date')] || '',
-                        status: values[headers.indexOf('status')] || 'active',
+                        lifecycle_status: values[headers.indexOf('lifecycle_status')] || '',
+                        monitoring_enabled: values[headers.indexOf('monitoring_enabled')] || '',
                         notes: values[headers.indexOf('notes')] || ''
                     });
                 }
             }
             
             setImportData(data);
+            setImportPreview(null);
             setImportResult(null);
+            setImportStep('upload');
         };
         reader.readAsText(file);
     };
 
-    const handleImport = async () => {
+    // Preview import data via backend validation
+    const handleImportPreview = async () => {
         if (importData.length === 0) {
-            toast.error('No data to import');
+            toast.error('No data to preview');
             return;
         }
         
         setImporting(true);
         try {
-            const token = localStorage.getItem('seo_nexus_token');
-            const response = await axios.post(
-                `${process.env.REACT_APP_BACKEND_URL}/api/v3/import/domains`,
-                { domains: importData, skip_duplicates: true },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            
+            const response = await importAPI.domainsPreview(importData);
+            setImportPreview(response.data);
+            setImportStep('preview');
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Preview failed');
+        } finally {
+            setImporting(false);
+        }
+    };
+
+    // Confirm and apply import
+    const handleImportConfirm = async () => {
+        if (!importPreview) {
+            toast.error('No preview data');
+            return;
+        }
+        
+        setImporting(true);
+        try {
+            const response = await importAPI.domainsConfirm(importData, createNew, updateExisting);
             setImportResult(response.data);
+            setImportStep('result');
             
-            if (response.data.imported > 0) {
-                toast.success(`Imported ${response.data.imported} domains`);
+            const totalSuccess = response.data.created + response.data.updated;
+            if (totalSuccess > 0) {
+                toast.success(`Successfully imported ${totalSuccess} domains`);
                 loadData();
             }
         } catch (err) {
@@ -952,20 +992,37 @@ export default function DomainsPage() {
 
     const resetImport = () => {
         setImportData([]);
+        setImportPreview(null);
         setImportResult(null);
+        setImportStep('upload');
+        setCreateNew(true);
+        setUpdateExisting(true);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
     };
 
-    const downloadTemplate = () => {
-        const csv = 'domain_name,brand_name,registrar,expiration_date,status,notes\nexample.com,MyBrand,GoDaddy,2026-12-31,active,Main site\nexample2.com,MyBrand,Namecheap,2027-06-15,active,Secondary site';
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'domains_import_template.csv';
-        a.click();
+    const downloadTemplate = async () => {
+        try {
+            const response = await importAPI.domainsTemplateCSV();
+            const blob = new Blob([response.data], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'domain_import_template.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            // Fallback to local template
+            const csv = 'domain_name,brand_name,category_name,registrar_name,expiration_date,lifecycle_status,monitoring_enabled,notes\nexample.com,MyBrand,Money Site,GoDaddy,2026-12-31,active,ON,Main site\nexample2.com,MyBrand,PBN,Namecheap,2027-06-15,active,OFF,Tier 1 support';
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'domain_import_template.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
     };
 
     // Refresh detail panel when data updates
