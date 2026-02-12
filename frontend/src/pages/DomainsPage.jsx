@@ -1168,6 +1168,7 @@ export default function DomainsPage() {
                                 {useV3 ? (
                                     <>
                                         <TableHead>SEO Networks</TableHead>
+                                        <TableHead>Lifecycle</TableHead>
                                         <TableHead>Monitoring</TableHead>
                                         <TableHead>Expiration</TableHead>
                                     </>
@@ -1178,7 +1179,6 @@ export default function DomainsPage() {
                                         <TableHead>Network</TableHead>
                                     </>
                                 )}
-                                <TableHead>Created</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -1187,14 +1187,20 @@ export default function DomainsPage() {
                                 <TableSkeleton />
                             ) : filteredData.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={useV3 ? 8 : 8} className="h-32 text-center">
+                                    <TableCell colSpan={useV3 ? 9 : 8} className="h-32 text-center">
                                         <div className="empty-state py-8">
                                             <Globe className="empty-state-icon mx-auto" />
                                             <p className="empty-state-title">No domains found</p>
                                             <p className="empty-state-description">
                                                 {totalItems === 0 
                                                     ? 'Add your first domain to get started'
-                                                    : 'Try adjusting your filters'}
+                                                    : viewMode === 'unmonitored' 
+                                                        ? 'All domains in SEO networks are monitored!'
+                                                        : viewMode === 'released' 
+                                                            ? 'No released domains'
+                                                            : viewMode === 'quarantined'
+                                                                ? 'No quarantined domains'
+                                                                : 'Try adjusting your filters'}
                                             </p>
                                         </div>
                                     </TableCell>
@@ -1204,6 +1210,18 @@ export default function DomainsPage() {
                                     <TableRow key={item.id} className="table-row-hover" data-testid={`domain-row-${item.id}`}>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
+                                                {item.quarantine_category && (
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger>
+                                                                <ShieldAlert className="h-4 w-4 text-orange-400" />
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>Quarantined: {item.quarantine_category_label || item.quarantine_category}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                )}
                                                 <span className="font-mono text-sm">{item.domain_name}</span>
                                                 <a 
                                                     href={`https://${item.domain_name}`} 
@@ -1237,12 +1255,19 @@ export default function DomainsPage() {
                                                     <SeoNetworksBadges networks={item.seo_networks || []} />
                                                 </TableCell>
                                                 <TableCell>
+                                                    <Badge variant="outline" className={LIFECYCLE_STATUS_COLORS[item.domain_lifecycle_status] || LIFECYCLE_STATUS_COLORS.active}>
+                                                        {LIFECYCLE_STATUS_LABELS[item.domain_lifecycle_status] || 'Active'}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
                                                     <span className={`text-xs px-2 py-1 rounded-full ${
                                                         item.monitoring_enabled 
                                                             ? 'bg-emerald-500/10 text-emerald-400' 
-                                                            : 'bg-zinc-500/10 text-zinc-500'
+                                                            : item.requires_monitoring
+                                                                ? 'bg-red-500/10 text-red-400'
+                                                                : 'bg-zinc-500/10 text-zinc-500'
                                                     }`}>
-                                                        {item.monitoring_enabled ? (item.ping_status === 'up' ? '● UP' : item.ping_status === 'down' ? '● DOWN' : 'ON') : 'OFF'}
+                                                        {item.monitoring_enabled ? (item.ping_status === 'up' ? '● UP' : item.ping_status === 'down' ? '● DOWN' : 'ON') : item.requires_monitoring ? '⚠ OFF' : 'OFF'}
                                                     </span>
                                                 </TableCell>
                                                 <TableCell>
