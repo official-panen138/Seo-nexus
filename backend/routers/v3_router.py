@@ -2038,6 +2038,16 @@ async def set_domain_lifecycle(
         update_dict["quarantined_at"] = None
         update_dict["quarantined_by"] = None
     
+    elif data.lifecycle_status == DomainLifecycleStatus.NOT_RENEWED:
+        # NOT_RENEWED - domain expired, monitoring forced OFF
+        update_dict["monitoring_enabled"] = False  # ❌ Not Renewed = no monitoring
+        update_dict["quarantine_category"] = None
+        update_dict["quarantine_note"] = None
+        update_dict["quarantined_at"] = None
+        update_dict["quarantined_by"] = None
+        update_dict["released_at"] = None
+        update_dict["released_by"] = None
+    
     await db.asset_domains.update_one({"id": asset_id}, {"$set": update_dict})
     
     # Log activity
