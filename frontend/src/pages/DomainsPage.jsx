@@ -1280,9 +1280,33 @@ export default function DomainsPage() {
                                                     <SeoNetworksBadges networks={item.seo_networks || []} />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline" className={LIFECYCLE_STATUS_COLORS[item.domain_lifecycle_status] || LIFECYCLE_STATUS_COLORS.active}>
-                                                        {LIFECYCLE_STATUS_LABELS[item.domain_lifecycle_status] || 'Active'}
-                                                    </Badge>
+                                                    <div className="flex items-center gap-1">
+                                                        <Badge variant="outline" className={LIFECYCLE_STATUS_COLORS[item.domain_lifecycle_status] || LIFECYCLE_STATUS_COLORS.active}>
+                                                            {item.lifecycle_status_label || LIFECYCLE_STATUS_LABELS[item.domain_lifecycle_status] || 'Active'}
+                                                        </Badge>
+                                                        {/* Lifecycle validation warnings */}
+                                                        {item.lifecycle_warnings && item.lifecycle_warnings.length > 0 && (
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <AlertTriangle className="h-4 w-4 text-amber-400 cursor-help" />
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent className="max-w-xs">
+                                                                        <div className="space-y-1">
+                                                                            {item.lifecycle_warnings.map((w, idx) => (
+                                                                                <div key={idx} className="text-xs">
+                                                                                    <p className="text-amber-400">⚠️ {w.message}</p>
+                                                                                    {w.suggestion && (
+                                                                                        <p className="text-zinc-400">Suggestion: {w.suggestion}</p>
+                                                                                    )}
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        )}
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <span className={`text-xs px-2 py-1 rounded-full ${
