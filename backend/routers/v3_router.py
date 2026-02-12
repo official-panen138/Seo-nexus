@@ -1494,10 +1494,44 @@ async def get_asset_domains(
     # Calculate skip from page number
     skip = (page - 1) * limit
 
-    # Fetch paginated data
+    # Build sort specification
+    # Direction: 1 = asc, -1 = desc
+    sort_dir = 1 if sort_direction == "asc" else -1
+    
+    # Define sort field mapping (handle computed fields specially)
+    sort_field_map = {
+        "domain_name": "domain_name",
+        "brand_name": "brand_id",  # Will be resolved later
+        "expiration_date": "expiration_date",
+        "monitoring_status": "monitoring_status",
+        "lifecycle_status": "lifecycle_status",
+    }
+    
+    # Default sort for "critical" mode: prioritize issues first
+    # Critical order: monitoring issues → expired → quarantined → expiration date → alphabetical
+    if sort_by == "critical":
+        # Critical sort: monitoring_status (down first), lifecycle (quarantined first), expiration_date (soonest first), domain_name
+        sort_spec = [
+            ("monitoring_status", 1),  # down < soft_blocked < unknown < up
+            ("lifecycle_status", 1),   # quarantined < released < active
+            ("expiration_date", 1),    # soonest first
+            ("domain_name", 1)
+        ]
+    elif sort_by in sort_field_map:
+        sort_spec = [(sort_field_map[sort_by], sort_dir), ("domain_name", 1)]  # Secondary sort by name
+    elif sort_by == "seo_networks_count":
+        # Handle in post-processing (computed field)
+        sort_spec = [("domain_name", sort_dir)]
+    elif sort_by == "domain_active_status":
+        # Handle in post-processing (computed from expiration_date)
+        sort_spec = [("expiration_date", sort_dir), ("domain_name", 1)]
+    else:
+        sort_spec = [("domain_name", sort_dir)]
+
+    # Fetch paginated data with sorting
     assets = (
         await db.asset_domains.find(query, {"_id": 0})
-        .sort("domain_name", 1)
+        .sort(sort_spec)
         .skip(skip)
         .limit(limit)
         .to_list(limit)
