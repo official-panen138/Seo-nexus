@@ -1929,7 +1929,7 @@ async def remove_domain_quarantine(
             entity_id=asset_id,
             before_value=existing,
             after_value={**existing, **update_dict},
-            notes=f"Quarantine removed: {data.reason}" if data.reason else "Quarantine removed"
+            metadata={"notes": f"Quarantine removed: {data.reason}" if data.reason else "Quarantine removed"}
         )
     
     updated = await db.asset_domains.find_one({"id": asset_id}, {"_id": 0})
