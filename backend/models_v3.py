@@ -755,7 +755,16 @@ class NetworkManagersAuditLog(BaseModel):
 
 
 class AssetDomainBase(BaseModel):
-    """Base model for asset domain - pure inventory"""
+    """
+    Base model for asset domain - pure inventory
+    
+    DOMAIN STATUS, MONITORING & LIFECYCLE (FINAL SPECIFICATION)
+    
+    1. domain_active_status (AUTO): Active/Expired based on expiration_date
+    2. monitoring_status (AUTO): Technical availability from monitoring
+    3. lifecycle_status (MANUAL): Strategic decision (Super Admin only)
+    4. quarantine_category: Why domain is quarantined (Super Admin only)
+    """
 
     domain_name: str
     brand_id: str
@@ -768,35 +777,50 @@ class AssetDomainBase(BaseModel):
     buy_date: Optional[str] = None
     expiration_date: Optional[str] = None
     auto_renew: bool = False
-    status: AssetStatus = AssetStatus.ACTIVE
 
-    # Domain Lifecycle Status (for monitoring scope)
-    # Only 'active' and 'expired_pending' domains are included in realtime monitoring
-    domain_lifecycle_status: DomainLifecycleStatus = DomainLifecycleStatus.ACTIVE
+    # ===== 1. DOMAIN ACTIVE STATUS (Administrative - AUTO) =====
+    # Computed based on expiration_date - NOT editable manually
+    # Active: today < expiration_date
+    # Expired: today >= expiration_date
+    # Has NO relation to uptime or monitoring - purely administrative
+    domain_active_status: Optional[str] = None  # Computed field, do not set manually
 
-    # Domain Quarantine (Super Admin only)
-    # Quarantined domains are EXCLUDED from all monitoring, alerts, and notifications
+    # ===== 2. DOMAIN MONITORING STATUS (Technical - AUTO) =====
+    # Updated by monitoring engine - NOT editable manually
+    # Values: up, down, soft_blocked, js_challenge, country_block, captcha, unknown
+    monitoring_status: str = "unknown"
+
+    # ===== 3. DOMAIN LIFECYCLE (Strategic - MANUAL) =====
+    # Super Admin ONLY can edit
+    # Active: Used in SEO Networks, monitoring allowed
+    # Released: Intentionally not renewed, monitoring NOT allowed
+    # Quarantined: Domain is problematic, monitoring NOT allowed
+    lifecycle_status: DomainLifecycleStatus = DomainLifecycleStatus.ACTIVE
+
+    # ===== 4. QUARANTINE CATEGORY (Super Admin only) =====
+    # Explains WHY a domain is quarantined
     quarantine_category: Optional[str] = None  # null = not quarantined
-    quarantine_note: Optional[str] = None  # Custom note when quarantine_category is 'custom'
-    quarantined_at: Optional[str] = None  # Timestamp when domain was quarantined
-    quarantined_by: Optional[str] = None  # User ID who quarantined the domain
+    quarantine_note: Optional[str] = None  # Custom note when category is 'other'
+    quarantined_at: Optional[str] = None
+    quarantined_by: Optional[str] = None
 
     # Released domain tracking
-    released_at: Optional[str] = None  # Timestamp when domain was marked as released
-    released_by: Optional[str] = None  # User ID who marked domain as released
+    released_at: Optional[str] = None
+    released_by: Optional[str] = None
 
-    # Monitoring - Availability (Ping/HTTP)
+    # ===== MONITORING CONFIGURATION =====
+    # monitoring_enabled: Toggle for monitoring (ON/OFF)
+    # Can only be TRUE if lifecycle_status = Active
     monitoring_enabled: bool = False
     monitoring_interval: MonitoringInterval = MonitoringInterval.ONE_HOUR
-    last_checked_at: Optional[str] = None  # Last availability check timestamp
-    last_ping_status: Optional[str] = (
-        None  # Previous ping status for transition detection
-    )
-    last_http_code: Optional[int] = None  # Last HTTP response code
+    last_checked_at: Optional[str] = None
+    last_http_code: Optional[int] = None
 
-    # Legacy monitoring fields (kept for backward compatibility)
+    # Legacy fields (kept for backward compatibility)
+    status: AssetStatus = AssetStatus.ACTIVE  # Legacy - use domain_active_status
     last_check: Optional[str] = None
-    ping_status: PingStatus = PingStatus.UNKNOWN
+    ping_status: PingStatus = PingStatus.UNKNOWN  # Legacy - use monitoring_status
+    last_ping_status: Optional[str] = None
     http_status: Optional[str] = None
     http_status_code: Optional[int] = None
 
