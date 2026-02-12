@@ -148,7 +148,7 @@ class ConflictMetricsService:
         recurring = [
             c for c in conflicts 
             if c.get("recurrence_count", 0) > 0 
-            and c.get("is_active", True) == True
+            and c.get("is_active", True)
             and c.get("status") not in ("resolved", "approved", "ignored")
         ]
         
