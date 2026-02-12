@@ -500,13 +500,16 @@ export default function ConflictDashboardPage() {
                                 <Users className="h-5 w-5 text-emerald-400" />
                                 Top Resolvers
                             </CardTitle>
+                            <p className="text-xs text-zinc-500 mt-1">
+                                Only human users who resolved conflict_resolution tasks
+                            </p>
                         </CardHeader>
                         <CardContent>
                             {topResolvers.length > 0 ? (
                                 <div className="space-y-3">
-                                    {topResolvers.map(([userId, count], index) => (
+                                    {topResolvers.slice(0, 5).map((resolver, index) => (
                                         <div 
-                                            key={userId} 
+                                            key={resolver.user_id} 
                                             className="flex items-center gap-3 p-2 rounded-lg bg-zinc-800/50"
                                         >
                                             <div className={`
@@ -515,13 +518,18 @@ export default function ConflictDashboardPage() {
                                             `}>
                                                 {index + 1}
                                             </div>
-                                            <div className="flex-1">
+                                            <div className="flex-1 min-w-0">
                                                 <p className="text-sm text-white truncate">
-                                                    {userId === 'system' ? 'System (Auto)' : users[userId] || userId.split('-')[0] + '...'}
+                                                    {resolver.name}
                                                 </p>
+                                                {resolver.email && (
+                                                    <p className="text-xs text-zinc-500 truncate">
+                                                        {resolver.email}
+                                                    </p>
+                                                )}
                                             </div>
                                             <Badge variant="outline" className="text-emerald-400 border-emerald-500/30">
-                                                {count} resolved
+                                                {resolver.resolved_count} resolved
                                             </Badge>
                                         </div>
                                     ))}
