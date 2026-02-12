@@ -1620,8 +1620,18 @@ async def update_asset_domain(
 
     update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
 
+    # Restrict lifecycle and quarantine changes to Super Admin
+    if current_user.get("role") != "super_admin":
+        restricted_fields = ["domain_lifecycle_status", "quarantine_category", "quarantine_note"]
+        for field in restricted_fields:
+            if field in update_dict:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Only Super Admin can modify {field}"
+                )
+
     # Convert enums
-    for field in ["status", "monitoring_interval"]:
+    for field in ["status", "monitoring_interval", "domain_lifecycle_status"]:
         if field in update_dict and hasattr(update_dict[field], "value"):
             update_dict[field] = update_dict[field].value
 
