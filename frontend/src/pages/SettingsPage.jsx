@@ -193,6 +193,74 @@ export default function SettingsPage() {
         }
     };
 
+    // Load Quarantine Categories
+    const loadQuarantineCategories = async () => {
+        setLoadingCategories(true);
+        try {
+            const res = await assetDomainsAPI.getQuarantineCategories();
+            setQuarantineCategories(res.data?.categories || []);
+        } catch (err) {
+            console.error('Failed to load quarantine categories:', err);
+            toast.error('Failed to load quarantine categories');
+        } finally {
+            setLoadingCategories(false);
+        }
+    };
+
+    // Create Quarantine Category
+    const handleCreateCategory = async () => {
+        if (!newCategory.value.trim() || !newCategory.label.trim()) {
+            toast.error('Both value and label are required');
+            return;
+        }
+        setSavingCategory(true);
+        try {
+            await assetDomainsAPI.createQuarantineCategory({
+                value: newCategory.value.trim(),
+                label: newCategory.label.trim()
+            });
+            toast.success('Quarantine category created');
+            setNewCategory({ value: '', label: '' });
+            setShowAddCategory(false);
+            loadQuarantineCategories();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to create category');
+        } finally {
+            setSavingCategory(false);
+        }
+    };
+
+    // Update Quarantine Category
+    const handleUpdateCategory = async () => {
+        if (!editingCategory) return;
+        setSavingCategory(true);
+        try {
+            await assetDomainsAPI.updateQuarantineCategory(editingCategory.id, {
+                value: editingCategory.value,
+                label: editingCategory.label
+            });
+            toast.success('Quarantine category updated');
+            setEditingCategory(null);
+            loadQuarantineCategories();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to update category');
+        } finally {
+            setSavingCategory(false);
+        }
+    };
+
+    // Delete Quarantine Category
+    const handleDeleteCategory = async (categoryId) => {
+        if (!confirm('Are you sure you want to delete this category?')) return;
+        try {
+            await assetDomainsAPI.deleteQuarantineCategory(categoryId);
+            toast.success('Quarantine category deleted');
+            loadQuarantineCategories();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to delete category');
+        }
+    };
+
     // Domain Monitoring Telegram handlers (SEPARATE channel)
     const handleSaveDomainMonitoring = async () => {
         setSavingDomainMonitoring(true);
