@@ -545,6 +545,10 @@ export default function SettingsPage() {
                                 <FileText className="h-4 w-4" />
                                 Templates
                             </TabsTrigger>
+                            <TabsTrigger value="performance" className="flex items-center gap-2" data-testid="performance-alerts-tab">
+                                <TrendingUp className="h-4 w-4" />
+                                Performance Alerts
+                            </TabsTrigger>
                         </TabsList>
                         
                         {/* Branding Tab */}
