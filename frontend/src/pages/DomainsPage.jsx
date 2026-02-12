@@ -608,6 +608,7 @@ export default function DomainsPage() {
     const clearFilters = () => {
         setSearchQuery('');
         setFilterBrand('all');
+        setFilterCategory('all');
         setFilterStatus('all');
         setFilterMonitoring('all');
         setFilterLifecycle('all');
@@ -616,7 +617,7 @@ export default function DomainsPage() {
         setCurrentPage(1); // Reset to first page when clearing filters
     };
 
-    const hasActiveFilters = filterBrand !== 'all' || filterStatus !== 'all' || filterMonitoring !== 'all' || searchQuery !== '' || filterLifecycle !== 'all' || filterQuarantine !== 'all' || filterUsedInSeo !== 'all';
+    const hasActiveFilters = filterBrand !== 'all' || filterCategory !== 'all' || filterStatus !== 'all' || filterMonitoring !== 'all' || searchQuery !== '' || filterLifecycle !== 'all' || filterQuarantine !== 'all' || filterUsedInSeo !== 'all';
 
     // Lifecycle & Quarantine handlers
     const handleMarkAsReleased = async () => {
