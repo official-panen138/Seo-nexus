@@ -391,6 +391,26 @@ export default function DomainsPage() {
             if (filterMonitoring === 'enabled') params.monitoring_enabled = true;
             if (filterMonitoring === 'disabled') params.monitoring_enabled = false;
             
+            // NEW: Lifecycle and quarantine filters
+            if (filterLifecycle !== 'all') params.lifecycle_status = filterLifecycle;
+            if (filterQuarantine !== 'all') {
+                if (filterQuarantine === 'quarantined') {
+                    params.is_quarantined = true;
+                } else if (filterQuarantine === 'not_quarantined') {
+                    params.is_quarantined = false;
+                } else {
+                    params.quarantine_category = filterQuarantine;
+                }
+            }
+            if (filterUsedInSeo !== 'all') {
+                params.used_in_seo = filterUsedInSeo === 'yes';
+            }
+            
+            // NEW: Special view modes
+            if (viewMode !== 'all') {
+                params.view_mode = viewMode;
+            }
+            
             const response = await assetDomainsAPI.getAll(params);
             
             // Handle paginated response
