@@ -515,7 +515,7 @@ class ExpirationMonitoringService:
             # Structure Chain - use full network structure formatted by tiers
             lines.append("")
             lines.append("━━━━━━━━━━━━━━━━━━━━━━")
-            lines.append("🔗 <b>FULL SEO STRUCTURE</b>")
+            lines.append("🧭 <b>STRUKTUR SEO TERKINI</b>")
             lines.append("━━━━━━━━━━━━━━━━━━━━━━")
             
             # Use pre-fetched full structure if available
