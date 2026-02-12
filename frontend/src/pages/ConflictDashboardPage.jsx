@@ -135,8 +135,10 @@ export default function ConflictDashboardPage() {
         return ((metrics.resolved_count / metrics.total_conflicts) * 100).toFixed(1);
     };
 
-    // Get recurring conflicts
-    const recurringConflicts = storedConflicts.filter(c => c.recurrence_count > 0);
+    // Get recurring conflicts - only show unresolved ones (detected or under_review)
+    const recurringConflicts = storedConflicts.filter(c => 
+        c.recurrence_count > 0 && c.status !== 'resolved'
+    );
 
     // Get top resolvers from metrics
     const topResolvers = metrics?.by_resolver 
