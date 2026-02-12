@@ -157,7 +157,7 @@ export default function SettingsPage() {
     const loadSettings = async () => {
         try {
             const [seoRes, brandingRes, timezoneRes, domainMonitoringRes, emailAlertsRes, digestRes, perfRes] = await Promise.all([
-                settingsAPI.getSeoTelegram().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } })),
+                settingsAPI.getSeoTelegram().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true, seo_leader_telegram_usernames: [] } })),
                 settingsAPI.getBranding().catch(() => ({ data: { site_title: 'SEO//NOC', site_description: '', tagline: 'Domain Network Management System', logo_url: '' } })),
                 settingsAPI.getTimezone().catch(() => ({ data: { default_timezone: 'Asia/Jakarta', timezone_label: 'GMT+7' } })),
                 domainMonitoringTelegramAPI.getSettings().catch(() => ({ data: { bot_token: '', chat_id: '', enabled: true } })),
@@ -165,7 +165,10 @@ export default function SettingsPage() {
                 weeklyDigestAPI.getSettings().catch(() => ({ data: { enabled: false, schedule_day: 'monday', schedule_hour: 9 } })),
                 performanceAlertsAPI.getThresholds().catch(() => ({ data: { thresholds: {} } }))
             ]);
-            setSeoTelegramConfig(seoRes.data);
+            // Ensure seo_leader_telegram_usernames is always an array
+            const seoData = seoRes.data || {};
+            seoData.seo_leader_telegram_usernames = seoData.seo_leader_telegram_usernames || [];
+            setSeoTelegramConfig(seoData);
             setBrandingConfig(brandingRes.data);
             setTimezoneConfig(timezoneRes.data);
             setDomainMonitoringConfig(domainMonitoringRes.data);
