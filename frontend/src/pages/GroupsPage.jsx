@@ -36,7 +36,9 @@ import {
     Lock,
     Users,
     AlertCircle,
-    Clock
+    Clock,
+    ShieldAlert,
+    AlertTriangle
 } from 'lucide-react';
 import { formatDate, debounce } from '../lib/utils';
 
