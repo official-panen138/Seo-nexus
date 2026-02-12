@@ -438,6 +438,12 @@ export default function DomainsPage() {
             if (filterMonitoring === 'enabled') params.monitoring_enabled = true;
             if (filterMonitoring === 'disabled') params.monitoring_enabled = false;
             
+            // NEW: Technical monitoring status filter (up/down/js_challenge/etc)
+            if (filterMonitoringStatus !== 'all') params.monitoring_status = filterMonitoringStatus;
+            
+            // NEW: Domain active status filter (active/expired)
+            if (filterDomainActiveStatus !== 'all') params.domain_active_status = filterDomainActiveStatus;
+            
             // NEW: Lifecycle and quarantine filters
             if (filterLifecycle !== 'all') params.lifecycle_status = filterLifecycle;
             if (filterQuarantine !== 'all') {
