@@ -126,6 +126,12 @@ export const conflictsAPI = {
     getMetrics: (params = {}) => apiV3.get('/conflicts/metrics', { params }),
     // Create optimization for a specific conflict
     createOptimization: (conflictId) => apiV3.post(`/conflicts/${conflictId}/create-optimization`),
+    // Resolve a conflict
+    resolve: (conflictId, note) => apiV3.post(`/conflicts/${conflictId}/resolve`, { resolution_note: note }),
+    // Super Admin approval (auto-resolves and deactivates)
+    approve: (conflictId, note) => apiV3.post(`/conflicts/${conflictId}/approve`, { approval_note: note }),
+    // Run migration for legacy data
+    migrateApproved: () => apiV3.post('/conflicts/migrate-approved'),
 };
 
 // Reports API
