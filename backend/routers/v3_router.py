@@ -1452,8 +1452,14 @@ async def get_asset_domains(
         pass  # Handle in enrichment
     
     elif view_mode == "not_renewed":
-        # Not Renewed = lifecycle_status is NOT_RENEWED (auto-set when domain expires)
-        query["lifecycle_status"] = DomainLifecycleStatus.NOT_RENEWED.value
+        # Not Renewed = domains where expiration_date has passed (auto-transitioned to NOT_RENEWED)
+        # Query by expiration_date <= now since lifecycle_status is auto-computed in enrichment
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        query["$or"] = [
+            {"lifecycle_status": DomainLifecycleStatus.NOT_RENEWED.value},
+            {"expiration_date": {"$lte": now.isoformat()}}
+        ]
 
     # Filter by network_id if provided (domains used in a specific SEO network)
     domain_ids_in_seo = None
