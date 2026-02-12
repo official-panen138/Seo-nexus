@@ -1179,7 +1179,21 @@ export default function DomainsPage() {
                                 {useV3 ? (
                                     <>
                                         <TableHead>SEO Networks</TableHead>
-                                        <TableHead>Lifecycle</TableHead>
+                                        <TableHead>
+                                            <div className="flex items-center gap-1">
+                                                Lifecycle
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Info className="h-3.5 w-3.5 text-zinc-500 cursor-help" />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-xs whitespace-pre-line text-xs">
+                                                            {LIFECYCLE_TOOLTIP}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </div>
+                                        </TableHead>
                                         <TableHead>Monitoring</TableHead>
                                         <TableHead>Expiration</TableHead>
                                     </>
