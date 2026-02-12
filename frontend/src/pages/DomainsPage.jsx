@@ -50,7 +50,9 @@ import {
     ShieldOff,
     Clock,
     Ban,
-    Activity
+    Activity,
+    Info,
+    AlertTriangle
 } from 'lucide-react';
 import { 
     TIER_LABELS, 
