@@ -135,9 +135,13 @@ export default function ConflictDashboardPage() {
         return ((metrics.resolved_count / metrics.total_conflicts) * 100).toFixed(1);
     };
 
-    // Get recurring conflicts - only show unresolved ones (detected or under_review)
+    // FRONTEND SAFETY GUARD: Recurring conflicts filter
+    // ONLY show active, unresolved conflicts with recurrence > 0
+    // This is a safety net - backend should already filter these out
     const recurringConflicts = storedConflicts.filter(c => 
-        c.recurrence_count > 0 && c.status !== 'resolved'
+        c.recurrence_count > 0 
+        && c.is_active !== false  // Exclude inactive conflicts
+        && !['resolved', 'approved', 'ignored'].includes(c.status)  // Exclude terminal statuses
     );
 
     // Get top resolvers from metrics
@@ -146,6 +150,19 @@ export default function ConflictDashboardPage() {
             .sort((a, b) => b[1] - a[1])
             .slice(0, 5)
         : [];
+
+    // Handle Super Admin approval
+    const handleApproveConflict = async (conflictId) => {
+        try {
+            const res = await conflictsAPI.approve(conflictId);
+            if (res.data?.success) {
+                toast.success('Conflict approved and deactivated');
+                loadData(); // Reload to reflect changes
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to approve conflict');
+        }
+    };
 
     if (loading) {
         return (
