@@ -92,7 +92,7 @@ const DOMAIN_ACTIVE_STATUS_COLORS = {
 };
 
 // ===== MONITORING STATUS (Technical - AUTO) =====
-// Updated by monitoring engine - NOT editable
+// Updated by monitoring engine - NOT editable manually
 const MONITORING_STATUS_LABELS = {
     'up': 'Up',
     'down': 'Down',
@@ -113,29 +113,40 @@ const MONITORING_STATUS_COLORS = {
     'unknown': 'text-zinc-400 bg-zinc-500/10'
 };
 
-// ===== LIFECYCLE STATUS (Strategic - MANUAL) =====
-// Super Admin ONLY can edit
+// Monitoring Status tooltip (MANDATORY)
+const MONITORING_STATUS_TOOLTIP = `Latest technical check result.
+"Unknown" means monitoring is disabled or not yet executed.`;
+
+// ===== LIFECYCLE STATUS (Strategic - MANUAL/AUTO) =====
+// Super Admin ONLY can edit (except Not Renewed which is auto-set)
 const LIFECYCLE_STATUS_LABELS = {
     'active': 'Active',
     'released': 'Released',
-    'quarantined': 'Quarantined'
+    'quarantined': 'Quarantined',
+    'not_renewed': 'Not Renewed'
 };
 
 const LIFECYCLE_STATUS_COLORS = {
     'active': 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10',
     'released': 'text-zinc-400 border-zinc-400/30 bg-zinc-500/10',
-    'quarantined': 'text-orange-400 border-orange-400/30 bg-orange-500/10'
+    'quarantined': 'text-orange-400 border-orange-400/30 bg-orange-500/10',
+    'not_renewed': 'text-red-400 border-red-400/30 bg-red-500/10'
 };
 
 // Lifecycle tooltip text (MANDATORY UI REQUIREMENT)
-const LIFECYCLE_TOOLTIP = `Lifecycle represents a strategic decision about domain usage.
-It is NOT related to uptime or expiration status.
+const LIFECYCLE_TOOLTIP = `Describes how the domain is used in SEO strategy.
+Not related to availability or monitoring result.
 
 • Active: Used in SEO Networks, monitoring enabled
 • Released: Intentionally not renewed / abandoned
 • Quarantined: Domain is problematic (Spam, DMCA, etc.)
+• Not Renewed: Domain has expired (auto-set)
 
 ⚠️ Only Active domains can be monitored.`;
+
+// Monitoring Toggle tooltip (MANDATORY)
+const MONITORING_TOGGLE_TOOLTIP = `Enable or disable technical monitoring for this domain.
+When OFF, no checks or alerts will be performed.`;
 
 // ===== QUARANTINE CATEGORIES =====
 const QUARANTINE_CATEGORY_LABELS = {
