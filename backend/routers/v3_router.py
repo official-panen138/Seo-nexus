@@ -2387,31 +2387,163 @@ async def get_lifecycle_info(
     }
 
 
+# ==================== QUARANTINE CATEGORIES CRUD ====================
+
+
 @router.get("/quarantine-categories")
 async def get_quarantine_categories(
     current_user: dict = Depends(get_current_user_wrapper),
 ):
     """
-    Get available quarantine categories.
-    Returns both predefined and custom categories (from existing quarantined domains).
+    Get all quarantine categories from master data.
+    Returns categories from database, seeded with defaults if empty.
     """
-    # Get predefined categories
-    categories = [
-        {"value": c.value, "label": QUARANTINE_CATEGORY_LABELS.get(c.value, c.value)}
-        for c in QuarantineCategory
-    ]
+    # Check if categories exist in DB
+    categories = await db.quarantine_categories.find({}, {"_id": 0}).sort("order", 1).to_list(100)
     
-    # Get custom categories from existing quarantined domains
-    custom_categories = await db.asset_domains.distinct(
-        "quarantine_category",
-        {"quarantine_category": {"$nin": [c.value for c in QuarantineCategory], "$ne": None}}
-    )
-    
-    for custom in custom_categories:
-        if custom:
-            categories.append({"value": custom, "label": custom})
+    if not categories:
+        # Seed with default categories
+        default_categories = [
+            {"id": str(uuid.uuid4()), "value": "spam", "label": "Spam (Pure Spam)", "order": 1, "is_default": True},
+            {"id": str(uuid.uuid4()), "value": "dmca", "label": "DMCA", "order": 2, "is_default": True},
+            {"id": str(uuid.uuid4()), "value": "manual_penalty", "label": "Manual Penalty", "order": 3, "is_default": True},
+            {"id": str(uuid.uuid4()), "value": "rollback_restore", "label": "Rollback / Restore", "order": 4, "is_default": True},
+            {"id": str(uuid.uuid4()), "value": "penalized", "label": "Penalized", "order": 5, "is_default": True},
+            {"id": str(uuid.uuid4()), "value": "other", "label": "Other", "order": 6, "is_default": True},
+        ]
+        await db.quarantine_categories.insert_many(default_categories)
+        categories = default_categories
     
     return {"categories": categories}
+
+
+class QuarantineCategoryCreate(BaseModel):
+    """Create quarantine category request"""
+    value: str = Field(..., min_length=1, max_length=50, description="Unique slug value (lowercase, no spaces)")
+    label: str = Field(..., min_length=1, max_length=100, description="Display label")
+
+
+class QuarantineCategoryUpdate(BaseModel):
+    """Update quarantine category request"""
+    value: Optional[str] = Field(None, min_length=1, max_length=50)
+    label: Optional[str] = Field(None, min_length=1, max_length=100)
+
+
+@router.post("/quarantine-categories")
+async def create_quarantine_category(
+    data: QuarantineCategoryCreate,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Create a new quarantine category. Super Admin only.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can create quarantine categories")
+    
+    # Normalize value (lowercase, replace spaces with underscores)
+    normalized_value = data.value.lower().replace(" ", "_").replace("-", "_")
+    
+    # Check if value already exists
+    existing = await db.quarantine_categories.find_one({"value": normalized_value})
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Category with value '{normalized_value}' already exists")
+    
+    # Get max order
+    max_order_doc = await db.quarantine_categories.find_one(sort=[("order", -1)])
+    max_order = max_order_doc.get("order", 0) if max_order_doc else 0
+    
+    category = {
+        "id": str(uuid.uuid4()),
+        "value": normalized_value,
+        "label": data.label,
+        "order": max_order + 1,
+        "is_default": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user.get("id"),
+    }
+    
+    await db.quarantine_categories.insert_one(category)
+    
+    # Return without _id
+    del category["_id"] if "_id" in category else None
+    return {"message": "Category created successfully", "category": category}
+
+
+@router.put("/quarantine-categories/{category_id}")
+async def update_quarantine_category(
+    category_id: str,
+    data: QuarantineCategoryUpdate,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Update a quarantine category. Super Admin only.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can update quarantine categories")
+    
+    category = await db.quarantine_categories.find_one({"id": category_id})
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    update_dict = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if data.label is not None:
+        update_dict["label"] = data.label
+    
+    if data.value is not None:
+        normalized_value = data.value.lower().replace(" ", "_").replace("-", "_")
+        # Check if new value already exists (for different category)
+        existing = await db.quarantine_categories.find_one({
+            "value": normalized_value, 
+            "id": {"$ne": category_id}
+        })
+        if existing:
+            raise HTTPException(status_code=400, detail=f"Category with value '{normalized_value}' already exists")
+        
+        # Also update all domains using old value
+        old_value = category.get("value")
+        if old_value != normalized_value:
+            await db.asset_domains.update_many(
+                {"quarantine_category": old_value},
+                {"$set": {"quarantine_category": normalized_value}}
+            )
+        
+        update_dict["value"] = normalized_value
+    
+    await db.quarantine_categories.update_one({"id": category_id}, {"$set": update_dict})
+    
+    # Return updated category
+    updated = await db.quarantine_categories.find_one({"id": category_id}, {"_id": 0})
+    return {"message": "Category updated successfully", "category": updated}
+
+
+@router.delete("/quarantine-categories/{category_id}")
+async def delete_quarantine_category(
+    category_id: str,
+    current_user: dict = Depends(get_current_user_wrapper),
+):
+    """
+    Delete a quarantine category. Super Admin only.
+    Cannot delete if category is in use by any domain.
+    """
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Only Super Admin can delete quarantine categories")
+    
+    category = await db.quarantine_categories.find_one({"id": category_id})
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    # Check if category is in use
+    domains_using = await db.asset_domains.count_documents({"quarantine_category": category.get("value")})
+    if domains_using > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete category '{category.get('label')}' - it is used by {domains_using} domain(s)"
+        )
+    
+    await db.quarantine_categories.delete_one({"id": category_id})
+    
+    return {"message": "Category deleted successfully"}
 
 
 # ==================== SEO NETWORKS ENDPOINTS ====================
