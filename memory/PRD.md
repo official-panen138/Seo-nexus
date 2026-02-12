@@ -49,6 +49,23 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## What's Been Implemented
 
+### P0 Bug Fix: "Failed to load conflicts" Toast Error (Feb 13, 2026) - COMPLETE
+**Issue:** The unified SEO Conflicts dashboard at `/alerts` displayed a "Failed to load conflicts" toast error immediately upon page load, even though the API was functioning correctly.
+
+**Root Cause:** In `AlertsPage.jsx`, the code was calling `conflictsAPI.getAll()` which doesn't exist in the API definition. The correct method is `conflictsAPI.getStored()`.
+
+**Fix Applied:**
+- Changed `conflictsAPI.getAll()` to `conflictsAPI.getStored()` in `AlertsPage.jsx` line 151
+- Deleted obsolete `ConflictDashboardPage.jsx` file (replaced by unified AlertsPage)
+- Removed the dead import from `App.js`
+
+**Files Updated:**
+- `/app/frontend/src/pages/AlertsPage.jsx` - Fixed API call
+- `/app/frontend/src/App.js` - Removed dead import
+- `/app/frontend/src/pages/ConflictDashboardPage.jsx` - DELETED (obsolete)
+
+---
+
 ### Merged SEO Conflicts Dashboard (Feb 12, 2026) - COMPLETE
 **Feature:** Merged two separate conflict dashboards (SEO Conflicts + Resolution Dashboard) into one unified page.
 
