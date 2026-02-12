@@ -1882,6 +1882,184 @@ Tier 2:
                                 </CardContent>
                             </Card>
                         </TabsContent>
+
+                        {/* Master Data Tab */}
+                        <TabsContent value="master-data" className="space-y-6" data-testid="master-data-content">
+                            {/* Quarantine Categories */}
+                            <Card className="bg-card border-border">
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <ShieldAlert className="h-5 w-5 text-orange-400" />
+                                            <div>
+                                                <CardTitle>Quarantine Categories</CardTitle>
+                                                <CardDescription>
+                                                    Manage quarantine reasons for domains. Super Admin only.
+                                                </CardDescription>
+                                            </div>
+                                        </div>
+                                        {isSuperAdmin && (
+                                            <Button 
+                                                onClick={() => setShowAddCategory(true)}
+                                                className="flex items-center gap-2"
+                                                data-testid="add-category-btn"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                                Add Category
+                                            </Button>
+                                        )}
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {/* Add Category Form */}
+                                    {showAddCategory && (
+                                        <div className="p-4 bg-zinc-900/50 border border-border rounded-lg space-y-4">
+                                            <h4 className="font-medium text-sm">Add New Category</h4>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label>Value (slug)</Label>
+                                                    <Input
+                                                        value={newCategory.value}
+                                                        onChange={(e) => setNewCategory({...newCategory, value: e.target.value.toLowerCase().replace(/\s+/g, '_')})}
+                                                        placeholder="e.g., hacked_site"
+                                                        className="bg-black border-border"
+                                                        data-testid="new-category-value"
+                                                    />
+                                                    <p className="text-xs text-zinc-500">Lowercase, no spaces (auto-converted)</p>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Display Label</Label>
+                                                    <Input
+                                                        value={newCategory.label}
+                                                        onChange={(e) => setNewCategory({...newCategory, label: e.target.value})}
+                                                        placeholder="e.g., Hacked Site"
+                                                        className="bg-black border-border"
+                                                        data-testid="new-category-label"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    onClick={() => {
+                                                        setShowAddCategory(false);
+                                                        setNewCategory({ value: '', label: '' });
+                                                    }}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    onClick={handleCreateCategory}
+                                                    disabled={savingCategory || !newCategory.value || !newCategory.label}
+                                                    data-testid="save-new-category-btn"
+                                                >
+                                                    {savingCategory ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                    ) : null}
+                                                    Create Category
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Categories List */}
+                                    {loadingCategories ? (
+                                        <div className="flex justify-center py-8">
+                                            <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {quarantineCategories.map((category) => (
+                                                <div 
+                                                    key={category.id} 
+                                                    className="flex items-center justify-between p-3 bg-zinc-900/30 border border-border rounded-lg"
+                                                    data-testid={`category-row-${category.value}`}
+                                                >
+                                                    {editingCategory?.id === category.id ? (
+                                                        // Edit mode
+                                                        <div className="flex items-center gap-4 flex-1">
+                                                            <Input
+                                                                value={editingCategory.value}
+                                                                onChange={(e) => setEditingCategory({...editingCategory, value: e.target.value.toLowerCase().replace(/\s+/g, '_')})}
+                                                                className="bg-black border-border w-40"
+                                                                data-testid={`edit-category-value-${category.value}`}
+                                                            />
+                                                            <Input
+                                                                value={editingCategory.label}
+                                                                onChange={(e) => setEditingCategory({...editingCategory, label: e.target.value})}
+                                                                className="bg-black border-border flex-1"
+                                                                data-testid={`edit-category-label-${category.value}`}
+                                                            />
+                                                            <div className="flex items-center gap-2">
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => setEditingCategory(null)}
+                                                                >
+                                                                    Cancel
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={handleUpdateCategory}
+                                                                    disabled={savingCategory}
+                                                                    data-testid={`save-category-btn-${category.value}`}
+                                                                >
+                                                                    {savingCategory ? (
+                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                    ) : 'Save'}
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        // View mode
+                                                        <>
+                                                            <div className="flex items-center gap-4">
+                                                                <code className="text-xs bg-zinc-800 px-2 py-1 rounded text-zinc-400">
+                                                                    {category.value}
+                                                                </code>
+                                                                <span className="text-sm">{category.label}</span>
+                                                                {category.is_default && (
+                                                                    <Badge variant="outline" className="text-xs text-zinc-500">
+                                                                        Default
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            {isSuperAdmin && (
+                                                                <div className="flex items-center gap-2">
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        onClick={() => setEditingCategory({...category})}
+                                                                        data-testid={`edit-category-btn-${category.value}`}
+                                                                    >
+                                                                        <Edit className="h-4 w-4" />
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                                                                        onClick={() => handleDeleteCategory(category.id)}
+                                                                        data-testid={`delete-category-btn-${category.value}`}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            
+                                            {quarantineCategories.length === 0 && (
+                                                <div className="text-center py-8 text-zinc-500">
+                                                    No quarantine categories found. Click "Add Category" to create one.
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
                     </Tabs>
                 </div>
             </div>
