@@ -6992,13 +6992,15 @@ async def migrate_approved_conflicts(
     current_user: dict = Depends(get_current_user_wrapper),
 ):
     """
-    ONE-TIME MIGRATION: Fix legacy approved/resolved conflicts that are still active.
+    ONE-TIME MIGRATION: Fix legacy conflicts data.
     
     This migration will:
     1. Find all conflicts with status 'resolved' or 'approved' that have is_active=true
     2. Set is_active = false
     3. Reset recurrence_count = 0
     4. Ensure resolved_at is set
+    5. Backfill fingerprints for all conflicts
+    6. Set first_detected_at from detected_at
     
     Super Admin only.
     """
@@ -7010,6 +7012,16 @@ async def migrate_approved_conflicts(
         )
     
     now = datetime.now(timezone.utc).isoformat()
+    
+    # Import fingerprint generator
+    from services.conflict_metrics_service import generate_conflict_fingerprint
+    
+    stats = {
+        "status_fixed": 0,
+        "fingerprints_added": 0,
+        "first_detected_set": 0,
+        "total_processed": 0
+    }
     
     # Find and update all legacy approved/resolved conflicts
     result = await db.seo_conflicts.update_many(
@@ -7032,6 +7044,7 @@ async def migrate_approved_conflicts(
             }
         }
     )
+    stats["status_fixed"] = result.modified_count
     
     # Also ensure all conflicts have is_active field
     await db.seo_conflicts.update_many(
@@ -7039,10 +7052,52 @@ async def migrate_approved_conflicts(
         {"$set": {"is_active": True}}
     )
     
+    # Backfill fingerprints for conflicts without them
+    conflicts_no_fp = await db.seo_conflicts.find(
+        {"$or": [{"fingerprint": None}, {"fingerprint": ""}, {"fingerprint": {"$exists": False}}]},
+        {"_id": 0}
+    ).to_list(5000)
+    
+    for conflict in conflicts_no_fp:
+        conflict_id = conflict.get("id")
+        if not conflict_id:
+            continue
+        
+        update_data = {"updated_at": now}
+        
+        # Generate fingerprint
+        fingerprint = generate_conflict_fingerprint(
+            network_id=conflict.get("network_id", ""),
+            conflict_type=conflict.get("conflict_type", ""),
+            domain_id=conflict.get("domain_id") or conflict.get("node_a_id", ""),
+            node_path=conflict.get("node_a_path", ""),
+            tier=conflict.get("node_a_tier"),
+            target_path=conflict.get("target_path") or conflict.get("node_b_path", "")
+        )
+        update_data["fingerprint"] = fingerprint
+        stats["fingerprints_added"] += 1
+        
+        # Set first_detected_at if missing
+        if not conflict.get("first_detected_at") and conflict.get("detected_at"):
+            update_data["first_detected_at"] = conflict.get("detected_at")
+            stats["first_detected_set"] += 1
+        
+        # Initialize missing fields
+        if conflict.get("is_false_resolution") is None:
+            update_data["is_false_resolution"] = False
+        if conflict.get("recurrence_history") is None:
+            update_data["recurrence_history"] = []
+        
+        await db.seo_conflicts.update_one(
+            {"id": conflict_id},
+            {"$set": update_data}
+        )
+        stats["total_processed"] += 1
+    
     return {
         "success": True,
-        "message": f"Migration complete. Fixed {result.modified_count} conflicts.",
-        "modified_count": result.modified_count
+        "message": "Migration complete",
+        "stats": stats
     }
 
 
