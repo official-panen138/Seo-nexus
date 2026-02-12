@@ -1,30 +1,39 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Layout } from '../components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { 
     BookOpen, 
     Search, 
     ChevronRight, 
     ChevronDown,
+    ChevronLeft,
     Home,
     Shield,
     Globe,
-    Network,
-    Bell,
-    Settings,
-    Users,
-    FileText,
     HelpCircle,
-    ExternalLink,
     Bookmark,
     CheckCircle,
-    AlertTriangle,
-    Info
+    Info,
+    Image as ImageIcon
 } from 'lucide-react';
+
+// Flatten all sections for navigation
+const getAllSections = (tocData) => {
+    const sections = [];
+    tocData.forEach(chapter => {
+        chapter.sections.forEach(section => {
+            sections.push({
+                ...section,
+                chapterId: chapter.id,
+                chapterTitle: chapter.title
+            });
+        });
+    });
+    return sections;
+};
 
 // Table of Contents Data
 const tocData = [
@@ -33,11 +42,11 @@ const tocData = [
         title: 'A. Getting Started',
         icon: Home,
         sections: [
-            { id: 'overview', title: 'A.1 Overview Aplikasi' },
+            { id: 'overview', title: 'A.1 Overview Aplikasi', hasImage: true },
             { id: 'requirements', title: 'A.2 System Requirements' },
-            { id: 'login', title: 'A.3 Login & Logout' },
-            { id: 'register', title: 'A.4 Registrasi Akun' },
-            { id: 'navigation', title: 'A.5 Navigasi Menu' },
+            { id: 'login', title: 'A.3 Login & Logout', hasImage: true },
+            { id: 'register', title: 'A.4 Registrasi Akun', hasImage: true },
+            { id: 'navigation', title: 'A.5 Navigasi Menu', hasImage: true },
             { id: 'glossary', title: 'A.6 Glossary' },
         ]
     },
@@ -58,17 +67,17 @@ const tocData = [
         title: 'C. Modul Utama',
         icon: Globe,
         sections: [
-            { id: 'dashboard', title: 'C.1 Dashboard' },
-            { id: 'asset-domains', title: 'C.2 Asset Domains' },
-            { id: 'seo-networks', title: 'C.3 SEO Networks' },
+            { id: 'dashboard', title: 'C.1 Dashboard', hasImage: true },
+            { id: 'asset-domains', title: 'C.2 Asset Domains', hasImage: true },
+            { id: 'seo-networks', title: 'C.3 SEO Networks', hasImage: true },
             { id: 'optimizations', title: 'C.4 Optimizations' },
-            { id: 'conflicts', title: 'C.5 SEO Conflicts' },
-            { id: 'monitoring', title: 'C.6 Domain Monitoring' },
-            { id: 'reports', title: 'C.7 Reports' },
-            { id: 'team-eval', title: 'C.8 Team Evaluation' },
+            { id: 'conflicts', title: 'C.5 SEO Conflicts', hasImage: true },
+            { id: 'monitoring', title: 'C.6 Domain Monitoring', hasImage: true },
+            { id: 'reports', title: 'C.7 Reports', hasImage: true },
+            { id: 'team-eval', title: 'C.8 Team Evaluation', hasImage: true },
             { id: 'master-data', title: 'C.9 Master Data' },
-            { id: 'users', title: 'C.10 User Management' },
-            { id: 'settings', title: 'C.11 Settings' },
+            { id: 'users', title: 'C.10 User Management', hasImage: true },
+            { id: 'settings', title: 'C.11 Settings', hasImage: true },
             { id: 'audit-logs', title: 'C.12 Audit Logs' },
         ]
     },
@@ -95,10 +104,28 @@ const tocData = [
     }
 ];
 
-// Content sections
+// Screenshot URLs - using placeholder images that represent each section
+const sectionImages = {
+    'overview': '/api/placeholder/dashboard',
+    'login': '/api/placeholder/login',
+    'register': '/api/placeholder/register',
+    'navigation': '/api/placeholder/navigation',
+    'dashboard': '/api/placeholder/dashboard',
+    'asset-domains': '/api/placeholder/domains',
+    'seo-networks': '/api/placeholder/networks',
+    'conflicts': '/api/placeholder/conflicts',
+    'monitoring': '/api/placeholder/monitoring',
+    'reports': '/api/placeholder/reports',
+    'team-eval': '/api/placeholder/team',
+    'users': '/api/placeholder/users',
+    'settings': '/api/placeholder/settings',
+};
+
+// Content sections with images
 const contentSections = {
     'overview': {
         title: 'A.1 Overview Aplikasi SEO-NOC',
+        image: { caption: 'Gambar 1 - Dashboard SEO-NOC', description: 'Tampilan utama dashboard dengan widget statistik' },
         content: `
 ## Apa itu SEO-NOC?
 
@@ -145,7 +172,6 @@ const contentSections = {
 
 ## Akun yang Diperlukan
 
-Untuk menggunakan SEO-NOC, Anda memerlukan:
 1. Akun user yang terdaftar di sistem
 2. Approval dari Super Admin (untuk akun baru)
 3. Telegram account (opsional, untuk menerima notifikasi)
@@ -153,6 +179,7 @@ Untuk menggunakan SEO-NOC, Anda memerlukan:
     },
     'login': {
         title: 'A.3 Login & Logout',
+        image: { caption: 'Gambar 2 - Halaman Login', description: 'Form login dengan field email dan password' },
         content: `
 ## Cara Login
 
@@ -187,6 +214,7 @@ Untuk menggunakan SEO-NOC, Anda memerlukan:
     },
     'register': {
         title: 'A.4 Registrasi Akun Baru',
+        image: { caption: 'Gambar 3 - Halaman Registrasi', description: 'Form registrasi akun baru' },
         content: `
 ## Membuat Akun Baru
 
@@ -225,6 +253,7 @@ Untuk menggunakan SEO-NOC, Anda memerlukan:
     },
     'navigation': {
         title: 'A.5 Navigasi Menu & Struktur Sidebar',
+        image: { caption: 'Gambar 4 - Sidebar Navigation', description: 'Struktur menu sidebar' },
         content: `
 ## Struktur Menu Utama
 
@@ -278,9 +307,6 @@ Di bagian atas sidebar terdapat **Brand Switcher**:
 | **Monitoring Toggle** | Switch untuk mengaktifkan/menonaktifkan monitoring |
 | **Availability** | Status ketersediaan domain (UP/DOWN) |
 | **Expiration** | Tanggal berakhirnya registrasi domain |
-| **Optimization** | Task optimasi SEO yang perlu dikerjakan |
-| **Conflict** | Masalah dalam konfigurasi SEO |
-| **Brand Scope** | Batasan akses user terhadap brand tertentu |
         `
     },
     'role-types': {
@@ -343,7 +369,7 @@ Di bagian atas sidebar terdapat **Brand Switcher**:
 | Configure Settings | ✅ | ❌ | ❌ |
 | Manage Master Data | ✅ | ✅ | ❌ |
 
-*Terbatas pada network yang di-assign atau view-only
+> *Terbatas pada network yang di-assign atau view-only
         `
     },
     'brand-scope': {
@@ -420,6 +446,7 @@ Error 403 muncul ketika user mencoba mengakses fitur yang tidak diizinkan.
     },
     'dashboard': {
         title: 'C.1 Dashboard',
+        image: { caption: 'Gambar 5 - Dashboard Overview', description: 'Dashboard dengan widget statistik dan panel informasi' },
         content: `
 ## Overview Dashboard
 
@@ -464,6 +491,7 @@ Menampilkan alert terbaru dengan badge severity:
     },
     'asset-domains': {
         title: 'C.2 Asset Domains',
+        image: { caption: 'Gambar 6 - Asset Domains', description: 'Tabel manajemen domain dengan kolom status' },
         content: `
 ## Tampilan Halaman
 
@@ -507,6 +535,7 @@ Menampilkan alert terbaru dengan badge severity:
     },
     'seo-networks': {
         title: 'C.3 SEO Networks',
+        image: { caption: 'Gambar 7 - SEO Networks', description: 'Visual graph struktur jaringan SEO' },
         content: `
 ## Daftar Network
 
@@ -584,6 +613,7 @@ Setelah manager merespons, Super Admin dapat resolve complaint.
     },
     'conflicts': {
         title: 'C.5 SEO Conflicts (Alert Center)',
+        image: { caption: 'Gambar 8 - Alert Center', description: 'Dashboard konflik SEO dengan metrik dan tabel' },
         content: `
 ## Apa itu SEO Conflict?
 
@@ -621,6 +651,7 @@ Klik tombol **"Create Optimization Tasks"** untuk membuat task dari konflik yang
     },
     'monitoring': {
         title: 'C.6 Domain Monitoring',
+        image: { caption: 'Gambar 9 - Monitoring Settings', description: 'Pengaturan monitoring domain' },
         content: `
 ## Konsep Monitoring
 
@@ -661,6 +692,7 @@ Domain Monitoring memantau 2 aspek:
     },
     'reports': {
         title: 'C.7 Reports',
+        image: { caption: 'Gambar 10 - Reports Dashboard', description: 'Halaman reports dengan chart dan analytics' },
         content: `
 ## Overview Reports
 
@@ -686,6 +718,7 @@ Domain Monitoring memantau 2 aspek:
     },
     'team-eval': {
         title: 'C.8 Team Evaluation',
+        image: { caption: 'Gambar 11 - Team Evaluation', description: 'Dashboard evaluasi performa tim' },
         content: `
 ## Overview
 
@@ -744,6 +777,7 @@ Kategori karantina: Spam, DMCA, Manual Penalty, Hacked Site, Other
     },
     'users': {
         title: 'C.10 User Management',
+        image: { caption: 'Gambar 12 - User Management', description: 'Tabel manajemen user' },
         content: `
 ## Daftar Users
 
@@ -769,6 +803,7 @@ Kategori karantina: Spam, DMCA, Manual Penalty, Hacked Site, Other
     },
     'settings': {
         title: 'C.11 Settings',
+        image: { caption: 'Gambar 13 - Settings', description: 'Halaman pengaturan sistem' },
         content: `
 ## Branding
 
@@ -987,10 +1022,42 @@ Hubungi Super Admin untuk update permission atau minta akses ke brand yang diper
     }
 };
 
+// Image component that shows placeholder with description
+const DocumentImage = ({ sectionId, imageInfo }) => {
+    if (!imageInfo) return null;
+    
+    return (
+        <div className="my-6 rounded-lg overflow-hidden border border-zinc-700 bg-zinc-800/50">
+            <div className="aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
+                <div className="text-center p-8">
+                    <ImageIcon className="h-16 w-16 text-zinc-600 mx-auto mb-4" />
+                    <p className="text-zinc-500 text-sm">{imageInfo.description}</p>
+                    <p className="text-zinc-600 text-xs mt-2">Screenshot akan ditampilkan di sini</p>
+                </div>
+            </div>
+            <div className="px-4 py-3 bg-zinc-800/80 border-t border-zinc-700">
+                <p className="text-sm text-zinc-400 text-center italic">{imageInfo.caption}</p>
+            </div>
+        </div>
+    );
+};
+
 export default function UserManualPage() {
     const [expandedSections, setExpandedSections] = useState(['getting-started']);
     const [activeSection, setActiveSection] = useState('overview');
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Get all sections flattened for navigation
+    const allSections = useMemo(() => getAllSections(tocData), []);
+    
+    // Find current section index
+    const currentIndex = useMemo(() => {
+        return allSections.findIndex(s => s.id === activeSection);
+    }, [allSections, activeSection]);
+
+    // Get previous and next sections
+    const prevSection = currentIndex > 0 ? allSections[currentIndex - 1] : null;
+    const nextSection = currentIndex < allSections.length - 1 ? allSections[currentIndex + 1] : null;
 
     const toggleSection = (sectionId) => {
         setExpandedSections(prev => 
@@ -1002,6 +1069,23 @@ export default function UserManualPage() {
 
     const handleSectionClick = (sectionId) => {
         setActiveSection(sectionId);
+        // Auto-expand parent chapter
+        const chapter = tocData.find(ch => ch.sections.some(s => s.id === sectionId));
+        if (chapter && !expandedSections.includes(chapter.id)) {
+            setExpandedSections(prev => [...prev, chapter.id]);
+        }
+    };
+
+    const handlePrevious = () => {
+        if (prevSection) {
+            handleSectionClick(prevSection.id);
+        }
+    };
+
+    const handleNext = () => {
+        if (nextSection) {
+            handleSectionClick(nextSection.id);
+        }
     };
 
     const currentContent = contentSections[activeSection] || contentSections['overview'];
@@ -1020,7 +1104,7 @@ export default function UserManualPage() {
             if (line.trim().startsWith('```')) {
                 if (inCodeBlock) {
                     elements.push(
-                        <pre key={`code-${index}`} className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto my-4 text-sm">
+                        <pre key={`code-${index}`} className="bg-zinc-900 text-zinc-100 p-4 rounded-lg overflow-x-auto my-4 text-sm font-mono">
                             <code>{codeContent.join('\n')}</code>
                         </pre>
                     );
@@ -1106,12 +1190,27 @@ export default function UserManualPage() {
             // List items
             else if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
                 const text = line.replace(/^[\s]*[-*]\s/, '').replace(/\*\*/g, '');
-                elements.push(
-                    <div key={index} className="flex items-start gap-2 ml-4 my-1">
-                        <ChevronRight className="h-4 w-4 text-blue-400 mt-1 flex-shrink-0" />
-                        <span className="text-zinc-400 text-sm">{text}</span>
-                    </div>
-                );
+                const isCheckbox = text.startsWith('[ ]') || text.startsWith('[x]');
+                
+                if (isCheckbox) {
+                    const checked = text.startsWith('[x]');
+                    const label = text.replace(/\[[ x]\]\s*/, '');
+                    elements.push(
+                        <div key={index} className="flex items-center gap-2 ml-4 my-1">
+                            <div className={`w-4 h-4 rounded border ${checked ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600'} flex items-center justify-center`}>
+                                {checked && <CheckCircle className="h-3 w-3 text-white" />}
+                            </div>
+                            <span className="text-zinc-400 text-sm">{label}</span>
+                        </div>
+                    );
+                } else {
+                    elements.push(
+                        <div key={index} className="flex items-start gap-2 ml-4 my-1">
+                            <ChevronRight className="h-4 w-4 text-blue-400 mt-1 flex-shrink-0" />
+                            <span className="text-zinc-400 text-sm">{text}</span>
+                        </div>
+                    );
+                }
             }
             // Numbered list
             else if (/^\d+\.\s/.test(line.trim())) {
@@ -1126,19 +1225,6 @@ export default function UserManualPage() {
                         </div>
                     );
                 }
-            }
-            // Checkbox
-            else if (line.trim().startsWith('- [ ]') || line.trim().startsWith('- [x]')) {
-                const checked = line.includes('[x]');
-                const text = line.replace(/- \[[ x]\]\s*/, '');
-                elements.push(
-                    <div key={index} className="flex items-center gap-2 ml-4 my-1">
-                        <div className={`w-4 h-4 rounded border ${checked ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600'} flex items-center justify-center`}>
-                            {checked && <CheckCircle className="h-3 w-3 text-white" />}
-                        </div>
-                        <span className="text-zinc-400 text-sm">{text}</span>
-                    </div>
-                );
             }
             // Regular paragraph
             else if (line.trim()) {
@@ -1230,6 +1316,14 @@ export default function UserManualPage() {
                                 {currentContent.title}
                             </h1>
 
+                            {/* Image if available */}
+                            {currentContent.image && (
+                                <DocumentImage 
+                                    sectionId={activeSection} 
+                                    imageInfo={currentContent.image} 
+                                />
+                            )}
+
                             {/* Content */}
                             <Card className="bg-zinc-900/50 border-zinc-800">
                                 <CardContent className="p-6">
@@ -1239,12 +1333,22 @@ export default function UserManualPage() {
 
                             {/* Navigation */}
                             <div className="flex justify-between mt-8 pt-6 border-t border-zinc-800">
-                                <Button variant="outline" className="text-zinc-400">
-                                    <ChevronRight className="h-4 w-4 rotate-180 mr-2" />
-                                    Previous
+                                <Button 
+                                    variant="outline" 
+                                    className="text-zinc-400 hover:text-white"
+                                    onClick={handlePrevious}
+                                    disabled={!prevSection}
+                                >
+                                    <ChevronLeft className="h-4 w-4 mr-2" />
+                                    {prevSection ? prevSection.title : 'Previous'}
                                 </Button>
-                                <Button variant="outline" className="text-zinc-400">
-                                    Next
+                                <Button 
+                                    variant="outline" 
+                                    className="text-zinc-400 hover:text-white"
+                                    onClick={handleNext}
+                                    disabled={!nextSection}
+                                >
+                                    {nextSection ? nextSection.title : 'Next'}
                                     <ChevronRight className="h-4 w-4 ml-2" />
                                 </Button>
                             </div>
