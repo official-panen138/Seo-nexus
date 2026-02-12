@@ -280,6 +280,8 @@ export default function DomainsPage() {
     const [filterCategory, setFilterCategory] = useState('all');
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterMonitoring, setFilterMonitoring] = useState('all');
+    const [filterMonitoringStatus, setFilterMonitoringStatus] = useState('all');  // Technical monitoring status (up/down/etc)
+    const [filterDomainActiveStatus, setFilterDomainActiveStatus] = useState('all');  // Administrative status (active/expired)
     const [showFilters, setShowFilters] = useState(false);
     
     // NEW: View mode tabs (all, released, quarantined, unmonitored)
