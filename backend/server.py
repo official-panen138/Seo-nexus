@@ -94,6 +94,35 @@ async def lifespan(app: FastAPI):
     reminder_scheduler.start()
     logger.info("Optimization Reminder Scheduler started")
 
+    # Start Team Performance Check Scheduler (daily)
+    from services.team_performance_alert_service import get_team_performance_service
+    
+    async def run_performance_check():
+        """Background task to check team performance daily."""
+        try:
+            service = get_team_performance_service(db)
+            result = await service.check_performance_and_alert()
+            if result.get("alerts_sent", 0) > 0:
+                logger.info(f"Team performance alerts sent: {result['alerts_sent']}")
+            else:
+                logger.debug("Team performance check: no alerts needed")
+        except Exception as e:
+            logger.error(f"Team performance check failed: {e}")
+    
+    # Schedule daily performance check
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
+    from apscheduler.triggers.cron import CronTrigger
+    
+    performance_scheduler = AsyncIOScheduler()
+    performance_scheduler.add_job(
+        run_performance_check,
+        trigger=CronTrigger(hour=9, minute=0),  # Daily at 9:00 AM
+        id="team_performance_check",
+        replace_existing=True
+    )
+    performance_scheduler.start()
+    logger.info("Team Performance Check Scheduler started (daily at 9:00 AM)")
+
     logger.info(
         "V3 services initialized: ActivityLog, TierCalculation, Monitoring, Reminders"
     )
