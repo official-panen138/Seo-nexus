@@ -1967,8 +1967,16 @@ if message_thread_id and ("thread" in error_text or "topic" in error_text):
   - Manual check via Settings > Performance Alerts tab
   - Alert history tracking in database
 
+- ✅ **Domain Lifecycle & Quarantine (Feb 12, 2026):** Complete domain monitoring overhaul
+  - Lifecycle statuses (active, expired_pending, expired_released, inactive, archived)
+  - Quarantine system with categories (spam_murni, DMCA, penalized, etc.)
+  - Super Admin only permissions for lifecycle/quarantine management
+  - SEO Monitoring Coverage panel with real-time stats
+  - View mode tabs (All, Unmonitored, Released, Quarantined)
+
 ### P2 - Future
 - **Email Notifications:** Optional email notifications for conflict detection/resolution
 - **Advanced Auto-Assign:** Complex assignment rules by tier, workload, or expertise
 - **v3_router.py Refactoring:** Break down the 3000+ line file into smaller domain-specific routers
+- **Root Domain Monitoring Rule:** Auto-detect when SEO networks use paths (e.g., domain.com/blog) and require root domain monitoring
 
