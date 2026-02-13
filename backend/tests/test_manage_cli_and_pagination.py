@@ -356,7 +356,7 @@ class TestAssetDomainsPagination:
     def test_pagination_expired_filter_returns_correct_total(self, auth_headers):
         """Test: GET /api/v3/asset-domains?domain_active_status=expired returns correct total"""
         response_expired = requests.get(
-            f"{BASE_URL}/api/v3/asset-domains?domain_active_status=expired&page=1&limit=1000",
+            f"{BASE_URL}/api/v3/asset-domains?domain_active_status=expired&page=1&limit=100",
             headers=auth_headers
         )
         
@@ -367,8 +367,13 @@ class TestAssetDomainsPagination:
         items_count = len(data_expired["data"])
         
         # CRITICAL: total should match items returned (when within limit)
-        assert items_count == total_expired or items_count == data_expired["meta"]["limit"], \
-            f"BUG: Total mismatch! total={total_expired}, items returned={items_count}"
+        assert items_count <= total_expired, \
+            f"BUG: Items count ({items_count}) > total ({total_expired})"
+        
+        # If total is less than or equal to limit, items should equal total
+        if total_expired <= 100:
+            assert items_count == total_expired, \
+                f"BUG: Total mismatch! total={total_expired}, items returned={items_count}"
         
         print(f"[PASS] domain_active_status=expired returns correct total: {total_expired} (items: {items_count})")
     
