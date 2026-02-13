@@ -140,14 +140,19 @@ export default function GroupsPage() {
 
     const loadData = async () => {
         try {
-            const [networksRes, brandsRes, domainsRes] = await Promise.all([
+            const [networksRes, brandsRes, domainsRes, usedMainRes] = await Promise.all([
                 networksAPI.getAll(),
                 brandsAPI.getAll(),
-                assetDomainsAPI.getAll({ limit: 100 }) // Get first page of domains
+                assetDomainsAPI.getAll({ limit: 100 }), // Get first page of domains
+                assetDomainsAPI.getUsedAsMain() // Get domains already used as main nodes
             ]);
             
             setNetworks(Array.isArray(networksRes.data) ? networksRes.data : networksRes.data?.data || []);
             setBrands(Array.isArray(brandsRes.data) ? brandsRes.data : brandsRes.data?.data || []);
+            
+            // Store used main domain IDs
+            const usedIds = usedMainRes.data?.used_domain_ids || [];
+            setUsedMainDomainIds(usedIds);
             
             // Asset domains API returns {data, meta} structure
             let allDomains = domainsRes.data?.data || domainsRes.data?.items || domainsRes.data || [];
