@@ -504,6 +504,27 @@ class ExpirationMonitoringService:
         lines.append("━━━━━━━━━━━━━━━━━━━━━━")
         
         if seo.get("used_in_seo"):
+            # PHASE 4: Add clarity on root vs path usage
+            has_root = seo.get("has_root_usage", False)
+            path_nodes = seo.get("path_only_nodes", [])
+            actual_nodes = seo.get("actual_nodes_affected", [])
+            
+            if actual_nodes:
+                lines.append(f"<b>📍 Affected Nodes:</b>")
+                for node in actual_nodes[:5]:
+                    lines.append(f"  • {node}")
+                if len(actual_nodes) > 5:
+                    lines.append(f"  ... +{len(actual_nodes) - 5} more")
+                lines.append("")
+            
+            # PHASE 4: Explicit root vs path indicator
+            if has_root:
+                lines.append("⚠️ <b>Root domain is registered in SEO</b>")
+            elif path_nodes:
+                lines.append(f"📌 <b>Path-only nodes:</b> {len(path_nodes)} paths registered")
+                lines.append("<i>Note: Root domain NOT registered in SEO</i>")
+            lines.append("")
+            
             for ctx in seo.get("seo_context", [])[:3]:
                 lines.append(f"• <b>Network:</b> {ctx.get('network_name', 'N/A')}")
                 lines.append(f"• <b>Brand:</b> {ctx.get('brand_name', 'N/A')}")
