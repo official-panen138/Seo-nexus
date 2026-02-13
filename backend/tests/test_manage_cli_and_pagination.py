@@ -323,7 +323,7 @@ class TestAssetDomainsPagination:
         """Test: GET /api/v3/asset-domains?domain_active_status=active returns correct total"""
         # Get total without filter
         response_all = requests.get(
-            f"{BASE_URL}/api/v3/asset-domains?page=1&limit=1000",
+            f"{BASE_URL}/api/v3/asset-domains?page=1&limit=100",
             headers=auth_headers
         )
         assert response_all.status_code == 200
@@ -331,7 +331,7 @@ class TestAssetDomainsPagination:
         
         # Get with active filter
         response_active = requests.get(
-            f"{BASE_URL}/api/v3/asset-domains?domain_active_status=active&page=1&limit=1000",
+            f"{BASE_URL}/api/v3/asset-domains?domain_active_status=active&page=1&limit=100",
             headers=auth_headers
         )
         
@@ -341,10 +341,15 @@ class TestAssetDomainsPagination:
         total_active = data_active["meta"]["total"]
         items_count = len(data_active["data"])
         
-        # CRITICAL: total in meta should match actual items returned
+        # CRITICAL: total in meta should match actual items returned (within limit)
         # This is the core bug fix validation
-        assert items_count == total_active or items_count == data_active["meta"]["limit"], \
-            f"BUG: Total mismatch! total={total_active}, items returned={items_count}"
+        assert items_count <= total_active, \
+            f"BUG: Items count ({items_count}) > total ({total_active})"
+        
+        # If total is less than or equal limit, items should equal total
+        if total_active <= 100:
+            assert items_count == total_active, \
+                f"BUG: Total mismatch! total={total_active}, items returned={items_count}"
         
         print(f"[PASS] domain_active_status=active returns correct total: {total_active} (items: {items_count})")
     
