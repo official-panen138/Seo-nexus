@@ -94,6 +94,16 @@ Build a full-stack SEO Network Operations Center combining:
 - Auto-restore on expiration update: When archived domain's expiration_date is updated to future, it auto-restores
 - All transitions (active→archived, archived→restored) are logged in activity_logs
 
+**Archived Items UI - COMPLETE (Feb 13, 2026)**
+- SEO Networks page: Added "Active Networks" / "Archived" tabs
+  - Archived networks displayed in read-only cards with purple styling
+  - Shows archive date and network details
+  - Restore button visible for Super Admin only
+- Asset Domains page: Added "Archived" tab to view mode
+  - Shows archived domains in table view
+  - Actions dropdown includes "Restore Domain" for Super Admin
+  - Displays archive date and reason in dropdown
+
 ### Default Super Admin Auto-Seeding (Feb 12, 2026) - COMPLETE
 **Feature:** Automatic default Super Admin creation for fresh deployments and migrations.
 
