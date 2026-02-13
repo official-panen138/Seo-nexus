@@ -49,7 +49,7 @@ Build a full-stack SEO Network Operations Center combining:
 
 ## What's Been Implemented
 
-### SYSTEM IMPROVEMENT - Data Integrity & SEO Governance (Feb 13, 2026) - IN PROGRESS
+### SYSTEM IMPROVEMENT - Data Integrity & SEO Governance (Feb 13, 2026) - PHASE 4 & 6 COMPLETE
 
 **Phase 1: Domain Eligibility Rules - COMPLETE**
 - Blocked lifecycle statuses: `Released`, `Not Renewed`, `Quarantined`
@@ -69,15 +69,30 @@ Build a full-stack SEO Network Operations Center combining:
 - New API: `POST /api/v3/networks/{id}/restore` (Super Admin)
 - Archived networks are READ-ONLY
 
-**Phase 4: Root vs Path Reporting - PENDING**
-- Only report actual nodes, not inferred roots
+**Phase 4: Root vs Path Reporting Fix - COMPLETE (Feb 13, 2026)**
+- SEO Context Enricher enhanced with explicit node tracking:
+  - `has_root_usage`: Boolean indicating if root domain is registered in SEO
+  - `path_only_nodes`: List of paths registered without root
+  - `actual_nodes_affected`: List of exact domain+path nodes in SEO
+- Monitoring alerts now show explicit "Affected Nodes" section
+- Clear indicators when only paths (not root) are in SEO network
+- Alerts no longer infer root domain impact from path-only nodes
 
 **Phase 5: Monitoring Integrity - COMPLETE**
 - Check if root domain has monitoring when adding path node
 - Send Telegram reminder if monitoring not configured
 
-**Phase 6: Expired Domain Handling - PENDING**
-- Auto-archive expired + not_renewed domains
+**Phase 6: Expired Domain Handling - COMPLETE (Feb 13, 2026)**
+- New APIs for domain archiving:
+  - `GET /api/v3/domains/archive-candidates`: Lists expired+not_renewed domains eligible for archiving
+  - `GET /api/v3/domains/archived`: Paginated list of archived domains
+  - `POST /api/v3/domains/archive-expired`: Auto-archives all eligible domains
+  - `POST /api/v3/asset-domains/{id}/restore`: Restores archived domain (Super Admin only)
+- Monitoring exclusion implemented:
+  - Availability monitoring excludes `archived=true` and blocked lifecycle domains
+  - Expiration monitoring excludes `archived=true` and blocked lifecycle domains
+- Auto-restore on expiration update: When archived domain's expiration_date is updated to future, it auto-restores
+- All transitions (active→archived, archived→restored) are logged in activity_logs
 
 ### Default Super Admin Auto-Seeding (Feb 12, 2026) - COMPLETE
 **Feature:** Automatic default Super Admin creation for fresh deployments and migrations.
