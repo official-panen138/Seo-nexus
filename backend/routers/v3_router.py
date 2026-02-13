@@ -3600,7 +3600,7 @@ async def delete_network(
         )
 
     return {
-        "message": f"Network archived successfully",
+        "message": "Network archived successfully",
         "details": {
             "network_id": network_id,
             "archived_at": now,
