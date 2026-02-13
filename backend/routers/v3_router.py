@@ -3251,6 +3251,11 @@ async def create_network(
 
     Every network MUST have a main node defined at creation time.
     The main domain MUST belong to the same brand as the network.
+    
+    Validations:
+    - Domain must be eligible (not Released/Not Renewed/Quarantined)
+    - Domain+path combination must be unique across all networks
+    - Monitoring warning if not enabled
     """
     # Validate brand exists (required field) and user has access
     brand = await db.brands.find_one({"id": data.brand_id})
@@ -3258,6 +3263,9 @@ async def create_network(
         raise HTTPException(status_code=400, detail="Brand not found")
 
     require_brand_access(data.brand_id, current_user)
+
+    # PHASE 1: Validate domain eligibility (lifecycle status)
+    await validate_domain_for_seo_network(data.main_node.asset_domain_id)
 
     # Validate main domain exists and belongs to the same brand
     main_domain = await db.asset_domains.find_one(
@@ -3271,6 +3279,17 @@ async def create_network(
             status_code=400,
             detail="Main domain must belong to the same brand as the network",
         )
+
+    # PHASE 2: Validate domain+path uniqueness
+    main_path = data.main_node.optimized_path or None
+    await validate_domain_path_uniqueness(data.main_node.asset_domain_id, main_path)
+
+    # PHASE 5: Check monitoring requirement (warning only, don't block)
+    monitoring_check = await check_monitoring_requirement(
+        data.main_node.asset_domain_id, 
+        main_path
+    )
+    monitoring_warning = monitoring_check.get("warning")
 
     now = datetime.now(timezone.utc).isoformat()
     network_id = str(uuid.uuid4())
@@ -3292,12 +3311,11 @@ async def create_network(
     await db.seo_networks.insert_one(network)
 
     # Create the main node (seo_structure_entry)
-    main_path = data.main_node.optimized_path or "/"
     main_entry = {
         "id": str(uuid.uuid4()),
         "asset_domain_id": data.main_node.asset_domain_id,
         "network_id": network_id,
-        "optimized_path": main_path if main_path != "/" else None,
+        "optimized_path": main_path if main_path and main_path != "/" else None,
         "domain_role": DomainRole.MAIN.value,
         "domain_status": SeoStatus.PRIMARY.value,  # Main nodes MUST have PRIMARY status
         "index_status": IndexStatus.INDEX.value,
@@ -3317,6 +3335,19 @@ async def create_network(
             entity_id=network_id,
             after_value={**network, "main_node_id": main_entry["id"]},
         )
+
+    # PHASE 5: Send monitoring reminder if needed
+    if monitoring_check.get("needs_reminder") and seo_telegram_service:
+        try:
+            await send_v3_telegram_alert(
+                f"🔔 MONITORING REMINDER\n\n"
+                f"Network: {data.name}\n"
+                f"Domain: {main_domain.get('domain_name')}\n\n"
+                f"{monitoring_warning}\n\n"
+                f"Please configure monitoring to ensure proper tracking."
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send monitoring reminder: {e}")
 
         # Log activity for main node creation
         await activity_log_service.log(
