@@ -12584,7 +12584,7 @@ async def archive_expired_domains(
                 before_value=domain,
                 after_value={**domain, "archived": True, "archived_at": now_iso},
                 metadata={
-                    "notes": f"Auto-archived: Domain expired and marked as not_renewed",
+                    "notes": "Auto-archived: Domain expired and marked as not_renewed",
                     "transition": "active → archived",
                     "trigger": "phase6_auto_archive"
                 }
