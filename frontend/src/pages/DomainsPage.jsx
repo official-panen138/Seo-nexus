@@ -447,28 +447,6 @@ export default function DomainsPage() {
     const loadPaginatedData = async () => {
         setLoading(true);
         try {
-            // PHASE 6: Handle archived view mode separately
-            if (viewMode === 'archived') {
-                const params = {
-                    page: currentPage,
-                    limit: pageSize
-                };
-                if (debouncedSearch) params.search = debouncedSearch;
-                if (filterBrand !== 'all') params.brand_id = filterBrand;
-                
-                const response = await assetDomainsAPI.getArchived(params);
-                if (response.data?.data && response.data?.meta) {
-                    setAssets(response.data.data);
-                    setTotalItems(response.data.meta.total);
-                    setTotalPages(response.data.meta.total_pages);
-                } else {
-                    setAssets([]);
-                    setTotalItems(0);
-                    setTotalPages(1);
-                }
-                return;
-            }
-            
             // Build params for server-side filtering and pagination
             const params = {
                 page: currentPage,
@@ -842,21 +820,6 @@ export default function DomainsPage() {
             loadCoverageStats();
         } catch (err) {
             toast.error(err.response?.data?.detail || 'Failed to remove quarantine');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    // PHASE 6: Restore archived domain
-    const handleRestoreArchived = async (asset) => {
-        setSaving(true);
-        try {
-            await assetDomainsAPI.restore(asset.id);
-            toast.success(`Domain "${asset.domain_name}" restored successfully`);
-            loadPaginatedData();
-            loadCoverageStats();
-        } catch (err) {
-            toast.error(err.response?.data?.detail || 'Failed to restore domain');
         } finally {
             setSaving(false);
         }
@@ -1272,10 +1235,6 @@ export default function DomainsPage() {
                             </TabsTrigger>
                             <TabsTrigger value="not_renewed" data-testid="tab-not-renewed" className="text-red-400 data-[state=active]:text-red-400">
                                 Not Renewed
-                            </TabsTrigger>
-                            <TabsTrigger value="archived" data-testid="tab-archived" className="text-purple-400 data-[state=active]:text-purple-400">
-                                <Archive className="h-3 w-3 mr-1" />
-                                Archived
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
