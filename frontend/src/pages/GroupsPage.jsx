@@ -82,6 +82,13 @@ export default function GroupsPage() {
     const [filterBrand, setFilterBrand] = useState('all');
     const [filterRankingStatus, setFilterRankingStatus] = useState('all');
     const [sortBy, setSortBy] = useState('default');
+    
+    // PHASE 6: View mode and archived networks
+    const [viewMode, setViewMode] = useState('active'); // 'active' or 'archived'
+    const [archivedNetworks, setArchivedNetworks] = useState([]);
+    const [archivedLoading, setArchivedLoading] = useState(false);
+    const { user } = useAuth();
+    const isSuperAdmin = user?.role === 'super_admin';
 
     // Ranking status badge helper
     const getRankingStatusBadge = (status) => {
