@@ -140,22 +140,36 @@ export default function GroupsPage() {
             const [networksRes, brandsRes, domainsRes] = await Promise.all([
                 networksAPI.getAll(),
                 brandsAPI.getAll(),
-                assetDomainsAPI.getAll({ limit: 10000 }) // Get all domains for selection
+                assetDomainsAPI.getAll({ limit: 100 }) // Get first page of domains
             ]);
-            
-            console.log('Networks response:', networksRes.data);
-            console.log('Brands response:', brandsRes.data);
-            console.log('Domains response:', domainsRes.data);
             
             setNetworks(Array.isArray(networksRes.data) ? networksRes.data : networksRes.data?.data || []);
             setBrands(Array.isArray(brandsRes.data) ? brandsRes.data : brandsRes.data?.data || []);
             
             // Asset domains API returns {data, meta} structure
-            const domainsData = domainsRes.data?.data || domainsRes.data?.items || domainsRes.data || [];
-            setDomains(Array.isArray(domainsData) ? domainsData : []);
+            let allDomains = domainsRes.data?.data || domainsRes.data?.items || domainsRes.data || [];
+            if (!Array.isArray(allDomains)) allDomains = [];
             
-            console.log('Loaded brands:', Array.isArray(brandsRes.data) ? brandsRes.data.length : 0);
-            console.log('Loaded domains:', Array.isArray(domainsData) ? domainsData.length : 0);
+            // If there are more domains, fetch additional pages
+            const meta = domainsRes.data?.meta;
+            if (meta && meta.total > allDomains.length) {
+                const totalPages = Math.ceil(meta.total / 100);
+                const additionalPages = [];
+                for (let page = 2; page <= Math.min(totalPages, 10); page++) { // Max 10 pages (1000 domains)
+                    additionalPages.push(assetDomainsAPI.getAll({ limit: 100, page }));
+                }
+                if (additionalPages.length > 0) {
+                    const additionalResults = await Promise.all(additionalPages);
+                    for (const res of additionalResults) {
+                        const pageData = res.data?.data || res.data?.items || [];
+                        if (Array.isArray(pageData)) {
+                            allDomains = [...allDomains, ...pageData];
+                        }
+                    }
+                }
+            }
+            
+            setDomains(allDomains);
         } catch (err) {
             console.error('Failed to load data:', err);
             toast.error('Failed to load networks');
