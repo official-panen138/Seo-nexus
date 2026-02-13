@@ -70,11 +70,38 @@ class SeoContextEnricher:
         entries = await self.db.seo_structure_entries.find(query, {"_id": 0}).to_list(
             100
         )
+        
+        # PHASE 4: Also filter out entries from archived networks
+        active_entries = []
+        for entry in entries:
+            network_id = entry.get("network_id")
+            if network_id:
+                network = await self.db.seo_networks.find_one(
+                    {"id": network_id, "deleted_at": {"$exists": False}},
+                    {"_id": 0, "id": 1}
+                )
+                if network:
+                    active_entries.append(entry)
+        entries = active_entries
 
         if not entries:
             return result
 
         result["used_in_seo"] = True
+        
+        # PHASE 4: Track if domain is used at root vs path only
+        has_root_usage = False
+        path_only_nodes = []
+        
+        for entry in entries:
+            path = entry.get("optimized_path")
+            if not path or path == "/":
+                has_root_usage = True
+            else:
+                path_only_nodes.append(path)
+        
+        result["has_root_usage"] = has_root_usage
+        result["path_only_nodes"] = path_only_nodes
 
         # Process each entry (domain may be in multiple networks)
         networks_processed = set()
