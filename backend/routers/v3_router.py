@@ -4170,11 +4170,14 @@ async def get_network_optimizations(
     limit: int = Query(default=20, ge=1, le=100),
     activity_type: Optional[str] = None,
     status: Optional[str] = None,
+    include_archived: bool = False,  # PHASE 3: Include archived optimizations
     current_user: dict = Depends(get_current_user_wrapper),
 ):
     """
     Get all SEO optimizations for a network with pagination.
     This does NOT affect the SEO structure - it's an execution & intelligence layer.
+    
+    PHASE 3: By default excludes archived optimizations (from deleted networks).
     """
     import math
 
@@ -4188,6 +4191,11 @@ async def get_network_optimizations(
 
     # Build query
     query = {"network_id": network_id}
+    
+    # PHASE 3: Exclude archived by default
+    if not include_archived:
+        query["archived"] = {"$ne": True}
+    
     if activity_type:
         query["activity_type"] = activity_type
     if status:
