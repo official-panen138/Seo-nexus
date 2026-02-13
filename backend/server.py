@@ -143,31 +143,73 @@ async def lifespan(app: FastAPI):
 async def create_database_indexes():
     """Create database indexes for optimal query performance"""
     try:
+        # Users indexes
+        await db.users.create_index("email", unique=True)
+        await db.users.create_index("id", unique=True)
+        await db.users.create_index("role")
+        await db.users.create_index("status")
+
+        # Brands indexes
+        await db.brands.create_index("id", unique=True)
+        await db.brands.create_index("status")
+        await db.brands.create_index("name")
+
         # Asset domains indexes for pagination and filtering
+        await db.asset_domains.create_index("id", unique=True)
         await db.asset_domains.create_index("domain_name")
         await db.asset_domains.create_index("brand_id")
         await db.asset_domains.create_index("status")
+        await db.asset_domains.create_index("lifecycle_status")
+        await db.asset_domains.create_index("monitoring_status")
+        await db.asset_domains.create_index("domain_active_status")
         await db.asset_domains.create_index("created_at")
+        await db.asset_domains.create_index("expiration_date")
         await db.asset_domains.create_index([("domain_name", 1), ("brand_id", 1)])
+        await db.asset_domains.create_index([("brand_id", 1), ("created_at", -1)])
 
         # SEO structure entries indexes
+        await db.seo_structure_entries.create_index("id", unique=True)
         await db.seo_structure_entries.create_index("network_id")
         await db.seo_structure_entries.create_index("asset_domain_id")
-        await db.seo_structure_entries.create_index(
-            [("network_id", 1), ("asset_domain_id", 1)]
-        )
+        await db.seo_structure_entries.create_index("tier")
+        await db.seo_structure_entries.create_index([("network_id", 1), ("asset_domain_id", 1)])
 
         # SEO networks indexes
+        await db.seo_networks.create_index("id", unique=True)
         await db.seo_networks.create_index("brand_id")
         await db.seo_networks.create_index("name")
+        await db.seo_networks.create_index("created_at")
+        await db.seo_networks.create_index([("brand_id", 1), ("created_at", -1)])
 
         # SEO optimizations indexes
+        await db.seo_optimizations.create_index("id", unique=True)
         await db.seo_optimizations.create_index("network_id")
         await db.seo_optimizations.create_index("brand_id")
+        await db.seo_optimizations.create_index("status")
+        await db.seo_optimizations.create_index("created_at")
         await db.seo_optimizations.create_index([("network_id", 1), ("created_at", -1)])
+        await db.seo_optimizations.create_index([("brand_id", 1), ("status", 1)])
 
-        # Users index
-        await db.users.create_index("email", unique=True)
+        # SEO conflicts indexes
+        await db.seo_conflicts.create_index("id", unique=True)
+        await db.seo_conflicts.create_index("network_id")
+        await db.seo_conflicts.create_index("status")
+        await db.seo_conflicts.create_index("severity")
+        await db.seo_conflicts.create_index("created_at")
+        await db.seo_conflicts.create_index([("network_id", 1), ("status", 1)])
+
+        # Activity logs indexes
+        await db.activity_logs.create_index("created_at")
+        await db.activity_logs.create_index("user_id")
+        await db.activity_logs.create_index([("created_at", -1)])
+
+        # Audit logs indexes
+        await db.audit_logs.create_index("timestamp")
+        await db.audit_logs.create_index([("timestamp", -1)])
+
+        # Categories and Registrars indexes
+        await db.categories.create_index("id", unique=True)
+        await db.registrars.create_index("id", unique=True)
 
         logger.info("Database indexes created/verified")
     except Exception as e:
