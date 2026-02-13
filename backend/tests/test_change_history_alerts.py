@@ -10,7 +10,7 @@ import os
 import json
 
 BASE_URL = os.environ.get(
-    "REACT_APP_BACKEND_URL", "https://domain-asset-monitor.preview.emergentagent.com"
+    "REACT_APP_BACKEND_URL", "https://domain-oversight.preview.emergentagent.com"
 ).rstrip("/")
 
 # Test credentials

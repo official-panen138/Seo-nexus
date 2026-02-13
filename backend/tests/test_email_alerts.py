@@ -18,7 +18,7 @@ import os
 # Get BASE_URL from environment
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 if not BASE_URL:
-    BASE_URL = "https://domain-asset-monitor.preview.emergentagent.com"
+    BASE_URL = "https://domain-oversight.preview.emergentagent.com"
 
 
 class TestEmailAlertsAPI:
