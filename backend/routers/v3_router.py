@@ -2869,7 +2869,6 @@ async def get_networks(
     status: Optional[NetworkStatus] = None,
     ranking_status: Optional[str] = None,  # Filter: "ranking", "tracking", "none"
     sort_by: Optional[str] = None,  # Sort: "best_position", "ranking_nodes"
-    include_archived: bool = False,  # PHASE 3: Include archived networks
     skip: int = 0,
     limit: int = 100,
     current_user: dict = Depends(get_current_user_wrapper),
@@ -2879,10 +2878,6 @@ async def get_networks(
 
     # Start with brand scope filter
     query = build_brand_filter(current_user)
-    
-    # PHASE 3: Exclude archived networks by default
-    if not include_archived:
-        query["deleted_at"] = {"$exists": False}
 
     # If specific brand requested, validate access
     if brand_id:
@@ -3184,46 +3179,6 @@ async def search_networks(
     }
 
 
-@router.get("/networks/archived")
-async def get_archived_networks(
-    brand_id: Optional[str] = None,
-    skip: int = 0,
-    limit: int = 100,
-    current_user: dict = Depends(get_current_user_wrapper),
-):
-    """
-    PHASE 3: Get archived/deleted networks.
-    
-    Archived networks are:
-    - READ-ONLY
-    - Not shown in active dashboards
-    - Available for audit and historical reference
-    """
-    query = build_brand_filter(current_user)
-    query["deleted_at"] = {"$exists": True}
-    
-    if brand_id:
-        require_brand_access(brand_id, current_user)
-        query["brand_id"] = brand_id
-    
-    networks = await db.seo_networks.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
-    
-    # Get brand names
-    brands = {
-        b["id"]: b["name"]
-        for b in await db.brands.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)
-    }
-    
-    # Enrich with brand names and archived info
-    result = []
-    for network in networks:
-        network["brand_name"] = brands.get(network.get("brand_id"))
-        network["is_archived"] = True
-        result.append(network)
-    
-    return result
-
-
 @router.get("/networks/{network_id}", response_model=SeoNetworkDetail)
 async def get_network(
     network_id: str,
@@ -3497,15 +3452,18 @@ async def delete_network(
     network_id: str, current_user: dict = Depends(get_current_user_wrapper)
 ):
     """
-    Soft-delete an SEO network - BRAND SCOPED.
+    HARD DELETE an SEO network - BRAND SCOPED.
     
-    PHASE 3: Clean cascade on deletion:
-    - Soft-delete the network (set deleted_at)
-    - Archive all related data:
-      - seo_optimizations
-      - optimization_complaints
-      - seo_conflicts
-    - Network becomes READ-ONLY and visible in "Archived" section
+    Permanently removes:
+    - The network document
+    - All structure entries (nodes)
+    - All SEO optimizations
+    - All optimization complaints
+    - All SEO conflicts
+    - All SEO change logs
+    - All network notifications
+    
+    Asset Domains are NOT deleted - they only lose their network association.
     """
     existing = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
     if not existing:
@@ -3513,76 +3471,19 @@ async def delete_network(
 
     # Validate brand access
     require_brand_access(existing.get("brand_id", ""), current_user)
-    
-    # Check if already deleted
-    if existing.get("deleted_at"):
-        raise HTTPException(
-            status_code=400, 
-            detail="Network is already archived/deleted"
-        )
 
-    now = datetime.now(timezone.utc).isoformat()
-    
-    # SOFT DELETE: Mark network as deleted instead of removing
-    await db.seo_networks.update_one(
-        {"id": network_id},
-        {
-            "$set": {
-                "deleted_at": now,
-                "deleted_by": current_user.get("email"),
-                "status": "archived"
-            }
-        }
-    )
-    
-    # CASCADE: Archive related seo_optimizations
-    opt_result = await db.seo_optimizations.update_many(
-        {"network_id": network_id},
-        {
-            "$set": {
-                "archived": True,
-                "archived_at": now,
-                "archived_reason": "Network deleted"
-            }
-        }
-    )
-    
-    # CASCADE: Archive related optimization_complaints
-    complaint_result = await db.optimization_complaints.update_many(
-        {"network_id": network_id},
-        {
-            "$set": {
-                "archived": True,
-                "archived_at": now,
-                "archived_reason": "Network deleted"
-            }
-        }
-    )
-    
-    # CASCADE: Archive related seo_conflicts (mark as archived but keep for audit)
-    conflict_result = await db.seo_conflicts.update_many(
-        {"network_id": network_id},
-        {
-            "$set": {
-                "archived": True,
-                "archived_at": now,
-                "archived_reason": "Network deleted"
-            }
-        }
-    )
-    
-    # CASCADE: Mark structure entries as archived (not delete)
-    entries_result = await db.seo_structure_entries.update_many(
-        {"network_id": network_id},
-        {
-            "$set": {
-                "archived": True,
-                "archived_at": now
-            }
-        }
-    )
+    # CASCADE HARD DELETE: Permanently remove all related data
+    entries_result = await db.seo_structure_entries.delete_many({"network_id": network_id})
+    opt_result = await db.seo_optimizations.delete_many({"network_id": network_id})
+    complaint_result = await db.optimization_complaints.delete_many({"network_id": network_id})
+    conflict_result = await db.seo_conflicts.delete_many({"network_id": network_id})
+    await db.seo_change_logs.delete_many({"network_id": network_id})
+    await db.seo_network_notifications.delete_many({"network_id": network_id})
 
-    # Log activity
+    # Delete the network itself
+    await db.seo_networks.delete_one({"id": network_id})
+
+    # Log activity (keep audit trail)
     if activity_log_service:
         await activity_log_service.log(
             actor=current_user["email"],
@@ -3591,100 +3492,24 @@ async def delete_network(
             entity_id=network_id,
             before_value=existing,
             metadata={
-                "soft_delete": True,
-                "archived_entries": entries_result.modified_count,
-                "archived_optimizations": opt_result.modified_count,
-                "archived_complaints": complaint_result.modified_count,
-                "archived_conflicts": conflict_result.modified_count,
+                "hard_delete": True,
+                "deleted_entries": entries_result.deleted_count,
+                "deleted_optimizations": opt_result.deleted_count,
+                "deleted_complaints": complaint_result.deleted_count,
+                "deleted_conflicts": conflict_result.deleted_count,
             },
         )
 
     return {
-        "message": "Network archived successfully",
+        "message": "Network permanently deleted",
         "details": {
             "network_id": network_id,
-            "archived_at": now,
-            "archived_entries": entries_result.modified_count,
-            "archived_optimizations": opt_result.modified_count,
-            "archived_complaints": complaint_result.modified_count,
-            "archived_conflicts": conflict_result.modified_count,
+            "deleted_entries": entries_result.deleted_count,
+            "deleted_optimizations": opt_result.deleted_count,
+            "deleted_complaints": complaint_result.deleted_count,
+            "deleted_conflicts": conflict_result.deleted_count,
         }
     }
-
-
-@router.post("/networks/{network_id}/restore")
-async def restore_network(
-    network_id: str, current_user: dict = Depends(get_current_user_wrapper)
-):
-    """
-    Restore an archived/deleted SEO network - SUPER ADMIN ONLY.
-    
-    Reverses soft-delete and restores all related data.
-    """
-    # Super Admin only
-    if current_user.get("role") != "super_admin":
-        raise HTTPException(
-            status_code=403,
-            detail="Only Super Admin can restore archived networks"
-        )
-    
-    existing = await db.seo_networks.find_one({"id": network_id}, {"_id": 0})
-    if not existing:
-        raise HTTPException(status_code=404, detail="Network not found")
-    
-    if not existing.get("deleted_at"):
-        raise HTTPException(
-            status_code=400,
-            detail="Network is not archived"
-        )
-    
-    now = datetime.now(timezone.utc).isoformat()
-    
-    # Restore network
-    await db.seo_networks.update_one(
-        {"id": network_id},
-        {
-            "$unset": {"deleted_at": "", "deleted_by": ""},
-            "$set": {
-                "status": "active",
-                "restored_at": now,
-                "restored_by": current_user.get("email")
-            }
-        }
-    )
-    
-    # Restore related data
-    await db.seo_optimizations.update_many(
-        {"network_id": network_id, "archived_reason": "Network deleted"},
-        {"$unset": {"archived": "", "archived_at": "", "archived_reason": ""}}
-    )
-    
-    await db.optimization_complaints.update_many(
-        {"network_id": network_id, "archived_reason": "Network deleted"},
-        {"$unset": {"archived": "", "archived_at": "", "archived_reason": ""}}
-    )
-    
-    await db.seo_conflicts.update_many(
-        {"network_id": network_id, "archived_reason": "Network deleted"},
-        {"$unset": {"archived": "", "archived_at": "", "archived_reason": ""}}
-    )
-    
-    await db.seo_structure_entries.update_many(
-        {"network_id": network_id},
-        {"$unset": {"archived": "", "archived_at": ""}}
-    )
-    
-    # Log activity
-    if activity_log_service:
-        await activity_log_service.log(
-            actor=current_user["email"],
-            action_type=ActionType.UPDATE,
-            entity_type=EntityType.SEO_NETWORK,
-            entity_id=network_id,
-            metadata={"action": "restore_from_archive"},
-        )
-    
-    return {"message": "Network restored successfully", "network_id": network_id}
 
 
 # ==================== SEO STRUCTURE ENDPOINTS ====================
