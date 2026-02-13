@@ -3538,13 +3538,23 @@ async def create_structure_entry(
     current_user: dict = Depends(get_current_user_wrapper),
 ):
     """Create a new SEO structure entry (node-based) with mandatory change note"""
-    # Validate network exists
+    # Validate network exists and is not archived
     network = await db.seo_networks.find_one({"id": data.network_id})
     if not network:
         raise HTTPException(status_code=400, detail="Network not found")
+    
+    # PHASE 3: Check if network is archived
+    if network.get("deleted_at"):
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot add nodes to an archived network. This network has been deleted."
+        )
 
     # PERMISSION CHECK: Only super_admin or network managers can create nodes
     await require_manager_permission(network, current_user)
+
+    # PHASE 1: Validate domain eligibility (lifecycle status)
+    await validate_domain_for_seo_network(data.asset_domain_id)
 
     # Validate asset domain exists
     asset = await db.asset_domains.find_one({"id": data.asset_domain_id})
@@ -3557,6 +3567,19 @@ async def create_structure_entry(
             status_code=400,
             detail="Domain must belong to the same brand as the SEO Network",
         )
+
+    # PHASE 2: Validate domain+path uniqueness ACROSS ALL NETWORKS
+    await validate_domain_path_uniqueness(
+        data.asset_domain_id, 
+        data.optimized_path,
+        exclude_network_id=None  # Check ALL networks, not just others
+    )
+
+    # PHASE 5: Check monitoring requirement (warning only)
+    monitoring_check = await check_monitoring_requirement(
+        data.asset_domain_id,
+        data.optimized_path
+    )
 
     # Validate target_entry_id if provided (new node-to-node relationship)
     if data.target_entry_id:
