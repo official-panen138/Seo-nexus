@@ -2008,6 +2008,52 @@ async def get_domains_used_as_main(
     return {"used_domain_ids": used_domain_ids}
 
 
+@router.get("/asset-domains-eligible-for-seo")
+async def get_domains_eligible_for_seo(
+    brand_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get list of domain IDs that are ELIGIBLE for use in SEO Networks.
+    
+    Excludes domains with:
+    - Lifecycle: Released, Not Renewed, Quarantined
+    - Quarantine category set
+    
+    Also returns domains already used as main nodes (for exclusion in UI).
+    """
+    # Build base query
+    query = {
+        "lifecycle_status": {"$nin": BLOCKED_LIFECYCLE_STATUSES},
+        "quarantine_category": {"$in": [None, ""]}
+    }
+    
+    # Filter by brand if specified
+    if brand_id:
+        query["brand_id"] = brand_id
+    
+    # Apply brand scope for non-super-admin
+    brand_filter = build_brand_filter(current_user)
+    if brand_filter:
+        query.update(brand_filter)
+    
+    # Get eligible domains
+    eligible_domains = await db.asset_domains.find(
+        query,
+        {"_id": 0, "id": 1, "domain_name": 1, "brand_id": 1, "lifecycle_status": 1}
+    ).to_list(10000)
+    
+    # Get domains already used as main nodes (at root level only)
+    used_response = await get_domains_used_as_main(current_user)
+    used_domain_ids = used_response.get("used_domain_ids", [])
+    
+    return {
+        "eligible_domains": eligible_domains,
+        "used_as_main_ids": used_domain_ids,
+        "blocked_lifecycle_statuses": BLOCKED_LIFECYCLE_STATUSES
+    }
+
+
 @router.post("/asset-domains", response_model=AssetDomainResponse)
 async def create_asset_domain(
     data: AssetDomainCreate, current_user: dict = Depends(get_current_user_wrapper)
