@@ -447,6 +447,28 @@ export default function DomainsPage() {
     const loadPaginatedData = async () => {
         setLoading(true);
         try {
+            // PHASE 6: Handle archived view mode separately
+            if (viewMode === 'archived') {
+                const params = {
+                    page: currentPage,
+                    limit: pageSize
+                };
+                if (debouncedSearch) params.search = debouncedSearch;
+                if (filterBrand !== 'all') params.brand_id = filterBrand;
+                
+                const response = await assetDomainsAPI.getArchived(params);
+                if (response.data?.data && response.data?.meta) {
+                    setAssets(response.data.data);
+                    setTotalItems(response.data.meta.total);
+                    setTotalPages(response.data.meta.total_pages);
+                } else {
+                    setAssets([]);
+                    setTotalItems(0);
+                    setTotalPages(1);
+                }
+                return;
+            }
+            
             // Build params for server-side filtering and pagination
             const params = {
                 page: currentPage,
