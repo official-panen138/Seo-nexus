@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
 import { 
     Plus, 
@@ -38,7 +39,9 @@ import {
     AlertCircle,
     Clock,
     ShieldAlert,
-    AlertTriangle
+    AlertTriangle,
+    Archive,
+    RefreshCw
 } from 'lucide-react';
 import { formatDate, debounce } from '../lib/utils';
 
