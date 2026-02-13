@@ -1750,6 +1750,29 @@ export default function DomainsPage() {
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end">
+                                                                    {/* PHASE 6: Restore archived domain */}
+                                                                    {viewMode === 'archived' && item.archived ? (
+                                                                        <>
+                                                                            <DropdownMenuItem
+                                                                                onClick={() => handleRestoreArchived(item)}
+                                                                                className="text-emerald-400"
+                                                                                data-testid={`restore-archived-${item.id}`}
+                                                                            >
+                                                                                <RefreshCw className="h-4 w-4 mr-2" />
+                                                                                Restore Domain
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuSeparator />
+                                                                            <DropdownMenuItem disabled className="text-xs text-zinc-500">
+                                                                                Archived: {item.archived_at ? new Date(item.archived_at).toLocaleDateString() : 'N/A'}
+                                                                            </DropdownMenuItem>
+                                                                            {item.archived_reason && (
+                                                                                <DropdownMenuItem disabled className="text-xs text-zinc-500">
+                                                                                    Reason: {item.archived_reason}
+                                                                                </DropdownMenuItem>
+                                                                            )}
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
                                                                     {/* Lifecycle actions */}
                                                                     {item.lifecycle_status !== 'released' && (
                                                                         <DropdownMenuItem
@@ -1815,6 +1838,8 @@ export default function DomainsPage() {
                                                                         <Trash2 className="h-4 w-4 mr-2" />
                                                                         Delete Domain
                                                                     </DropdownMenuItem>
+                                                                        </>
+                                                                    )}
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
                                                         )}
