@@ -847,6 +847,21 @@ export default function DomainsPage() {
         }
     };
 
+    // PHASE 6: Restore archived domain
+    const handleRestoreArchived = async (asset) => {
+        setSaving(true);
+        try {
+            await assetDomainsAPI.restore(asset.id);
+            toast.success(`Domain "${asset.domain_name}" restored successfully`);
+            loadPaginatedData();
+            loadCoverageStats();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to restore domain');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     // Export handlers - Enhanced with all current filters
     const handleExport = async (format) => {
         try {
