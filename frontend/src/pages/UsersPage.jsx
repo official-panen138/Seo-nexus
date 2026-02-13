@@ -996,6 +996,7 @@ export default function UsersPage() {
                                     </SelectContent>
                                 </Select>
                                 {editForm.role === 'super_admin' && <p className="text-xs text-zinc-500">Super Admin has access to all brands</p>}
+                                {editForm.role === 'manager' && <p className="text-xs text-amber-500">Manager role is assigned via SEO Network. Change to Admin or Viewer if needed.</p>}
                             </div>
                             {editForm.role !== 'super_admin' && (
                                 <BrandSelector value={editForm.brand_scope_ids} onChange={(v) => setEditForm(prev => ({ ...prev, brand_scope_ids: v }))} formSetter={setEditForm} />
