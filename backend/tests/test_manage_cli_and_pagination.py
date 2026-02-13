@@ -434,8 +434,10 @@ class TestAPIRegression:
         
         assert response.status_code == 200, f"Login failed: {response.text}"
         data = response.json()
-        assert "token" in data
-        assert len(data["token"]) > 0
+        # API returns access_token not token
+        assert "access_token" in data or "token" in data
+        token = data.get("access_token") or data.get("token")
+        assert len(token) > 0
         print(f"[PASS] Login API works correctly")
     
     def test_asset_domains_list_returns_data(self, auth_headers):
