@@ -1,0 +1,63 @@
+{
+  "summary": "Phase 4 & Phase 6 testing completed. All backend API endpoints work correctly. Fixed a critical bug in the restore endpoint that caused MongoDB conflict.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase4_phase6_features.py",
+    "/app/test_reports/pytest/phase4_phase6_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "FIXED: MongoDB $set/$unset conflict in restore_archived_domain endpoint at line 12708 - was trying to both $set and $unset archived_at, archived_reason, archived_by fields simultaneously",
+    "FIXED: Same issue in auto_restore_domain_on_expiration_update function at line 12762"
+  ],
+  "updated_files": [
+    "/app/backend/routers/v3_router.py - Fixed MongoDB conflict in restore endpoints (lines 12697-12710, 12748-12768)",
+    "/app/backend/tests/test_phase4_phase6_features.py - New test file for Phase 4 & 6 features"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 core tests passed, 1 skipped due to test isolation)"
+  },
+  "test_credentials": {
+    "email": "superadmin@seonoc.com",
+    "password": "SuperAdmin123!"
+  },
+  "seed_data_creation": "Test created archive candidate domains during integration tests (auto-cleaned up)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Phase 4 and Phase 6 features are fully implemented and tested. The SEO context enricher returns has_root_usage, path_only_nodes, and actual_nodes_affected fields. Monitoring services correctly exclude archived and blocked lifecycle domains.",
+  "features_tested": {
+    "phase6_archive_candidates": "PASS - GET /api/v3/domains/archive-candidates returns expired+not_renewed domains",
+    "phase6_archived_domains_list": "PASS - GET /api/v3/domains/archived returns archived domains with pagination",
+    "phase6_archive_expired": "PASS - POST /api/v3/domains/archive-expired archives eligible domains",
+    "phase6_restore_domain": "PASS - POST /api/v3/asset-domains/{id}/restore restores archived domains (after fix)",
+    "phase6_monitoring_excludes_archived": "PASS - Verified monitoring queries exclude archived=true domains",
+    "phase6_monitoring_excludes_blocked_lifecycle": "PASS - Verified monitoring queries exclude released/not_renewed/quarantined lifecycle statuses",
+    "phase4_seo_context_has_root_usage": "PASS - SEO context enricher returns has_root_usage flag",
+    "phase4_seo_context_path_only_nodes": "PASS - SEO context enricher returns path_only_nodes list",
+    "phase4_seo_context_actual_nodes_affected": "PASS - SEO context enricher returns actual_nodes_affected list",
+    "phase4_monitoring_alerts_root_vs_path": "PASS - Monitoring service uses Phase 4 fields in alert formatting"
+  },
+  "bugs_found_and_fixed": [
+    {
+      "location": "/app/backend/routers/v3_router.py:12708",
+      "issue": "MongoDB WriteError: Updating the path 'archived_at' would create a conflict at 'archived_at'",
+      "cause": "Code was using both $set and $unset on the same fields (archived_at, archived_reason, archived_by)",
+      "fix": "Removed $unset operation, using only $set with None values to clear archive fields"
+    },
+    {
+      "location": "/app/backend/routers/v3_router.py:12762",
+      "issue": "Same MongoDB conflict in auto_restore_domain_on_expiration_update function",
+      "cause": "Same as above - conflicting $set and $unset operations",
+      "fix": "Removed $unset operation, using only $set with None values"
+    }
+  ],
+  "rca_of_issues": "The restore endpoint was trying to set fields to None via $set while also trying to $unset the same fields. MongoDB does not allow modifying the same field path with both $set and $unset in a single update operation. The fix uses only $set with None values which effectively clears the fields."
+}
