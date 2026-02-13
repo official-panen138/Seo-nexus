@@ -247,8 +247,7 @@ class ExpirationMonitoringService:
         # - Already archived
         query = {
             "expiration_date": {"$ne": None, "$exists": True},
-            "lifecycle_status": {"$nin": ["released", "not_renewed", "quarantined"]},
-            "archived": {"$ne": True}
+            "lifecycle_status": {"$nin": ["released", "not_renewed", "quarantined"]}
         }
 
         # Optionally exclude auto-renew domains
@@ -812,8 +811,7 @@ class AvailabilityMonitoringService:
         domains = await self.db.asset_domains.find(
             {
                 "monitoring_enabled": True,
-                "lifecycle_status": {"$nin": ["released", "not_renewed", "quarantined"]},
-                "archived": {"$ne": True}
+                "lifecycle_status": {"$nin": ["released", "not_renewed", "quarantined"]}
             }, 
             {"_id": 0}
         ).to_list(10000)
