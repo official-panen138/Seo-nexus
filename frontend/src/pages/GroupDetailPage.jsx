@@ -695,19 +695,43 @@ export default function GroupDetailPage() {
         
         setSaving(true);
         try {
+            // Only send fields that have changed from the original
             const payload = {
-                domain_role: editForm.domain_role,
-                domain_status: editForm.domain_status,
-                index_status: editForm.index_status,
-                optimized_path: editForm.optimized_path || null,
-                target_entry_id: editForm.target_entry_id || null,
-                target_asset_domain_id: editForm.target_asset_domain_id || null,
-                ranking_url: editForm.ranking_url || null,
-                primary_keyword: editForm.primary_keyword || null,
-                ranking_position: editForm.ranking_position ? parseInt(editForm.ranking_position) : null,
-                notes: editForm.notes || null,
                 change_note: editForm.change_note.trim()  // Required for SEO logging
             };
+            
+            // Only include fields that have actually changed
+            if (editForm.domain_role !== selectedEntry.domain_role) {
+                payload.domain_role = editForm.domain_role;
+            }
+            if (editForm.domain_status !== selectedEntry.domain_status) {
+                payload.domain_status = editForm.domain_status;
+            }
+            if (editForm.index_status !== selectedEntry.index_status) {
+                payload.index_status = editForm.index_status;
+            }
+            if ((editForm.optimized_path || null) !== (selectedEntry.optimized_path || null)) {
+                payload.optimized_path = editForm.optimized_path || null;
+            }
+            if ((editForm.target_entry_id || null) !== (selectedEntry.target_entry_id || null)) {
+                payload.target_entry_id = editForm.target_entry_id || null;
+            }
+            if ((editForm.target_asset_domain_id || null) !== (selectedEntry.target_asset_domain_id || null)) {
+                payload.target_asset_domain_id = editForm.target_asset_domain_id || null;
+            }
+            if ((editForm.ranking_url || null) !== (selectedEntry.ranking_url || null)) {
+                payload.ranking_url = editForm.ranking_url || null;
+            }
+            if ((editForm.primary_keyword || null) !== (selectedEntry.primary_keyword || null)) {
+                payload.primary_keyword = editForm.primary_keyword || null;
+            }
+            const newRanking = editForm.ranking_position ? parseInt(editForm.ranking_position) : null;
+            if (newRanking !== (selectedEntry.ranking_position || null)) {
+                payload.ranking_position = newRanking;
+            }
+            if ((editForm.notes || null) !== (selectedEntry.notes || null)) {
+                payload.notes = editForm.notes || null;
+            }
             
             await structureAPI.update(selectedEntry.id, payload);
             toast.success('Structure entry updated');
