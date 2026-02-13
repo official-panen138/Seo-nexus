@@ -75,6 +75,9 @@ export default function GroupsPage() {
     // Filtered domains based on selected brand
     const [brandDomains, setBrandDomains] = useState([]);
     
+    // Domains already used as main nodes (without paths)
+    const [usedMainDomainIds, setUsedMainDomainIds] = useState([]);
+    
     // Filter state
     const [filterBrand, setFilterBrand] = useState('all');
     const [filterRankingStatus, setFilterRankingStatus] = useState('all');
