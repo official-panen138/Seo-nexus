@@ -276,8 +276,6 @@ export const assetDomainsAPI = {
 // V3 SEO Networks API
 export const networksAPI = {
     getAll: (params) => apiV3.get('/networks', { params }),
-    getArchived: (params) => apiV3.get('/networks/archived', { params }),  // PHASE 3
-    restore: (networkId) => apiV3.post(`/networks/${networkId}/restore`),  // PHASE 3
     getOne: (networkId) => apiV3.get(`/networks/${networkId}`),
     getTiers: (networkId) => apiV3.get(`/networks/${networkId}/tiers`),
     getAvailableDomains: (networkId) => apiV3.get(`/networks/${networkId}/available-domains`),
