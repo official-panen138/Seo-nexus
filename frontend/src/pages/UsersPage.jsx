@@ -912,10 +912,10 @@ export default function UsersPage() {
                                             <SelectTrigger data-testid="create-user-role"><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="admin">Admin</SelectItem>
-                                                <SelectItem value="manager">Manager</SelectItem>
                                                 <SelectItem value="viewer">Viewer</SelectItem>
                                             </SelectContent>
                                         </Select>
+                                        <p className="text-xs text-zinc-500 mt-1">Manager role is assigned via SEO Network management</p>
                                     </div>
                                     
                                     {/* Password Option */}
