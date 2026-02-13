@@ -1236,6 +1236,10 @@ export default function DomainsPage() {
                             <TabsTrigger value="not_renewed" data-testid="tab-not-renewed" className="text-red-400 data-[state=active]:text-red-400">
                                 Not Renewed
                             </TabsTrigger>
+                            <TabsTrigger value="archived" data-testid="tab-archived" className="text-purple-400 data-[state=active]:text-purple-400">
+                                <Archive className="h-3 w-3 mr-1" />
+                                Archived
+                            </TabsTrigger>
                         </TabsList>
                     </Tabs>
                 )}
