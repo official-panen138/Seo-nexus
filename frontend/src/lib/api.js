@@ -266,11 +266,7 @@ export const assetDomainsAPI = {
     createQuarantineCategory: (data) => apiV3.post('/quarantine-categories', data),
     updateQuarantineCategory: (categoryId, data) => apiV3.put(`/quarantine-categories/${categoryId}`, data),
     deleteQuarantineCategory: (categoryId) => apiV3.delete(`/quarantine-categories/${categoryId}`),
-    // PHASE 6: Archived domains management
-    getArchived: (params = {}) => apiV3.get('/domains/archived', { params }),
-    getArchiveCandidates: () => apiV3.get('/domains/archive-candidates'),
-    archiveExpired: () => apiV3.post('/domains/archive-expired'),
-    restore: (assetId) => apiV3.post(`/asset-domains/${assetId}/restore`)
+    // PHASE 6: Archived domains management - REMOVED
 };
 
 // V3 SEO Networks API
