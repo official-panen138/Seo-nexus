@@ -707,10 +707,19 @@ class ConflictOptimizationLinkerService:
         network_id: Optional[str] = None,
         status: Optional[str] = None,
         severity: Optional[str] = None,
+        include_archived: bool = False,
         limit: int = 100
     ) -> List[Dict[str, Any]]:
-        """Get stored conflicts with optional filters."""
+        """Get stored conflicts with optional filters.
+        
+        PHASE 3: By default excludes archived conflicts (from deleted networks).
+        """
         query = {}
+        
+        # PHASE 3: Exclude archived conflicts by default
+        if not include_archived:
+            query["archived"] = {"$ne": True}
+        
         if network_id:
             query["network_id"] = network_id
         if status:
