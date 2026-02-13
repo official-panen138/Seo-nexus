@@ -2150,6 +2150,14 @@ async def update_asset_domain(
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
 
     await db.asset_domains.update_one({"id": asset_id}, {"$set": update_dict})
+    
+    # PHASE 6: Check for auto-restore if expiration date is updated to future
+    if "expiration_date" in update_dict and existing.get("archived"):
+        await auto_restore_domain_on_expiration_update(
+            asset_id, 
+            update_dict["expiration_date"], 
+            current_user["email"]
+        )
 
     # Log activity
     if activity_log_service:
