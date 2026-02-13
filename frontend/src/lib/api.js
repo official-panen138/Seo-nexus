@@ -248,6 +248,8 @@ export const assetDomainsAPI = {
     create: (data) => apiV3.post('/asset-domains', data),
     update: (assetId, data) => apiV3.put(`/asset-domains/${assetId}`, data),
     delete: (assetId) => apiV3.delete(`/asset-domains/${assetId}`),
+    // Get domains that are already used as main nodes (without specific paths)
+    getUsedAsMain: () => apiV3.get('/asset-domains-used-as-main'),
     // Lifecycle Management (Super Admin only)
     markAsReleased: (assetId, data = {}) => apiV3.post(`/asset-domains/${assetId}/mark-released`, data),
     setLifecycle: (assetId, data) => apiV3.post(`/asset-domains/${assetId}/set-lifecycle`, data),
