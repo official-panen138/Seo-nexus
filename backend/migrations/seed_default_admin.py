@@ -93,6 +93,7 @@ async def seed_default_admin():
         # Create new default super admin
         print("[ACTION] Creating default Super Admin user...")
         
+        now = datetime.now(timezone.utc).isoformat()
         new_admin = {
             "id": str(uuid.uuid4()),
             "email": DEFAULT_ADMIN_EMAIL,
@@ -102,10 +103,10 @@ async def seed_default_admin():
             "status": "active",
             "brand_scope_ids": None,  # Super Admin has full access
             "telegram_username": None,
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc),
+            "created_at": now,
+            "updated_at": now,
             "approved_by": "system",
-            "approved_at": datetime.now(timezone.utc),
+            "approved_at": now,
             "menu_permissions": None  # Uses default permissions
         }
         
