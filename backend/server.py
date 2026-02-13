@@ -1161,7 +1161,7 @@ async def seed_default_super_admin():
                         "role": "super_admin",
                         "status": "active",
                         "brand_scope_ids": None,
-                        "updated_at": datetime.now(timezone.utc)
+                        "updated_at": datetime.now(timezone.utc).isoformat()
                     }
                 }
             )
@@ -1171,6 +1171,7 @@ async def seed_default_super_admin():
         # Create new default super admin
         logger.info("Creating default Super Admin user...")
         
+        now = datetime.now(timezone.utc).isoformat()
         new_admin = {
             "id": str(uuid.uuid4()),
             "email": DEFAULT_ADMIN_EMAIL,
@@ -1180,10 +1181,10 @@ async def seed_default_super_admin():
             "status": "active",
             "brand_scope_ids": None,
             "telegram_username": None,
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc),
+            "created_at": now,
+            "updated_at": now,
             "approved_by": "system",
-            "approved_at": datetime.now(timezone.utc),
+            "approved_at": now,
             "menu_permissions": None
         }
         
