@@ -181,6 +181,47 @@ export default function GroupsPage() {
         }
     };
 
+    // PHASE 6: Load archived networks
+    const loadArchivedNetworks = async () => {
+        setArchivedLoading(true);
+        try {
+            const response = await networksAPI.getArchived({ search: searchQuery || undefined });
+            setArchivedNetworks(response.data?.data || response.data || []);
+        } catch (err) {
+            console.error('Failed to load archived networks:', err);
+            toast.error('Failed to load archived networks');
+            setArchivedNetworks([]);
+        } finally {
+            setArchivedLoading(false);
+        }
+    };
+
+    // PHASE 6: Restore archived network
+    const handleRestoreNetwork = async (network) => {
+        if (!isSuperAdmin) {
+            toast.error('Only Super Admin can restore archived networks');
+            return;
+        }
+        setSaving(true);
+        try {
+            await networksAPI.restore(network.id);
+            toast.success(`Network "${network.name}" restored successfully`);
+            loadArchivedNetworks();
+            loadData();
+        } catch (err) {
+            toast.error(err.response?.data?.detail || 'Failed to restore network');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Load archived networks when view mode changes
+    useEffect(() => {
+        if (viewMode === 'archived') {
+            loadArchivedNetworks();
+        }
+    }, [viewMode]);
+
     // Debounced search function
     const performSearch = useCallback(
         debounce(async (query) => {
