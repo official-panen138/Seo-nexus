@@ -286,29 +286,43 @@ def test_monitoring_test_alert_includes_phase4_fields(api_client):
 
 def test_structure_entries_with_paths(api_client):
     """Test that SEO structure entries can have optimized_path"""
-    # Get networks
+    # Get networks - returns list directly
     response = api_client.get(f"{BASE_URL}/api/v3/networks?limit=1")
     
-    if response.status_code == 200 and response.json().get("data"):
-        network = response.json()["data"][0]
-        network_id = network["id"]
+    if response.status_code == 200:
+        networks_data = response.json()
         
-        # Get structure entries for this network
-        entries_response = api_client.get(
-            f"{BASE_URL}/api/v3/networks/{network_id}/structure"
-        )
+        # Handle both list and dict response formats
+        if isinstance(networks_data, dict):
+            networks = networks_data.get("data", [])
+        else:
+            networks = networks_data if isinstance(networks_data, list) else []
         
-        if entries_response.status_code == 200:
-            entries = entries_response.json()
+        if networks:
+            network = networks[0]
+            network_id = network["id"]
             
-            # Check if any entries have optimized_path
-            path_entries = [e for e in entries if e.get("optimized_path")]
-            root_entries = [e for e in entries if not e.get("optimized_path")]
+            # Get structure entries for this network
+            entries_response = api_client.get(
+                f"{BASE_URL}/api/v3/networks/{network_id}/structure"
+            )
             
-            print(f"Network {network['name']}: {len(root_entries)} root entries, {len(path_entries)} path entries")
-            
-            for entry in path_entries[:3]:
-                print(f"  - Path entry: {entry.get('domain_name')}{entry.get('optimized_path')}")
+            if entries_response.status_code == 200:
+                entries = entries_response.json()
+                
+                # Handle both list and dict response
+                if isinstance(entries, dict):
+                    entries = entries.get("entries", entries.get("data", []))
+                entries = entries if isinstance(entries, list) else []
+                
+                # Check if any entries have optimized_path
+                path_entries = [e for e in entries if e.get("optimized_path")]
+                root_entries = [e for e in entries if not e.get("optimized_path")]
+                
+                print(f"Network {network.get('name', 'Unknown')}: {len(root_entries)} root entries, {len(path_entries)} path entries")
+                
+                for entry in path_entries[:3]:
+                    print(f"  - Path entry: {entry.get('domain_name')}{entry.get('optimized_path')}")
 
 
 # ==================== INTEGRATION TEST: FULL ARCHIVE FLOW ====================
