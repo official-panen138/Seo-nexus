@@ -34,10 +34,20 @@ class SeoContextEnricher:
         self.db = db
 
     async def enrich_domain_with_seo_context(
-        self, domain_name: str, domain_id: Optional[str] = None
+        self, domain_name: str, domain_id: Optional[str] = None, 
+        specific_path: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Enrich a domain with full SEO context.
+        
+        PHASE 4 ENHANCEMENT:
+        - If specific_path is provided, only return context for that exact node
+        - If specific_path is None, return all nodes for this domain
+        - The 'has_root_usage' flag indicates if root domain is registered
+        - The 'path_only_nodes' list shows which paths are registered
+        
+        This ensures monitoring alerts don't infer root domain impact
+        when only specific paths are registered.
 
         Returns dict with:
         - seo_context: List of networks/nodes where domain is used
@@ -60,6 +70,10 @@ class SeoContextEnricher:
                 "node_role": None,
                 "index_status": None,
             },
+            # PHASE 4: Root vs Path tracking
+            "has_root_usage": False,
+            "path_only_nodes": [],
+            "actual_nodes_affected": [],  # List of domain+path combinations actually in SEO
         }
 
         # Find all SEO structure entries for this domain
@@ -86,22 +100,34 @@ class SeoContextEnricher:
 
         if not entries:
             return result
-
-        result["used_in_seo"] = True
         
         # PHASE 4: Track if domain is used at root vs path only
         has_root_usage = False
         path_only_nodes = []
+        actual_nodes_affected = []
         
         for entry in entries:
             path = entry.get("optimized_path")
-            if not path or path == "/":
+            node_label = f"{domain_name}{path or ''}"
+            actual_nodes_affected.append(node_label)
+            
+            if not path or path == "/" or path == "":
                 has_root_usage = True
             else:
                 path_only_nodes.append(path)
         
         result["has_root_usage"] = has_root_usage
         result["path_only_nodes"] = path_only_nodes
+        result["actual_nodes_affected"] = actual_nodes_affected
+        
+        # PHASE 4: If specific_path provided, filter entries to only that path
+        if specific_path is not None:
+            entries = [e for e in entries if (e.get("optimized_path") or "") == specific_path]
+            if not entries:
+                # Path not found in SEO - return empty context but keep tracking info
+                return result
+
+        result["used_in_seo"] = True
 
         # Process each entry (domain may be in multiple networks)
         networks_processed = set()
