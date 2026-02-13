@@ -250,6 +250,10 @@ export const assetDomainsAPI = {
     delete: (assetId) => apiV3.delete(`/asset-domains/${assetId}`),
     // Get domains that are already used as main nodes (without specific paths)
     getUsedAsMain: () => apiV3.get('/asset-domains-used-as-main'),
+    // PHASE 1: Get domains eligible for SEO Networks (excludes Released, Not Renewed, Quarantined)
+    getEligibleForSeo: (brandId = null) => apiV3.get('/asset-domains-eligible-for-seo', { 
+        params: brandId ? { brand_id: brandId } : {} 
+    }),
     // Lifecycle Management (Super Admin only)
     markAsReleased: (assetId, data = {}) => apiV3.post(`/asset-domains/${assetId}/mark-released`, data),
     setLifecycle: (assetId, data) => apiV3.post(`/asset-domains/${assetId}/set-lifecycle`, data),
@@ -267,6 +271,8 @@ export const assetDomainsAPI = {
 // V3 SEO Networks API
 export const networksAPI = {
     getAll: (params) => apiV3.get('/networks', { params }),
+    getArchived: (params) => apiV3.get('/networks/archived', { params }),  // PHASE 3
+    restore: (networkId) => apiV3.post(`/networks/${networkId}/restore`),  // PHASE 3
     getOne: (networkId) => apiV3.get(`/networks/${networkId}`),
     getTiers: (networkId) => apiV3.get(`/networks/${networkId}/tiers`),
     getAvailableDomains: (networkId) => apiV3.get(`/networks/${networkId}/available-domains`),
