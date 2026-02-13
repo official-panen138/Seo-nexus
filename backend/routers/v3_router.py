@@ -328,6 +328,214 @@ async def require_manager_permission(network: dict, user: dict):
         )
 
 
+# ==================== DOMAIN ELIGIBILITY VALIDATION ====================
+# Phase 1: Strict Domain Eligibility for SEO Networks
+
+# Lifecycle statuses that BLOCK domain usage in SEO Networks
+BLOCKED_LIFECYCLE_STATUSES = [
+    DomainLifecycleStatus.RELEASED.value,
+    DomainLifecycleStatus.NOT_RENEWED.value,
+    DomainLifecycleStatus.QUARANTINED.value,
+]
+
+
+async def check_domain_eligibility(domain_id: str) -> dict:
+    """
+    Check if a domain is eligible for use in SEO Networks.
+    
+    Returns:
+        dict with keys:
+        - eligible: bool
+        - reason: str (if not eligible)
+        - domain: dict (the domain data)
+    """
+    domain = await db.asset_domains.find_one({"id": domain_id}, {"_id": 0})
+    
+    if not domain:
+        return {
+            "eligible": False,
+            "reason": f"Domain not found (ID: {domain_id})",
+            "domain": None
+        }
+    
+    lifecycle = domain.get("lifecycle_status", DomainLifecycleStatus.ACTIVE.value)
+    domain_name = domain.get("domain_name", "Unknown")
+    
+    # Check blocked lifecycle statuses
+    if lifecycle in BLOCKED_LIFECYCLE_STATUSES:
+        status_label = lifecycle.replace("_", " ").title()
+        return {
+            "eligible": False,
+            "reason": f"Domain '{domain_name}' has lifecycle status '{status_label}' and cannot be used in SEO Networks. Only 'Active' domains are allowed.",
+            "domain": domain
+        }
+    
+    # Check quarantine category (additional safety)
+    if domain.get("quarantine_category"):
+        return {
+            "eligible": False,
+            "reason": f"Domain '{domain_name}' is quarantined under category '{domain.get('quarantine_category')}' and cannot be used in SEO Networks.",
+            "domain": domain
+        }
+    
+    return {
+        "eligible": True,
+        "reason": None,
+        "domain": domain
+    }
+
+
+async def validate_domain_for_seo_network(domain_id: str):
+    """
+    Validate domain eligibility and raise HTTPException if not eligible.
+    Use this for backend enforcement.
+    """
+    result = await check_domain_eligibility(domain_id)
+    
+    if not result["eligible"]:
+        raise HTTPException(
+            status_code=400,
+            detail=result["reason"]
+        )
+    
+    return result["domain"]
+
+
+# ==================== DOMAIN+PATH UNIQUENESS VALIDATION ====================
+# Phase 2: Domain + Path Uniqueness Across SEO Networks
+
+async def check_domain_path_uniqueness(domain_id: str, optimized_path: str = None, exclude_network_id: str = None) -> dict:
+    """
+    Check if a domain+path combination is already used in another SEO Network.
+    
+    Args:
+        domain_id: The asset domain ID
+        optimized_path: The path (None or empty = root domain)
+        exclude_network_id: Network ID to exclude from check (for updates)
+    
+    Returns:
+        dict with keys:
+        - unique: bool
+        - existing_network: dict (if not unique, contains network info)
+        - reason: str (if not unique)
+    """
+    # Normalize path
+    normalized_path = optimized_path if optimized_path and optimized_path != "/" else None
+    
+    # Build query to find existing usage
+    query = {
+        "asset_domain_id": domain_id,
+        "$or": [
+            {"optimized_path": normalized_path},
+            # Also match if normalized_path is None and stored path is "/" or ""
+            {"optimized_path": None if normalized_path is None else {"$exists": False}},
+        ]
+    }
+    
+    # More precise matching
+    if normalized_path is None:
+        query = {
+            "asset_domain_id": domain_id,
+            "$or": [
+                {"optimized_path": None},
+                {"optimized_path": ""},
+                {"optimized_path": "/"}
+            ]
+        }
+    else:
+        query = {
+            "asset_domain_id": domain_id,
+            "optimized_path": normalized_path
+        }
+    
+    # Exclude current network if updating
+    if exclude_network_id:
+        query["network_id"] = {"$ne": exclude_network_id}
+    
+    # Find existing entry
+    existing = await db.seo_structure_entries.find_one(query, {"_id": 0, "network_id": 1})
+    
+    if existing:
+        # Get network details
+        network = await db.seo_networks.find_one(
+            {"id": existing["network_id"]}, 
+            {"_id": 0, "id": 1, "name": 1, "deleted_at": 1}
+        )
+        
+        # Skip if network is deleted (archived)
+        if network and network.get("deleted_at"):
+            return {"unique": True, "existing_network": None, "reason": None}
+        
+        if network:
+            domain = await db.asset_domains.find_one({"id": domain_id}, {"_id": 0, "domain_name": 1})
+            domain_name = domain.get("domain_name") if domain else domain_id
+            path_display = normalized_path or "(root)"
+            
+            return {
+                "unique": False,
+                "existing_network": network,
+                "reason": f"Domain '{domain_name}' with path '{path_display}' is already used in network '{network.get('name')}'. Each domain+path combination can only belong to ONE SEO Network."
+            }
+    
+    return {"unique": True, "existing_network": None, "reason": None}
+
+
+async def validate_domain_path_uniqueness(domain_id: str, optimized_path: str = None, exclude_network_id: str = None):
+    """
+    Validate domain+path uniqueness and raise HTTPException if not unique.
+    Use this for backend enforcement.
+    """
+    result = await check_domain_path_uniqueness(domain_id, optimized_path, exclude_network_id)
+    
+    if not result["unique"]:
+        raise HTTPException(
+            status_code=400,
+            detail=result["reason"]
+        )
+
+
+# ==================== MONITORING INTEGRITY VALIDATION ====================
+# Phase 5: Check if root domain has monitoring enabled
+
+async def check_monitoring_requirement(domain_id: str, optimized_path: str = None) -> dict:
+    """
+    Check if monitoring requirements are met for adding a domain/path to SEO Network.
+    
+    For path nodes: Root domain MUST have monitoring enabled.
+    For root nodes: Monitoring should be enabled but just warn.
+    
+    Returns:
+        dict with keys:
+        - ok: bool (True if can proceed, even with warnings)
+        - warning: str (warning message if applicable)
+        - needs_reminder: bool (should send reminder)
+    """
+    domain = await db.asset_domains.find_one({"id": domain_id}, {"_id": 0})
+    
+    if not domain:
+        return {"ok": False, "warning": "Domain not found", "needs_reminder": False}
+    
+    monitoring_enabled = domain.get("monitoring_enabled", False)
+    domain_name = domain.get("domain_name", "Unknown")
+    is_path_node = optimized_path and optimized_path != "/"
+    
+    if is_path_node and not monitoring_enabled:
+        return {
+            "ok": True,  # Allow but warn
+            "warning": f"⚠️ WARNING: Root domain '{domain_name}' does not have monitoring enabled. Path-based nodes require root domain monitoring. Please enable monitoring for '{domain_name}' to track this node's status.",
+            "needs_reminder": True
+        }
+    
+    if not monitoring_enabled:
+        return {
+            "ok": True,  # Allow but warn
+            "warning": f"⚠️ Monitoring is not enabled for '{domain_name}'. Consider enabling monitoring to track domain status.",
+            "needs_reminder": True
+        }
+    
+    return {"ok": True, "warning": None, "needs_reminder": False}
+
+
 async def require_manager_permission_by_network_id(network_id: str, user: dict) -> dict:
     """
     Fetch network and check manager permission.
