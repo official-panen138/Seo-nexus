@@ -2861,6 +2861,7 @@ async def get_networks(
     status: Optional[NetworkStatus] = None,
     ranking_status: Optional[str] = None,  # Filter: "ranking", "tracking", "none"
     sort_by: Optional[str] = None,  # Sort: "best_position", "ranking_nodes"
+    include_archived: bool = False,  # PHASE 3: Include archived networks
     skip: int = 0,
     limit: int = 100,
     current_user: dict = Depends(get_current_user_wrapper),
@@ -2870,6 +2871,10 @@ async def get_networks(
 
     # Start with brand scope filter
     query = build_brand_filter(current_user)
+    
+    # PHASE 3: Exclude archived networks by default
+    if not include_archived:
+        query["deleted_at"] = {"$exists": False}
 
     # If specific brand requested, validate access
     if brand_id:
