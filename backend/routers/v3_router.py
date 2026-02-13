@@ -1669,8 +1669,10 @@ async def get_asset_domains(
             {"lifecycle_status": DomainLifecycleStatus.QUARANTINED.value}
         ]
     elif view_mode == "expired":
-        # This will be computed in post-processing since domain_active_status is computed
-        pass  # Handle in enrichment
+        # Filter at DB level: expired = expiration_date <= now
+        from datetime import datetime, timezone
+        _now_exp = datetime.now(timezone.utc).isoformat()
+        query["expiration_date"] = {"$lte": _now_exp}
     
     elif view_mode == "not_renewed":
         # Not Renewed = domains where expiration_date has passed (auto-transitioned to NOT_RENEWED)
