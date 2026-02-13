@@ -3287,46 +3287,6 @@ async def get_network(
     return SeoNetworkDetail(**network)
 
 
-@router.get("/networks/archived")
-async def get_archived_networks(
-    brand_id: Optional[str] = None,
-    skip: int = 0,
-    limit: int = 100,
-    current_user: dict = Depends(get_current_user_wrapper),
-):
-    """
-    PHASE 3: Get archived/deleted networks.
-    
-    Archived networks are:
-    - READ-ONLY
-    - Not shown in active dashboards
-    - Available for audit and historical reference
-    """
-    query = build_brand_filter(current_user)
-    query["deleted_at"] = {"$exists": True}
-    
-    if brand_id:
-        require_brand_access(brand_id, current_user)
-        query["brand_id"] = brand_id
-    
-    networks = await db.seo_networks.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
-    
-    # Get brand names
-    brands = {
-        b["id"]: b["name"]
-        for b in await db.brands.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)
-    }
-    
-    # Enrich with brand names and archived info
-    result = []
-    for network in networks:
-        network["brand_name"] = brands.get(network.get("brand_id"))
-        network["is_archived"] = True
-        result.append(network)
-    
-    return result
-
-
 @router.post("/networks", response_model=SeoNetworkResponse)
 async def create_network(
     data: SeoNetworkCreate, current_user: dict = Depends(get_current_user_wrapper)
