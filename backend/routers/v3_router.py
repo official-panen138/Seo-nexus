@@ -1763,24 +1763,40 @@ async def get_domains_used_as_main(
 ):
     """
     Get list of domain IDs that are already used as main nodes in SEO networks.
-    Only returns domains used at root level (no path or path = '/').
-    Domains with specific paths can still be reused with different paths.
+    Only returns domains that are ONLY used at root level (no path).
+    If a domain is used with a specific path in ANY network, it can still be reused.
     """
-    # Find all main domain entries without a path (root level usage)
-    main_entries = await db.seo_structure_entries.find(
-        {
-            "domain_role": "main",
-            "$or": [
-                {"optimized_path": None},
-                {"optimized_path": ""},
-                {"optimized_path": "/"}
-            ]
-        },
-        {"_id": 0, "asset_domain_id": 1}
+    # Get ALL main domain entries
+    all_main_entries = await db.seo_structure_entries.find(
+        {"domain_role": "main"},
+        {"_id": 0, "asset_domain_id": 1, "optimized_path": 1}
     ).to_list(10000)
     
-    # Return unique domain IDs
-    used_domain_ids = list(set(e.get("asset_domain_id") for e in main_entries if e.get("asset_domain_id")))
+    # Group by domain_id to check if domain has any path-based usage
+    domain_usage = {}
+    for entry in all_main_entries:
+        domain_id = entry.get("asset_domain_id")
+        if not domain_id:
+            continue
+        
+        path = entry.get("optimized_path")
+        is_root = path in [None, "", "/"]
+        
+        if domain_id not in domain_usage:
+            domain_usage[domain_id] = {"has_root": False, "has_path": False}
+        
+        if is_root:
+            domain_usage[domain_id]["has_root"] = True
+        else:
+            domain_usage[domain_id]["has_path"] = True
+    
+    # Only exclude domains that are ONLY used at root (no path usage at all)
+    # If domain has any path-based usage, it can still be reused with different paths
+    used_domain_ids = [
+        domain_id for domain_id, usage in domain_usage.items()
+        if usage["has_root"] and not usage["has_path"]
+    ]
+    
     return {"used_domain_ids": used_domain_ids}
 
 
