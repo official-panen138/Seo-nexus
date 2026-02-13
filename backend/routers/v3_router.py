@@ -3045,7 +3045,7 @@ async def create_network(
         "network_id": network_id,
         "optimized_path": main_path if main_path != "/" else None,
         "domain_role": DomainRole.MAIN.value,
-        "domain_status": SeoStatus.CANONICAL.value,
+        "domain_status": SeoStatus.PRIMARY.value,  # Main nodes MUST have PRIMARY status
         "index_status": IndexStatus.INDEX.value,
         "target_entry_id": None,  # Main node has no target
         "created_at": now,
