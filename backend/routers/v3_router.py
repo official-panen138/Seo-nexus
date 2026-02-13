@@ -1623,6 +1623,23 @@ async def get_asset_domains(
     if lifecycle_status:
         query["lifecycle_status"] = lifecycle_status.value
     
+    # Filter by domain_active_status at DB level (computed from expiration_date)
+    if domain_active_status:
+        from datetime import datetime as _dt, timezone as _tz
+        _now_iso = _dt.now(_tz.utc).isoformat()
+        if domain_active_status == "expired":
+            query["expiration_date"] = {"$lte": _now_iso}
+        elif domain_active_status == "active":
+            if "$and" not in query:
+                query["$and"] = []
+            query["$and"].append({
+                "$or": [
+                    {"expiration_date": {"$gt": _now_iso}},
+                    {"expiration_date": None},
+                    {"expiration_date": {"$exists": False}},
+                ]
+            })
+
     # Monitoring status filter (technical)
     if monitoring_status:
         query["monitoring_status"] = monitoring_status
