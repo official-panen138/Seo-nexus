@@ -62,12 +62,14 @@ Build a full-stack SEO Network Operations Center combining:
 - Backend enforcement with clear error messages
 - Returns existing network name if duplicate
 
-**Phase 3: Soft Delete & Cascade Archiving - COMPLETE**
-- Networks now soft-deleted (set `deleted_at`)
-- Cascade archive: optimizations, complaints, conflicts, entries
-- New API: `GET /api/v3/networks/archived`
-- New API: `POST /api/v3/networks/{id}/restore` (Super Admin)
-- Archived networks are READ-ONLY
+**Phase 3: SEO Network Hard Delete (REPLACES Soft Delete) - COMPLETE (Feb 13, 2026)**
+- SEO Networks are now PERMANENTLY DELETED (no archive, no restore, no soft-delete)
+- Cascade hard delete removes: structure entries, optimizations, complaints, conflicts, change logs, notifications
+- Asset Domains are NOT deleted - only lose network association
+- Removed endpoints: `GET /api/v3/networks/archived`, `POST /api/v3/networks/{id}/restore`
+- Frontend: Removed "Archived" tab from SEO Networks page
+- Delete dialog clearly shows permanent deletion warning
+- Old ghost data from previous soft-deletes cleaned from database
 
 **Phase 4: Root vs Path Reporting Fix - COMPLETE (Feb 13, 2026)**
 - SEO Context Enricher enhanced with explicit node tracking:
@@ -94,12 +96,9 @@ Build a full-stack SEO Network Operations Center combining:
 - Auto-restore on expiration update: When archived domain's expiration_date is updated to future, it auto-restores
 - All transitions (active→archived, archived→restored) are logged in activity_logs
 
-**Archived Items UI - COMPLETE (Feb 13, 2026)**
-- SEO Networks page: Added "Active Networks" / "Archived" tabs
-  - Archived networks displayed in read-only cards with purple styling
-  - Shows archive date and network details
-  - Restore button visible for Super Admin only
-- Asset Domains page: Added "Archived" tab to view mode
+**Archived Items UI - PARTIALLY UPDATED (Feb 13, 2026)**
+- SEO Networks page: Archive tab REMOVED (networks are permanently deleted)
+- Asset Domains page: "Archived" tab remains for expired domain management
   - Shows archived domains in table view
   - Actions dropdown includes "Restore Domain" for Super Admin
   - Displays archive date and reason in dropdown
