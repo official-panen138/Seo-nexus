@@ -124,10 +124,20 @@ export default function GroupsPage() {
         loadData();
     }, []);
 
-    // Filter domains when brand changes
+    // Filter domains when brand changes - exclude domains already used as main nodes
     useEffect(() => {
         if (form.brand_id && domains.length > 0) {
-            const filtered = domains.filter(d => d.brand_id === form.brand_id);
+            // Filter by brand AND exclude domains used as main nodes (without paths)
+            const filtered = domains.filter(d => {
+                // Must belong to selected brand
+                if (d.brand_id !== form.brand_id) return false;
+                
+                // Exclude if used as main node without a path
+                // (domains with paths can still be reused with different paths)
+                if (usedMainDomainIds.includes(d.id)) return false;
+                
+                return true;
+            });
             setBrandDomains(filtered);
             // Reset domain selection if not in filtered list
             if (form.main_domain_id && !filtered.find(d => d.id === form.main_domain_id)) {
@@ -136,7 +146,7 @@ export default function GroupsPage() {
         } else {
             setBrandDomains([]);
         }
-    }, [form.brand_id, domains]);
+    }, [form.brand_id, domains, usedMainDomainIds]);
 
     const loadData = async () => {
         try {
