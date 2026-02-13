@@ -846,6 +846,99 @@ export default function GroupsPage() {
                         })}
                     </div>
                 )}
+                </>
+                )}
+
+                {/* PHASE 6: Archived Networks View */}
+                {viewMode === 'archived' && (
+                    <div className="space-y-4">
+                        {archivedLoading ? (
+                            <div className="flex items-center justify-center h-48">
+                                <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                            </div>
+                        ) : archivedNetworks.length === 0 ? (
+                            <div className="empty-state mt-16">
+                                <Archive className="empty-state-icon text-purple-500" />
+                                <p className="empty-state-title">No archived networks</p>
+                                <p className="empty-state-description">
+                                    Deleted networks will appear here for recovery
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="archived-networks-grid">
+                                {archivedNetworks.map((network, index) => (
+                                    <Card 
+                                        key={network.id} 
+                                        className={`bg-card border-border border-purple-500/30 h-full animate-fade-in stagger-${(index % 5) + 1}`}
+                                        data-testid={`archived-network-card-${network.id}`}
+                                    >
+                                        <CardHeader className="pb-3">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 rounded-md bg-purple-500/10">
+                                                        <Archive className="h-5 w-5 text-purple-500" />
+                                                    </div>
+                                                    <div>
+                                                        <CardTitle className="text-base text-zinc-400">{network.name}</CardTitle>
+                                                        {network.brand_name && (
+                                                            <Badge variant="outline" className="mt-1 text-xs text-zinc-500">
+                                                                <Tag className="h-3 w-3 mr-1" />
+                                                                {network.brand_name}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+                                                    Archived
+                                                </Badge>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="pt-0">
+                                            <div className="space-y-2 text-sm text-zinc-500">
+                                                <div className="flex items-center gap-2">
+                                                    <Clock className="h-4 w-4" />
+                                                    <span>
+                                                        Archived: {network.deleted_at 
+                                                            ? formatDate(network.deleted_at) 
+                                                            : 'Unknown'}
+                                                    </span>
+                                                </div>
+                                                {network.description && (
+                                                    <p className="text-xs text-zinc-600 mt-2">{network.description}</p>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Restore button - Super Admin only */}
+                                            {isSuperAdmin && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="w-full mt-4 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                                                    onClick={() => handleRestoreNetwork(network)}
+                                                    disabled={saving}
+                                                    data-testid={`restore-network-${network.id}`}
+                                                >
+                                                    {saving ? (
+                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                    ) : (
+                                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                                    )}
+                                                    Restore Network
+                                                </Button>
+                                            )}
+                                            
+                                            {!isSuperAdmin && (
+                                                <p className="text-xs text-zinc-600 mt-4 text-center">
+                                                    Only Super Admin can restore archived networks
+                                                </p>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Multi-Step Create / Edit Dialog */}
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
