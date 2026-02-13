@@ -242,7 +242,14 @@ class ExpirationMonitoringService:
         include_auto_renew = exp_settings.get("include_auto_renew", False)
 
         # Build query for domains with expiration dates
-        query = {"expiration_date": {"$ne": None, "$exists": True}}
+        # PHASE 4 & 6: Exclude domains that are:
+        # - Released, Not Renewed, Quarantined (blocked lifecycle)
+        # - Already archived
+        query = {
+            "expiration_date": {"$ne": None, "$exists": True},
+            "lifecycle_status": {"$nin": ["released", "not_renewed", "quarantined"]},
+            "archived": {"$ne": True}
+        }
 
         # Optionally exclude auto-renew domains
         if not include_auto_renew:
