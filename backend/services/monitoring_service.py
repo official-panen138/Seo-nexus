@@ -787,8 +787,14 @@ class AvailabilityMonitoringService:
             }
 
         # Get domains with monitoring enabled
+        # PHASE 6: Exclude archived and blocked lifecycle domains
         domains = await self.db.asset_domains.find(
-            {"monitoring_enabled": True}, {"_id": 0}
+            {
+                "monitoring_enabled": True,
+                "lifecycle_status": {"$nin": ["released", "not_renewed", "quarantined"]},
+                "archived": {"$ne": True}
+            }, 
+            {"_id": 0}
         ).to_list(10000)
 
         now = datetime.now(timezone.utc)
