@@ -1709,7 +1709,6 @@ export default function DomainsPage() {
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end">
-                                                                        <>
                                                                     {/* Lifecycle actions */}
                                                                     {item.lifecycle_status !== 'released' && (
                                                                         <DropdownMenuItem
