@@ -1218,6 +1218,27 @@ class AvailabilityMonitoringService:
         lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         
         if seo.get("used_in_seo"):
+            # PHASE 4: Add clarity on root vs path usage
+            has_root = seo.get("has_root_usage", False)
+            path_nodes = seo.get("path_only_nodes", [])
+            actual_nodes = seo.get("actual_nodes_affected", [])
+            
+            if actual_nodes:
+                lines.append(f"<b>📍 Affected Nodes in SEO:</b>")
+                for node in actual_nodes[:3]:
+                    lines.append(f"  • {node}")
+                if len(actual_nodes) > 3:
+                    lines.append(f"  ... +{len(actual_nodes) - 3} more")
+                lines.append("")
+            
+            # PHASE 4: Explicit root vs path indicator
+            if has_root:
+                lines.append("⚠️ <b>Root domain is registered in SEO</b>")
+            elif path_nodes:
+                lines.append(f"📌 <b>Path-only:</b> {len(path_nodes)} path(s) registered")
+                lines.append("<i>Root domain NOT in SEO network</i>")
+            lines.append("")
+            
             ctx_list = seo.get("seo_context", [])
             if ctx_list:
                 first_ctx = ctx_list[0]
@@ -1243,6 +1264,7 @@ class AvailabilityMonitoringService:
                     lines.append(line)
             else:
                 # Fallback: Build from context
+                ctx_list = seo.get("seo_context", [])
                 if ctx_list:
                     first_ctx = ctx_list[0]
                     node_label = first_ctx.get("node") or domain.get("domain_name", "Unknown")
