@@ -83,7 +83,7 @@ async def seed_default_admin():
                         "role": "super_admin",
                         "status": "active",
                         "brand_scope_ids": None,  # Full access
-                        "updated_at": datetime.now(timezone.utc)
+                        "updated_at": datetime.now(timezone.utc).isoformat()
                     }
                 }
             )
