@@ -1290,6 +1290,24 @@ async def login(credentials: UserLogin):
         )
 
     token = create_token(user["id"], user["email"], user["role"])
+    
+    # Convert datetime objects to ISO strings if needed
+    created_at = user.get("created_at")
+    if hasattr(created_at, 'isoformat'):
+        created_at = created_at.isoformat()
+    elif created_at is None:
+        created_at = datetime.now(timezone.utc).isoformat()
+    
+    updated_at = user.get("updated_at")
+    if hasattr(updated_at, 'isoformat'):
+        updated_at = updated_at.isoformat()
+    elif updated_at is None:
+        updated_at = datetime.now(timezone.utc).isoformat()
+    
+    approved_at = user.get("approved_at")
+    if hasattr(approved_at, 'isoformat'):
+        approved_at = approved_at.isoformat()
+    
     user_response = UserResponse(
         id=user["id"],
         email=user["email"],
@@ -1297,10 +1315,11 @@ async def login(credentials: UserLogin):
         role=user["role"],
         brand_scope_ids=user.get("brand_scope_ids"),
         status=user.get("status", "active"),
+        telegram_username=user.get("telegram_username"),
         approved_by=user.get("approved_by"),
-        approved_at=user.get("approved_at"),
-        created_at=user.get("created_at"),
-        updated_at=user.get("updated_at"),
+        approved_at=approved_at,
+        created_at=created_at,
+        updated_at=updated_at,
     )
     return TokenResponse(access_token=token, user=user_response)
 
