@@ -1775,8 +1775,6 @@ export default function DomainsPage() {
                                                                         <Trash2 className="h-4 w-4 mr-2" />
                                                                         Delete Domain
                                                                     </DropdownMenuItem>
-                                                                        </>
-                                                                    )}
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
                                                         )}
