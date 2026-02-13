@@ -142,11 +142,20 @@ export default function GroupsPage() {
                 brandsAPI.getAll(),
                 assetDomainsAPI.getAll({ limit: 10000 }) // Get all domains for selection
             ]);
-            setNetworks(networksRes.data);
-            setBrands(brandsRes.data);
+            
+            console.log('Networks response:', networksRes.data);
+            console.log('Brands response:', brandsRes.data);
+            console.log('Domains response:', domainsRes.data);
+            
+            setNetworks(Array.isArray(networksRes.data) ? networksRes.data : networksRes.data?.data || []);
+            setBrands(Array.isArray(brandsRes.data) ? brandsRes.data : brandsRes.data?.data || []);
+            
             // Asset domains API returns {data, meta} structure
             const domainsData = domainsRes.data?.data || domainsRes.data?.items || domainsRes.data || [];
             setDomains(Array.isArray(domainsData) ? domainsData : []);
+            
+            console.log('Loaded brands:', Array.isArray(brandsRes.data) ? brandsRes.data.length : 0);
+            console.log('Loaded domains:', Array.isArray(domainsData) ? domainsData.length : 0);
         } catch (err) {
             console.error('Failed to load data:', err);
             toast.error('Failed to load networks');
