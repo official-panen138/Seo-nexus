@@ -217,6 +217,15 @@ async def create_database_indexes():
 
 
 app = FastAPI(title="SEO-NOC API", lifespan=lifespan)
+
+@app.get("/api/health")
+async def health_check():
+    """
+    Health check endpoint
+    Used by Docker / infrastructure monitoring
+    """
+    return {"status": "ok"}
+
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
 
