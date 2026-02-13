@@ -3505,7 +3505,8 @@ async def update_structure_entry(
     # === MAIN NODE VALIDATION RULES ===
     # Determine the effective role after update
     new_role = update_dict.get("domain_role", existing.get("domain_role"))
-    new_status = update_dict.get("domain_status", existing.get("domain_status"))
+    new_status = update_dict.get("domain_status")  # Only check if explicitly being changed
+    existing_status = existing.get("domain_status")
     new_target = update_dict.get("target_entry_id", existing.get("target_entry_id"))
     new_target_domain = update_dict.get(
         "target_asset_domain_id", existing.get("target_asset_domain_id")
@@ -3519,12 +3520,14 @@ async def update_structure_entry(
                 detail="Main (LP/Money Site) nodes cannot have a target. They are the primary target.",
             )
 
-        # Rule 2: Main nodes MUST have PRIMARY status
-        if new_status and new_status not in ["primary", SeoStatus.PRIMARY]:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Main nodes must have 'primary' status, not '{new_status}'. Main nodes don't redirect to themselves.",
-            )
+        # Rule 2: Main nodes MUST have PRIMARY status (only validate if status is being changed)
+        if new_status is not None:  # Only check if status is explicitly being updated
+            status_value = new_status.value if hasattr(new_status, 'value') else new_status
+            if status_value not in ["primary", SeoStatus.PRIMARY.value]:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Main nodes must have 'primary' status, not '{status_value}'. Main nodes don't redirect to themselves.",
+                )
 
         # Rule 3: Check if changing TO main role, and another main already exists
         if existing.get("domain_role") != "main" and (
