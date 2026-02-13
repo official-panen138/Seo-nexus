@@ -562,7 +562,6 @@ export default function GroupsPage() {
                         </div>
                     )}
                 </div>
-                )}
 
                 {/* Networks Grid */}
                 {filteredNetworks.length === 0 ? (
