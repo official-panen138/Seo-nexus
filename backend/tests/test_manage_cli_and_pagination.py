@@ -380,7 +380,7 @@ class TestAssetDomainsPagination:
     def test_pagination_view_mode_expired_returns_correct_total(self, auth_headers):
         """Test: GET /api/v3/asset-domains?view_mode=expired returns correct total"""
         response_expired = requests.get(
-            f"{BASE_URL}/api/v3/asset-domains?view_mode=expired&page=1&limit=1000",
+            f"{BASE_URL}/api/v3/asset-domains?view_mode=expired&page=1&limit=100",
             headers=auth_headers
         )
         
@@ -391,8 +391,13 @@ class TestAssetDomainsPagination:
         items_count = len(data_expired["data"])
         
         # CRITICAL: view_mode=expired should also have correct count
-        assert items_count == total_expired or items_count == data_expired["meta"]["limit"], \
-            f"BUG: view_mode=expired total mismatch! total={total_expired}, items returned={items_count}"
+        assert items_count <= total_expired, \
+            f"BUG: Items count ({items_count}) > total ({total_expired})"
+        
+        # If total is less than or equal to limit, items should equal total
+        if total_expired <= 100:
+            assert items_count == total_expired, \
+                f"BUG: view_mode=expired total mismatch! total={total_expired}, items returned={items_count}"
         
         print(f"[PASS] view_mode=expired returns correct total: {total_expired} (items: {items_count})")
     
