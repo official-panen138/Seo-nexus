@@ -1942,14 +1942,6 @@ async def get_asset_domains(
             if asset.get("released_by"):
                 asset["released_by_name"] = user_map.get(asset["released_by"])
 
-    # Filter by domain_active_status if specified (post-processing since it's computed)
-    if domain_active_status:
-        assets = [a for a in assets if a.get("domain_active_status") == domain_active_status]
-    
-    # Filter by view_mode=expired (post-processing)
-    if view_mode == "expired":
-        assets = [a for a in assets if a.get("domain_active_status") == "expired"]
-
     # Return paginated response
     return {
         "data": [AssetDomainResponse(**a) for a in assets],
