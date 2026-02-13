@@ -464,22 +464,7 @@ export default function GroupsPage() {
                     </div>
                 </div>
 
-                {/* PHASE 6: View Mode Tabs - Active vs Archived */}
-                <Tabs value={viewMode} onValueChange={setViewMode} className="mb-6">
-                    <TabsList className="bg-zinc-900">
-                        <TabsTrigger value="active" data-testid="tab-active-networks">
-                            <Network className="h-4 w-4 mr-2" />
-                            Active Networks
-                        </TabsTrigger>
-                        <TabsTrigger value="archived" data-testid="tab-archived-networks" className="text-purple-400 data-[state=active]:text-purple-400">
-                            <Archive className="h-4 w-4 mr-2" />
-                            Archived
-                        </TabsTrigger>
-                    </TabsList>
-                </Tabs>
-
-                {/* Domain Search with Auto-suggest - Only for active view */}
-                {viewMode === 'active' && (
+                {/* Domain Search with Auto-suggest */}
                 <div className="mb-6">
                     <Popover open={searchOpen && searchResults.length > 0} onOpenChange={setSearchOpen}>
                         <PopoverTrigger asChild>
