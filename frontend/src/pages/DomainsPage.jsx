@@ -2661,7 +2661,6 @@ export default function DomainsPage() {
                                         {selectedLifecycle === 'active' && '✅ Domain will be included in real-time monitoring and alerts.'}
                                         {selectedLifecycle === 'released' && '🚫 Domain will be excluded from all monitoring and alerts (intentionally retired).'}
                                         {selectedLifecycle === 'quarantined' && '⚠️ Domain will be blocked due to issues and excluded from monitoring.'}
-                                        {selectedLifecycle === 'archived' && '📦 Domain will be archived (historical only, no monitoring).'}
                                     </p>
                                 </div>
                             )}
