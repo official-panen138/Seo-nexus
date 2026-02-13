@@ -140,11 +140,13 @@ export default function GroupsPage() {
             const [networksRes, brandsRes, domainsRes] = await Promise.all([
                 networksAPI.getAll(),
                 brandsAPI.getAll(),
-                assetDomainsAPI.getAll()
+                assetDomainsAPI.getAll({ limit: 10000 }) // Get all domains for selection
             ]);
             setNetworks(networksRes.data);
             setBrands(brandsRes.data);
-            setDomains(domainsRes.data);
+            // Asset domains API returns {data, meta} structure
+            const domainsData = domainsRes.data?.data || domainsRes.data?.items || domainsRes.data || [];
+            setDomains(Array.isArray(domainsData) ? domainsData : []);
         } catch (err) {
             console.error('Failed to load data:', err);
             toast.error('Failed to load networks');
