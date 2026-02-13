@@ -12750,8 +12750,13 @@ async def auto_restore_domain_on_expiration_update(domain_id: str, new_expiratio
     
     now_iso = datetime.now(timezone.utc).isoformat()
     
+    # Note: We use $set with None values to clear archive fields
+    # Using both $set and $unset on the same fields causes MongoDB conflict
     update_dict = {
         "archived": False,
+        "archived_at": None,
+        "archived_reason": None,
+        "archived_by": None,
         "lifecycle_status": DomainLifecycleStatus.ACTIVE.value,
         "restored_at": now_iso,
         "restored_by": actor_email,
@@ -12759,13 +12764,7 @@ async def auto_restore_domain_on_expiration_update(domain_id: str, new_expiratio
         "updated_at": now_iso
     }
     
-    await db.asset_domains.update_one(
-        {"id": domain_id}, 
-        {
-            "$set": update_dict, 
-            "$unset": {"archived_at": "", "archived_reason": "", "archived_by": ""}
-        }
-    )
+    await db.asset_domains.update_one({"id": domain_id}, {"$set": update_dict})
     
     # Log the transition
     if activity_log_service:
