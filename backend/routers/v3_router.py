@@ -12694,6 +12694,8 @@ async def restore_archived_domain(
     else:
         new_lifecycle = DomainLifecycleStatus.ACTIVE.value
     
+    # Note: We use $set with None values to clear archive fields
+    # Using both $set and $unset on the same fields causes MongoDB conflict
     update_dict = {
         "archived": False,
         "archived_at": None,
@@ -12705,7 +12707,7 @@ async def restore_archived_domain(
         "updated_at": now_iso
     }
     
-    await db.asset_domains.update_one({"id": asset_id}, {"$set": update_dict, "$unset": {"archived_at": "", "archived_reason": "", "archived_by": ""}})
+    await db.asset_domains.update_one({"id": asset_id}, {"$set": update_dict})
     
     # Log the transition
     if activity_log_service:
