@@ -336,7 +336,7 @@ export default function GroupsPage() {
         setSaving(true);
         try {
             await networksAPI.delete(selectedNetwork.id);
-            toast.success('Network deleted');
+            toast.success('Network permanently deleted');
             setDeleteDialogOpen(false);
             setSelectedNetwork(null);
             loadData();
