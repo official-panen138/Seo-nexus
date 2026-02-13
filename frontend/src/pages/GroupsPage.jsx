@@ -982,12 +982,24 @@ export default function GroupsPage() {
                 <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                     <DialogContent className="bg-card border-border max-w-md">
                         <DialogHeader>
-                            <DialogTitle>Delete Network</DialogTitle>
+                            <DialogTitle className="text-red-400">Permanently Delete Network</DialogTitle>
                         </DialogHeader>
-                        <p className="text-zinc-400">
-                            Are you sure you want to delete <span className="text-white font-medium">{selectedNetwork?.name}</span>?
-                            All nodes will be removed from this network.
-                        </p>
+                        <div className="space-y-3">
+                            <p className="text-zinc-400">
+                                Are you sure you want to permanently delete <span className="text-white font-medium">{selectedNetwork?.name}</span>?
+                            </p>
+                            <div className="bg-red-500/10 border border-red-500/20 rounded-md p-3 text-sm text-red-300">
+                                <p className="font-medium mb-1">This action cannot be undone. The following will be permanently removed:</p>
+                                <ul className="list-disc list-inside space-y-1 text-red-400/80">
+                                    <li>All network nodes</li>
+                                    <li>All SEO optimizations</li>
+                                    <li>All optimization complaints</li>
+                                    <li>All SEO conflicts</li>
+                                    <li>All change history & notifications</li>
+                                </ul>
+                                <p className="mt-2 text-zinc-400">Asset Domains will NOT be deleted &mdash; they will only lose their network association.</p>
+                            </div>
+                        </div>
                         <DialogFooter>
                             <Button
                                 variant="outline"
@@ -1002,7 +1014,7 @@ export default function GroupsPage() {
                                 data-testid="confirm-delete-network-btn"
                             >
                                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                Delete
+                                Delete Permanently
                             </Button>
                         </DialogFooter>
                     </DialogContent>
