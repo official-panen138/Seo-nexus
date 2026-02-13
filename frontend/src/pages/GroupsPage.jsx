@@ -625,8 +625,11 @@ export default function GroupsPage() {
                         </div>
                     )}
                 </div>
+                )}
 
-                {/* Networks Grid */}
+                {/* Networks Grid - Active View */}
+                {viewMode === 'active' && (
+                <>
                 {filteredNetworks.length === 0 ? (
                     <div className="empty-state mt-16">
                         <Network className="empty-state-icon" />
