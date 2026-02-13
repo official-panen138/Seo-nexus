@@ -84,24 +84,15 @@ Build a full-stack SEO Network Operations Center combining:
 - Check if root domain has monitoring when adding path node
 - Send Telegram reminder if monitoring not configured
 
-**Phase 6: Expired Domain Handling - COMPLETE (Feb 13, 2026)**
-- New APIs for domain archiving:
-  - `GET /api/v3/domains/archive-candidates`: Lists expired+not_renewed domains eligible for archiving
-  - `GET /api/v3/domains/archived`: Paginated list of archived domains
-  - `POST /api/v3/domains/archive-expired`: Auto-archives all eligible domains
-  - `POST /api/v3/asset-domains/{id}/restore`: Restores archived domain (Super Admin only)
-- Monitoring exclusion implemented:
-  - Availability monitoring excludes `archived=true` and blocked lifecycle domains
-  - Expiration monitoring excludes `archived=true` and blocked lifecycle domains
-- Auto-restore on expiration update: When archived domain's expiration_date is updated to future, it auto-restores
-- All transitions (active→archived, archived→restored) are logged in activity_logs
+**Phase 6: Expired Domain Handling - REVISED (Feb 13, 2026)**
+- Archive feature for Asset Domains REMOVED
+- Expired+Not Renewed domains remain visible in the system with "Not Renewed" tab
+- Domain monitoring continues for all non-blocked lifecycle domains
+- Removed endpoints: `/domains/archive-expired`, `/domains/archived`, `/asset-domains/{id}/restore`, `/domains/archive-candidates`
 
-**Archived Items UI - PARTIALLY UPDATED (Feb 13, 2026)**
-- SEO Networks page: Archive tab REMOVED (networks are permanently deleted)
-- Asset Domains page: "Archived" tab remains for expired domain management
-  - Shows archived domains in table view
-  - Actions dropdown includes "Restore Domain" for Super Admin
-  - Displays archive date and reason in dropdown
+**Archived Items UI - REMOVED (Feb 13, 2026)**
+- SEO Networks: Archive tab REMOVED (networks are permanently deleted)
+- Asset Domains: Archive tab REMOVED (no archiving concept)
 
 ### Default Super Admin Auto-Seeding (Feb 12, 2026) - COMPLETE
 **Feature:** Automatic default Super Admin creation for fresh deployments and migrations.
