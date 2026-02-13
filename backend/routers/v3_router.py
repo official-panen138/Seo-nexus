@@ -1757,6 +1757,33 @@ async def get_asset_domain(
     return AssetDomainResponse(**asset)
 
 
+@router.get("/asset-domains-used-as-main")
+async def get_domains_used_as_main(
+    current_user: dict = Depends(get_current_user_wrapper)
+):
+    """
+    Get list of domain IDs that are already used as main nodes in SEO networks.
+    Only returns domains used at root level (no path or path = '/').
+    Domains with specific paths can still be reused with different paths.
+    """
+    # Find all main domain entries without a path (root level usage)
+    main_entries = await db.seo_structure_entries.find(
+        {
+            "domain_role": "main",
+            "$or": [
+                {"optimized_path": None},
+                {"optimized_path": ""},
+                {"optimized_path": "/"}
+            ]
+        },
+        {"_id": 0, "asset_domain_id": 1}
+    ).to_list(10000)
+    
+    # Return unique domain IDs
+    used_domain_ids = list(set(e.get("asset_domain_id") for e in main_entries if e.get("asset_domain_id")))
+    return {"used_domain_ids": used_domain_ids}
+
+
 @router.post("/asset-domains", response_model=AssetDomainResponse)
 async def create_asset_domain(
     data: AssetDomainCreate, current_user: dict = Depends(get_current_user_wrapper)
