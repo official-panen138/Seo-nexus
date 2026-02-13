@@ -510,7 +510,7 @@ class ExpirationMonitoringService:
             actual_nodes = seo.get("actual_nodes_affected", [])
             
             if actual_nodes:
-                lines.append(f"<b>📍 Affected Nodes:</b>")
+                lines.append("<b>📍 Affected Nodes:</b>")
                 for node in actual_nodes[:5]:
                     lines.append(f"  • {node}")
                 if len(actual_nodes) > 5:
@@ -1224,7 +1224,7 @@ class AvailabilityMonitoringService:
             actual_nodes = seo.get("actual_nodes_affected", [])
             
             if actual_nodes:
-                lines.append(f"<b>📍 Affected Nodes in SEO:</b>")
+                lines.append("<b>📍 Affected Nodes in SEO:</b>")
                 for node in actual_nodes[:3]:
                     lines.append(f"  • {node}")
                 if len(actual_nodes) > 3:
