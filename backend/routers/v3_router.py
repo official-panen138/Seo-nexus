@@ -459,12 +459,8 @@ async def check_domain_path_uniqueness(domain_id: str, optimized_path: str = Non
         # Get network details
         network = await db.seo_networks.find_one(
             {"id": existing["network_id"]}, 
-            {"_id": 0, "id": 1, "name": 1, "deleted_at": 1}
+            {"_id": 0, "id": 1, "name": 1}
         )
-        
-        # Skip if network is deleted (archived)
-        if network and network.get("deleted_at"):
-            return {"unique": True, "existing_network": None, "reason": None}
         
         if network:
             domain = await db.asset_domains.find_one({"id": domain_id}, {"_id": 0, "domain_name": 1})
@@ -3578,17 +3574,10 @@ async def create_structure_entry(
     current_user: dict = Depends(get_current_user_wrapper),
 ):
     """Create a new SEO structure entry (node-based) with mandatory change note"""
-    # Validate network exists and is not archived
+    # Validate network exists
     network = await db.seo_networks.find_one({"id": data.network_id})
     if not network:
         raise HTTPException(status_code=400, detail="Network not found")
-    
-    # PHASE 3: Check if network is archived
-    if network.get("deleted_at"):
-        raise HTTPException(
-            status_code=400, 
-            detail="Cannot add nodes to an archived network. This network has been deleted."
-        )
 
     # PERMISSION CHECK: Only super_admin or network managers can create nodes
     await require_manager_permission(network, current_user)
